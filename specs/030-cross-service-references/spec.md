@@ -2,11 +2,16 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-06-30T15:51:10Z
-  reviewed-against: dae9e8214a597ad69599fd583f492620ab59647d
+  last-run: 2026-09-13T23:59:36Z
+  reviewed-against: bf37241d8ae0a0f07bb4079096353cc1307978e8
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 15
+  scope: 24
+  reviewed-digest:
+    data-model.md: e6129b0a4d7f0ec1ea1ab3871d11ed38ba2f421797c5d22eaa415bf39565a587
+    scenarios/referenced-service-spec-root.md: ac0ca79a7abf9e6ee80d019e2998dd8a214552c50f91521b10ee2f1de80df0ab
   blocking: false
 next-criterion: 13
 analyze:
