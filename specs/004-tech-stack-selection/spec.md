@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap]
 review:
-  last-run: 2026-06-11T01:48:34Z
-  reviewed-against: b9982910c3120ed67b63b90a7bb702a88de29403
+  last-run: 2026-09-13T14:04:03Z
+  reviewed-against: 21c2f9efccb7459d98eb7a0f56ee0b79f1c24512
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 2
+  scope: 2
+  reviewed-digest:
+    scenarios/framework-implies-language.md: fb39f0f619d5199df17337ce5d293773d1834457dea4be27dbf9d86b0f39ce6f
   blocking: false
 next-criterion: 10
 analyze:
