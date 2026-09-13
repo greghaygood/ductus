@@ -35,9 +35,9 @@ Its open question asked whether the check belonged in the bootstrap procedure or
 in an `/{project}:audit` family. **Neither, as posed** — `/{project}:audit` is
 maintainer-only and absent from the Shared Files manifest, so an audit family
 could only ever check this repository, never the adopter whose config both
-motivating instances were found in. The rule lives in `/{project}:analyze`
-§Project-level consistency, which ships to adopters and already exists for this
-subject, with the bootstrap's migration batch as a second call site because the
+motivating instances were found in. The rule lives in
+`framework/commands/analyze.md` §Project-level consistency, the `/{project}:analyze`
+source, which ships to adopters and already exists for this subject, with the bootstrap's migration batch as a second call site because the
 registry it holds is what makes attribution possible. One primitive,
 `check-orphaned-references`, serves both; its attribution degrades from
 `registry` to `watermark` explicitly rather than silently. Released in
