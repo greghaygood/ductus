@@ -4,7 +4,7 @@ Cross-cutting decisions, conventions, and deferred work that span multiple featu
 
 ## Design Decisions
 
-- **Templates live at the `ductus` root** — all templates (spec, plan, system, errors, events, project scaffolding) live in `templates/` at the `ductus` root. This is the source. The init command copies spec templates to `{project}/specs/templates/` and system spec templates to `{project}/specs/` during bootstrap. `ductus` is the source, not an adopting project.
+- **Templates live under `framework/`** — all templates live in `framework/templates/`, split by purpose: `framework/templates/spec/` (spec, plan, tasks, data-model, research, scenario) and `framework/templates/project/` (system, errors, events, inbox, README, AGENTS, CLAUDE, gitignore). This is the source. The **Shared Files** manifest copies spec templates to `{project}/specs/templates/` and the system specs to `{project}/specs/` during bootstrap, so the adopter-side destinations are unchanged. `ductus` is the source, not an adopting project.
 
 Historical renames (e.g., `/validate` → `/analyze`, `/capture` → `/specify`, `/elaborate` → `/amend`, `/ask` → `/amend`, `configuration.md` → `configuration-cross.md`) are recorded in git history. Spec bodies are kept current via the mechanical-sweep rule in [`AGENTS.md`](../AGENTS.md) (the "no dead references in live artifacts" entry); the sweep updates every live artifact in a single uniform-substitution commit and does not reopen done specs. See [§spec-lifecycle](../framework/constitution.md#spec-lifecycle) for the mechanical-vs-meaningful boundary.
 
