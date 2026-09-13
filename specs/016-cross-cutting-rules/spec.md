@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [006-bug-workflow, 008-security-rules]
 tags: [format, process, pipeline]
 review:
-  last-run: 2026-08-03T15:03:53Z
-  reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
+  last-run: 2026-09-13T12:30:07Z
+  reviewed-against: 19a236adfd41281319991094525535ded7586e91
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 7
+  scope: 17
+  reviewed-digest:
+    scenarios/applicable-rules-consistency-check.md: 654067cf29c934cccf9a88046d9aedf9b61728af9c5353037bb45ff4adf7d145
   blocking: false
 next-criterion: 9
 analyze:

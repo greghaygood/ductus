@@ -1,12 +1,14 @@
 ---
 spec: 016-cross-cutting-rules
-reviewed-at: 2026-08-03T15:03:53Z
-reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
-diff-base: ef96450
+reviewed-at: 2026-09-13T12:30:07Z
+reviewed-against: 19a236adfd41281319991094525535ded7586e91
+diff-base: 510eb25cfd96bc5ac2bcc714054c482a2c3cbfe1
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 7
+scope: 17
 skipped-passes: []
 ---
 
@@ -14,7 +16,11 @@ skipped-passes: []
 
 ## Summary
 
-Re-review triggered by /ductus:audit Family 19, which flagged this spec's review as predating its own durable contracts. **0 MUST, 0 SHOULD — not blocking.** The diff since the recorded review is markdown only, confined to the `applicable-rules-consistency-check` scenario's question sections: no source file, no command procedure, and no schema changed, so the loaded backend + cross rule set has no surface to evaluate — security, api, concurrency, performance, observability, and reliability are all N/A by scope rather than by inspection. What a review can check here is whether the artifact still describes shipped behavior, and it does: an open question moved to `## Resolved Questions` with its promotion criterion recorded, which is the convention 046 settled. Verification at this HEAD: 864 lib tests plus 11 suites green, clippy -D warnings and fmt clean, markdownlint clean across 390 files, check-artifacts clean on this spec, and the 19-family self-audit green apart from the freshness backlog this review is clearing.
+Reopened by a factual correction rather than by the filename sweep. 016's §Edge Cases bullet cited *"the README's 'Pinning files with …' section"*, and the README carries no such section under any name — it was restructured, and `[pinned]` is now documented under §Configuration. The pointer was dead before the sweep touched the filename inside it, which is why it could not ride the sweep's exemption: repointing rewords the line, and a reworded line is a factual correction that takes the back-edge. It now names §Configuration, which `resolve-anchor` classifies as a qualified reference. No MUST or SHOULD violation against the loaded rules is outstanding.
+
+**Criterion verification.** All eight ticked criteria were re-checked against the tree rather than taken as banked: AC1's `<!-- §rules -->` marker is present in `framework/constitution.md`; AC2's fourth decision-tree route is in §bug-handling; AC3's section in `framework/commands/analyze.md` is `### Rules (blocking and advisory)`, renamed from "Security rules" as required; AC4's `## Applicable Rules` section is in `framework/templates/spec/spec.md`; AC5's `rule` route is in `framework/commands/groom.md`'s decision tree; AC6's signpost is at the top of `specs/008-security-rules/spec.md` and links to 016; AC7 and AC8 re-verified by running `markdownlint-cli2` and the deterministic analyze families clean. Every `§` reference in the spec resolves — 11 of them, 0 unresolved.
+
+**What this review read, and what it did not.** The five passes read 7 of the 17 in-scope files: 016's `spec.md`, `framework/rules/quality-cross.md`, and the five artifacts AC1–AC6 assert against (`framework/constitution.md`, `framework/commands/analyze.md`, `framework/commands/groom.md`, `framework/templates/spec/spec.md`, `specs/008-security-rules/spec.md`). The rest are 016's `plan.md` and `tasks.md`, the two generated `.claude/commands/ductus/` copies, and 017's and 027's artifacts — the latter pulled in because they were modified in the same window by the sweep, not because 016 bears on them; they carry their own reviews. None of those was re-read this run.
 
 ## MUST violations (blocking)
 
@@ -36,6 +42,14 @@ Re-review triggered by /ductus:audit Family 19, which flagged this spec's review
 
 *None.*
 
+## Observations
+
+*None.*
+
 ## Skipped passes
+
+*None.*
+
+## Unexamined governance
 
 *None.*
