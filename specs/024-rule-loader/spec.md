@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [020-code-review, 023-govern-refinement]
 review:
   last-run: 2026-09-13T13:23:05Z
@@ -13,14 +13,17 @@ review:
   blocking: false
 next-criterion: 10
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T13:23:20Z
+  analyzed-against: 9df041463be71e76e0af5ece84ce160e473b6465
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 5
-  unexamined-by-reason:
-    not-a-live-claim: 5
+  unexamined: 0
+  analyzed-digest:
+    plan.md: 860ee33cec53489b1de345321ebf669134f0a53d2361b44dcbf26a53b167f904
+    review.md: ee7da695de5f204455d8e51d08b986f43d4c074d330c55a0bb6056cda3d2c558
+    spec.md: 277b210dad73147376011717da1d0218b645cdd2ec874b67623992b87f3599f9
+    tasks.md: 38787d76dfa286ab11941a1ec55e73ab31ebc20d666fbdd4373661b5f9f655d8
   blocking: false
 ---
 
