@@ -8,7 +8,7 @@ title: "007-govern-workflow — plan"
 
 ## Overview
 
-Create one ductus command file per supported CLI (`ductus/ductus.md` for Claude Code, `ductus/ductus-auggie.md` for Auggie) in the `ductus/` directory. Each file is a self-contained prompt that instructs the AI agent to fetch templates from GitHub, scaffold governance files, resolve placeholders, and display next steps. The command templates in `commands/` gain a `{cli-config-dir}` placeholder so a single template set serves all CLIs.
+Create one ductus command file per supported CLI (`ductus/ductus.md` for Claude Code, `ductus/ductus-auggie.md` for Auggie) in the `ductus/` directory. Each file is a self-contained prompt that instructs the AI agent to fetch templates from GitHub, scaffold `ductus` files, resolve placeholders, and display next steps. The command templates in `commands/` gain a `{cli-config-dir}` placeholder so a single template set serves all CLIs.
 
 ## Technical Decisions
 
@@ -16,13 +16,13 @@ Create one ductus command file per supported CLI (`ductus/ductus.md` for Claude 
 
 Each CLI variant is a separate markdown file in the `ductus/` directory. The CLI-specific values (config directory, session file path, setup behavior) are hardcoded in each variant. This avoids runtime CLI detection logic in a prompt — the user's choice of which file to curl determines the target.
 
-Adding a new CLI means creating a new ductus variant. The governance core (constitution, templates, command templates) does not change.
+Adding a new CLI means creating a new ductus variant. The framework core (constitution, templates, command templates) does not change.
 
 ### Command templates use `{cli-config-dir}` placeholder
 
 The existing command templates in `commands/` reference `.claude/` paths for session state and settings. To support multiple CLIs, these references change to `{cli-config-dir}` — a placeholder resolved during adoption alongside `{project}`.
 
-For governance's own commands in `.claude/commands/ductus/`, the placeholder is already resolved to `.claude`. Adopting projects get it resolved to whichever CLI they chose.
+For this repository's own commands in `.claude/commands/ductus/`, the placeholder is already resolved to `.claude`. Adopting projects get it resolved to whichever CLI they chose.
 
 Affected references in command templates:
 
@@ -77,6 +77,8 @@ Same approach as the init command: fetch from `https://raw.githubusercontent.com
 ### Considered: single ductus file with CLI prompt
 
 A single `ductus.md` that asks "Which CLI are you using?" at runtime. Rejected because the user already chose their CLI by installing the file into a specific directory. A prompt adds friction and the file can't know which directory it was placed in.
+
+**Adopted, not rejected — [012-multi-agent-govern](../012-multi-agent-govern/spec.md) reversed this.** The shipped installer is exactly the option this section turned down: one `framework/bootstrap/ductus.md` carrying an Agent Registry, selecting the agent at runtime via a first-run prompt (and `--add-agent` afterwards). The premise did not survive the change it was reasoning about: once there is a single file at a single URL, the user no longer "already chose their CLI by installing the file into a specific directory", so the argument against the prompt dissolved with the two-file model that supported it. Recorded here rather than deleted because it is the decision 007 actually made; left un-swept would read as a live objection to the design that won — the drift `AGENTS.md` §Gotchas records as invisible to every check, since the option's name never changed and the prose carries none of the tokens an identifier sweep greps for.
 
 ### Considered: keeping `.claude/` hardcoded in command templates, substituting only in ductus
 

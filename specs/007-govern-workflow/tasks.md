@@ -14,11 +14,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 Done when: every `.claude/` reference in `commands/*.md` that is CLI-specific uses `{cli-config-dir}/` instead.
 
-## 2. Re-derive governance commands from updated templates
+## 2. Re-derive the installed commands from updated templates
 
 - [x] Regenerate `.claude/commands/ductus/*.md` from the updated `commands/` templates with `{cli-config-dir}` resolved to `.claude` and `{project}` resolved to `gov`.
 
-Done when: all governance commands match the updated templates with placeholders resolved.
+Done when: all installed commands match the updated templates with placeholders resolved.
 
 ## 3. Create `ductus/ductus.md` for Claude Code
 

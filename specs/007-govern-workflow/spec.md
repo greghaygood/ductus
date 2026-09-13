@@ -1,6 +1,6 @@
 ---
 title: "007-govern-workflow — spec"
-status: done
+status: in-progress
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap, commands]
 review:
@@ -28,14 +28,16 @@ analyze:
 > **Superseded in part by [012-multi-agent-govern](../012-multi-agent-govern/spec.md).** The two-file distribution model described below (`ductus/ductus.md` for Claude Code, `ductus/ductus-auggie.md` for Auggie) is replaced by a single unified `ductus/ductus.md` with an agent registry. The `{cli-config-dir}` placeholder approach and the file-fetching workflow remain correct — only the file count and the runtime agent-selection mechanism change. 007's status stays `done` because its work shipped; 012 carries forward the new design.
 >
 > **Note:** path references below (`ductus/ductus.md`, `templates/system.md`, `templates/spec.md`, etc.) reflect the original layout. The repository was later reorganized so the ductus installer lives at `framework/bootstrap/ductus.md`, spec templates at `framework/templates/spec/`, and project-scaffolding templates at `framework/templates/project/`. Adopting projects' destination paths did not change.
+>
+> **Note:** the `.gitignore` merge *mechanism* described below is superseded, while its requirement is not. This spec describes a `# Governance` comment header checked with an inline grep before appending. The marker was renamed twice — `# Governance` → `# govern` by the `gitignore-marker-rename` migration, then to `# ductus` — and the mechanism itself became the `merge-managed-block` primitive (line-prefix style, marker `ductus`), which rewrites a delimited managed region rather than appending below a header. AC5's idempotency requirement still holds and is still what the installer guarantees; only the marker string and the means of achieving it changed. `# Governance` survives in this spec, in the migration procedure, and nowhere else that states current behaviour.
 
-A self-contained slash command file that bootstraps governance in existing (brownfield) projects. Users fetch a single `.md` file into their CLI's command directory and run it — no clone of the governance repo required. The command instructs the AI agent to fetch templates from GitHub, write them into the correct locations, perform placeholder substitution, handle conflicts with existing files, and display brownfield-specific next steps.
+A self-contained slash command file that bootstraps `ductus` in existing (brownfield) projects. Users fetch a single `.md` file into their CLI's command directory and run it — no clone of the `ductus` repo required. The command instructs the AI agent to fetch templates from GitHub, write them into the correct locations, perform placeholder substitution, handle conflicts with existing files, and display brownfield-specific next steps.
 
 The command supports multiple AI coding CLIs. Each CLI gets native directory paths and configuration formats — no backward-compatibility shims.
 
 ## Distribution Model
 
-The deliverable is one markdown file per supported CLI, hosted in the governance repo. Each file is self-contained and tailored to its target CLI's conventions.
+The deliverable is one markdown file per supported CLI, hosted in the `ductus` repo. Each file is self-contained and tailored to its target CLI's conventions.
 
 ### Supported CLIs
 
@@ -56,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/stonean/ductus/main/ductus/ductus-a
   > .augment/commands/ductus.md
 ```
 
-No runtime, no dependencies, no build step — the "program" is a prompt. Each variant contains the same governance logic but targets its CLI's native paths and configuration formats.
+No runtime, no dependencies, no build step — the "program" is a prompt. Each variant contains the same scaffolding logic but targets its CLI's native paths and configuration formats.
 
 ## Inputs
 
@@ -73,13 +75,13 @@ The target CLI is implicit — determined by which `ductus.md` variant the user 
 Before scaffolding, verify:
 
 - The current directory **is** an existing git repository.
-- A `specs/` directory does **not** already exist (governance not yet adopted). If it does, stop and report: "This project already has a specs/ directory. If you want to re-run adoption, remove it first."
+- A `specs/` directory does **not** already exist (`ductus` not yet adopted). If it does, stop and report: "This project already has a specs/ directory. If you want to re-run adoption, remove it first."
 
 ## File Fetching
 
-The command contains a manifest of files to fetch from the governance repo. Each entry specifies:
+The command contains a manifest of files to fetch from the `ductus` repo. Each entry specifies:
 
-- Source path (relative to governance repo root)
+- Source path (relative to the `ductus` repo root)
 - Destination path (relative to project root)
 - Conflict strategy: `skip` (don't overwrite), `merge` (append), or `create` (must not exist)
 
@@ -97,8 +99,8 @@ If a fetch fails, report the failure and continue with remaining files. The comm
 
 These files are identical regardless of target CLI:
 
-- `constitution.md` — copied as-is from governance root
-- `.markdownlint-cli2.jsonc` — copied as-is from governance root
+- `constitution.md` — copied as-is from the repo root
+- `.markdownlint-cli2.jsonc` — copied as-is from the repo root
 - `specs/system.md` — from `templates/system.md`
 - `specs/errors.md` — from `templates/errors.md`
 - `specs/events.md` — from `templates/events.md`
@@ -124,9 +126,9 @@ Slash command templates use a `{cli-config-dir}` placeholder for CLI-specific pa
 
 ### Files with conflict handling
 
-- **AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, copy from governance and substitute project name and description.
+- **AGENTS.md** (strategy: skip) — if it exists, leave it alone. If not, copy from the framework and substitute project name and description.
 - **CLAUDE.md** (strategy: skip) — if it exists, leave it alone. If not, copy from `templates/claude-md.md`. Used by both Claude Code and Auggie.
-- **.gitignore** (strategy: merge) — if it exists, append governance patterns and language-specific patterns below existing content, separated by a `# Governance` comment header. If not, create from `templates/gitignore` plus language patterns.
+- **.gitignore** (strategy: merge) — if it exists, append the framework-managed patterns and language-specific patterns below existing content, separated by a `# Governance` comment header. If not, create from `templates/gitignore` plus language patterns.
 
 ### Placeholder substitution
 
@@ -137,7 +139,7 @@ In every copied file, replace:
 
 ### What the command does NOT do
 
-- Modify `README.md` — the project's README is its own; governance doesn't touch it
+- Modify `README.md` — the project's README is its own; `ductus` doesn't touch it
 - Create feature specs — the user does that via `/{project}:specify`
 - Fill in AGENTS.md content — that requires project-specific knowledge
 - Fill in system.md content — that requires architectural decisions
@@ -173,11 +175,11 @@ The command file remains in the CLI's command directory after execution. It is i
 
 ## Acceptance Criteria
 
-- [x] AC1: One `ductus.md` variant exists per supported CLI in the `ductus/` directory
-- [x] AC2: Running `curl` followed by `/ductus {name}` in an existing git repo produces a complete governance scaffold
-- [x] AC3: Each CLI variant scaffolds into its native directory paths (`.claude/` for Claude Code, `.augment/` for Auggie)
+- [x] AC1: One `ductus.md` variant exists per supported CLI in the `ductus/` directory. Delivered as written against the per-CLI bootstrap files of the time. **Superseded twice over:** `012-multi-agent-govern` replaced the per-CLI variants with a single registry-driven installer, so there is no longer one file per CLI; and the repository was later reorganized, so the `ductus/` directory this criterion names does not exist — the installer is `framework/bootstrap/ductus.md`. Annotated rather than rewritten because the claim was superseded, not renamed: restating it as the single-file model would credit 007 with 012's work. `009`'s AC18 carries the same annotation for the same supersession
+- [x] AC2: Running `curl` followed by `/ductus {name}` in an existing git repo produces a complete `ductus` scaffold
+- [x] AC3: Each CLI variant scaffolds into its native directory paths (`.claude/` for Claude Code, `.augment/` for Auggie). **The requirement holds; the enumeration is superseded.** Native-path scaffolding is still exactly what the installer does, and `{cli-config-dir}` is still how it does it. But there are no longer "CLI variants" (012, per AC1), and the parenthetical names two agents where the registry in `framework/bootstrap/ductus.md` now carries four — `claude` → `.claude`, `auggie` → `.augment`, `antigravity` → `.agents`, `opencode` → `.opencode`, across three layout values. Left as written because the two it names are still correct and the criterion asserts no exclusivity; the registry is the live enumeration
 - [x] AC4: Existing files (.gitignore, AGENTS.md, CLAUDE.md) are not overwritten
-- [x] AC5: `.gitignore` merge is idempotent — running twice does not duplicate governance patterns
+- [x] AC5: `.gitignore` merge is idempotent — running twice does not duplicate the managed patterns
 - [x] AC6: Fetch failures for individual files do not abort the entire process
 - [x] AC7: All generated files pass `npx markdownlint-cli2`
 - [x] AC8: Slash commands are installed in the CLI's native command directory with `{project}` and `{cli-config-dir}` placeholders resolved
@@ -186,7 +188,7 @@ The command file remains in the CLI's command directory after execution. It is i
 - [x] AC11: Post-scaffolding output displays brownfield-specific next steps
 - [x] AC12: Invalid project names are rejected with a clear error message
 - [x] AC13: Intermediate directories are created as needed
-- [x] AC14: Adding a new CLI requires only a new ductus variant file — no changes to governance core
+- [x] AC14: Adding a new CLI requires only a new ductus variant file — no changes to the framework core. Delivered as written, and the *intent* survives: adding an agent still leaves the constitution, templates and command sources untouched. **The mechanism is superseded.** 012 replaced the variant file with a row in the Agent Registry, so adding an agent means a registry row plus a walk of the §Derived values **Layout-derived** table — command path, invocation, install path, settings file, permission shape, native rule-loading dir, native rules file, cleanup glob. That is more than "only a new file", and `AGENTS.md` §Workflow records that nothing audits per-layout behaviour parity, so the walk is contributor discipline rather than a gate
 
 ## Open Questions
 
@@ -194,9 +196,9 @@ None — all resolved.
 
 ## Resolved Questions
 
-- ~~Should the command also fetch `sdd-context.md`?~~ No — governance-internal only.
+- ~~Should the command also fetch `sdd-context.md`?~~ No — framework-internal only.
 - ~~Should there be a `--dry-run` mode?~~ No — the command is idempotent with create/skip/merge strategies, making dry-run unnecessary.
-- ~~How should the file manifest be maintained?~~ Hardcoded in each ductus variant. Updated when governance templates change.
+- ~~How should the file manifest be maintained?~~ Hardcoded in each ductus variant. Updated when the framework templates change.
 - ~~CLI-specific command variants or path variable?~~ Path variable (`{cli-config-dir}`) resolved at ductus time. One set of command templates, N ductus variants do the substitution.
 - ~~How should `/ductus:setup` work for Auggie?~~ Skipped for now — Auggie permissions are global. Deferred to future considerations in `specs/spec.md`.
 
