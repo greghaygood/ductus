@@ -61,7 +61,7 @@ You don't have to start at `draft`. A brownfield feature can enter with a sparse
 
 Adoption installs a full set of verb-named, session-aware commands. Use `/target` to switch the working feature; `/specify` creates one and targets it automatically.
 
-Command names below are written bare for readability. As installed they carry your project's namespace — `/my-project:specify` on Claude Code, Auggie, and Antigravity; `/my-project/specify` on OpenCode, which namespaces by subdirectory.
+Command names below are written bare for readability. As installed they carry your project's namespace — `/my-project:specify` on Claude Code and Auggie; `/my-project-specify` on Antigravity, which discovers flat-named skills rather than a namespaced command directory; `/my-project/specify` on OpenCode, which namespaces by subdirectory.
 
 Each entry below says what the command **does**; the section it links to says when you would reach for it and why it exists.
 

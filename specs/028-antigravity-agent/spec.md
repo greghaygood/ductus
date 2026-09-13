@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime]
 review:
   last-run: 2026-06-10T02:46:51Z
@@ -106,7 +106,12 @@ registry's layout and host-convention assumptions — not a row append.
 | Permissions | `settings.local.json` (`permissions.allow/deny` or `toolPermissions[]`) | `.agents/settings.json` (`permissions.allow/deny/ask`, action grammar) |
 
 (Antigravity facts verified against `agy 1.0.7` and maintainer-supplied docs;
-see Resolved Questions for the per-fact provenance.)
+see Resolved Questions for the per-fact provenance. **The MCP-wiring row was
+later refuted**: `031-agent-mcp-wiring` reproduced the project-local
+`.agents/mcp_config.json` case against a spawning positive control and measured
+0 server spawns, so Antigravity's MCP target is home-level
+`~/.gemini/config/mcp_config.json`. The row is left as written because it records
+what the docs of the day claimed; the refutation is the durable half.)
 
 ## Verified Antigravity Layout
 
@@ -119,7 +124,7 @@ workspace skill at `<repo>/.agents/skills/<name>/SKILL.md`):
 | Pipeline commands (`framework/commands/*.md`) | `.agents/skills/{project}-<name>/SKILL.md` | dir-form skill; body = the command procedure (gates preserved as in-body prompts); `name` + `description` frontmatter; invoked `/{project}-<name>` |
 | `ductus` installer | `.agents/skills/ductus/SKILL.md` | curl-scaffolded for bootstrap |
 | Domain rule files | `.agents/rules/<name>.md` | native Antigravity rule loading |
-| ductus runtime | `.agents/mcp_config.json` | `{ "mcpServers": { "ductus": { "command": "ductus", "args": ["mcp"] } } }` |
+| ductus runtime | ~~`.agents/mcp_config.json`~~ → home-level `~/.gemini/config/mcp_config.json` | **Superseded by `031-agent-mcp-wiring`.** Project-local `.agents/mcp_config.json` is ignored by Antigravity (0 spawns against a spawning positive control), so ductus writes no MCP file here — the user edits the home-level config once and reloads with `/mcp` |
 | Permissions | `.agents/settings.json` | `permissions.allow/deny/ask`; ductus covered by a single `mcp(ductus/*)` |
 | Project context | `AGENTS.md` (already shipped) | read natively; no `CLAUDE.md`, no new context file |
 
@@ -157,8 +162,11 @@ For Antigravity, `/ductus` scaffolds the project-local `.agents/` tree:
   still applies. The argument-token equivalent of `$ARGUMENTS` is a plan-phase
   detail to confirm.
 - **Rules.** Scaffold ductus's domain rule files to `.agents/rules/<name>.md`.
-- **MCP.** Write `.agents/mcp_config.json` wiring ductus as a local stdio server,
-  additively if the file already exists.
+- **MCP.** ~~Write `.agents/mcp_config.json` wiring ductus as a local stdio server,
+  additively if the file already exists.~~ **Superseded by `031-agent-mcp-wiring`:**
+  ductus writes no MCP file for Antigravity. Registration is `surface-instruction` —
+  the user adds a `ductus` block naming the absolute store path to home-level
+  `~/.gemini/config/mcp_config.json` once per machine, then reloads with `/mcp`.
 - **Permissions (`configure`).** A new `framework/bootstrap/configure/{key}.md`
   for Antigravity writes `.agents/settings.json` `permissions` in Antigravity's
   action grammar: `mcp(ductus/*)` for the runtime, `command(...)` allows/denies for
@@ -214,7 +222,18 @@ unchanged.
       invocable as `/{project}-<name>`
 - [x] AC4: ductus's domain rule files scaffold to `.agents/rules/<name>.md`
 - [x] AC5: ductus is wired via `.agents/mcp_config.json` (local stdio server, additive)
-      **and** `.agents/settings.json` allows `mcp(ductus/*)`
+      **and** `.agents/settings.json` allows `mcp(ductus/*)`. **Half superseded.**
+      The permission half still holds exactly — `framework/bootstrap/configure/antigravity.md`
+      writes `mcp(ductus/*)` into `.agents/settings.json`, emitted by
+      `scripts/gen-configure-mcp.sh`. The wiring half was **reversed** by
+      `031-agent-mcp-wiring`: Antigravity loads MCP servers only from home-level
+      `~/.gemini/config/mcp_config.json`, and project-local `.agents/mcp_config.json`
+      is ignored — measured against the live `agy` CLI at 0 server spawns and 0 MCP
+      log references, against a positive control that did spawn. ductus therefore
+      writes **no** MCP file for Antigravity at all; its registration `mechanism` is
+      `surface-instruction`, so the user performs a one-time config edit plus a `/mcp`
+      reload. The criterion is left as delivered rather than rewritten, because the
+      wiring it describes is what this spec shipped in June
 - [x] AC6: A `framework/bootstrap/configure/{key}.md` for Antigravity writes
       `.agents/settings.json` `permissions` in Antigravity's action grammar;
       `gen-configure-mcp.sh` emits the Antigravity MCP block
@@ -287,7 +306,14 @@ unchanged.
   ductus covered by a single `mcp(ductus/*)` and shell allows/denies as
   `command(...)`; workspace files are auto-allowed so `read_file`/`write_file`
   are largely unneeded.
-- **MCP wiring + merge ownership.** ductus spans two `.agents/` files —
+- **MCP wiring + merge ownership.** **Reversed by `031-agent-mcp-wiring` — this
+  resolution no longer describes shipped behavior.** ductus spans only **one**
+  `.agents/` file: `settings.json`, carrying the `mcp(ductus/*)` permission. The
+  server definition is not ductus's to write — Antigravity reads MCP servers from
+  home-level `~/.gemini/config/mcp_config.json`, which lives outside the repo, so
+  ductus surfaces a one-time instruction instead of mutating a per-machine file.
+  The original resolution, kept for the record of what was decided and why:
+  ductus spans two `.agents/` files —
   `mcp_config.json` (server definition) and `settings.json` (`mcp(ductus/*)`
   permission) — mirroring Claude's `.mcp.json` + settings split. Both installs are
   additive (preserve adopter entries). `mcp_config.json` is a JSON-object merge;
