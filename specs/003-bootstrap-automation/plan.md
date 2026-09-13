@@ -12,7 +12,7 @@ Create eleven slash commands in `.claude/commands/ductus/`: ten standard pipelin
 
 ### Standard commands are literal copies with placeholder replacement
 
-Each of the ten command templates in `commands/` is copied to `.claude/commands/ductus/` with every occurrence of `{project}` replaced by `ductus`. No other modifications. This ensures governance dogfoods the exact same commands adopting projects use. If a command template is updated later, the governance copy should be re-derived from the template.
+Each of the ten command templates in `commands/` is copied to `.claude/commands/ductus/` with every occurrence of `{project}` replaced by `ductus`. No other modifications. This ensures this repo dogfoods the exact same commands adopting projects use. If a command template is updated later, the copy is re-derived from the template — by hand as designed here, and by `scripts/gen-claude-commands.sh` since the Trade-offs entry below was reversed. The copy-and-substitute shape survived that reversal; what changed is that a script does it over a directory glob rather than a contributor over a fixed list.
 
 ### Init command is governance-specific
 
@@ -50,15 +50,15 @@ Standard commands reference `.ductus/session.toml` for session state. (Original 
 
 ### Considered: generating standard commands dynamically from templates
 
-Rejected. Copying with replacement is simple and explicit. The governance repo has a fixed project name (`gov`) that never changes. Dynamic generation adds complexity for no benefit.
+Rejected here, and **later adopted** — recorded per [§drift-prevention](../../framework/constitution.md#drift-prevention)'s *Decision resolution* rule, which fires when a previously-rejected option is taken up. The rejection rested on two premises that did not hold: that copying with replacement stays simple, and that this repo's project name is fixed. The command set grew from ten to sixteen, and 049 renamed the project to `ductus`, so hand-copied files drifted from the templates they came from. `scripts/gen-claude-commands.sh` now globs `framework/commands/*.md`, substitutes `{project}` and `{cli-config-dir}`, writes `.claude/commands/ductus/`, and deletes any file whose source is gone; the pre-commit hook runs it, and `/ductus:audit`'s check-zero precondition fails on a stale copy.
 
 ### Considered: a single `/ductus:work` command instead of ten standard commands
 
 Rejected. Governance should use the same commands as adopting projects. A custom command would diverge from the dogfooding principle and miss bugs or friction in the templates.
 
-### Considered: skipping setup command for governance
+### Considered: skipping the configure command for this repo
 
-Rejected. Even though governance already has a settings file, the setup command is part of the standard set. Keeping it maintains parity with adopting projects.
+Rejected. Even though this repo already has a settings file, the configure command is part of the standard set. Keeping it maintains parity with adopting projects.
 
 ## Open Questions Resolved
 
