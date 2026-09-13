@@ -1,6 +1,6 @@
 ---
 title: "007-govern-workflow — spec"
-status: in-progress
+status: done
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap, commands]
 review:
@@ -16,12 +16,18 @@ review:
   blocking: false
 next-criterion: 15
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T18:16:19Z
+  analyzed-against: a081c3e3b2a1b9222fd9001517a147ce74789438
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  analyzed-digest:
+    plan.md: d383cef38ca2ef5c83b750c524398cec691b0e856f365732cb2f96cf853feffe
+    review.md: 43c5fdcbe1e1829d15d332141966b7d8ca207dfd76494c854820d90430b8241c
+    scenarios/ductus-self-update-precheck.md: c03909715a9bdd56b2c97a8d9bf89e970d5d8077afa61cb62b8bd3ad8998fbfe
+    spec.md: ce0a25b6cb9c7e74855475d3e7d8607160903817ed21d72a52a58da919b8c11e
+    tasks.md: b503145cfa68b222c80551495a0fba74ce80cb90f668678bed65fe17f038d8ac
   blocking: false
 ---
 
