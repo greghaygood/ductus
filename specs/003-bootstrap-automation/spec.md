@@ -16,14 +16,14 @@ review:
   blocking: false
 next-criterion: 18
 analyze:
-  last-run: 2026-09-13T14:08:26Z
-  analyzed-against: a5f15cce5738995cd8b7b98a264c1a95652eeae0
+  last-run: 2026-09-13T14:13:46Z
+  analyzed-against: 64b76b50a2265e93333bb2d99f51a3fde999d9a0
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 3
   analyzed-digest:
-    plan.md: 8c09f05a0a780347e56074e5fd62eadb235f0adf8271dd9ae9cfbd7a20f5ef40
+    plan.md: ad3823f7c251c85b9e3ec543aa6248e57ee94333446218a0be7385e442961068
     review.md: 8024ebfa7c6da4572661afc0bed44e753743f03d85a53c76efec7329801be19c
     scenarios/curl-sh-installer.md: 63eaebf34fe95db7e26a926ca06f6e73d57936901b75269601465a8ef108d069
     spec.md: e354bb82cc4c701c39c04f90ea3d1ff0257f910560544cdb78f98a9bc826c7ea
