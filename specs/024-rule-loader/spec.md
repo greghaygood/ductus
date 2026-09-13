@@ -1,6 +1,6 @@
 ---
 status: in-progress
-dependencies: [023-govern-refinement]
+dependencies: [020-code-review, 023-govern-refinement]
 review:
   last-run: 2026-05-17T20:00:00Z
   reviewed-against: 041b8ccc1fa655b76608fd7c65ec5781c28eeda3
@@ -53,7 +53,7 @@ The fix: derive rule-file selection from observable signals. Each rule file decl
 - **A `surface:` frontmatter field on rule files.** Filename suffix is sufficient and visible at directory-listing time. Adding frontmatter would duplicate the signal and create a "what if they disagree?" problem.
 - **A new surface taxonomy beyond backend / frontend / cross-cutting.** Mobile-specific rules are not in scope; if mobile rules are added later, this spec's pattern extends with a `-mobile.md` suffix and a corresponding stack-detection update (a separate spec).
 - **The opt-out mechanism for excluding a specific rule file.** That is **spec 025 — rule-file opt-out** (sibling spec, listed as a forward reference, not a dependency — 025 depends on this spec, not the other way around) — 024 ships the auto-load; 025 ships the override.
-- **Editing done specs that reference the old hardcoded behavior.** The current behavior of `/ductus:review` is what `framework/commands/review.md` says today; that file is the live artifact this spec edits, and `020-code-review`'s body is not the source of truth for it. This spec was implemented while [§drift-prevention](../../framework/constitution.md#drift-prevention) still carved done specs out as *frozen archaeology*, so their bodies were left unswept at the time. That carve-out was removed by 023's `living-specs` scenario: done spec bodies are live artifacts now, kept current by the same uniform-substitution sweep as everything else, which does not reopen them.
+- **Editing done specs that reference the old hardcoded behavior.** The current behavior of `/ductus:review` is what `framework/commands/review.md` says today; that file is the live artifact this spec edits, and [020-code-review](../020-code-review/spec.md)'s body is not the source of truth for it. This spec was implemented while [§drift-prevention](../../framework/constitution.md#drift-prevention) still carved done specs out as *frozen archaeology*, so their bodies were left unswept at the time. That carve-out was removed by 023's `living-specs` scenario: done spec bodies are live artifacts now, kept current by the same uniform-substitution sweep as everything else, which does not reopen them.
 
 ## Affected files
 
