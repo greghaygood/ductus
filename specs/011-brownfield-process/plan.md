@@ -6,7 +6,7 @@ title: "011-brownfield-process — plan"
 
 ## Overview
 
-Three workstreams: (1) create the `/capture` command and its Claude Code instance, (2) rename `triage` to `inbox` across all governance artifacts, (3) document the brownfield process, scenario promotion, and cross-spec impact patterns in constitution, sdd-context, and README.
+Three workstreams: (1) create the `/capture` command and its Claude Code instance, (2) rename `triage` to `inbox` across all `ductus` artifacts, (3) document the brownfield process, scenario promotion, and cross-spec impact patterns in constitution, sdd-context, and README.
 
 ## Technical Decisions
 
@@ -28,7 +28,7 @@ Both `ductus/ductus.md` and `ductus/ductus-auggie.md` reference `triage` in thre
 
 ### Ductus migration for triage → inbox
 
-The ductus command only creates and updates files — it does not delete files removed from the manifest. Projects that adopted governance before the rename will have orphaned `specs/inbox.md` and `{cli-config-dir}/commands/{project}/triage.md` files after re-running `/ductus`.
+The ductus command only creates and updates files — it does not delete files removed from the manifest. Projects that adopted `ductus` before the rename will have orphaned `specs/inbox.md` and `{cli-config-dir}/commands/{project}/triage.md` files after re-running `/ductus`.
 
 A migration step is added to both ductus files. Before the file manifest is processed, the command checks:
 
