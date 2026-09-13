@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-13T12:28:44Z
@@ -18,22 +18,22 @@ review:
   blocking: false
 next-criterion: 27
 analyze:
-  last-run: 2026-09-13T00:18:37Z
-  analyzed-against: caae5ad17950993ee8f8d9fcd220e87fe08e0aeb
+  last-run: 2026-09-13T12:29:25Z
+  analyzed-against: f05e2fa42e35c3461e7edcdd98d68bc0653a757e
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 1
   analyzed-digest:
-    data-model.md: 6e24f25156055a0c7a636c72294fdfbc6e0de44556f95d40513028d0410fee4f
-    plan.md: 5347baac2a0c626466c7e8784959968d98058252ed8aafb5dc1c533d3096a0d9
-    review.md: c5c7aa5bd73ec9160d7693d1681013923c9ca5ea84688e6bff8660c716ac17cd
-    scenarios/detect-dependency-cycles.md: f7b0ac55bdeb0d2084d59779cd67015635ca2616daf423324713c9217c3d36e8
-    scenarios/generator-sync-claim-honesty.md: e03a245d2efd00b267fd7eeb0690af4fd3877a685c7ab121e9b5dc0ffe598481
-    scenarios/skip-prose-cross-references.md: e57301025e73da4c077a5be9fc7ae821653c37a9ad12ee0d4c10a31798f60380
-    scenarios/tracked-specs-not-worktree.md: 985aeeaa62ab386742d54ffd4b671f6109f53c156431391b5c42d7eb7718287c
-    spec.md: 8adeb7c4c74ad808740785630021b824d6a819c4305799b96e91fee992de0d66
-    tasks.md: 5c3477a2fc9b4c27b3f54c78159d45c6c9ae9584ca5d5d4fd6458d022e2630c7
+    data-model.md: 660f5669693d42287cd8ae1819165d73a4e9ae3546402e01c8d50a109f5c91d6
+    plan.md: 0f39c855071d31a66dbadf94616a98b2c40cab33ca20750367a186a4eedbbd14
+    review.md: 3418609794ea63f684883e087b75440ce55e32acc3bf9fbabf9bac0f3f25e0a8
+    scenarios/detect-dependency-cycles.md: 000d69d482a589ef696aec878d87fa53a1336b0e220ca2baa71a1b8aff397ceb
+    scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264
+    scenarios/skip-prose-cross-references.md: c70ab9312912ef443049b63f3d3e1915b0f466dcb720c8e88253eeea8e4f2326
+    scenarios/tracked-specs-not-worktree.md: ba42aee5fbee0dfed38fce985200b0ba5775ecd03113a81aa792b25a18383829
+    spec.md: a0c8e7626a04544bad26067fe0b653da02c3b64780289f7a6212b76d221e5ee6
+    tasks.md: 375377a3d6f43f25b3f0565d366a534d5841744f5db3653b31993ad0b57b37a7
   unexamined-by-reason:
     no-readable-state: 1
   blocking: false
