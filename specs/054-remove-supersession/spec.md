@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [050-constitution, 052-spec-supersession-and-consolidation]
 review:
   last-run: 2026-08-31T00:30:00Z
@@ -122,7 +122,7 @@ Two adopter-side non-events, stated so their absence is deliberate rather than o
 - [x] AC7: `write-supersession-annotation` and `read-supersession-pair` are absent from all five registration sites, and `cargo test --test mcp` passes with the manifest set-equal to the registry
 - [x] AC8: The `classifyClaims` extension point and its request, response, and claim types are gone, and no extension point remains without a caller
 - [x] AC9: `validate-frontmatter` contains no `supersedes` validation path
-- [x] AC10: `check-artifacts` runs eight residual deterministic families, `supersession-reciprocity` is returned by no code path, and `analyze.md`'s enumeration and count match the implementation
+- [x] AC10: `check-artifacts` runs eight residual deterministic families, `supersession-reciprocity` is returned by no code path, and `analyze.md`'s enumeration and count match the implementation. **The count has since grown to nine** — `analyze-state-drift` was added with the durable `analyze:` record, after this spec removed the supersession family. The requirement is what this criterion actually asserts and it still holds exactly: the runtime emits nine families, `analyze.md` enumerates nine and says "nine", and `supersession-reciprocity` is returned by no code path. Only the literal number was a snapshot of the day
 - [x] AC11: `cargo build`, `cargo clippy`, and the full `cargo test` suite pass with no dead-code or unused-import warnings from the removal
 - [x] AC12: `help.md`, `docs/slash-commands.md`, and `README.md` document sixteen commands with no `/supersede` among them, and `scripts/gen-help-tables.sh` carries no supersede entry
 - [x] AC13: The installer manifest carries no `supersede.md` row, and every hardcoded command count in `framework/bootstrap/ductus.md` and `framework/bootstrap/govern.md` reads sixteen rather than seventeen
