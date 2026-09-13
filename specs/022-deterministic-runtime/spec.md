@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [021-runtime-boundary]
 review:
   last-run: 2026-09-13T23:26:01Z
@@ -109,16 +109,16 @@ review:
   blocking: false
 next-criterion: 32
 analyze:
-  last-run: 2026-09-13T00:44:24Z
-  analyzed-against: dda0c8691455aa6ade83949b3ca2d5f819303172
+  last-run: 2026-09-13T23:27:12Z
+  analyzed-against: 77708c7e17dd1dfe29b8ac07bcf31535066aac51
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 0
+  unexamined: 2
   analyzed-digest:
-    data-model.md: 4c2d7895323972f4a8e5480174c3f8ce605acc28a0f7c1c6b3572ff07fd8252a
-    plan.md: 83fd97d76c64d20beb729ce68149d23f3e1e388711ec0371818aa49b4f0304bf
-    review.md: c1683c7dba7bfef1b211a9f6e569db6226d7963fe5284b1b1c934681456a978b
+    data-model.md: f9e7371f1b3dfd386c0b71baa920ac851ed76deb15d77dce74e01dac2490b21b
+    plan.md: 1c040e61e27620ff92bbb285dff892a21b1482fdffc333f5e5bd3bf63e2c6972
+    review.md: 6266c8bf0ce35de16310fcfb7da4c916dcbabebee451af284b29217d0f448722
     scenarios/a-done-spec-has-no-transition-to-gate.md: bad3db76667fc6620b34a2a6dfa39fb6e461523984128314df82f05717a74493
     scenarios/a-review-states-what-it-read.md: a9d8ffdd823dfec6ea56f7c57d84e375e39adfbaf83dc61e9a16099d1828bf1b
     scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -129,16 +129,16 @@ analyze:
     scenarios/append-primitive-marker-normalization.md: 42f66c331c19205f62f29d4ff2ef96a3d51ffab8aa38bf9df4ed09eeef6f8990
     scenarios/append-task-honours-slug-with-explicit-body.md: d831ac5fada945c565042a7216a7d7dd0fa7477efb635597901a5720926cf726
     scenarios/apply-manifest-substitution-contract.md: 046f9c2ba1ee98e3ae72ab670e5955503042c8c873d1caf7474ace8ee5a284b1
-    scenarios/apply-manifest.md: 55c22d1778922e60da1392cd35a3672a27dc455ee5cfb3f8a75a5d1d1041e3ac
+    scenarios/apply-manifest.md: 2f24eacbf999ca3d7b9baedbd341933af1ca5731abdb7c82df6e89e76be9f3d7
     scenarios/archive-network-hardening.md: 127616981fb074c9e21ef54b4f58d74413f1fdc31af349529601b8dbc096a512
-    scenarios/ask-consolidation.md: c9034a78aad6de2a680545e155698aabfc269a41a88f5af42bf143a960275fe2
+    scenarios/ask-consolidation.md: 5e79770b6fed76e68f42c52a0aaeeb88d2c64bc9bbd7d4b6fa13aece937b298b
     scenarios/block-element-scanner.md: 5a9512b307d28410b18d35199f01f7ceb1a7d250e8614cedb661d4104f7effdd
     scenarios/check-artifacts-skipped-targets.md: 4713c3cc6ada06504d74ed9a4a29fef3db3bb0e7a12b67bad2c4793699880d39
     scenarios/check-stuck-read-blob-reuse.md: b5112173b0a1e7fc0b17a3540bc9e84972d22240461d4351ecc0bbcff2ed3508
     scenarios/check-stuck-tasks-md-advancement.md: af319861c05805255dc7a6084cbf8c378e667d8e7f964f32d02485c89f23fd20
     scenarios/clarify-command-acceleration.md: 4c27a1159c752a87957c2dd7d55b131ea7000eb1b06d27c1f06a7935ff264236
-    scenarios/cli-config-dir-per-contributor.md: 3764b5f4f1b7c618c6255f6feef1c7db06f5ca43774d98095a1a01403b4bb391
-    scenarios/commands-dir-parameterization.md: 61e6896a156386a62c24253cc91db2cfb0b76dd09491a11e53fdfaef3b1f7d7c
+    scenarios/cli-config-dir-per-contributor.md: 0bc5375924bac0679ddd489d8353ddd7dc14a6deec9fc4f2575b3d60c1a994df
+    scenarios/commands-dir-parameterization.md: 88c284e23990428bfdde29f4922ccba6a59402665fb2dcfcac18254e3fc09528
     scenarios/config-resolution-single-probe.md: fc602eb6f2d64f6d1956da411b809af3a53a0c91b26dd198f6b1af61e3347ab4
     scenarios/config-sourced-paths-and-the-traversal-boundary.md: 5ce4f8c45bdfd56606b9a977431e06683f4f38904742f96c358e6b6c5828b30e
     scenarios/constitution-excerpts-as-skill-resources.md: 56192a1689b5afe2bfc51928c27b7d567518816b79c8df0a50250bd3328a8e86
@@ -148,7 +148,7 @@ analyze:
     scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
     scenarios/criterion-non-assertion-phrasings.md: 9509f4ef1affca714b18825cad5870d7d8edbf6c8f8beb2f81fcb81363456e83
     scenarios/criterion-path-existence-family.md: 668bd1d22a6557ed95fad7b6dd96b9386c67239057827403ca73368e181c0c26
-    scenarios/dashboard-primitive.md: 6ba6e4381ae54beb99453b308c7b50332b235ef0a90d19a559c63623483ac6d3
+    scenarios/dashboard-primitive.md: a155f19a28116f871b84d300d0e1ef2687fae92c75b51e9a8fc83dcb824c26fd
     scenarios/derive-boundary-uncommitted-spec-dir.md: ca28aaef13416801e00bc40d9d58da09c7a513b237bb659597e1efc91a0aaef5
     scenarios/derive-references-unstaged-drift-is-reported.md: a16e7ec25a3be056668079316b47b915bf105d0292c57ffad026a0e577a458e5
     scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
@@ -166,12 +166,12 @@ analyze:
     scenarios/mark-task-untick-symmetry.md: 0b04c0e1f2091244701f75c435884cb0857a2be728eac41f84fbe41c8df92fb0
     scenarios/mcp-arg-unknown-field-strictness.md: 57c17fb05d72b8f47f64140fc0d8ba6df0c0b8f757282e41d1036aa222309a1b
     scenarios/merge-managed-block-multi-subsection-end.md: 7f2c02450d100d801dccbffb9336331a114257fd2040d36ad298d65e6edc3234
-    scenarios/merge-managed-block-renamed-subsection.md: c03abb5ae0097d3b15c8a74ef472cdf77d0946ffd2a1625c79351cae300e9a84
+    scenarios/merge-managed-block-renamed-subsection.md: 61340856803e5d6891c0e27a841d6fd894be838c1568ed11d9e9c09ae195297f
     scenarios/merge-managed-block-subsection-insertion.md: 2a0a7f5f443ef78811f1550a34b419054c9d9bb29bc800b51b86033be350e2f8
     scenarios/merge-managed-block-trailing-append.md: 6f18642416470c96b6f582a0305d62137a9ae2ec6f1ec054eccac421d8e68a4f
     scenarios/numbered-heading-grammar-single-source.md: 359d35403e9b3f853e4a7cbcca71f3fc032ad556406bae6a584272c6bcd97862
-    scenarios/opencode-command-resolution.md: 250386554e1cab7548a5748272f75fa9d948378090cee5ae11570ce4bb76cf3a
-    scenarios/orphan-check-adopter-authored-references.md: 3da4993b02a464f5d69b7fcf780d8ce60610c81b09d3cf95947f799e8bf0cac3
+    scenarios/opencode-command-resolution.md: eaa0eba65ccf3f1b3a610db8a10231a9635994f71b5df780111e8f5731118e1e
+    scenarios/orphan-check-adopter-authored-references.md: b47b815a5d2380fc979d2ad5a8020c05d95a7593f962235795ff19cd3cb1e6fd
     scenarios/orphaned-reference-check.md: 146c5bb872a31b732234b1dc5cc404b858a5b71046a4b0979a8694a5543674b2
     scenarios/orphaned-reference-historical-roots.md: 246412993db6d903a5f7d47699f5a5d9a22105157e6b862be68683a2736da195
     scenarios/parser-nested-list-continuation.md: 60eb9129494668bb18045e94e9c6b208353a9a1195ef384cf2aeb6d2482ce139
@@ -183,7 +183,7 @@ analyze:
     scenarios/review-exec-wiring.md: 93a1adbbf6f81d20d99ea0bca31c59891fdbc7c21fdde6f2da0cb76b547f9b46
     scenarios/review-gate-unexaminable-contracts.md: 325800f6bcb755514183c176b71cc31abf7e55c8ea709e63349ca029afb3858b
     scenarios/review-observations-write-through.md: abbb178a3784b17314fe1a0f8e414a2718ea32cb8ee06191d1242ec93599c177
-    scenarios/review-runtime-acceleration.md: 8ae08dc867ff3646254e1886a73afffc206b5d7b2d894a88886794577b1d76b3
+    scenarios/review-runtime-acceleration.md: 0f4434be9ec44ee121324e7360085889f6e2c721e848d4fed62bf8377a3d6696
     scenarios/review-scope-parse-fidelity.md: aacc1429dd36c837b609a1551ef4692cb071c6bbff4ee010a7cdba486e17fdb8
     scenarios/review-scope-plan-affected-table-format.md: 33a2f84bf8d9a83375018cadd42a21ab11f2969eb8f1f311fed1530f5065c156
     scenarios/review-scope-union.md: 36b9dd7bcd4981778fc5316172b2bbff58c4df4d2e9e1e3563e9e16c132d5392
@@ -200,21 +200,24 @@ analyze:
     scenarios/specify-routes-before-scaffolding.md: e008baae7f44f2d4ea73d45df18dd6e1f2cc435cdc5562fd8c148494a6d0c520
     scenarios/the-cli-surface-nothing-pins.md: f63de14533aeb6b2c77f33421af289633e0fded63e795f219b82bfa30f071c8c
     scenarios/the-committed-tree-horizon.md: 77ad933415ea4cc42016d55f524c2a90146a683e41634ba3a945db0d2c693b5c
+    scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
     scenarios/the-cross-spec-impact-gate.md: 636a894e1d481799d2a89ab6df5638030676b1d8bb784e8531e3bf339d4fce87
     scenarios/the-inbox-row.md: 58d356dddec37f5a770fc51e85668351999b9f701aa6d43631a0aecf411d1edd
-    scenarios/traverse-deps-cycle-check.md: 81debabcec79ccfa9b77fb5bdecf9e902ad4f3304d1b2b3d0613308ec26ad913
+    scenarios/traverse-deps-cycle-check.md: f1440d35fa727666c358bb58d27769349b843fa3495d55c30ad8d00f349cb7d1
     scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
     scenarios/unreadable-scenario-is-reported.md: 569047275a9d821b190581ae2adba05492a698aa50bc19d696cccee0d38be159
     scenarios/waiver-processing-order.md: e3237b3ad4a9f5e8b06d08256f17732c007f07c1cc30d0721729b87e8c8a5c38
     scenarios/write-analysis-and-the-second-gate.md: 22fff1f9ef829b003fc932fd33056aa3f15cedc4f38b4d84e3f99325a4171814
     scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
     scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
-    scenarios/write-session-primitive.md: be022a0bb9fdea196fd6ec4ea48a68fc5552ab2253a4ba91d2c1b9972e2fd936
+    scenarios/write-session-primitive.md: 496ae9ca22e5c5b80d842c388175b36fad6ca9bb38dd603da2f9bb9b07b82550
     scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
     scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
     scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-    spec.md: 1c6978b96828831a11cb56d440d4095b3bec8e86aab57f1472ee00b700189d3e
-    tasks.md: 71a1a978ce0501ca1a046e6413888e3a85e4cc06a8a8e85c374ec8c5beaf064d
+    spec.md: fdd950867085c48d26cb67704d956dca6484c6f7236c2663870017426f1e8c9e
+    tasks.md: b98499825c6acdbb956f95a0656bc36d73b946824a805e58d1954f5053a28b6f
+  unexamined-by-reason:
+    not-a-live-claim: 2
   blocking: false
 ---
 
