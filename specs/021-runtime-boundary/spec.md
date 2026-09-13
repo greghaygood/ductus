@@ -2,11 +2,14 @@
 status: in-progress
 dependencies: [020-code-review]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T13:15:24Z
+  reviewed-against: cab970412a37cef25d192915d56786d4f964f054
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 3
+  scope: 7
+  reviewed-digest: {}
   blocking: false
 next-criterion: 12
 analyze:
