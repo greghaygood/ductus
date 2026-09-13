@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap, commands]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T18:15:56Z
+  reviewed-against: 2e63261d7398ad41b3d6a974749a95ac98ba2466
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 7
+  scope: 25
+  reviewed-digest:
+    scenarios/ductus-self-update-precheck.md: c03909715a9bdd56b2c97a8d9bf89e970d5d8077afa61cb62b8bd3ad8998fbfe
   blocking: false
 next-criterion: 15
 analyze:
