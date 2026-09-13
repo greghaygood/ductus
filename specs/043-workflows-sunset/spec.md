@@ -13,12 +13,17 @@ review:
   blocking: false
 next-criterion: 12
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T13:25:34Z
+  analyzed-against: 636690489615fba1c9846c11257cc82f6a7e31ef
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 4
+  analyzed-digest:
+    plan.md: b35f9a62efbe87f2b5ba3772dbb4ebeb6ec4bb34a4cd8c940e300269091c99a7
+    review.md: 8649805a789f2999a2537e22838f02a53ec94b4cf2bbf88c9631816bb0dbc033
+    spec.md: 7e02ab5adc6481a8d50ea773b2a668be3b1128b24ed2c0a3b18b75d9740ea5ff
+    tasks.md: 36badbc9407ecd8b544527a3f6803cad63e340098617816c1f43aa7a0afaa04f
   unexamined-by-reason:
     not-a-live-claim: 4
   blocking: false
