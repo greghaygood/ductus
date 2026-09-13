@@ -19,7 +19,7 @@ Branches that do **not** write a target: Step 1 (rule item — amend a rule file
 
 ### How the target is written
 
-A markdown-only session write, mirroring `specify.md` / `amend.md`'s fallback path: read any existing `.govern.session.toml` first to capture `cli-config-dir`, then rewrite the file via tempfile + rename with the new `feature` / `path` (/ `scenario` / `scenario-path`) plus `set-at` (ISO 8601 UTC), carrying `cli-config-dir` forward. No new runtime-primitive preamble is added to `groom.md`; if the maintainer later moves groom onto `write-session`/`create-scenario`/`append-task` primitives, that is a separate refactor (noted in Trade-offs).
+A markdown-only session write, mirroring `specify.md` / `amend.md`'s fallback path: read any existing `.ductus/session.toml` first to capture `cli-config-dir`, then rewrite the file via tempfile + rename with the new `feature` / `path` (/ `scenario` / `scenario-path`) plus `set-at` (ISO 8601 UTC), carrying `cli-config-dir` forward. No new runtime-primitive preamble is added to `groom.md`; if the maintainer later moves groom onto `write-session`/`create-scenario`/`append-task` primitives, that is a separate refactor (noted in Trade-offs).
 
 ### Consent model (no new prompt)
 

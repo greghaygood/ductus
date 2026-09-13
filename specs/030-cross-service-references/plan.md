@@ -6,7 +6,7 @@ Implements [030 — Cross-Service References](spec.md).
 
 Cross-service references are informative links from a spec to a spec in another service, surfaced with the linked spec's lifecycle status. Implementation spans five surfaces, all landing inside this feature:
 
-1. **Registry** — a `.govern.toml [services]` table mapping a service alias to its canonical repo and local checkout path.
+1. **Registry** — a `.ductus/config.toml [services]` table mapping a service alias to its canonical repo and local checkout path.
 2. **Harvest** — a generator that extracts cross-service URL links from a spec body into a derived `references:` frontmatter index, kept strictly distinct from `dependencies:`.
 3. **Runtime** — a new `ductus` primitive that resolves each reference through the registry, reads the linked spec's `status` from the local checkout, and classifies the outcome. The markdown-only path performs the same work with host file tools; the primitive is the fast path, never a prerequisite.
 4. **Commands** — `/{project}:status` surfaces the resolved status; `/{project}:analyze` reports a provably-broken reference as a finding.
@@ -16,11 +16,11 @@ Comprehensive tests are a first-class deliverable (per the planning decision): R
 
 ## Technical Decisions
 
-### D1 — Registry: `.govern.toml [services]`
+### D1 — Registry: `.ductus/config.toml [services]`
 
 A `[services.<alias>]` table with two string fields: `repo` (canonical URL, the identity matched against body-link hrefs) and `path` (local checkout, relative to repo root or absolute). The table is optional — absent means no cross-service resolution, and a single-service adopter writes nothing.
 
-`.govern.toml` is the shared adopter-side database (per `AGENTS.md`); `[services]` is a new table documented in this spec's `data-model.md`. Adding it does **not** generate a §cross-spec-impact signpost on spec 019. The schema is declared canonically in `data-model.md` and the runtime reads per that schema (§runtime-boundary principle 4). Entries are added with the `/{project}:link` command (D6), not derived — `path` is machine-local knowledge `ductus` cannot infer. An optional `description` annotates an entry with the service's purpose; it is **informational only** (surfaced for orientation, never branched on), which keeps it clear of the no-human-diligence principle that rejects optional *load-bearing* inputs.
+`.ductus/config.toml` is the shared adopter-side database (per `AGENTS.md`); `[services]` is a new table documented in this spec's `data-model.md`. Adding it does **not** generate a §cross-spec-impact signpost on spec 019. The schema is declared canonically in `data-model.md` and the runtime reads per that schema (§runtime-boundary principle 4). Entries are added with the `/{project}:link` command (D6), not derived — `path` is machine-local knowledge `ductus` cannot infer. An optional `description` annotates an entry with the service's purpose; it is **informational only** (surfaced for orientation, never branched on), which keeps it clear of the no-human-diligence principle that rejects optional *load-bearing* inputs.
 
 ### D2 — Reference syntax and harvesting
 
@@ -48,7 +48,7 @@ It reuses the `validate-frontmatter` machinery (`read_text`, `split_frontmatter`
 
 ### D4 — Command integration and the markdown-only fallback
 
-- `/{project}:status` gains a reference-status readout per spec: each reference shows its outcome and, on `ok`, the linked lifecycle status. The command prose carries the markdown-only procedure (read `.govern.toml`, resolve path, read linked frontmatter `status`, classify) as the runtime-absent path; the `resolve-references` primitive is the runtime path. Neither wraps the other.
+- `/{project}:status` gains a reference-status readout per spec: each reference shows its outcome and, on `ok`, the linked lifecycle status. The command prose carries the markdown-only procedure (read `.ductus/config.toml`, resolve path, read linked frontmatter `status`, classify) as the runtime-absent path; the `resolve-references` primitive is the runtime path. Neither wraps the other.
 - `/{project}:analyze` reports a `broken` outcome as an **Advisory** finding — surfaced on every run, but non-blocking, because references are informative and non-load-bearing. (`unregistered` / `not-checked-out` are *not* findings; they are informational unknowns — the can't-check vs. provably-broken line from the spec.)
 
 ### D5 — Constitution and frontmatter schema
@@ -62,11 +62,11 @@ Template-rule alignment holds without a template change: a freshly scaffolded sp
 
 ### D6 — Registration command `/{project}:link`
 
-A new slash command registers a service in `[services]` — chosen over hand-edit-only for two reasons: it surfaces the capability in `/{project}:help` and the README (an adopter discovers it; a `.govern.toml` table they would not), and it guarantees well-formed TOML rather than leaving structure to the author. Registration is *not* derived — `path` is machine-local knowledge `ductus` cannot infer.
+A new slash command registers a service in `[services]` — chosen over hand-edit-only for two reasons: it surfaces the capability in `/{project}:help` and the README (an adopter discovers it; a `.ductus/config.toml` table they would not), and it guarantees well-formed TOML rather than leaving structure to the author. Registration is *not* derived — `path` is machine-local knowledge `ductus` cannot infer.
 
 - **Flow:** prompts for each field one at a time — alias, then repo URL, then local path, then an optional `description` (enter to skip) — validating as it goes, the same one-at-a-time interaction `/{project}:clarify` uses. Inline args (`/{project}:link <alias> <repo> <path> [--description <text>]`) are accepted as an optional shortcut.
 - **Validation (per field, as entered):** alias is a valid, unique TOML key (no clobber of an existing entry); `repo` is URL-shaped; `path` is recorded as written but *warns* — does not block — when it does not currently resolve, since `not-checked-out` is a valid state.
-- **Write:** additive — adds the `[services.<alias>]` block and leaves every other `.govern.toml` table intact (the additive discipline already used for `.mcp.json` and permission merges). The markdown-only path edits `.govern.toml` with host file tools; a small deterministic write primitive may serve as the fast path, but `ductus` is never required.
+- **Write:** additive — adds the `[services.<alias>]` block and leaves every other `.ductus/config.toml` table intact (the additive discipline already used for `.mcp.json` and permission merges). The markdown-only path edits `.ductus/config.toml` with host file tools; a small deterministic write primitive may serve as the fast path, but `ductus` is never required.
 - **`--list`:** shows registered services and, when reachable, their resolution health. Removal stays a hand-edit.
 - **Docs:** the command's row lives in the README **Orient** section and `/{project}:help`; the `unregistered` outcome (D4) points the user at `/{project}:link`.
 
@@ -105,4 +105,4 @@ The command adds surface: a source under `framework/commands/`, wiring through t
 - **Broken-reference severity: Advisory vs. Blocking** — chose Advisory. References are informative and non-gating, so a broken one is surfaced every run but never blocks pipeline advancement. Limitation: a broken reference can linger; mitigated by repeated surfacing.
 - **Local-checkout-only (no fetch)** — a reference to an unchecked-out service shows `not-checked-out` rather than resolving. Accepted per the spec's Non-Goals; keeps resolution deterministic and CI simple.
 - **Self-reference** — a URL pointing at the consumer's own repo resolves like any other registered service (minimal special-casing); documented as a limitation rather than a guarded error.
-- **Slash command vs. hand-edit-only registration** — chose `/{project}:link`. Hand-editing `.govern.toml` works but is undiscoverable and error-prone; a command surfaces in `/{project}:help` / README and guarantees formatting. Registration stays non-derived (`path` is machine-local). Cost: a new command's full generator/permission/test surface.
+- **Slash command vs. hand-edit-only registration** — chose `/{project}:link`. Hand-editing `.ductus/config.toml` works but is undiscoverable and error-prone; a command surfaces in `/{project}:help` / README and guarantees formatting. Registration stays non-derived (`path` is machine-local). Cost: a new command's full generator/permission/test surface.

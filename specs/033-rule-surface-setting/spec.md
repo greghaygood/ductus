@@ -21,7 +21,7 @@ analyze:
 
 # 033 — Explicit project rule-surface setting
 
-A `.govern.toml` setting that declares which rule **surfaces** a project needs — backend, frontend, or both — so that rule-file installation and rule enforcement apply only the relevant surface. `/ductus` prompts for the value when it is unset and persists it; `/ductus:review` enforces only the configured surface(s); cross-cutting `-cross.md` rules always apply.
+A `.ductus/config.toml` setting that declares which rule **surfaces** a project needs — backend, frontend, or both — so that rule-file installation and rule enforcement apply only the relevant surface. `/ductus` prompts for the value when it is unset and persists it; `/ductus:review` enforces only the configured surface(s); cross-cutting `-cross.md` rules always apply.
 
 ## Motivation
 
@@ -35,7 +35,7 @@ This feature adds an explicit surface setting that both halves read: `/ductus` i
 
 ## Setting
 
-A new `.govern.toml` `[rules]` section carries a `surfaces` key whose value is a **list** of the surfaces the project needs:
+A new `.ductus/config.toml` `[rules]` section carries a `surfaces` key whose value is a **list** of the surfaces the project needs:
 
 ```toml
 [rules]
@@ -50,7 +50,7 @@ A list (rather than a single enum) composes naturally with the suffix model and 
 
 ## `/ductus` behavior
 
-- **Prompt when unset.** On a `/ductus` run where `[rules] surfaces` is absent, `/ductus` prompts the operator to choose the project's surface(s) and persists the answer to `.govern.toml`. This is an explicit input prompt, consistent with `/ductus`'s existing first-run and agent-selection prompts. The prompt lives only in `/ductus`; it does not migrate the default-derive posture of any other command.
+- **Prompt when unset.** On a `/ductus` run where `[rules] surfaces` is absent, `/ductus` prompts the operator to choose the project's surface(s) and persists the answer to `.ductus/config.toml`. This is an explicit input prompt, consistent with `/ductus`'s existing first-run and agent-selection prompts. The prompt lives only in `/ductus`; it does not migrate the default-derive posture of any other command.
 - **Selective install/update when set.** When the setting is present, `/ductus` fetches, writes, and updates only the rule files whose suffix matches a configured surface, plus all `-cross.md` files. Rule files for unconfigured surfaces are not installed, and the manifest does not flag their absence as drift.
 - **Notice on contradiction.** When the explicit `surfaces` contradicts what `/ductus` would otherwise detect from the stack (e.g., `["backend"]` set on a repo with obvious frontend code), `/ductus` honors the operator's explicit choice but emits a one-line notice recording the discrepancy. The choice is final; the notice prevents a silent mismatch.
 - **Surface change.** When `surfaces` gains a value (e.g., `["backend"]` → `["backend", "frontend"]`), the next `/ductus` run installs the newly-relevant rule files. Files that became irrelevant (a surface was removed) are **left in place** but no longer updated — removal is destructive and is left to the operator (or a future explicit prune).
@@ -64,8 +64,8 @@ A list (rather than a single enum) composes naturally with the suffix model and 
 
 ## Acceptance Criteria
 
-- [x] AC1: `.govern.toml` accepts a `[rules] surfaces` list with member values `"backend"` and/or `"frontend"`; `"cross"` is rejected as invalid (cross-cutting files are unconditional).
-- [x] AC2: On a `/ductus` run with `[rules] surfaces` unset, `/ductus` prompts the operator to choose surface(s) and persists the choice to `.govern.toml`.
+- [x] AC1: `.ductus/config.toml` accepts a `[rules] surfaces` list with member values `"backend"` and/or `"frontend"`; `"cross"` is rejected as invalid (cross-cutting files are unconditional).
+- [x] AC2: On a `/ductus` run with `[rules] surfaces` unset, `/ductus` prompts the operator to choose surface(s) and persists the choice to `.ductus/config.toml`.
 - [x] AC3: On a `/ductus` run with `[rules] surfaces` set, only rule files whose suffix matches a configured surface — plus all `-cross.md` files — are installed/updated; files for unconfigured surfaces are not written and their absence is not reported as drift.
 - [x] AC4: When `surfaces` contradicts the detected stack, `/ductus` installs per the explicit setting and emits a one-line notice naming the discrepancy.
 - [x] AC5: When a surface is added to `surfaces`, the next `/ductus` run installs the newly-relevant rule files; a removed surface's files are left in place and no longer updated.
@@ -73,7 +73,7 @@ A list (rather than a single enum) composes naturally with the suffix model and 
 - [x] AC7: `/ductus:analyze` still resolves rule citations against the full rule-file set regardless of `surfaces`, so an out-of-surface citation does not produce a spurious finding.
 - [x] AC8: A pinned rule file (`[pinned] files`) is never overwritten regardless of surface configuration.
 - [x] AC9: When `surfaces` is unset, no command outside `/ductus` prompts for it and no command errors on its absence (behavior matches 024 derivation today).
-- [x] AC10: The `[rules] surfaces` setting, its accepted values, and its precedence relative to 024 derivation are documented in the `.govern.toml` schema documentation and the relevant command sources.
+- [x] AC10: The `[rules] surfaces` setting, its accepted values, and its precedence relative to 024 derivation are documented in the `.ductus/config.toml` schema documentation and the relevant command sources.
 
 ## Resolved Questions
 

@@ -82,7 +82,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Implement the behavior described in [`scenarios/project-inputs-asked-once.md`](scenarios/project-inputs-asked-once.md).
 
-- **Done when**: project inputs (`name`, `description`, `languages`) persist in `.govern.toml`'s `[project]` table and resolve at §Collect Project Inputs after the Pre-flight Phase — existing values read back, only missing ones prompted — so they are asked at most once across a State-B / stale-`ductus.md` restart and never re-asked on update runs. (Landed in commit `6f75041`.)
+- **Done when**: project inputs (`name`, `description`, `languages`) persist in `.ductus/config.toml`'s `[project]` table and resolve at §Collect Project Inputs after the Pre-flight Phase — existing values read back, only missing ones prompted — so they are asked at most once across a State-B / stale-`ductus.md` restart and never re-asked on update runs. (Landed in commit `6f75041`.)
 
 ## 13. Implement scenario: archive-fetch-direct-codeload
 

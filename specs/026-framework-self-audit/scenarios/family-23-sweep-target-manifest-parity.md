@@ -12,7 +12,7 @@ relocated directory sends the grep somewhere clean and the sweep silently
 misses the files that moved. That rule is the residue of a real failure: 042
 moved the generators from `scripts/` to `.ductus/scripts/`, 049's rename sweep
 grepped the stale list, and `config_path_of` in the shipped
-`.ductus/scripts/lib/specs-root.sh` kept resolving `.govern/config.toml` then
+`.ductus/scripts/lib/specs-root.sh` kept resolving `.ductus/config.toml` then
 the legacy root with no `.ductus/` tier. A converged adopter therefore resolved
 to a path that does not exist, fell through to the default spec root, and
 exited 0.

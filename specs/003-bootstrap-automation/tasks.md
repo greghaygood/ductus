@@ -11,7 +11,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Create `.claude/commands/ductus/` directory
 - [x] Copy all ten command templates from `commands/` into `.claude/commands/ductus/`
 - [x] Replace every `{project}` with `gov` in all ten files
-- [x] Verify commands reference `.govern.session.toml` for session state (was `.claude/gov-session.json` pre-0.10.0)
+- [x] Verify commands reference `.ductus/session.toml` for session state (was `.claude/gov-session.json` pre-0.10.0)
 
 Done when: all ten `/ductus:*` commands exist, all `{project}` placeholders are replaced with `gov`, and no template placeholders remain.
 

@@ -6,17 +6,17 @@ section: "Command Set"
 
 ## Context
 
-`/ductus:target` (Behavior → Command Set → Utility commands) sets the working feature for the session by writing `.govern.session.toml`. After a spec advances to `done`, the session still points at the now-completed feature (and optionally scenario), producing awkward `/ductus:status` output ("Target: 000-slash-commands / done / next: done (spec is complete)") and trapping `/ductus:amend` and `/ductus:implement` on stale state until the user manually picks a new target.
+`/ductus:target` (Behavior → Command Set → Utility commands) sets the working feature for the session by writing `.ductus/session.toml`. After a spec advances to `done`, the session still points at the now-completed feature (and optionally scenario), producing awkward `/ductus:status` output ("Target: 000-slash-commands / done / next: done (spec is complete)") and trapping `/ductus:amend` and `/ductus:implement` on stale state until the user manually picks a new target.
 
 The only reset path today is `/ductus:target <other-feature>`, which mutates the session toward a different target rather than clearing it. There is no first-class "no target" state reachable through the command — even though the `dashboard` primitive already handles `session-target: null` and the status renderer already prints "No session target. Run /ductus:target to select one." when that's the case (per `framework/commands/status.md` step 2).
 
-The user-visible gap: closing out a spec leaves the session pointer dangling, and clearing it requires hand-editing `.govern.session.toml`.
+The user-visible gap: closing out a spec leaves the session pointer dangling, and clearing it requires hand-editing `.ductus/session.toml`.
 
 ## Behavior
 
 `/ductus:target` accepts a `--clear` flag (mutually exclusive with a feature argument). When set:
 
-- Remove `.govern.session.toml` (delete the file). The `dashboard` primitive's documented "Session file absent → session-target: null" behavior is the reset state — there's no separate empty-session format to invent.
+- Remove `.ductus/session.toml` (delete the file). The `dashboard` primitive's documented "Session file absent → session-target: null" behavior is the reset state — there's no separate empty-session format to invent.
 - Emit a one-line confirmation: `Session cleared. Run /ductus:target to set a new target.`
 - Exit 0.
 

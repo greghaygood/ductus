@@ -1,4 +1,4 @@
-# 025 — Rule-file opt-out via `.govern.toml` Tasks
+# 025 — Rule-file opt-out via `.ductus/config.toml` Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
@@ -11,7 +11,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 2. Extend `framework/commands/review.md` §Behavior step 5 with the disabled-files filter
 
 - [x] Insert a new sub-step between the existing stack-filtering and the `loading rule files: <list>` notice that:
-  - Reads `.govern.toml` `[[review.disabled-rule-files]]`.
+  - Reads `.ductus/config.toml` `[[review.disabled-rule-files]]`.
   - For each entry, applies one of: drop + notice (stack-selected match), no-op notice (non-stack-selected match), unknown warning (basename does not exist), malformed warning (missing field or reason < 16 codepoints), duplicate warning (same `file` listed twice).
   - Collapses internal whitespace in `reason` (including newlines from TOML multi-line strings) to single spaces before emitting the notice.
 - [x] Ensure the `loading rule files: <list>` notice fires AFTER the disabled-file notices and excludes any dropped file from its list.
@@ -30,13 +30,13 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Update `framework/constitution.md` §rules
 
-- [x] After the filename-suffix subsection (currently lines 285–295), append a brief paragraph naming the file-level opt-out, summarizing that adopters can list a rule file in `.govern.toml` `[[review.disabled-rule-files]]` with a mandatory reason, and pointing at `framework/commands/review.md` for the schema and behavior.
+- [x] After the filename-suffix subsection (currently lines 285–295), append a brief paragraph naming the file-level opt-out, summarizing that adopters can list a rule file in `.ductus/config.toml` `[[review.disabled-rule-files]]` with a mandatory reason, and pointing at `framework/commands/review.md` for the schema and behavior.
 - [x] Keep the addition to ≤ 3 sentences — the constitution describes contracts, not implementation.
 - [x] Done when: the §rules anchor reads naturally with the suffix rule, the opt-out paragraph, and the existing lifecycle subsection in sequence.
 
 ## 6. Update `framework/commands/status.md`
 
-- [x] In step 6 (below-the-table callouts), add a fourth conditional callout: when `.govern.toml` `[[review.disabled-rule-files]]` is non-empty, emit a single line of the form `disabled rule files: <N> (.govern.toml) — <comma-separated basenames>`.
+- [x] In step 6 (below-the-table callouts), add a fourth conditional callout: when `.ductus/config.toml` `[[review.disabled-rule-files]]` is non-empty, emit a single line of the form `disabled rule files: <N> (.ductus/config.toml) — <comma-separated basenames>`.
 - [x] Done when: status's instructions enumerate four callouts (blocked specs, recovery-state specs, tags-in-use, disabled rule files); no verbose listing of reasons is added.
 
 ## 7. Verify all 9 acceptance criteria

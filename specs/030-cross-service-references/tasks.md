@@ -4,13 +4,13 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 1. Registry schema (`[services]`)
 
-- [x] Add the `[services.<alias>]` type (`repo`, `path`, optional `description`) in a new `runtime/src/schema/services.rs` module, parsed from `.govern.toml`; absent table → empty set.
+- [x] Add the `[services.<alias>]` type (`repo`, `path`, optional `description`) in a new `runtime/src/schema/services.rs` module, parsed from `.ductus/config.toml`; absent table → empty set.
 - [x] Confirm `data-model.md` matches the implemented schema (`repo` / `path` / optional `description`). (The §drift-prevention canonical-source row is Task 8.)
 - [x] **Done when:** `[services]` parses, a duplicate `repo` is detectable, and a missing table is a no-op; unit tests cover present/absent/duplicate.
 
 ## 2. `/{project}:link` registration command
 
-- [x] Create `framework/commands/link.md`: register a service in `[services]` — **prompt for each field one at a time** (alias → repo → path → optional description), validating as entered (unique TOML key, URL-shaped repo, not-checked-out warning on the path); inline positional args remain an optional shortcut; additive write that preserves other `.govern.toml` tables; `--list` shows registered services + resolution health.
+- [x] Create `framework/commands/link.md`: register a service in `[services]` — **prompt for each field one at a time** (alias → repo → path → optional description), validating as entered (unique TOML key, URL-shaped repo, not-checked-out warning on the path); inline positional args remain an optional shortcut; additive write that preserves other `.ductus/config.toml` tables; `--list` shows registered services + resolution health.
 - [x] Wire through the command/help-table/permission generators and add per-agent permission entries in `framework/bootstrap/configure/*.md`; register in the command manifest.
 - [x] **Done when:** `/{project}:link` adds a well-formed `[services]` block without disturbing other tables, rejects a duplicate alias, warns on an unresolved path, lists services with `--list`, and appears in `/{project}:help`; command tests pass.
 
@@ -28,7 +28,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 5. Markdown-only fallback
 
-- [x] Write the runtime-absent procedure into the command prose (Tasks 6–7): read `.govern.toml`, resolve `path`, read the linked frontmatter `status`, classify — using host file tools only, no shell-pipeline substitution.
+- [x] Write the runtime-absent procedure into the command prose (Tasks 6–7): read `.ductus/config.toml`, resolve `path`, read the linked frontmatter `status`, classify — using host file tools only, no shell-pipeline substitution.
 - [x] **Done when:** the prose path and the primitive produce identical resolution records for the same fixtures; `lint-procedure-parseability.sh` passes.
 
 ## 6. `/{project}:status` integration
@@ -71,7 +71,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tests are first-class
 
 ## 13. Root-aware cross-service harvest (scenario: referenced-service-spec-root)
 
-- [x] Make `scripts/gen-cross-service-refs.sh`'s URL matcher resolve the referenced service's `[paths] specs-root` (read from the registered, checked-out reference's own `.govern.toml`, default `specs`) instead of a hardcoded `/specs/NNN-slug/`; see [scenario](scenarios/referenced-service-spec-root.md).
+- [x] Make `scripts/gen-cross-service-refs.sh`'s URL matcher resolve the referenced service's `[paths] specs-root` (read from the registered, checked-out reference's own `.ductus/config.toml`, default `specs`) instead of a hardcoded `/specs/NNN-slug/`; see [scenario](scenarios/referenced-service-spec-root.md).
 - [x] Resolve the root-unknowable cases (registered-but-not-checked-out, unregistered) per the scenario's Open Questions, settled in `/ductus:clarify`; reuse 040's `[A-Za-z0-9_-]` regex-safety guarantee for the interpolated root.
 - [x] Keep the markdown-only fallback and runtime harvest paths producing a byte-identical `references:` index (030 parity invariant).
 

@@ -82,7 +82,7 @@ The next `/ductus` run in any adopted project performs the migration:
 4. Strip the now-redundant bold-prefix lines from the document body.
 5. Leave non-spec artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files) untouched — frontmatter is not required for these.
 6. Apply governance's standard `update`/`create`/`skip` strategy to the project's bundled spec and scenario templates and slash commands so they pick up the new format.
-7. Pinned files (via `.governance.toml`) are skipped — the adopter is responsible for their own migration of pinned files.
+7. Pinned files (via `.ductus/config.toml`) are skipped — the adopter is responsible for their own migration of pinned files.
 8. Print a summary of converted files. The user reviews the result via `git diff`, commits, or aborts via `git restore`. No backup directory is created — git is the recovery mechanism.
 
 Migration is idempotent: re-running `/ductus` on an already-migrated project produces no further metadata changes.
@@ -99,7 +99,7 @@ This repo dogfoods the principle: every existing spec under `specs/` in this rep
 
 - **Spec with malformed bold-prefix metadata** (missing `**Status:**` line, typo in field name): migration logs a warning and skips the file; the user repairs manually before re-running.
 - **Spec already partially migrated** (frontmatter present but body still has bold-prefix lines): migration completes the conversion idempotently — frontmatter wins, redundant body lines are removed.
-- **Pinned spec files via `.governance.toml`**: skipped during migration. The adopter receives a summary listing pinned files so they know which need manual conversion.
+- **Pinned spec files via `.ductus/config.toml`**: skipped during migration. The adopter receives a summary listing pinned files so they know which need manual conversion.
 - **Project on an older governance version**: `/ductus` always migrates to the current schema. There is no version negotiation; older projects pull current.
 - **Spec with custom non-schema fields in bold-prefix form** (e.g., a project added their own `**Owner:**` line): migration preserves these as additional frontmatter fields. The schema permits unknown fields by design.
 - **Spec created manually outside `/ductus:specify`** (e.g., direct file creation): the bundled template's `tags: []` placeholder is visible as a reminder, but no creation-time prompt fires. The advisory finding at `/ductus:clarify` catches missing tags before the spec advances to `clarified`.
@@ -123,7 +123,7 @@ This repo dogfoods the principle: every existing spec under `specs/` in this rep
 - [x] AC12: `/ductus` (the unified bootstrap from 012) detects pre-frontmatter spec files in adopted projects and migrates them on its next run.
 - [x] AC13: `/ductus` migration is idempotent — running it twice on the same project produces no second-run changes.
 - [x] AC14: `/ductus` migration prechecks `git status --porcelain` scoped to `specs/` and refuses to run on a dirty tree, instructing the user to commit or stash. No automatic backup directory is created; git is the recovery mechanism.
-- [x] AC15: `/ductus` migration respects `.governance.toml` pinning — pinned files are skipped and surfaced in the post-run summary.
+- [x] AC15: `/ductus` migration respects `.ductus/config.toml` pinning — pinned files are skipped and surfaced in the post-run summary.
 - [x] AC16: The root `README.md` includes a "Viewing artifacts" section that documents `npx quartz` as the recommended viewer and notes that other PKM tools work unchanged. The recommendation lives in this repo only — the project-readme template is unchanged.
 - [x] AC17: `framework/bootstrap/ductus.md` post-run output mentions `npx quartz specs/` as a one-line tip so adopters discover the viewer at bootstrap time without the recommendation being baked into their own README.
 - [x] AC18: All updated and migrated `.md` files pass `npx markdownlint-cli2`.

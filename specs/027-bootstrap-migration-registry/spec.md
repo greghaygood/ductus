@@ -44,12 +44,13 @@ registry it holds is what makes attribution possible. One primitive,
 `ductus-v0.29.4`, with two follow-up fixes in `0.29.6` found by this spec's own
 review.
 
-AC6, AC23 and AC24 are annotated for **dated naming**: they say `.govern.toml`,
-which no longer exists. The behaviour each requires is unchanged and shipped —
-only the filename moved, by `042-consolidate-govern-per-project-files-under-govern-directory`
-and `049-rename-govern-to-ductus`. The legacy name is still load-bearing inside
-the migration chain itself, since a migration must name the file it migrates
-*from*.
+AC6, AC23 and AC24 name `.ductus/config.toml`, where the `[migrations]` section
+lives. The file was moved by `042-consolidate-govern-per-project-files-under-govern-directory`
+and renamed by `049-rename-govern-to-ductus`; the criteria were swept with it,
+because only the filename changed and the behaviour each requires is unchanged
+and shipped. The retired name stays load-bearing inside the migration chain
+itself, since a migration must name the file it migrates *from* — the exemption
+[§drift-prevention](../../framework/constitution.md#drift-prevention) states.
 
 ## Motivation
 
@@ -60,13 +61,13 @@ Two compounding problems follow:
 1. **Bootstrap work grows monotonically.** The Pre-run Migrations section can only grow because there is no sunset path. Every release that removes a convention adds another permanent scan.
 2. **Future removals are unsafe.** Nothing prevents a maintainer from deleting a template, command, or filename convention without writing an adopter migration. Adopters silently break on the next pipeline command.
 
-This spec introduces (a) a machine-readable registry of convention removals, (b) an adopter-side `last_applied_migration` field in `.govern.toml` so bootstrap can skip already-applied entries, (c) a sunset mechanism that prunes old entries from the active registry into an adopter-facing changelog, and (d) an `/audit` family that enforces the registry as the only way to ship a removal.
+This spec introduces (a) a machine-readable registry of convention removals, (b) an adopter-side `last_applied_migration` field in `.ductus/config.toml` so bootstrap can skip already-applied entries, (c) a sunset mechanism that prunes old entries from the active registry into an adopter-facing changelog, and (d) an `/audit` family that enforces the registry as the only way to ship a removal.
 
 ## Registry Shape
 
 A new file at `framework/migrations.toml` (location and format are open questions — see below) lists every active convention removal. Each entry carries:
 
-- **id** — stable identifier the adopter's `.govern.toml` references. Format is an open question.
+- **id** — stable identifier the adopter's `.ductus/config.toml` references. Format is an open question.
 - **introduced_in** — the ductus version (or framework commit) that shipped the removal.
 - **sunset_after** — the ductus version past which this migration drops from the active registry into the adopter changelog.
 - **summary** — one-line human-readable description (e.g., "spec-and-plan.md → spec.md").
@@ -75,7 +76,7 @@ A new file at `framework/migrations.toml` (location and format are open question
 
 ## Adopter State
 
-`.govern.toml` gains a single new field (section name open):
+`.ductus/config.toml` gains a single new field (section name open):
 
 ```toml
 [migrations]
@@ -95,9 +96,9 @@ A cleanup that must reach every contributor belongs on the command that owns the
 The Pre-run Migrations section in `framework/bootstrap/ductus.md` is replaced by a single procedure that:
 
 1. Reads `framework/migrations.toml` from the fetched archive.
-2. Reads `.govern.toml` `[migrations].last_applied`.
+2. Reads `.ductus/config.toml` `[migrations].last_applied`.
 3. For each registry entry newer than `last_applied`, executes the entry's procedure (declarative step or referenced markdown).
-4. Updates `.govern.toml` `[migrations].last_applied` to the newest entry id.
+4. Updates `.ductus/config.toml` `[migrations].last_applied` to the newest entry id.
 5. Reports each applied migration in the post-scaffolding summary using the entry's `summary` field.
 
 Entries past their `sunset_after` version are excluded from this loop entirely — they live in the adopter changelog only.
@@ -119,14 +120,14 @@ This family is the gate that makes the registry load-bearing: a maintainer who r
 ### Registry shape
 
 - [x] AC1: `framework/migrations.toml` exists with one `[[migrations]]` array-of-tables entry per active convention removal. Each entry carries the fields: `id` (slug), `introduced_in` (SemVer string), `sunset_after` (SemVer string or omitted), `summary` (one-line string), `target_paths` (array of strings), `procedure_file` (path string).
-- [x] AC2: Six back-filled entries cover every convention removal currently encoded in `framework/bootstrap/ductus.md` Pre-run Migrations: `.governance.toml` rename, `# Governance` gitignore marker, `spec-and-plan.md` sunset, rule-file relocation (subsuming `configuration.md` → `configuration-cross.md`), legacy `skills/` directory, post-005 workflow filename rename.
+- [x] AC2: Six back-filled entries cover every convention removal currently encoded in `framework/bootstrap/ductus.md` Pre-run Migrations: `.ductus/config.toml` rename, `# Governance` gitignore marker, `spec-and-plan.md` sunset, rule-file relocation (subsuming `configuration.md` → `configuration-cross.md`), legacy `skills/` directory, post-005 workflow filename rename.
 - [x] AC3: Each back-filled entry's `introduced_in` matches the ductus version (or framework commit) where the removal actually shipped, derived from `git log` at registry-introduction time.
 - [x] AC4: Each back-filled entry's `sunset_after` is set to `registry_introduction_version + 2 minor versions` (uniform).
 - [x] AC5: Each back-filled entry has a corresponding `framework/migrations/{id}.md` procedure file containing the migration's prose logic (skip conditions, prompts, summary reporting). No declarative-step DSL is introduced.
 
 ### Adopter state
 
-- [x] AC6: `.govern.toml` schema documents a `[migrations]` section with a `last_applied` field (string, slug-valued). Absent field means "no migrations applied" — bootstrap runs every active entry. — **superseded naming**: `.govern.toml` no longer exists; the same section now lives in `.ductus/config.toml`, moved by `042-consolidate-govern-per-project-files-under-govern-directory` and renamed by `049-rename-govern-to-ductus`. The behaviour this criterion requires is unchanged and shipped; only the filename is dated.
+- [x] AC6: `.ductus/config.toml` schema documents a `[migrations]` section with a `last_applied` field (string, slug-valued). Absent field means "no migrations applied" — bootstrap runs every active entry.
 - [x] AC7: On `/ductus` re-run against an adopter whose `last_applied` equals the newest active entry's `id`, the migration loop performs zero filesystem reads beyond loading the registry and reports zero migrations applied.
 - [x] AC8: On `/ductus` re-run against an adopter whose `last_applied` is older than the newest entry, only entries newer than `last_applied` (per SemVer comparison on `introduced_in`, lexicographic tie-break on `id`) execute.
 - [x] AC9: After each migration completes successfully, `last_applied` is updated to that entry's `id` before the next entry begins. An aborted batch resumes from the next-pending entry on the following `/ductus` run.
@@ -158,8 +159,8 @@ This family is the gate that makes the registry load-bearing: a maintainer who r
 ### Edge cases and failure modes
 
 - [x] AC22: Empty registry (`framework/migrations.toml` exists but contains zero `[[migrations]]` entries): the bootstrap loop is a no-op, no batch prompt is emitted, no `last_applied` write occurs.
-- [x] AC23: `.govern.toml` exists but has no `[migrations]` section: treated as "no migrations applied" — bootstrap runs every active entry. Subsequent run writes the `[migrations]` section. — **superseded naming**: `.govern.toml` no longer exists; the same section now lives in `.ductus/config.toml`, moved by `042-consolidate-govern-per-project-files-under-govern-directory` and renamed by `049-rename-govern-to-ductus`. The behaviour this criterion requires is unchanged and shipped; only the filename is dated.
-- [x] AC24: `.govern.toml` `[migrations].last_applied` references an `id` that no longer exists in the active registry (sunsetted since the adopter's last run): bootstrap treats the field as "before the oldest active entry" and runs every active entry. A warning is emitted: `last_applied was "{id}" which has been retired; see CHANGELOG.md for its recipe`. — **superseded naming**: `.govern.toml` no longer exists; the same section now lives in `.ductus/config.toml`, moved by `042-consolidate-govern-per-project-files-under-govern-directory` and renamed by `049-rename-govern-to-ductus`. The behaviour this criterion requires is unchanged and shipped; only the filename is dated.
+- [x] AC23: `.ductus/config.toml` exists but has no `[migrations]` section: treated as "no migrations applied" — bootstrap runs every active entry. Subsequent run writes the `[migrations]` section.
+- [x] AC24: `.ductus/config.toml` `[migrations].last_applied` references an `id` that no longer exists in the active registry (sunsetted since the adopter's last run): bootstrap treats the field as "before the oldest active entry" and runs every active entry. A warning is emitted: `last_applied was "{id}" which has been retired; see CHANGELOG.md for its recipe`.
 - [x] AC25: Two TOML entries share the same `id`: bootstrap aborts at registry-parse time with a clear error. Family 10's no-orphan check would also fail on a subsequent `/audit`.
 - [x] AC26: Malformed `framework/migrations.toml` (TOML parse error): bootstrap aborts before running any migration, matching existing 022 TOML-parse-error semantics.
 - [x] AC27: `framework/migrations/{id}.md` referenced by a TOML entry does not exist in the fetched archive: bootstrap aborts the batch at that entry, reports `migration {id}: procedure file missing from archive`, and `last_applied` retains its prior value. Family 10's no-broken-references check would have caught this at maintainer time.

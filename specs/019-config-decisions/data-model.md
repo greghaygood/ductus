@@ -2,7 +2,7 @@
 
 Schema declaration for the `.ductus/config.toml` file. This file is the canonical reference for the framework; the README documents the same schema for adopters.
 
-> **Note (post-completion):** paths in the live schema below reflect [042-consolidate-govern-per-project-files-under-govern-directory](../042-consolidate-govern-per-project-files-under-govern-directory/spec.md) (`.govern.toml` → `.ductus/config.toml`) and [044-relocate-constitution-under-govern-directory](../044-relocate-constitution-under-govern-directory/spec.md) (the pinned example's constitution path). The `[workflows]` section below is historical — removed by [043-workflows-sunset](../043-workflows-sunset/spec.md); see the post-completion note in [spec.md](spec.md). Its prose (including the `.govern.toml` literals inside it) is left as the decision-time record.
+> **Note (post-completion):** paths in the live schema below reflect [042-consolidate-govern-per-project-files-under-govern-directory](../042-consolidate-govern-per-project-files-under-govern-directory/spec.md) (`.ductus/config.toml` → `.ductus/config.toml`) and [044-relocate-constitution-under-govern-directory](../044-relocate-constitution-under-govern-directory/spec.md) (the pinned example's constitution path). The `[workflows]` section below is historical — removed by [043-workflows-sunset](../043-workflows-sunset/spec.md); see the post-completion note in [spec.md](spec.md). Its prose (including the `.ductus/config.toml` literals inside it) is left as the decision-time record.
 
 ## File location and lifecycle
 
@@ -63,7 +63,7 @@ Matching is case-insensitive — `"linting"`, `"Linting"`, and `"LINTING"` are e
 Entries that don't match any of the canonical category names (typos, removed categories, free-form notes) are reported once each in the post-scaffolding summary as:
 
 ```text
-unrecognized workflow decline: "{value}" (in .govern.toml)
+unrecognized workflow decline: "{value}" (in .ductus/config.toml)
 ```
 
 They do not abort the run, do not affect prompts, and are not auto-removed.
@@ -95,6 +95,6 @@ There is no commit hook or `/ductus:analyze` rule for `.ductus/config.toml`. The
 
 ## Backwards compatibility
 
-Projects with an existing `.govern.toml` containing only `[pinned]` continue to work without modification. The `[workflows]` section is purely additive — neither `/ductus` nor any other framework component requires it to exist.
+Projects with an existing `.ductus/config.toml` containing only `[pinned]` continue to work without modification. The `[workflows]` section is purely additive — neither `/ductus` nor any other framework component requires it to exist.
 
-Removing the `[workflows]` section from an existing `.govern.toml` (manually) reverts that project to today's prompt behavior on the next `/ductus` run.
+Removing the `[workflows]` section from an existing `.ductus/config.toml` (manually) reverts that project to today's prompt behavior on the next `/ductus` run.

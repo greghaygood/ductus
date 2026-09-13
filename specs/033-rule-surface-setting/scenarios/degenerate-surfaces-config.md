@@ -6,7 +6,7 @@ section: "Setting"
 
 ## Context
 
-An operator sets `[rules] surfaces` in `.govern.toml` to a degenerate value — either an explicitly empty list (`surfaces = []`) or a list containing a member that is not a recognized surface (e.g. `"fullstack"`, a typo). The Setting section defines the valid members (`"backend"`, `"frontend"`) and rejects `"cross"`, but does not define behavior for an empty list or an unrecognized member. Both cases are distinct from the key being *unset* (absent entirely), which falls back to 024-rule-loader's stack derivation.
+An operator sets `[rules] surfaces` in `.ductus/config.toml` to a degenerate value — either an explicitly empty list (`surfaces = []`) or a list containing a member that is not a recognized surface (e.g. `"fullstack"`, a typo). The Setting section defines the valid members (`"backend"`, `"frontend"`) and rejects `"cross"`, but does not define behavior for an empty list or an unrecognized member. Both cases are distinct from the key being *unset* (absent entirely), which falls back to 024-rule-loader's stack derivation.
 
 ## Behavior
 

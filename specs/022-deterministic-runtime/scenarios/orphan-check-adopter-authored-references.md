@@ -6,7 +6,7 @@ section: "Follow-on scenarios"
 
 ## Context
 
-`check-orphaned-references` examines a fixed `REFERRERS` list — `CLAUDE.md`, `AGENTS.md`, `README.md`, and `.githooks/pre-commit` — for references to framework paths a migration has moved. The `ductus-rename` migration's step 3 repairs `.govern/constitution.md` references in exactly the first three of those.
+`check-orphaned-references` examines a fixed `REFERRERS` list — `CLAUDE.md`, `AGENTS.md`, `README.md`, and `.githooks/pre-commit` — for references to framework paths a migration has moved. The `ductus-rename` migration's step 3 repairs `.ductus/constitution.md` references in exactly the first three of those.
 
 Both halves are scoped to files the framework itself authored, which is a principled boundary: the framework repairs what it wrote. The blind spot it leaves is not. An adopter's `specs/system.md` is `create`-strategy — seeded once and owned by the adopter thereafter — so when the adopter writes their own reference to a framework path (a link to the constitution, a tree diagram naming the per-project directory), nothing rescaffolds the file, no migration step names it, and the orphan check does not look at it.
 

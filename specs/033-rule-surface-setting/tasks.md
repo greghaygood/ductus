@@ -4,7 +4,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Add `[rules] surfaces` input resolution to the installer
 
-- [x] In `framework/bootstrap/ductus.md` §Collect Project Inputs, add `[rules] surfaces` as a resolved input: read from `.govern.toml` `[rules] surfaces`, else prompt ("backend / frontend / both"), else persist the answer into `.govern.toml` `[rules]` (preserving every other section).
+- [x] In `framework/bootstrap/ductus.md` §Collect Project Inputs, add `[rules] surfaces` as a resolved input: read from `.ductus/config.toml` `[rules] surfaces`, else prompt ("backend / frontend / both"), else persist the answer into `.ductus/config.toml` `[rules]` (preserving every other section).
 - [x] Document accepted members `{"backend", "frontend"}`, rejection of `"cross"`, and that unset means "derive / install all".
 - Done when: a first scaffold prompts once and persists `[rules] surfaces`; a routine re-run with the key present prompts nothing.
 
@@ -17,7 +17,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Make `/ductus:review` consult `[rules] surfaces`
 
-- [x] In `framework/commands/review.md` §Behavior step 5, read `.govern.toml` `[rules] surfaces`. When set, keep rule files whose surface is in `surfaces` plus every `*-cross.md` and unrecognized-suffix file (replacing the detected-stack filter); when unset, run the detected-stack filter as today. The 025 disabled-files filter runs after, unchanged.
+- [x] In `framework/commands/review.md` §Behavior step 5, read `.ductus/config.toml` `[rules] surfaces`. When set, keep rule files whose surface is in `surfaces` plus every `*-cross.md` and unrecognized-suffix file (replacing the detected-stack filter); when unset, run the detected-stack filter as today. The 025 disabled-files filter runs after, unchanged.
 - [x] Document `[rules] surfaces` in §Inputs alongside `tech-stack-verified` and `disabled-rule-files`.
 - Done when: with `surfaces` set, `/ductus:review` enforces only the configured surface(s) + `-cross`; with it unset, behavior is identical to today.
 
@@ -28,12 +28,12 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Document the setting
 
-- [x] Document `[rules] surfaces` in `README.md` (and any `.govern.toml` reference): accepted values, derive-when-unset fallback, precedence over stack detection.
+- [x] Document `[rules] surfaces` in `README.md` (and any `.ductus/config.toml` reference): accepted values, derive-when-unset fallback, precedence over stack detection.
 - Done when: a reader can configure `[rules] surfaces` from the docs without reading the command sources.
 
 ## 6. Resolve cross-spec impact on 024 / 020
 
-- [x] Decision recorded: **no cross-spec edits needed.** The `review.md` change is additive — when `[rules] surfaces` is unset, [024-rule-loader](../024-rule-loader/spec.md)'s stack derivation and [020-code-review](../020-code-review/spec.md)'s behavior are unchanged, so neither spec's claims are falsified. The new `[rules]` `.govern.toml` table is documented in this spec's body per the AGENTS.md ".govern.toml is a shared database — document a new section in the spec that adds it, not in 019" rule; spec 019 needs no signpost.
+- [x] Decision recorded: **no cross-spec edits needed.** The `review.md` change is additive — when `[rules] surfaces` is unset, [024-rule-loader](../024-rule-loader/spec.md)'s stack derivation and [020-code-review](../020-code-review/spec.md)'s behavior are unchanged, so neither spec's claims are falsified. The new `[rules]` `.ductus/config.toml` table is documented in this spec's body per the AGENTS.md ".ductus/config.toml is a shared database — document a new section in the spec that adds it, not in 019" rule; spec 019 needs no signpost.
 - Done when: the decision is recorded (done — additive layering, no change to 024/020/019).
 
 ## 7. Validate

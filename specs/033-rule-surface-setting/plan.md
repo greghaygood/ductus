@@ -4,7 +4,7 @@ Implements [033 — Explicit project rule-surface setting](spec.md).
 
 ## Overview
 
-A markdown-tier change — no runtime code. The feature threads one new `.govern.toml` setting, `[rules] surfaces`, through the two places that already act on rule-file surface:
+A markdown-tier change — no runtime code. The feature threads one new `.ductus/config.toml` setting, `[rules] surfaces`, through the two places that already act on rule-file surface:
 
 1. **`framework/bootstrap/ductus.md`** (the installer) — resolve `[rules] surfaces` as a project input (prompt when unset, persist), then filter the host-built rule-file manifest entries by the configured surface(s) before `apply-manifest` runs.
 2. **`framework/commands/review.md`** (the `/ductus:review` loader, spec 024) — consult `[rules] surfaces` in §Behavior step 5; when set, it replaces the detected-stack filter; when unset, stack derivation remains the fallback.
@@ -15,7 +15,7 @@ A markdown-tier change — no runtime code. The feature threads one new `.govern
 
 ### Setting schema — `[rules] surfaces`
 
-`.govern.toml` gains a `[rules]` table with one key:
+`.ductus/config.toml` gains a `[rules]` table with one key:
 
 ```toml
 [rules]
@@ -28,7 +28,7 @@ surfaces = ["backend"]   # list; members ∈ {"backend", "frontend"}; full-stack
 
 ### Installer (`framework/bootstrap/ductus.md`)
 
-- **Input resolution.** Add `[rules] surfaces` to §Collect Project Inputs as a resolved input: read from `.govern.toml` `[rules] surfaces`; if absent, prompt ("Which rule surfaces does this project need? backend / frontend / both"); persist the answer into `.govern.toml` `[rules]`, preserving every other section (same pattern as `[project] name/description/languages`). On a routine re-run the value is present, so no prompt fires.
+- **Input resolution.** Add `[rules] surfaces` to §Collect Project Inputs as a resolved input: read from `.ductus/config.toml` `[rules] surfaces`; if absent, prompt ("Which rule surfaces does this project need? backend / frontend / both"); persist the answer into `.ductus/config.toml` `[rules]`, preserving every other section (same pattern as `[project] name/description/languages`). On a routine re-run the value is present, so no prompt fires.
 - **Manifest filter.** The host already builds `manifest-entries`. Filter the rule-file entries (`framework/rules/*.md` → adopter `specs/rules/*.md`) to those whose suffix matches a configured surface, **plus every `*-cross.md` unconditionally**, before calling `apply-manifest`. Entries for unconfigured surfaces are simply omitted from the manifest — never added to any prune/enforce set, so an already-installed file for a now-unconfigured surface is **left in place** (rule files are not in `enforce-directories`; only slash-command dirs are pruned).
 - **Contradiction notice.** When `surfaces` excludes a surface that `[project] languages` clearly implies (e.g., `surfaces=["backend"]` but a frontend language is listed), emit one advisory line; the explicit setting still wins. No prompt.
 
@@ -36,7 +36,7 @@ surfaces = ["backend"]   # list; members ∈ {"backend", "frontend"}; full-stack
 
 §Behavior step 5 currently: discover by suffix → filter by detected stack → apply disabled-files filter. Insert a surface source ahead of the stack filter:
 
-- Read `.govern.toml` `[rules] surfaces`. **If set**, keep rule files whose surface is in `surfaces`, plus every `*-cross.md` and every unrecognized-suffix file; this *replaces* the detected-stack filter. **If unset**, run the detected-stack filter exactly as today.
+- Read `.ductus/config.toml` `[rules] surfaces`. **If set**, keep rule files whose surface is in `surfaces`, plus every `*-cross.md` and every unrecognized-suffix file; this *replaces* the detected-stack filter. **If unset**, run the detected-stack filter exactly as today.
 - The §Inputs section documents `[rules] surfaces` alongside `[review] tech-stack-verified` and `[[review.disabled-rule-files]]`.
 - The 025 disabled-files filter runs after, unchanged. A file already excluded by surface needs no opt-out entry.
 
@@ -46,7 +46,7 @@ No behavior change. `/ductus:analyze` continues to load every discovered rule fi
 
 ### Documentation
 
-`README.md` (and any `.govern.toml` reference) documents `[rules] surfaces`: accepted values, the derive-when-unset fallback, and its precedence over stack detection.
+`README.md` (and any `.ductus/config.toml` reference) documents `[rules] surfaces`: accepted values, the derive-when-unset fallback, and its precedence over stack detection.
 
 ## Affected Files
 

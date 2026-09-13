@@ -130,31 +130,31 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 
 ## 15. State the retired-filename rule in §drift-prevention and clear the `.govern.toml` residue
 
-- [ ] Implement the behavior described in `scenarios/a-retired-filename-leaves-a-decision-record.md`
+- [x] Implement the behavior described in `scenarios/a-retired-filename-leaves-a-decision-record.md`
 - [x] Resolve the scenario's open question first — whether the corpus rewrite is a §spec-lifecycle case (a) mechanical edit or takes the back-edge on each spec it touches; the answer sets the cost and must not be decided during the pass
 - [x] Amend §drift-prevention to distinguish a retired identifier from a retired filename a compatibility path still reads, naming the exempt sites as a category (resolution ladder / fallback tier, migration procedure, the prose and shell spelling either) rather than as this repository's paths
 - [x] State the corpus end state: the current name wherever a spec states current behavior, the retired name only in the few references recording the decision to change it
-- [x] State that a ticked acceptance criterion is annotated rather than rewritten, citing 017 and 027 as the existing practice
+- [x] State that a ticked acceptance criterion is swept like any other reference, because only the filename moved and the requirement it states is unchanged; reserve annotation for a criterion whose *behavior* was superseded, and remove the annotations 017 and 027 carried from before this was settled
 - [x] Repoint the `AGENTS.md` §Gotchas entry on `.govern.toml` at the new constitution text so it states no normative content of its own, per AC3's promoted-entry pattern
-- [ ] Audit the 317 `.govern.toml` occurrences under `specs/` per-hit: correct present-tense prose to `.ductus/config.toml`, annotate ticked criteria, and leave compatibility-path and decision-record occurrences as written
+- [x] Audit every retired-filename occurrence under `specs/` per-hit: substitute the current name wherever an artifact states current behaviour — acceptance criteria included — and leave the compatibility-path, migration, historical-root, dated-observation and decision-record occurrences as written
 - [x] Leave every occurrence outside `specs/` untouched — 144 occurrences at the 2026-09-13 baseline (the earlier "131" counted matching *lines*, not occurrences): the `runtime/src/` resolution ladder, the `framework/migrations/` procedures that must name the file each migration migrates, and the `framework/commands|bootstrap`, `scripts/` and generated `.claude/` copies spelling the same ladder. `AGENTS.md` is the one deliberate exception, rewritten by the subtask above
 
-- **Done when**: §drift-prevention carries the retired-filename rule with its exempt-site categories and the annotate-not-rewrite disposition; `AGENTS.md` mirrors it by reference; every `.govern.toml` occurrence under `specs/` has been judged individually, with the survivors limited to the compatibility-path and decision-record cases; and the 131 occurrences outside `specs/` are unchanged.
+- **Done when**: §drift-prevention carries the retired-filename rule with its exempt-site categories and the sweep-don't-annotate disposition; `AGENTS.md` mirrors it by reference; every retired-filename occurrence under `specs/` has been judged individually, with the survivors limited to the compatibility-path, migration, historical-root, dated-observation and decision-record cases; and every occurrence outside `specs/` is unchanged.
 
 ## 16. Correct 016's dead README section pointer
 
-- [ ] `specs/016-cross-cutting-rules/spec.md:73` cites *the README's "Pinning files with …" section*; the README was restructured and has no such section under any name, so the pointer was already dead before the filename pass renamed the file it mentions
-- [ ] Repoint it at what the README actually documents — `[pinned]` under §Configuration — or drop the parenthetical and name the key directly
-- [ ] This is a **factual correction**, not a substitution: it rewords the line, so §spec-lifecycle's back-edge applies and 016 reopens `done → in-progress` for it. Do not bundle it with the filename sweep, which is exempt precisely because it rewords nothing
-- [ ] `check-corpus-links` cannot catch this class — a prose reference to a section title is not a link — so note whether the corpus carries more of them before closing
+- [x] `specs/016-cross-cutting-rules/spec.md:73` cites *the README's "Pinning files with …" section*; the README was restructured and has no such section under any name, so the pointer was already dead before the filename pass renamed the file it mentions
+- [x] Repoint it at what the README actually documents — `[pinned]` under §Configuration — or drop the parenthetical and name the key directly
+- [x] This is a **factual correction**, not a substitution: it rewords the line, so §spec-lifecycle's back-edge applies and 016 reopens `done → in-progress` for it. Do not bundle it with the filename sweep, which is exempt precisely because it rewords nothing
+- [x] `check-corpus-links` cannot catch this class — a prose reference to a section title is not a link — so note whether the corpus carries more of them before closing
 
 - **Done when**: 016's spec body no longer points at a README section that does not exist, the correction is taken through the back-edge rather than folded into the exempt sweep, and the run says whether other prose section-title pointers were checked.
 
 ## 17. Apply the retired-filename rule to the three sibling names
 
-- [ ] Task 15 was scoped to `.govern.toml` alone, but the rule it states governs every retired filename a compatibility path still reads. Measured 2026-09-13, three siblings carry comparable residue: `.govern.session.toml` (167 occurrences, 92 under `specs/`), `.govern/` (171, 40 under `specs/`), `.governance.toml` (36, 27 under `specs/`)
-- [ ] Judge them by the same test — the resolution ladder's legacy tiers, the migration procedures that must name both sides, and the decision records stay; present-tense prose naming them as current is residue and takes the current name (`.ductus/session.toml`, `.ductus/`, and — for `.governance.toml` — whichever tier the ladder actually resolves)
-- [ ] `.governance.toml` needs care: `framework/migrations/governance-config-rename.md` renames it **to** `.govern.toml`, so both sides of that procedure are retired today and both must survive
-- [ ] Keep the prose substitutions free of any reworded line so the sweep exemption holds, exactly as task 15's mechanical half did — the annotations are what reopen a spec
+- [x] Task 15 was scoped to `.govern.toml` alone, but the rule it states governs every retired filename a compatibility path still reads. Measured 2026-09-13, three siblings carry comparable residue: `.govern.session.toml` (167 occurrences, 92 under `specs/`), `.govern/` (171, 40 under `specs/`), `.governance.toml` (36, 27 under `specs/`)
+- [x] Judge them by the same test — the resolution ladder's legacy tiers, the migration procedures that must name both sides, and the decision records stay; present-tense prose naming them as current is residue and takes the current name (`.ductus/session.toml`, `.ductus/`, and — for `.governance.toml` — whichever tier the ladder actually resolves)
+- [x] `.governance.toml` needs care: `framework/migrations/governance-config-rename.md` renames it **to** `.govern.toml`, so both sides of that procedure are retired today and both must survive
+- [x] Keep the prose substitutions free of any reworded line so the sweep exemption holds, exactly as task 15's mechanical half did — the annotations are what reopen a spec
 
 - **Done when**: Every `.govern.session.toml`, `.govern/` and `.governance.toml` occurrence under `specs/` has been judged individually against §drift-prevention's retired-filename rule, the compatibility-path and decision-record occurrences are named as deliberate survivors with a count, and nothing outside `specs/` moved.

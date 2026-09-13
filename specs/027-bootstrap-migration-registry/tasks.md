@@ -14,7 +14,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 For each of the six back-filled migrations, create `framework/migrations/{id}.md` following the plan §Procedure file shape convention. Each procedure file lifts its body content from the corresponding existing prose in `framework/bootstrap/ductus.md`.
 
-- [x] `framework/migrations/governance-config-rename.md` (lifted from `framework/bootstrap/ductus.md` `### .governance.toml → .govern.toml`).
+- [x] `framework/migrations/governance-config-rename.md` (lifted from `framework/bootstrap/ductus.md` `### .ductus/config.toml → .ductus/config.toml`).
 - [x] `framework/migrations/gitignore-marker-rename.md` (lifted from `### # Governance gitignore marker → # ductus`).
 - [x] `framework/migrations/spec-and-plan-sunset.md` (lifted from `### spec-and-plan.md → spec.md (lightweight-track sunset)`).
 - [x] `framework/migrations/rule-files-relocate.md` (lifted from `### Rule files: relocate to specs/rules/`, subsuming `configuration.md` rename).
@@ -44,11 +44,11 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 - [x] Delete the `### Legacy workflow cleanup` content (step 1 of the workflow recommendation procedure, line ~586).
 - [x] Update the `### Legacy directory note` at the end of the workflow recommendation section (line ~677) to reference the registry instead of the deleted sub-sections.
 - [x] Update the procedural-fidelity rule at line 24 to drop the "legacy `spec-and-plan.md` rename" exception (the registry-driven loop's outer batch prompt subsumes it).
-- [x] Add the `[migrations]` section to the `.govern.toml` schema documented in `## Project Configuration` (line ~252+). Document `last_applied` field with its absence semantics.
+- [x] Add the `[migrations]` section to the `.ductus/config.toml` schema documented in `## Project Configuration` (line ~252+). Document `last_applied` field with its absence semantics.
 - [x] Update the `enforce-manifest` step at line 36 to drop the "legacy `skills/` directory removal" and "legacy workflow filename removal" mentions from its summary line. The primitive's expected-list construction loses the legacy paths.
 - [x] Run `npx markdownlint-cli2` on `framework/bootstrap/ductus.md`.
 
-- **Done when**: `framework/bootstrap/ductus.md`'s `## Pre-run Migrations` is the registry-driven loop, the legacy cleanup sub-sections are removed, the `.govern.toml` `[migrations]` schema is documented, and the file passes `npx markdownlint-cli2`.
+- **Done when**: `framework/bootstrap/ductus.md`'s `## Pre-run Migrations` is the registry-driven loop, the legacy cleanup sub-sections are removed, the `.ductus/config.toml` `[migrations]` schema is documented, and the file passes `npx markdownlint-cli2`.
 
 ## 5. Trim `enforce-manifest` primitive's expected-list contract
 
@@ -89,20 +89,20 @@ Look up `introduced_in` per migration via `git log` against the commits that shi
 
 ## 9. Update CLAUDE.md / AGENTS.md if needed
 
-- [x] Check whether `AGENTS.md` mentions any of the legacy migrations or `.govern.toml` schema details. Update if any text references the old prose-encoded migrations or omits the new `[migrations]` section.
+- [x] Check whether `AGENTS.md` mentions any of the legacy migrations or `.ductus/config.toml` schema details. Update if any text references the old prose-encoded migrations or omits the new `[migrations]` section.
 - [x] No changes if AGENTS.md is silent on these topics — the bootstrap procedure is the canonical reference. Updated line 43's procedural-fidelity mirror (spec-and-plan rename → registry-driven migration prompts) and incidentally fixed a stale spec reference at line 45 (the reverted 027-command-source-templating → 027-bootstrap-migration-registry).
 
 - **Done when**: `AGENTS.md` no longer references the old prose-encoded migrations — the procedural-fidelity mirror points at the registry-driven prompts and the stale spec reference is corrected.
 
 ## 10. End-to-end verification
 
-- [x] Manually run through the bootstrap loop's prose against a fresh fixture: empty `.govern.toml`, expect all six entries to run, expect `last_applied` written. (Trace: `last_applied = null`; sunset filter passes for all six (current gvrn 0.7.2 < 0.10.0). Filter order, by `introduced_in` ascending with lex tie-break on `id`: `gitignore-marker-rename` → `governance-config-rename` → `skills-to-workflows` → `workflow-filename-rename` → `spec-and-plan-sunset` → `rule-files-relocate`. Prompt: "6 framework migrations are pending…". On confirm, all six procedures dispatch in that order; `[migrations].last_applied` is rewritten per entry, ending at `"rule-files-relocate"`.)
+- [x] Manually run through the bootstrap loop's prose against a fresh fixture: empty `.ductus/config.toml`, expect all six entries to run, expect `last_applied` written. (Trace: `last_applied = null`; sunset filter passes for all six (current gvrn 0.7.2 < 0.10.0). Filter order, by `introduced_in` ascending with lex tie-break on `id`: `gitignore-marker-rename` → `governance-config-rename` → `skills-to-workflows` → `workflow-filename-rename` → `spec-and-plan-sunset` → `rule-files-relocate`. Prompt: "6 framework migrations are pending…". On confirm, all six procedures dispatch in that order; `[migrations].last_applied` is rewritten per entry, ending at `"rule-files-relocate"`.)
 - [x] Manually run against an updated fixture: `last_applied = "rule-files-relocate"`, expect only `skills-to-workflows` and `workflow-filename-rename` to run. (Discrepancy: as the registry was actually back-filled in task 3, `rule-files-relocate` is the **newest** entry (`introduced_in = 0.6.0`), not a mid-point. Per the prose filter (`introduced_in > last_applied.introduced_in`, lex tie-break on `id`), `last_applied = "rule-files-relocate"` yields **zero** qualifying entries — identical to State 3. A faithful mid-point trace, substituting `last_applied = "governance-config-rename"` (0.2.0, lex pos #2 of the four 0.2.0 entries), yields four entries in filter order: `skills-to-workflows` (0.2.0, lex-after) → `workflow-filename-rename` (0.2.0, lex-after) → `spec-and-plan-sunset` (0.5.0) → `rule-files-relocate` (0.6.0). The filter logic is sound; the task's example id was written before the back-fill pinned `rule-files-relocate` as the newest.)
-- [x] Manually run against an up-to-date fixture: `last_applied = "<newest entry id>"`, expect zero entries to run and zero filesystem reads beyond the registry. (Trace: `last_applied = "rule-files-relocate"` (introduced_in 0.6.0). Filter rejects every entry (introduced_in ≤ 0.6.0, lex tie-break rejects equal-id). Loop step 4 ("If the filtered list is empty, emit nothing and proceed") fires; no `framework/migrations/*.md` files are read, no `.govern.toml` write, no prompt. Bootstrap proceeds directly to the next section.)
+- [x] Manually run against an up-to-date fixture: `last_applied = "<newest entry id>"`, expect zero entries to run and zero filesystem reads beyond the registry. (Trace: `last_applied = "rule-files-relocate"` (introduced_in 0.6.0). Filter rejects every entry (introduced_in ≤ 0.6.0, lex tie-break rejects equal-id). Loop step 4 ("If the filtered list is empty, emit nothing and proceed") fires; no `framework/migrations/*.md` files are read, no `.ductus/config.toml` write, no prompt. Bootstrap proceeds directly to the next section.)
 - [x] Run `/audit` (`bash scripts/audit/run-all.sh`); confirm exit 0. (Ran clean: exit 0, no findings.)
 - [x] Run `npx markdownlint-cli2` against the entire feature directory and all modified framework files. (Feature directory + modified framework files: 0 errors. Note: `runtime/CHANGELOG.md` carries two pre-existing MD038 findings in its 0.6.1 entry (a code span containing the literal `` `### 19. Dedup `/configure` permission entries` ``) — confirmed pre-existing via `git show HEAD~7:runtime/CHANGELOG.md`. Out of scope for this spec; would belong to a separate runtime-lint cleanup.)
 
-- **Done when**: the registry-driven bootstrap loop is traced against empty, partial, and up-to-date `.govern.toml` fixtures with the expected entries running each time, and `/audit` plus `npx markdownlint-cli2` are clean.
+- **Done when**: the registry-driven bootstrap loop is traced against empty, partial, and up-to-date `.ductus/config.toml` fixtures with the expected entries running each time, and `/audit` plus `npx markdownlint-cli2` are clean.
 
 ## 11. Final review and status advancement
 

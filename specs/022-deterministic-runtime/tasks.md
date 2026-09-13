@@ -199,7 +199,7 @@ Runtime half of [049's rename](../049-rename-govern-to-ductus/spec.md): the per-
 - [x] Tests: a mid-block renamed subsection replaced rather than stranded, with no orphaned comment header and the adopter tail intact; a long unmatched run past the bound preserved as adopter territory; all existing line-prefix tests green
 - [x] Update the module doc, which currently records the stranding as a deliberate trade-off
 
-- **Done when**: `merge-managed-block` replaces a `line-prefix` subsection whose patterns were all renamed instead of stopping the walk at it, so no tail of the old block survives below the merged one and the dedup pass leaves no orphaned comment headers; the lookahead is bounded and the bound's rationale is stated in code; `scenarios/merge-managed-block-trailing-append.md`'s invariant still holds and its tests are unchanged; the real case that surfaced it — spec 048's adopter bootstrap, whose `.gitignore` kept a dead `.govern.session.toml` plus headerless `# IDE` / `# OS` — merges clean; `cargo test`, `cargo clippy -- -D warnings` and `npx markdownlint-cli2` all clean.
+- **Done when**: `merge-managed-block` replaces a `line-prefix` subsection whose patterns were all renamed instead of stopping the walk at it, so no tail of the old block survives below the merged one and the dedup pass leaves no orphaned comment headers; the lookahead is bounded and the bound's rationale is stated in code; `scenarios/merge-managed-block-trailing-append.md`'s invariant still holds and its tests are unchanged; the real case that surfaced it — spec 048's adopter bootstrap, whose `.gitignore` kept a dead `.ductus/session.toml` plus headerless `# IDE` / `# OS` — merges clean; `cargo test`, `cargo clippy -- -D warnings` and `npx markdownlint-cli2` all clean.
 
 ## 93. Implement scenario: [orphaned-reference-check](scenarios/orphaned-reference-check.md) — one primitive for two call sites, with attribution that degrades out loud
 
@@ -209,7 +209,7 @@ Runtime half of [049's rename](../049-rename-govern-to-ductus/spec.md): the per-
 
 ## 94. check-orphaned-references matches historical roots and declares its scope
 
-- [x] `managed_roots` gains `.govern/`, `scripts/gen-`, `scripts/lib/`, with the historical-root reasoning in the doc comment
+- [x] `managed_roots` gains `.ductus/`, `scripts/gen-`, `scripts/lib/`, with the historical-root reasoning in the doc comment
 - [x] `CheckOrphanedReferencesResult` gains `matched-prefixes`, populated from the roots the run used
 - [x] the pre-existing test that worked around the blind spot is corrected to assert the retired-root reference is now reported
 - [x] tests: the pre-042 generator orphan reports; an adopter-owned script does not; a clean result declares its prefixes

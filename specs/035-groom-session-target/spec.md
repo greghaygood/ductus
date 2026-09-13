@@ -21,7 +21,7 @@ analyze:
 
 # 035 — Groom sets the session target from the routed item
 
-`/ductus:groom` sets `.govern.session.toml` to the spec it routes an inbox item to, so a follow-on `/ductus:amend` or `/ductus:implement` operates on the right target without a manual `/ductus:target`.
+`/ductus:groom` sets `.ductus/session.toml` to the spec it routes an inbox item to, so a follow-on `/ductus:amend` or `/ductus:implement` operates on the right target without a manual `/ductus:target`.
 
 ## Motivation
 
@@ -31,7 +31,7 @@ This is the same "don't make the operator remember session state" gap that self-
 
 ## Behavior
 
-- When groom routes an item to an **existing spec** — a spec edit (Step 3) or a scenario created under the matching spec (Step 4, durable-requirement branch) — it sets `.govern.session.toml` to that feature as part of the routing action. The target is the feature the decision tree matched in Step 2 (reinforced by, but not dependent on, any `specs/NNN-*/` link in the item text).
+- When groom routes an item to an **existing spec** — a spec edit (Step 3) or a scenario created under the matching spec (Step 4, durable-requirement branch) — it sets `.ductus/session.toml` to that feature as part of the routing action. The target is the feature the decision tree matched in Step 2 (reinforced by, but not dependent on, any `specs/NNN-*/` link in the item text).
 - The per-item routing confirmation groom already requires before acting now **names the target it will set** — e.g., *"Create a scenario under `033-rule-surface-setting` and set it as the session target? (Y/n)"*. That single confirmation is the consent for both the routing and the target write; no separate target prompt is added (consistent with the procedural-fidelity / don't-add-prompts stance). The operator sees and confirms the target without having to recall it.
 - **New-spec items** (Step 2, no spec exists → `/ductus:specify`) are unchanged: `/ductus:specify` already targets the spec it creates.
 - **Rule items** (Step 1, amend a rule file) and **chores** (Step 4 chore, left in the inbox) set no target — neither has a single spec home.
@@ -43,7 +43,7 @@ The change is confined to `framework/commands/groom.md` (and its generated `.cla
 
 ## Acceptance Criteria
 
-- [x] AC1: When groom routes an item to a spec edit (Step 3) or a scenario under the matching spec (Step 4 durable branch), it sets `.govern.session.toml` to that feature.
+- [x] AC1: When groom routes an item to a spec edit (Step 3) or a scenario under the matching spec (Step 4 durable branch), it sets `.ductus/session.toml` to that feature.
 - [x] AC2: The per-item routing confirmation names the target it will set; groom adds no separate "set the target?" prompt.
 - [x] AC3: New-spec items, rule-file items (Step 1), and chores (Step 4 chore) do **not** set a session target via groom.
 - [x] AC4: Across a multi-item run, the session target follows the current item (the last spec-routed item is the final target).

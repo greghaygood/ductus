@@ -14,7 +14,7 @@ Three categories ship — `METRIC`, `TRACE`, `HEALTH` — with six rules, two of
 
 Modeled on `performance-backend.md` (same surface, same analyze-time design-time-commitment framing):
 
-- **Header.** Title `# Observability Rules — Backend`; an intro scoping it to server-side observability beyond logging; the RFC 2119 note; the ID-format / category-declaration line stating IDs follow `BE-{CATEGORY}-{NNN}` with categories `METRIC` (metrics), `TRACE` (distributed tracing), `HEALTH` (health endpoints), and a pointer to `specs/008-security-rules/data-model.md` for the schema; a default-**SHOULD** paragraph (MUST reserved for detection/diagnosis-blocking absences) noting these verify design-time commitments enforced by `/{project}:analyze`; and the standard backend pin/surface note (pin in `.govern.toml`, or exclude the backend surface via `[rules] surfaces`).
+- **Header.** Title `# Observability Rules — Backend`; an intro scoping it to server-side observability beyond logging; the RFC 2119 note; the ID-format / category-declaration line stating IDs follow `BE-{CATEGORY}-{NNN}` with categories `METRIC` (metrics), `TRACE` (distributed tracing), `HEALTH` (health endpoints), and a pointer to `specs/008-security-rules/data-model.md` for the schema; a default-**SHOULD** paragraph (MUST reserved for detection/diagnosis-blocking absences) noting these verify design-time commitments enforced by `/{project}:analyze`; and the standard backend pin/surface note (pin in `.ductus/config.toml`, or exclude the backend surface via `[rules] surfaces`).
 - **Categories disjoint** from `security-backend.md`, `api-backend.md`, `performance-backend.md` (verified: `METRIC`/`TRACE`/`HEALTH` appear in none).
 
 ### Rule set

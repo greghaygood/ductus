@@ -4,7 +4,7 @@ Implements [040 — Configurable spec-root directory name](spec.md).
 
 ## Overview
 
-Introduce one operator-set `.govern.toml` key — `[paths] specs-root`, default `"specs"` — as the single source of truth for the spec-root directory name, and teach every executable code path to resolve the root from it instead of hardcoding `specs/`. The work spans three surfaces:
+Introduce one operator-set `.ductus/config.toml` key — `[paths] specs-root`, default `"specs"` — as the single source of truth for the spec-root directory name, and teach every executable code path to resolve the root from it instead of hardcoding `specs/`. The work spans three surfaces:
 
 1. **Runtime (`ductus`)** — a single shared resolver reads `[paths] specs-root` (default `specs`), and every primitive that today calls `repo.join("specs")` calls the resolver instead.
 2. **Bootstrap and commands (markdown)** — `/ductus` gains the init-time prompt, validation, and notices; `/ductus:init` scaffolds under the configured name; command bodies resolve the root in executable path references while illustrative prose keeps `specs/` as the documented default.
@@ -16,7 +16,7 @@ The load-bearing invariant is **default-`specs` everywhere**: an adopter who nev
 
 ### Config schema: `[paths] specs-root`, default `specs`
 
-A new TOML table `[paths]` carries a scalar key `specs-root`. Resolution rule everywhere: read the key; when absent or empty, fall back to `specs`. The key is documented in this spec's body — per the project convention that `.govern.toml` is a shared adopter-side database whose new "tables" are documented in the adding spec, not signposted onto the prior `.govern.toml` specs (`017`/`019`). Well-formedness (non-empty, single segment, no separators, no `..`, no leading slash) is validated when `/ductus` writes the value.
+A new TOML table `[paths]` carries a scalar key `specs-root`. Resolution rule everywhere: read the key; when absent or empty, fall back to `specs`. The key is documented in this spec's body — per the project convention that `.ductus/config.toml` is a shared adopter-side database whose new "tables" are documented in the adding spec, not signposted onto the prior `.ductus/config.toml` specs (`017`/`019`). Well-formedness (non-empty, single segment, no separators, no `..`, no leading slash) is validated when `/ductus` writes the value.
 
 ### One shared runtime resolver
 
@@ -24,18 +24,18 @@ Add a single helper in the runtime's config/schema layer (the same layer that al
 
 ```rust
 // resolve the spec-root directory name for `repo`, defaulting to "specs"
-fn specs_root(repo: &Path) -> PathBuf  // reads [paths] specs-root from <repo>/.govern.toml
+fn specs_root(repo: &Path) -> PathBuf  // reads [paths] specs-root from <repo>/.ductus/config.toml
 ```
 
 Every `repo.join("specs")` site is rewritten to `repo.join(specs_root(repo))`. From the discovery sweep, the sites are: `primitives/{read_spec, set_status, mark_task, mark_criterion, read_tasks, traverse_deps, check_stuck, derive_boundary, resolve_references, dashboard}.rs` and `interpreter/payload.rs`. Full-path primitives (`write_session`, `lint_markdown`, `substitute_templates`) are untouched because the host bakes the resolved root into the path argument they receive.
 
-One resolver (not a `.govern.toml` read duplicated per primitive) keeps the default and the parsing in one place — the drift-prevention discipline applied to code. This is an edit to existing primitives' path construction plus a config-read helper; it does **not** add a new primitive, so the new-primitive wiring checklist (schema/parser/interpreter/main/server/`runtime-tools.txt`) does not apply.
+One resolver (not a `.ductus/config.toml` read duplicated per primitive) keeps the default and the parsing in one place — the drift-prevention discipline applied to code. This is an edit to existing primitives' path construction plus a config-read helper; it does **not** add a new primitive, so the new-primitive wiring checklist (schema/parser/interpreter/main/server/`runtime-tools.txt`) does not apply.
 
 ### Bootstrap (`/ductus`) gains the prompt, validation, and notices
 
 In `framework/bootstrap/ductus.md`:
 
-- **Prompt at init** for the spec-root name, defaulting to `specs`, persisted to `.govern.toml`. Confined to `/ductus` — no other command prompts (mirrors `033`'s surface-prompt pattern).
+- **Prompt at init** for the spec-root name, defaulting to `specs`, persisted to `.ductus/config.toml`. Confined to `/ductus` — no other command prompts (mirrors `033`'s surface-prompt pattern).
 - **Well-formedness rejection** (blocking) on malformed values.
 - **On-disk collision advisory** — if the chosen directory already exists and is not a ductus spec root (no `inbox.md`, no numbered `NNN-*` subdirs), emit a one-line notice and proceed on confirmation.
 - **Half-finished-rename notice** — configured root absent on disk but a different ductus-shaped directory present.
@@ -53,7 +53,7 @@ In `framework/commands/*.md`, executable path references (where a command reads/
 
 ### Generators resolve the root
 
-`scripts/gen-spec-deps.sh` and `scripts/gen-cross-service-refs.sh` walk the spec tree to derive frontmatter; `scripts/lint-rule-ids.sh` and `scripts/lint-frontmatter.sh` walk it to lint. Each resolves `[paths] specs-root` (default `specs`) from the repo's `.govern.toml` before walking. Because these ship to adopter repos and run from the adopter pre-commit hook, they must read the adopter's `.govern.toml` at run time. No new generators are introduced, so the three-site generator-wiring rule does not apply — the existing generators are taught to resolve the root.
+`scripts/gen-spec-deps.sh` and `scripts/gen-cross-service-refs.sh` walk the spec tree to derive frontmatter; `scripts/lint-rule-ids.sh` and `scripts/lint-frontmatter.sh` walk it to lint. Each resolves `[paths] specs-root` (default `specs`) from the repo's `.ductus/config.toml` before walking. Because these ship to adopter repos and run from the adopter pre-commit hook, they must read the adopter's `.ductus/config.toml` at run time. No new generators are introduced, so the three-site generator-wiring rule does not apply — the existing generators are taught to resolve the root.
 
 ### No data model
 
@@ -97,7 +97,7 @@ Default-`specs` means every existing test, fixture, and golden file keeps passin
 
 ## Trade-offs
 
-- **One shared resolver vs. per-primitive config read** — chose one helper. Rejected duplicating `.govern.toml` parsing in each primitive: it would scatter the default value and re-parse config per call.
+- **One shared resolver vs. per-primitive config read** — chose one helper. Rejected duplicating `.ductus/config.toml` parsing in each primitive: it would scatter the default value and re-parse config per call.
 - **Set-once + manual rename vs. ductus-owned mover** — chose manual `git mv` plus a divergence notice. Rejected an in-framework mover: a destructive code path for a rare operation that `git mv` already handles deterministically.
 - **Prose keeps `specs/` vs. full parameterization** — chose documented-default plus one canonical note. Rejected `{specs-root}` placeholders across ~35 files: it degrades a human-read document for accuracy the default already provides.
 - **040 as canonical owner vs. restating in 002/003/022** — chose single-owner with conditional signposts. Rejected restating "spec-root is configurable" in each touched spec: it scatters the requirement and over-reopens done specs. Signposts land only where a prior spec makes a now-false absolute claim.

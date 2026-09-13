@@ -53,12 +53,12 @@ Per spec Q7 expansion: `framework/bootstrap/hooks/pre-commit` and `framework/boo
 | Detected state | Action |
 | --- | --- |
 | `core.hooksPath` unset and `.githooks/pre-commit` absent | Install both, set `core.hooksPath .githooks`, report installed |
-| `.githooks/pre-commit` exists from a prior `/ductus` run (detected by a sentinel comment in the file) | Overwrite (`update` strategy, pinnable via `.govern.toml`) |
+| `.githooks/pre-commit` exists from a prior `/ductus` run (detected by a sentinel comment in the file) | Overwrite (`update` strategy, pinnable via `.ductus/config.toml`) |
 | `core.hooksPath` points elsewhere, OR `.githooks/pre-commit` exists without the sentinel comment, OR husky/lefthook/`.pre-commit-config.yaml` detected | Skip install; report a warning with a manual integration snippet; continue |
 
 The sentinel comment is a single line near the top of the shipped hook (e.g., `# managed-by: ductus`) that the detection logic looks for to distinguish a ductus-installed hook from a hand-rolled one. The same sentinel survives `/ductus` updates because it's part of the shipped file.
 
-`scripts/gen-spec-deps.sh` ships to adopters with `update` strategy — every `/ductus` run refreshes it from upstream so adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites. The shipped pre-commit hook references it via the project-relative path (`scripts/gen-spec-deps.sh`).
+`scripts/gen-spec-deps.sh` ships to adopters with `update` strategy — every `/ductus` run refreshes it from upstream so adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.ductus/config.toml` `pinned.files` to opt out of overwrites. The shipped pre-commit hook references it via the project-relative path (`scripts/gen-spec-deps.sh`).
 
 ### Generated artifacts use marker comments
 
@@ -195,7 +195,7 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/bootstrap/ductus.md` | Modify | Add Hook Installation section; add `framework/rules/configuration-cross.md` to Shared Files (update strategy); add `framework/bootstrap/hooks/pre-commit` to Shared Files (create strategy) and `scripts/gen-spec-deps.sh` to Shared Files (update strategy, pinnable via `.govern.toml`); add `framework/bootstrap/hooks/install.sh` to per-agent scaffolding logic |
+| `framework/bootstrap/ductus.md` | Modify | Add Hook Installation section; add `framework/rules/configuration-cross.md` to Shared Files (update strategy); add `framework/bootstrap/hooks/pre-commit` to Shared Files (create strategy) and `scripts/gen-spec-deps.sh` to Shared Files (update strategy, pinnable via `.ductus/config.toml`); add `framework/bootstrap/hooks/install.sh` to per-agent scaffolding logic |
 | `framework/bootstrap/configure/claude.md` | Modify | Add Bash permissions for hook install/run paths (`Bash(git config *)`, `Bash(.githooks/*)`, `Bash(scripts/gen-*)`) |
 | `framework/bootstrap/configure/auggie.md` | Modify | Same permission additions in Auggie's format |
 

@@ -162,7 +162,7 @@ Add a `--remove=auggie` flag that deletes `.augment/` and its scaffolding. Rejec
 
 ### Known limitation: pinned `ductus.md` blocks migration
 
-A project that lists `.claude/commands/ductus.md` or `.augment/commands/ductus.md` in `.governance.toml` `pinned.files` will not migrate to the unified file via `/ductus` — the pin overrides the `update` strategy. Documented as a footgun, not solved programmatically. Removing the pin is a one-line edit.
+A project that lists `.claude/commands/ductus.md` or `.augment/commands/ductus.md` in `.ductus/config.toml` `pinned.files` will not migrate to the unified file via `/ductus` — the pin overrides the `update` strategy. Documented as a footgun, not solved programmatically. Removing the pin is a one-line edit.
 
 ### Known limitation: agent self-path inference
 

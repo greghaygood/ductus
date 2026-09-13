@@ -1,10 +1,10 @@
-# 025 — Rule-file opt-out via `.govern.toml` Plan
+# 025 — Rule-file opt-out via `.ductus/config.toml` Plan
 
-Implements [025 — Rule-file opt-out via `.govern.toml`](spec.md).
+Implements [025 — Rule-file opt-out via `.ductus/config.toml`](spec.md).
 
 ## Overview
 
-The feature is a narrow, markdown-only change. There is no new module, no new parser, no new CLI surface — `.govern.toml` is read ad-hoc by the agent runtime in each command that needs it, following the precedent established by [spec 020's](../020-code-review/spec.md) handling of `[review] tech-stack-verified`. This spec adds one new array-of-tables key (`[[review.disabled-rule-files]]`) and threads its consultation into `/ductus:review`'s rule-file selection step (§Behavior step 5), with discoverability notices on stdout and a one-line callout in `/ductus:status`. Two files in the spec's original Affected list are dropped after planning (see Trade-offs).
+The feature is a narrow, markdown-only change. There is no new module, no new parser, no new CLI surface — `.ductus/config.toml` is read ad-hoc by the agent runtime in each command that needs it, following the precedent established by [spec 020's](../020-code-review/spec.md) handling of `[review] tech-stack-verified`. This spec adds one new array-of-tables key (`[[review.disabled-rule-files]]`) and threads its consultation into `/ductus:review`'s rule-file selection step (§Behavior step 5), with discoverability notices on stdout and a one-line callout in `/ductus:status`. Two files in the spec's original Affected list are dropped after planning (see Trade-offs).
 
 ## Technical Decisions
 
@@ -14,8 +14,8 @@ The feature is a narrow, markdown-only change. There is no new module, no new pa
 
 1. Discover `framework/rules/*.md` by directory walk.
 2. Classify each file by suffix; filter the recognized set by the detected stack (existing 024 logic).
-3. **New:** read `.govern.toml` `[[review.disabled-rule-files]]`. For each entry:
-   - If `file` matches a file in the post-stack-filter set, drop it and emit the `disabled-rule-file: <name> — <reason> (.govern.toml)` notice.
+3. **New:** read `.ductus/config.toml` `[[review.disabled-rule-files]]`. For each entry:
+   - If `file` matches a file in the post-stack-filter set, drop it and emit the `disabled-rule-file: <name> — <reason> (.ductus/config.toml)` notice.
    - If `file` matches a `framework/rules/` basename that was NOT selected by stack detection, emit the `disabled-rule-file (no-op): <name> not selected by stack detection` notice (no drop — there was nothing to drop).
    - If `file` does not match any `framework/rules/` basename, emit the `unknown disabled-rule-file: <name> (no such file in framework/rules/)` warning (already covered by AC3).
    - Malformed / duplicate entries follow the warn-and-skip pattern documented in §Malformed and duplicate waivers (review.md lines 358–375).
@@ -33,13 +33,13 @@ Warnings (malformed, duplicate, unknown, length-fail) emit to stdout but never s
 
 ### `/ductus:status` integration
 
-`framework/commands/status.md` step 6 already lists below-the-table callouts (blocked specs, recovery-state specs, tags-in-use). Add a fourth callout when `.govern.toml` `[[review.disabled-rule-files]]` is non-empty:
+`framework/commands/status.md` step 6 already lists below-the-table callouts (blocked specs, recovery-state specs, tags-in-use). Add a fourth callout when `.ductus/config.toml` `[[review.disabled-rule-files]]` is non-empty:
 
 ```text
-disabled rule files: <N> (.govern.toml) — <comma-separated basenames>
+disabled rule files: <N> (.ductus/config.toml) — <comma-separated basenames>
 ```
 
-Single line; no verbose mode. Adopters who need the reasons read `.govern.toml` directly. Surfacing the list at all is the AC6 contract — the dashboard is the discoverability surface, not a full pretty-printer.
+Single line; no verbose mode. Adopters who need the reasons read `.ductus/config.toml` directly. Surfacing the list at all is the AC6 contract — the dashboard is the discoverability surface, not a full pretty-printer.
 
 ### Constitution edit
 
@@ -47,21 +47,21 @@ Single line; no verbose mode. Adopters who need the reasons read `.govern.toml` 
 
 ### Example TOML block
 
-The canonical `.govern.toml` schema example lives in `framework/bootstrap/ductus.md` lines 246–262 (showing `[pinned]` and `[workflows]`). Add a commented-out `[[review.disabled-rule-files]]` block alongside, so adopters running through bootstrap see the schema at the same place they see the others. This replaces the spec body's reference to a `framework/templates/project/ductus-toml.md` file that does not exist.
+The canonical `.ductus/config.toml` schema example lives in `framework/bootstrap/ductus.md` lines 246–262 (showing `[pinned]` and `[workflows]`). Add a commented-out `[[review.disabled-rule-files]]` block alongside, so adopters running through bootstrap see the schema at the same place they see the others. This replaces the spec body's reference to a `framework/templates/project/ductus-toml.md` file that does not exist.
 
 ### `framework/commands/analyze.md` — no edit needed
 
-Verified during planning: `framework/commands/analyze.md` does not read `.govern.toml` at all (grep returns no matches). AC7 ("`/ductus:analyze` does NOT error on the new key") is structurally satisfied by analyze never seeing the file. The Affected files row from spec.md is dropped — there is nothing to extend.
+Verified during planning: `framework/commands/analyze.md` does not read `.ductus/config.toml` at all (grep returns no matches). AC7 ("`/ductus:analyze` does NOT error on the new key") is structurally satisfied by analyze never seeing the file. The Affected files row from spec.md is dropped — there is nothing to extend.
 
 ### `scripts/lint-ductus-toml.sh` — out of scope
 
-Verified during planning: the script does not exist. The spec body Affected files row carries an `(if it exists)` qualifier, and the Q3 resolution treats `.govern.toml` hygiene as a separate single-purpose tool. Adding the script as part of 025 is scope creep — runtime warnings (stdout) already cover the operator-feedback path. Defer to a future spec when demand emerges.
+Verified during planning: the script does not exist. The spec body Affected files row carries an `(if it exists)` qualifier, and the Q3 resolution treats `.ductus/config.toml` hygiene as a separate single-purpose tool. Adding the script as part of 025 is scope creep — runtime warnings (stdout) already cover the operator-feedback path. Defer to a future spec when demand emerges.
 
 ## Affected Files
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/commands/review.md` | edit | §Inputs (add `[[review.disabled-rule-files]]` Config bullet); §Behavior step 5 (apply disabled-files filter after stack filter, emit per-entry notices); §Output (document the new notices); §Notes for adopters (one bullet on the override and a link to `.govern.toml`'s `[[review.disabled-rule-files]]`) |
+| `framework/commands/review.md` | edit | §Inputs (add `[[review.disabled-rule-files]]` Config bullet); §Behavior step 5 (apply disabled-files filter after stack filter, emit per-entry notices); §Output (document the new notices); §Notes for adopters (one bullet on the override and a link to `.ductus/config.toml`'s `[[review.disabled-rule-files]]`) |
 | `framework/commands/status.md` | edit | Step 6 — add a fourth below-the-table callout when the disabled list is non-empty |
 | `framework/constitution.md` | edit | §rules — append a brief paragraph after the filename-suffix subsection mentioning the file-level opt-out |
 | `framework/bootstrap/ductus.md` | edit | Example TOML block (lines 246–262) — add a commented-out `[[review.disabled-rule-files]]` example alongside `[pinned]` and `[workflows]` |
@@ -71,14 +71,14 @@ Verified during planning: the script does not exist. The spec body Affected file
 
 ### Considered and rejected
 
-- **Surface `.govern.toml` parsing in a shared TOML reader module.** Ductus has no shared parser — each command's markdown instructions tell the agent to read the file ad-hoc. Following the precedent set by [spec 020's](../020-code-review/spec.md) handling of `[review] tech-stack-verified` keeps the change shape uniform; introducing a shared module for one new key is premature.
-- **Extend `framework/commands/analyze.md` to validate `.govern.toml`.** Analyze reads markdown spec artifacts, not `.govern.toml`. Adding a `.govern.toml` validator to analyze would couple two unrelated concerns (artifact-vs-artifact audits vs. config hygiene); single-purpose `scripts/lint-ductus-toml.sh` is the right home if and when it exists.
+- **Surface `.ductus/config.toml` parsing in a shared TOML reader module.** Ductus has no shared parser — each command's markdown instructions tell the agent to read the file ad-hoc. Following the precedent set by [spec 020's](../020-code-review/spec.md) handling of `[review] tech-stack-verified` keeps the change shape uniform; introducing a shared module for one new key is premature.
+- **Extend `framework/commands/analyze.md` to validate `.ductus/config.toml`.** Analyze reads markdown spec artifacts, not `.ductus/config.toml`. Adding a `.ductus/config.toml` validator to analyze would couple two unrelated concerns (artifact-vs-artifact audits vs. config hygiene); single-purpose `scripts/lint-ductus-toml.sh` is the right home if and when it exists.
 - **Create `scripts/lint-ductus-toml.sh` as part of this spec.** Spec body line 68's `(if it exists)` qualifier and the Q3 resolution both treat the lint as a separate concern. The feature works without it — malformed entries warn at runtime via stdout. Deferring keeps 025 narrow.
-- **Verbose `/ductus:status` listing of disabled files with reasons.** The dashboard is meant to be glanceable; full reasons live in `.govern.toml`. One-line callout with basenames is the AC6 contract.
+- **Verbose `/ductus:status` listing of disabled files with reasons.** The dashboard is meant to be glanceable; full reasons live in `.ductus/config.toml`. One-line callout with basenames is the AC6 contract.
 - **Auto-removing malformed disabled entries.** Same posture as malformed waivers (review.md lines 358–365): operator-authored state is not framework-collected garbage. Warn and skip; the operator cleans it up.
 
 ### Known limitations
 
-- The disabled list is consulted once per `/ductus:review` invocation, at step 5. There is no in-process rescan or hot-reload — consistent with the rest of `.govern.toml` reads in the codebase.
+- The disabled list is consulted once per `/ductus:review` invocation, at step 5. There is no in-process rescan or hot-reload — consistent with the rest of `.ductus/config.toml` reads in the codebase.
 - The no-op notice (`disabled-rule-file (no-op): ...`) depends on stack detection having produced a definite result. The existing tech-stack alignment gate (§Behavior step 4) guarantees this either via `tech-stack-verified = true` or a fresh check; if both fail the run halts before step 5, so the no-op branch is never reached without a stack.
-- Adopters who rename a rule file in their fork (e.g., `accessibility-frontend.md` → `a11y-frontend.md`) and forget to update `.govern.toml` get the `unknown disabled-rule-file` warning and the rule file stays enforced. This is the AC3 design — quiet re-enablement would be a worse failure mode.
+- Adopters who rename a rule file in their fork (e.g., `accessibility-frontend.md` → `a11y-frontend.md`) and forget to update `.ductus/config.toml` get the `unknown disabled-rule-file` warning and the rule file stays enforced. This is the AC3 design — quiet re-enablement would be a worse failure mode.

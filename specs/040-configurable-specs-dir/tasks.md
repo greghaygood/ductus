@@ -29,7 +29,7 @@ Done when: each script reads the configured root (default `specs`), and a rename
 
 ## 4. Bootstrap `/ductus` prompt, validation, and notices
 
-- [x] Add the init-time spec-root prompt (default `specs`, persisted to `.govern.toml`), confined to `/ductus`
+- [x] Add the init-time spec-root prompt (default `specs`, persisted to `.ductus/config.toml`), confined to `/ductus`
 - [x] Add blocking well-formedness validation with a clear rejection message
 - [x] Add the on-disk collision advisory (warn naming the directory; proceed on confirmation)
 - [x] Add the half-finished-rename notice

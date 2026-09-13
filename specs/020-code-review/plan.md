@@ -10,7 +10,7 @@ Implements [020 — `/ductus:review` code review command with blocking gate](spe
 
 `/ductus:review` ships as a new markdown slash-command file (`framework/commands/review.md`) following the same shape as `/ductus:analyze`, `/ductus:plan`, and the other pipeline commands — no new code, no new runtime. Each invocation is interpreted by the AI agent against the loaded rules. The blocking gate is enforced by three lightweight, mutually reinforcing edits to `framework/commands/implement.md`, `framework/commands/analyze.md`, and `framework/templates/ci/adopter-generators.yml`. Templates and the constitution are updated alongside so newly-created specs ship with the `review:` frontmatter block and the gate is documented in the pipeline section. The scenario file at `scenarios/waiver-expiry.md` captures the subtlest behavior (rule/file-anchored waiver expiry) at the situational tier.
 
-The clarify pass added three behaviors that this plan must propagate: tech-stack alignment as a hard pre-flight gate (with `.govern.toml [review] tech-stack-verified` opt-out), an empty-scope short-circuit, and cross-pass dedupe. These all live in the embedded `framework/commands/review.md` artifact in the spec; the plan's job is to ensure each shipped file picks them up correctly.
+The clarify pass added three behaviors that this plan must propagate: tech-stack alignment as a hard pre-flight gate (with `.ductus/config.toml [review] tech-stack-verified` opt-out), an empty-scope short-circuit, and cross-pass dedupe. These all live in the embedded `framework/commands/review.md` artifact in the spec; the plan's job is to ensure each shipped file picks them up correctly.
 
 ## Technical Decisions
 
@@ -30,11 +30,11 @@ Each mechanism is small and reads the same `review:` frontmatter block — addin
 
 ### Tech-stack alignment is an agent judgment, not a parser
 
-The alignment check (added during clarify) reads `AGENTS.md` `Tech Stack` and the file scope, then asks the agent whether they appear consistent. Implementation is a paragraph of natural-language instructions, not a polyglot file-extension classifier. The `.govern.toml [review] tech-stack-verified` opt-out exists precisely so adopters with unusual layouts (vendored code, polyglot repos) can bypass false negatives — the LLM judgment is the cheap path; the bypass is the escape valve.
+The alignment check (added during clarify) reads `AGENTS.md` `Tech Stack` and the file scope, then asks the agent whether they appear consistent. Implementation is a paragraph of natural-language instructions, not a polyglot file-extension classifier. The `.ductus/config.toml [review] tech-stack-verified` opt-out exists precisely so adopters with unusual layouts (vendored code, polyglot repos) can bypass false negatives — the LLM judgment is the cheap path; the bypass is the escape valve.
 
-### `.govern.toml` follows the shared-database convention
+### `.ductus/config.toml` follows the shared-database convention
 
-Per AGENTS.md (Workflow): `.govern.toml` is shared adopter-side state, not a schema owned by any one spec. The new `[review]` section with `tech-stack-verified = true` is documented in this spec's body (under Inputs and Behavior) and in the embedded `framework/commands/review.md` artifact. No signpost or edit on spec 019 is required; that policy is now codified in AGENTS.md.
+Per AGENTS.md (Workflow): `.ductus/config.toml` is shared adopter-side state, not a schema owned by any one spec. The new `[review]` section with `tech-stack-verified = true` is documented in this spec's body (under Inputs and Behavior) and in the embedded `framework/commands/review.md` artifact. No signpost or edit on spec 019 is required; that policy is now codified in AGENTS.md.
 
 ### Frontmatter `review:` block ships in templates
 
@@ -66,22 +66,22 @@ Of the 13 acceptance criteria, AC 8's waiver auto-expiry has the subtlest behavi
 | `README.md` | Edit | Add `/ductus:review` row to Pipeline (advance state) table; add Waivers subsection; update pipeline diagrams |
 | `.claude/commands/ductus/review.md` | Generated | Produced by the regeneration script — not hand-edited |
 | `specs/020-code-review/scenarios/waiver-expiry.md` | Create | Scenario capturing the rule/file-anchored waiver auto-expiry behavior |
-| `specs/020-code-review/data-model.md` | Create | Consolidate the data structures introduced (frontmatter block, review.md, waiver records, .govern.toml section) |
+| `specs/020-code-review/data-model.md` | Create | Consolidate the data structures introduced (frontmatter block, review.md, waiver records, .ductus/config.toml section) |
 
 ## Trade-offs
 
 ### Considered and rejected
 
-- **Tunable confidence threshold via `.govern.toml`** — rejected during clarify (Q2). The 80 cutoff is a framework-calibration opinion, not a project decision; tunability would let teams effectively waive the gate by raising the threshold to 100.
+- **Tunable confidence threshold via `.ductus/config.toml`** — rejected during clarify (Q2). The 80 cutoff is a framework-calibration opinion, not a project decision; tunability would let teams effectively waive the gate by raising the threshold to 100.
 - **Required `co-waived-by` field on MUST waivers** — rejected during clarify (Q4). The framework cannot enforce a "different person" guarantee; encoding the requirement in frontmatter would be performative. Adopters with two-author policy can layer fields on the open-schema waiver record and gate them in their own CI.
 - **Hash-based auto-reset of `tech-stack-verified`** — rejected during clarify (tech-stack refinement). Adds machinery for a corner case the operator can resolve with one keystroke; the flag is an efficiency optimization, not a correctness invariant.
 - **`--all` covering only `in-progress` specs** — rejected during clarify (Q1). Excluding `done` would make the blocking gate retroactively blind to MUST rules added after a feature shipped.
-- **Cross-spec signpost on spec 019 for the new `[review]` section** — rejected per AGENTS.md Workflow policy (codified during clarify): `.govern.toml` is a shared adopter-side database; new sections/keys are documented in the adding spec, not in 019.
+- **Cross-spec signpost on spec 019 for the new `[review]` section** — rejected per AGENTS.md Workflow policy (codified during clarify): `.ductus/config.toml` is a shared adopter-side database; new sections/keys are documented in the adding spec, not in 019.
 - **Running `/ductus:review` itself in CI** — rejected. Requires an AI runtime in the CI environment and turns review into an external dependency. The CI template stays as a frontmatter-state backstop; adopters run review locally.
 
 ### Known limitations
 
-- The agent-judgment tech-stack alignment will occasionally misfire on polyglot or vendored repos. Bypass via `.govern.toml [review] tech-stack-verified = true` is the documented path; documented in the blocking-error message.
+- The agent-judgment tech-stack alignment will occasionally misfire on polyglot or vendored repos. Bypass via `.ductus/config.toml [review] tech-stack-verified = true` is the documented path; documented in the blocking-error message.
 - `/ductus:review`'s output quality is the agent's output quality. There is no deterministic linter substitute. Mitigated by the loaded rule files being the authoritative source — the agent's judgment is bounded by the rules, not free-form.
 - Existing `done` specs in adopter projects (pre-`/ductus:review`) lack `review.last-run` entirely. The first `/ductus:analyze` run after adoption will flag them. This is the intended behavior — adopters re-review or waive on adoption.
 - CI gate uses awk-parsed YAML; will be replaced by a deterministic runtime check in v2 (see [§runtime-boundary](../../framework/constitution.md#runtime-boundary) once landed).

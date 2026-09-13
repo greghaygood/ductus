@@ -106,11 +106,11 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ### 15. Add migration step to `framework/bootstrap/ductus.md`
 
-- [x] Add a new section to `framework/bootstrap/ductus.md`, positioned between Project Configuration (which reads `.governance.toml`) and File Fetching, titled "Frontmatter Migration."
+- [x] Add a new section to `framework/bootstrap/ductus.md`, positioned between Project Configuration (which reads `.ductus/config.toml`) and File Fetching, titled "Frontmatter Migration."
 - [x] Step 1: run `git status --porcelain -- specs/` (project-relative). If the output is non-empty, refuse with a clear message ("Migration requires a clean working tree under `specs/`. Commit or stash your changes, then re-run.") and exit before any modifications.
 - [x] Step 2: walk `specs/**/spec.md`, `specs/**/spec-and-plan.md`, and `specs/**/scenarios/*.md`.
 - [x] Step 3: for each file, check whether the first non-blank line is `---`. If yes, skip with reason "already frontmatter." If no and bold-prefix metadata lines are present, convert: insert frontmatter block at top, remove redundant body lines.
-- [x] Step 4: for each file, also check `.governance.toml` `pinned.files`. If pinned, skip with reason "pinned."
+- [x] Step 4: for each file, also check `.ductus/config.toml` `pinned.files`. If pinned, skip with reason "pinned."
 - [x] Step 5: print a per-file summary at the end of the run (`migrated`, `skipped (already frontmatter)`, `skipped (pinned)`, `skipped (no metadata to migrate)`, `skipped (malformed metadata)`). Surface to the user.
 - [x] Added an explicit early-return when `specs/` does not exist (first run — nothing to migrate).
 - [x] Added an Edge Cases subsection covering partially-migrated files, malformed metadata, and custom open-schema fields.
@@ -124,10 +124,10 @@ These tasks may proceed in parallel within a session. Each command file is touch
 
 ### 17. Verify migration on a test fixture
 
-- [x] Created `/tmp/ductus-013-fixture/` with: `specs/000-foo/spec.md` (typical bold-prefix), `specs/000-foo/scenarios/edge-case.md` (bold-prefix `spec-ref`), `specs/001-bar/spec.md` (pinned via `.governance.toml`), `specs/002-already-migrated/spec.md` (already in frontmatter), plus a `.governance.toml` pinning `001-bar`.
+- [x] Created `/tmp/ductus-013-fixture/` with: `specs/000-foo/spec.md` (typical bold-prefix), `specs/000-foo/scenarios/edge-case.md` (bold-prefix `spec-ref`), `specs/001-bar/spec.md` (pinned via `.ductus/config.toml`), `specs/002-already-migrated/spec.md` (already in frontmatter), plus a `.ductus/config.toml` pinning `001-bar`.
 - [x] Confirmed clean-tree precheck behavior: clean → empty `git status --porcelain -- specs/` → migration proceeds; dirty → non-empty output → migration refuses.
 - [x] Walked the convert step on `000-foo/spec.md` and `000-foo/scenarios/edge-case.md`. Both produced correctly-structured frontmatter (em-dash in `spec-ref` properly quoted), bodies preserved, `# Heading` placed after the frontmatter block. Output lints clean.
-- [x] Verified pinning: `001-bar/spec.md` was untouched (matches `.governance.toml` `pinned.files`).
+- [x] Verified pinning: `001-bar/spec.md` was untouched (matches `.ductus/config.toml` `pinned.files`).
 - [x] Verified idempotency: `002-already-migrated/spec.md` starts with `---` on the first non-blank line and would be skipped per the prose.
 - [x] No rough edges discovered. The migration prose in `ductus.md` is sufficient as written.
 - [x] **Done when:** the fixture migration runs cleanly end-to-end; documented findings (if any) are incorporated. (Fixture left in `/tmp/ductus-013-fixture/` — `/tmp` clears on reboot.)

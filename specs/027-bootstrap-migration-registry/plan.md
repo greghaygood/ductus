@@ -4,7 +4,7 @@ Implements [027 — Bootstrap Migration Registry](spec.md).
 
 ## Overview
 
-The implementation consolidates two scattered sets of adopter-cleanup prose in `framework/bootstrap/ductus.md` — the `## Pre-run Migrations` section (`.governance.toml`, gitignore marker, `spec-and-plan.md`, rule-file relocation) and the `## Workflow recommendation` legacy-cleanup sub-sections (`skills/` directory, workflow filename rename) — into one registry-driven loop. Six bespoke prose blocks become six TOML entries plus six small markdown procedure files plus one consolidated bootstrap step. Sunset is delivered via a `CHANGELOG.md` at the repo root and a Family 10 audit that enforces registry/state consistency.
+The implementation consolidates two scattered sets of adopter-cleanup prose in `framework/bootstrap/ductus.md` — the `## Pre-run Migrations` section (`.ductus/config.toml`, gitignore marker, `spec-and-plan.md`, rule-file relocation) and the `## Workflow recommendation` legacy-cleanup sub-sections (`skills/` directory, workflow filename rename) — into one registry-driven loop. Six bespoke prose blocks become six TOML entries plus six small markdown procedure files plus one consolidated bootstrap step. Sunset is delivered via a `CHANGELOG.md` at the repo root and a Family 10 audit that enforces registry/state consistency.
 
 No new runtime primitive at v1 (Q11). Per-entry idempotency is preserved as an invariant: every procedure file's first action is a target-presence check that exits silently when nothing to do.
 
@@ -26,7 +26,7 @@ procedure_file = "framework/migrations/spec-and-plan-sunset.md"
 
 Field semantics:
 
-- `id` — slug, stable, lowercase-hyphenated. The `.govern.toml` `[migrations].last_applied` references this string.
+- `id` — slug, stable, lowercase-hyphenated. The `.ductus/config.toml` `[migrations].last_applied` references this string.
 - `introduced_in` — SemVer string; back-filled per `git log` for the existing six entries.
 - `sunset_after` — SemVer string or omitted. Entry expires when current ductus ≥ `sunset_after`. Omitted means "active indefinitely."
 - `summary` — one-line human-readable description used by the post-scaffolding summary line and the eventual CHANGELOG heading.
@@ -35,7 +35,7 @@ Field semantics:
 
 Ordering rule (Q3): by `introduced_in` SemVer ascending, lexicographic tie-break on `id`. File order in the TOML is not authoritative — TOML parsers don't guarantee array-of-tables order preservation across rewrites.
 
-### `.govern.toml` `[migrations]` section
+### `.ductus/config.toml` `[migrations]` section
 
 ```toml
 [migrations]
@@ -75,7 +75,7 @@ The `## Pre-run Migrations` section in `framework/bootstrap/ductus.md` (lines ~1
 ```markdown
 ## Pre-run Migrations
 
-Read `framework/migrations.toml` from the fetched archive. Read `.govern.toml`'s
+Read `framework/migrations.toml` from the fetched archive. Read `.ductus/config.toml`'s
 `[migrations].last_applied` (treat absence as null).
 
 Filter the registry to entries where:
@@ -98,14 +98,14 @@ filesystem changes.
 On confirm: for each entry in filter order:
   1. Read `framework/migrations/{id}.md` from the fetched archive.
   2. Execute its `## Procedure` steps.
-  3. Update `.govern.toml` `[migrations].last_applied = "{id}"` atomically
-     (tempfile + rename, matching existing `.govern.toml` write semantics).
+  3. Update `.ductus/config.toml` `[migrations].last_applied = "{id}"` atomically
+     (tempfile + rename, matching existing `.ductus/config.toml` write semantics).
   4. If the procedure aborts (rare — only via explicit user "stop everything"
      path inside the procedure), halt the loop. The next /ductus run resumes
      from the next-pending entry.
 ```
 
-The loop runs **before** the existing `## Workflow recommendation` section (since some legacy migrations affect workflows the recommendation flow then reads). It runs **after** the `## Project Configuration` section (so `.govern.toml` is already loaded).
+The loop runs **before** the existing `## Workflow recommendation` section (since some legacy migrations affect workflows the recommendation flow then reads). It runs **after** the `## Project Configuration` section (so `.ductus/config.toml` is already loaded).
 
 The two legacy-cleanup sub-sections inside `## Workflow recommendation` (lines 570 and 586) are deleted entirely — their work is now done by the registry-driven loop earlier in the procedure. The `enforce-manifest` invocation at line 36 keeps its other duties (slash-command manifest enforcement) but loses its legacy-cleanup roles (those move to the registry).
 
@@ -204,9 +204,9 @@ Future maintainers append archived migrations under `## Archived migrations` as 
 | `framework/migrations/skills-to-workflows.md` | Create | Procedure for `skills/` directory removal |
 | `framework/migrations/workflow-filename-rename.md` | Create | Procedure for post-005 workflow filename cleanup |
 | `framework/migrations/rule-files-relocate.md` | Create | Procedure for rule-file relocation (subsumes `configuration.md` rename) |
-| `framework/migrations/governance-config-rename.md` | Create | Procedure for `.governance.toml` → `.govern.toml` |
+| `framework/migrations/governance-config-rename.md` | Create | Procedure for `.ductus/config.toml` → `.ductus/config.toml` |
 | `framework/migrations/gitignore-marker-rename.md` | Create | Procedure for `# Governance` → `# ductus` gitignore marker |
-| `framework/bootstrap/ductus.md` | Modify | Replace `## Pre-run Migrations` section; delete two legacy-cleanup sub-sections inside `## Workflow recommendation`; add `.govern.toml` `[migrations]` section to the §Project Configuration schema |
+| `framework/bootstrap/ductus.md` | Modify | Replace `## Pre-run Migrations` section; delete two legacy-cleanup sub-sections inside `## Workflow recommendation`; add `.ductus/config.toml` `[migrations]` section to the §Project Configuration schema |
 | `scripts/audit/migration-coverage.sh` | Create | Family 10 — three static checks |
 | `scripts/audit/run-all.sh` | Modify | Append Family 10 invocation |
 | `framework/commands/audit.md` | Modify | Append step for Family 10 in the Markdown-only reference |

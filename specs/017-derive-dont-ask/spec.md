@@ -145,7 +145,7 @@ Per Q2 (twin constitutions collapsed) and Q7 (spec-deps derivation), three new g
 
 `framework/bootstrap/hooks/pre-commit` ships with the framework as an adopter-owned outer stub that calls the ductus-owned inner hook — see the post-018 signpost at the top of this spec. As delivered here it ran `gen-spec-deps.sh` from `.ductus/scripts/`; since the promotion in AC23 the derivations arrive with the acquired runtime instead, so there is nothing to scaffold, refresh, or pin.
 
-`/ductus` manages the adopter hook (see Q7 resolution for the install/update/skip behavior). Pinning is `.ductus/config.toml` `[pinned] files` — `.govern.toml` was the pre-049 name and no longer exists.
+`/ductus` manages the adopter hook (see Q7 resolution for the install/update/skip behavior). Pinning is `.ductus/config.toml` `[pinned] files`.
 
 ### CI safety net
 
@@ -174,8 +174,8 @@ Both repos run the generators in CI and fail the build on a non-empty diff. Catc
 - [x] AC19: `/analyze` runs cleanly on every existing spec (000–016) plus this spec after migration — no new findings introduced by schema changes; stale fields in done specs are silently ignored per the open-schema rule
 - [x] AC20: This spec's own frontmatter has `title:` and `tags:` removed by the final task
 - [x] AC21: `framework/bootstrap/hooks/pre-commit` ships with the framework, as did `framework/bootstrap/hooks/install.sh`, which no longer exists — spec `018-adopter-owned-pre-commit` inlined its install actions into `framework/bootstrap/ductus.md` §Hook Installation; the shipped hook calls only adopter-relevant generators (initially `gen-spec-deps.sh`)
-- [x] AC22: `/ductus` installs the adopter hook on first run when no existing hook system is detected; updates on subsequent runs; warns and skips with a manual integration snippet when an existing hook system is detected (`.githooks/pre-commit` not from `/ductus`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere); respects `.govern.toml` pinning
-- [x] AC23: `.ductus/scripts/gen-spec-deps.sh` ships to adopter projects with `update` strategy on every `/ductus` run (pinnable via `.govern.toml`); the shipped pre-commit hook references it via the project-relative path — superseded by 022-deterministic-runtime: the shell generators it names were promoted to runtime primitives, so `.ductus/scripts/` no longer exists — the derivation this criterion delivered now runs as `derive-dependencies` and `derive-references`
+- [x] AC22: `/ductus` installs the adopter hook on first run when no existing hook system is detected; updates on subsequent runs; warns and skips with a manual integration snippet when an existing hook system is detected (`.githooks/pre-commit` not from `/ductus`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere); respects `.ductus/config.toml` pinning
+- [x] AC23: `.ductus/scripts/gen-spec-deps.sh` ships to adopter projects with `update` strategy on every `/ductus` run (pinnable via `.ductus/config.toml`); the shipped pre-commit hook references it via the project-relative path — superseded by 022-deterministic-runtime: the shell generators it names were promoted to runtime primitives, so `.ductus/scripts/` no longer exists — the derivation this criterion delivered now runs as `derive-dependencies` and `derive-references`
 - [x] AC24: A CI workflow runs all generators in dry-run mode and fails the build on non-empty diff, in both this repo and (as a shipped example) adopter projects; protects against contributors or adopters whose hook was skipped or never installed
 - [x] AC25: Capturing a review finding that maps to no loaded rule does not depend on the reviewer remembering a separate step: recording it in the report is what writes it to the inbox, so the two cannot diverge and an uncaptured observation is not a reachable state
 - [x] AC26: The routing rules that decide whether work becomes a new spec, a scenario on an existing spec, or a rule-file amendment bind wherever work enters — not only when it arrives through the inbox, where `/{project}:groom`'s decision tree happens to run
@@ -199,10 +199,10 @@ Both repos run the generators in CI and fail the build on a non-empty diff. Catc
   **`/ductus` manages the adopter hook on every install/update run.** Ships `framework/bootstrap/hooks/pre-commit` and `framework/bootstrap/hooks/install.sh`. On run, detects state and acts:
 
   - No `core.hooksPath` set, no `.githooks/pre-commit` → install both, set `core.hooksPath .githooks`, report installed.
-  - `.githooks/pre-commit` exists from a prior `/ductus` run → overwrite (`update` strategy, pinnable via `.govern.toml`).
+  - `.githooks/pre-commit` exists from a prior `/ductus` run → overwrite (`update` strategy, pinnable via `.ductus/config.toml`).
   - Existing hook system detected (`.githooks/pre-commit` not from `/ductus`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere) → do not install; report a warning with a manual integration snippet; continue.
 
-  `.ductus/scripts/gen-spec-deps.sh` ships to adopters with `update` strategy so every `/ductus` run refreshes it from upstream and adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.govern.toml` `pinned.files` to opt out of overwrites. The shipped pre-commit hook calls it via the project-relative path.
+  `.ductus/scripts/gen-spec-deps.sh` ships to adopters with `update` strategy so every `/ductus` run refreshes it from upstream and adopters pick up generator fixes automatically. Adopters who have customized the script can list it in `.ductus/config.toml` `pinned.files` to opt out of overwrites. The shipped pre-commit hook calls it via the project-relative path.
 
   **CI safety net for both surfaces.** The same generators run in dry-run mode in CI; non-empty diff fails the build. Catches contributors who never installed the hook locally and adopters whose hook was skipped due to existing-hook detection.
 

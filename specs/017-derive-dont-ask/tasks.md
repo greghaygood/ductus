@@ -288,9 +288,9 @@ Done when: `framework/commands/help.md` carries all five generated-table marker 
 - [x] Sentinel-based detection of ductus-managed hooks via `# managed-by: ductus` comment
 - [x] Add `framework/rules/configuration-cross.md` → `specs/rules/configuration-cross.md` to update-strategy manifest
 - [x] Add `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` to update-strategy manifest (subject to detection)
-- [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to update-strategy manifest (pinnable via `.govern.toml`)
+- [x] Add `scripts/gen-spec-deps.sh` → `scripts/gen-spec-deps.sh` to update-strategy manifest (pinnable via `.ductus/config.toml`)
 - [x] Document manual integration snippet for adopters with existing hook systems
-- [x] Document `.govern.toml` pinning for the hook file
+- [x] Document `.ductus/config.toml` pinning for the hook file
 - [x] Update Post-Scaffolding Output to include hook installation status line
 - [x] Lint passes
 

@@ -16,7 +16,7 @@ Modeled on `configuration-cross.md` (the closest sibling: `-cross.md` suffix, do
 
 - **Header.** `# Code Quality Rules` + an intro paragraph stating the discipline is cross-cutting (applies to every stack); the RFC 2119 note; the ID-format / category declaration line (per the 016 per-file category-declaration policy) —
   `Rule IDs follow the format \`QUAL-{CATEGORY}-{NNN}\` and are permanent … Categories: \`STUB\` (silent stubs). See \`specs/036-quality-cross-rules/data-model.md\` for the \`QUAL\` surface and \`specs/008-security-rules/data-model.md\` for the full rule schema.`
-- **Pin note** adapted for a cross file: cross-cutting files always apply (never surface-filtered), so the note is the standard "pin in `.govern.toml` `[pinned]` if you customize it," not a "projects without X can exclude it" note.
+- **Pin note** adapted for a cross file: cross-cutting files always apply (never surface-filtered), so the note is the standard "pin in `.ductus/config.toml` `[pinned]` if you customize it," not a "projects without X can exclude it" note.
 - **Category section** `## QUAL-STUB — Silent stubs` containing the one rule.
 - **`### QUAL-STUB-001`** (MUST — per the clarify resolution):
   - **Statement:** *Partial or unimplemented code paths MUST fail loudly (panic / explicit error / failing test fixture) rather than silently pass through. Stubs that return zero values, no-op middleware that returns `next` unchanged, handlers that return early without an error, and methods that return `nil, nil` are forbidden when the surrounding contract implies the path performs work.*

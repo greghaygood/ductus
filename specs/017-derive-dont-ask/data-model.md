@@ -168,7 +168,7 @@ The shipped adopter pre-commit hook contains a single sentinel line near the top
 
 `/ductus`'s hook-installation logic uses the presence of this sentinel to distinguish a ductus-installed hook from a hand-rolled one. When the sentinel is present, `/ductus` treats the file as `update`-strategy and overwrites it on subsequent runs (subject to `.ductus/config.toml` `[pinned] files`). When the sentinel is absent, `/ductus` skips installation and warns the user.
 
-**Post-018:** the sentinel still exists and still decides this, but it moved with the ownership split described in the signpost at the top of `spec.md`. `018-adopter-owned-pre-commit` made `framework/bootstrap/hooks/pre-commit` an adopter-owned `create`-strategy outer stub carrying **no** sentinel, and put the ductus-owned orchestration in `.githooks/ductus-pre-commit`, which carries `# managed-by: ductus` on line 2. `/ductus` also reads that line to recognize a spec-017-era hook and migrate it. Pinning is `.ductus/config.toml` — `.govern.toml` was the pre-049 name.
+**Post-018:** the sentinel still exists and still decides this, but it moved with the ownership split described in the signpost at the top of `spec.md`. `018-adopter-owned-pre-commit` made `framework/bootstrap/hooks/pre-commit` an adopter-owned `create`-strategy outer stub carrying **no** sentinel, and put the ductus-owned orchestration in `.githooks/ductus-pre-commit`, which carries `# managed-by: ductus` on line 2. `/ductus` also reads that line to recognize a spec-017-era hook and migrate it. Pinning is `.ductus/config.toml`.
 
 ## File extension and shebang conventions
 

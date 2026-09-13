@@ -120,7 +120,7 @@ These files use native paths and formats for the target CLI:
 | Slash commands | `.claude/commands/{project}/*.md` | `.augment/commands/{project}/*.md` |
 | Rules file | `CLAUDE.md` (from `templates/claude-md.md`) | `CLAUDE.md` (Auggie reads it natively) |
 
-Slash command templates use a `{cli-config-dir}` placeholder for CLI-specific paths. The ductus command resolves this placeholder to the target CLI's native directory (`.claude` or `.augment`) during copy. Session state is not in this table — post-0.10.0 it lives at the repo-root `.govern.session.toml` and is host-agnostic.
+Slash command templates use a `{cli-config-dir}` placeholder for CLI-specific paths. The ductus command resolves this placeholder to the target CLI's native directory (`.claude` or `.augment`) during copy. Session state is not in this table — post-0.10.0 it lives at the repo-root `.ductus/session.toml` and is host-agnostic.
 
 ### Files with conflict handling
 

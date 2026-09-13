@@ -22,7 +22,7 @@ Swapping to the new instructions mid-run is not feasible — slash commands cann
 - After **Archive fetch and extract** completes and before any other manifest pass (no shared files written, no per-agent scaffolding, no security audit, no frontmatter migration), `/ductus` runs a self-update pre-check.
 - For each selected agent, compare the extracted `{tempdir}/ductus-main/framework/bootstrap/ductus.md` against the installed `{config_dir}/commands/ductus.md`:
   - If the installed file does not exist (first run for this agent), record "no installed copy" and continue — nothing to diverge from.
-  - Byte-compare the two files. Identical → record "current". Different → record "stale" if the file is not pinned, or "pinned-divergent" if `{config_dir}/commands/ductus.md` is listed in `.governance.toml` `pinned.files`. A pinned file that matches upstream is recorded as "current" (the pin had nothing to suppress this run).
+  - Byte-compare the two files. Identical → record "current". Different → record "stale" if the file is not pinned, or "pinned-divergent" if `{config_dir}/commands/ductus.md` is listed in `.ductus/config.toml` `pinned.files`. A pinned file that matches upstream is recorded as "current" (the pin had nothing to suppress this run).
 - "pinned-divergent" never triggers the abort — pinning is an opt-out from automatic updates. It produces a single advisory line in the post-scaffolding output: `{agent}: ductus.md pinned, upstream has changed`. The line appears only on runs where the pinned file actually differs from upstream; it stays silent on runs where the pinned version happens to match.
 - If any selected agent is recorded as "stale", abort the run before any further work. Print:
 
