@@ -13,12 +13,17 @@ review:
   blocking: false
 next-criterion: 14
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T13:14:33Z
+  analyzed-against: 4968a448cae8ec3222e63c2e53157fe1c89fdf92
   hard-fail: 0
   blocking-findings: 0
-  advisory: 2
+  advisory: 0
   unexamined: 7
+  analyzed-digest:
+    plan.md: ea8d8d62a9e496e3bcc2017466343bad29869e348a26d62cb7a2bd8151eb3288
+    review.md: b8285de8e6fa5286b628bbfc2cc62499b156568b63cf22bd33a2754813770cea
+    spec.md: 842dc5beac923ee62d58bcf6a7d5472bb20cfca3c1fb1b8db92116328fa19de3
+    tasks.md: 0b74cae6c34b594697a70c707ea58dcc79fc5c83012e71c62eb045ce763d67da
   unexamined-by-reason:
     not-a-live-claim: 6
     ships-to-adopter: 1
