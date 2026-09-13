@@ -2,11 +2,15 @@
 status: in-progress
 dependencies: [041-task-pruning]
 review:
-  last-run: 2026-08-31T00:00:00Z
-  reviewed-against: 88b2fad2f7d1b73c9294c1e1e3943b2e1dc3300e
+  last-run: 2026-09-13T14:34:46Z
+  reviewed-against: 8c01d6f58ba65d6218e43301e8a384237fa49c3b
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 9
+  scope: 9
+  reviewed-digest:
+    scenarios/stranded-session-after-removal.md: 4883250ac10f3dfad056127377b33924382c3e8fb5487e212fc1e2ccbb57b0e0
   blocking: false
 next-criterion: 46
 analyze:
