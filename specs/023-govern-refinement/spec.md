@@ -49,7 +49,7 @@ Consolidate the slash command surface so the pipeline feels less like a framewor
 ### 1. Lightweight track removed
 
 - Delete `framework/templates/spec/spec-and-plan.md`.
-- Delete §lightweight-track from `framework/constitution.md`.
+- Delete the `lightweight-track` section from `framework/constitution.md`.
 - Remove the "check for `spec.md` first, then `spec-and-plan.md`" fallback in every command that performs that detection.
 - Drop the four qualifying questions from `/specify`.
 
@@ -118,7 +118,7 @@ The list is sourced from `framework/runtime-tools.txt` to avoid drift. Each tool
 
 - [x] AC1: `framework/templates/spec/spec-and-plan.md` is deleted.
 - [x] AC2: `framework/constitution.md` no longer contains §lightweight-track and no longer references `spec-and-plan.md` in any section.
-- [x] AC3: `framework/constitution.md` references no deleted verbs (`/capture`, `/elaborate`) anywhere in its body. Every prior mention is rewritten to the post-consolidation verb (`/specify` for `/capture`; `/amend` for `/elaborate`). Sections known to require sweeping: §spec-lifecycle (back-edge ownership), §three-cycles (Brownfield and Reopen cycles), §scenario-promotion, §brownfield-process (intro, Capture phase, Inbox integration), §runtime-boundary (semantic-judgment example list).
+- [x] AC3: `framework/constitution.md` references no deleted verbs (`/capture`, `/elaborate`) anywhere in its body. Every prior mention is rewritten to the post-consolidation verb (`/specify` for `/capture`; `/amend` for `/elaborate`). Sections known to require sweeping: §spec-lifecycle (back-edge ownership), the three-cycles subsection (Brownfield and Reopen cycles), §scenario-promotion, §brownfield-process (intro, Capture phase, Inbox integration), §runtime-boundary (semantic-judgment example list).
 - [x] AC4: `framework/commands/capture.md` is deleted; `.claude/commands/ductus/capture.md` is regenerated as deleted.
 - [x] AC5: `framework/commands/elaborate.md` is deleted; `.claude/commands/ductus/elaborate.md` is regenerated as deleted.
 - [x] AC6: `framework/commands/specify.md` no longer prompts qualifying questions and always copies the `spec.md` template.

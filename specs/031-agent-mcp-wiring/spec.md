@@ -96,7 +96,7 @@ target (which Auggie does not read) and Antigravity gets a project-local
   adoptions. For Antigravity, the `.agents/mcp_config.json` write is **retained pending
   live-CLI verification**; if project-local loading is confirmed broken, the target moves
   to home-level `~/.gemini/config/mcp_config.json` (surfaced per the posture decision).
-- **§Derived values and §MCP wiring document the correct per-agent target and scope**, and
+- **`framework/bootstrap/ductus.md` §Derived values and §MCP wiring document the correct per-agent target and scope**, and
   the State-B auto-wire from
   [029-bootstrap-runtime-autowire](../029-bootstrap-runtime-autowire/spec.md) is updated
   so that, for an agent whose MCP config is user-global/home-level, it does the correct
@@ -118,7 +118,7 @@ the instruction for the user to run.
 
 ## Acceptance Criteria
 
-- [x] AC1: The Agent Registry / §Derived values no longer state that Auggie's MCP-wiring file
+- [x] AC1: `framework/bootstrap/ductus.md`'s Agent Registry / §Derived values no longer state that Auggie's MCP-wiring file
       is repo-root `.mcp.json`.
 - [x] AC2: The Antigravity MCP target in the registry reflects a **verification against the
       live `agy` CLI**: home-level `~/.gemini/config/mcp_config.json` if project-local
@@ -169,7 +169,7 @@ Question below). Listing it here records the linkage without expanding this spec
   `~/.augment/` or `~/.gemini/`, nor shell out to the agent's CLI on the user's behalf.
   Rationale: only this option keeps ductus from mutating global state outside the repo
   (a posture change from every other write it makes), it avoids depending on each agent
-  having a registration subcommand, and it satisfies the §Design-Principles
+  having a registration subcommand, and it satisfies `AGENTS.md` §Design Principles'
   "no dependence on human diligence" filter because the action is reduced to a single
   copy-paste. The home-level config is project-agnostic (`ductus mcp` operates on the
   working directory), so the user runs it **once per machine**, not once per project. The

@@ -97,8 +97,9 @@ Two structural facts drive the design:
 OpenCode diverges from both existing layouts — a single committed JSON config
 spanning MCP + permissions, namespaced `command/{project}/<name>.md` commands, AGENTS.md native
 reading, project-committed MCP — so it is **not** a `claude-style` one-row append.
-It introduces a new `layout` value (`opencode`) with its own branches in §Derived
-values, §Per-Agent Scaffolding, and §Permission Setup, plus a per-agent MCP
+It introduces a new `layout` value (`opencode`) with its own branches in
+`framework/bootstrap/ductus.md` §Derived values, its §Per-Agent Scaffolding and
+`framework/bootstrap/ductus.md` §Permission Setup, plus a per-agent MCP
 descriptor row. These become registry-derived values:
 
 - **Command location & invocation** — `.opencode/command/{project}/<name>.md`
