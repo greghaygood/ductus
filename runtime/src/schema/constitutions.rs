@@ -5,14 +5,53 @@
 //! instead of retyping them. The registry mirrors [`crate::schema::services`]
 //! deliberately: `repo` is identity and navigation only and is **never
 //! fetched**, and the local `path` is the only state read. This module is the
-//! pure shape plus parser; file IO and outcome classification live in the
+//! pure shape, its parser, and the value validation the registry's schema
+//! declares; file IO and outcome classification live in the
 //! `resolve-constitutions` primitive.
 //!
-//! Schema is canonical in `specs/055-shared-constitution/data-model.md`.
+//! **Validation runs inside [`Constitutions::from_toml_str`], not beside it.**
+//! A separate `validate()` a caller had to remember to invoke would be the
+//! diligence dependency the constitution's §design-principles rejects — and
+//! the failure would be silent, since an unvalidated registry resolves
+//! perfectly well and simply answers wrongly. Routing it through the one
+//! constructor makes a `Constitutions` built from a config document validated
+//! by construction.
+//!
+//! Schema is canonical in `specs/055-shared-constitution/data-model.md`; the
+//! severities are canonical in `framework/bootstrap/ductus.md` §Validating the
+//! registry, which this module mirrors rather than restates.
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
+
+/// Why the `[constitutions]` registry could not be read.
+///
+/// Two kinds, kept apart because a caller renders them differently and they
+/// are different operator mistakes. A [`Self::Parse`] failure is a document
+/// that is not TOML, or an entry missing a required field — serde's message
+/// already locates it. A [`Self::Invalid`] failure is an entry that parsed
+/// cleanly and carries a value the registry's schema forbids, so nothing but
+/// this check would ever name it.
+#[derive(Debug, thiserror::Error)]
+pub enum ConstitutionsError {
+    /// The config document is not valid TOML, or an entry omits `repo` or
+    /// `path`. Carried through verbatim so the caller can attach the path.
+    #[error(transparent)]
+    Parse(#[from] toml::de::Error),
+    /// An entry parsed but holds a value the schema forbids. Names the alias
+    /// and the field, which is what `framework/bootstrap/ductus.md`
+    /// §Validating the registry requires of the halt.
+    #[error("[constitutions.{alias}] `{field}` {reason}")]
+    Invalid {
+        /// The offending entry's registry alias, verbatim.
+        alias: String,
+        /// Which field was rejected — `alias`, `repo`, or `path`.
+        field: String,
+        /// One-line description of why, phrased to follow the field name.
+        reason: String,
+    },
+}
 
 /// One `[constitutions.<alias>]` entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,11 +104,67 @@ impl Constitutions {
     ///
     /// # Errors
     ///
-    /// Returns the underlying [`toml::de::Error`] when the document is not
-    /// valid TOML or an entry is missing a required field.
-    pub fn from_toml_str(content: &str) -> std::result::Result<Self, toml::de::Error> {
+    /// Returns [`ConstitutionsError::Parse`] when the document is not valid
+    /// TOML or an entry is missing a required field, and
+    /// [`ConstitutionsError::Invalid`] when an entry parses but carries a
+    /// value the registry's schema forbids — see [`Self::validate`].
+    pub fn from_toml_str(content: &str) -> std::result::Result<Self, ConstitutionsError> {
         let parsed: ConstitutionsConfig = toml::from_str(content)?;
-        Ok(Self(parsed.constitutions))
+        let registry = Self(parsed.constitutions);
+        registry.validate()?;
+        Ok(registry)
+    }
+
+    /// Check every entry's values against the registry's declared schema,
+    /// returning the **first** violation in a deterministic order: entries in
+    /// alias order, and within an entry `alias`, then `repo`, then `path`.
+    /// One message rather than a list, because a malformed entry halts — the
+    /// operator fixes it and re-runs, and the next violation surfaces then.
+    ///
+    /// Scope is exactly what `framework/bootstrap/ductus.md` §Validating the
+    /// registry declares malformed, and deliberately **nothing else**. In
+    /// particular a `path` that does not *resolve* is not checked here: that
+    /// is the `not-checked-out` state, which warns rather than halting,
+    /// because it is a machine-local condition that is correct for any
+    /// contributor who has not cloned the governance repository yet. The
+    /// asymmetry is the point — a malformed entry is a mistake in the
+    /// project's own committed config and is always wrong, while an
+    /// unresolved checkout is not. Validation is therefore pure value
+    /// inspection and touches no filesystem.
+    fn validate(&self) -> std::result::Result<(), ConstitutionsError> {
+        for (alias, entry) in &self.0 {
+            if !is_bare_toml_key(alias) {
+                return Err(ConstitutionsError::Invalid {
+                    alias: alias.clone(),
+                    field: "alias".to_string(),
+                    reason: "is not a bare TOML key: letters, digits, hyphens and underscores \
+                             only, with no whitespace, dots or quotes"
+                        .to_string(),
+                });
+            }
+            if !is_url_shaped(&entry.repo) {
+                return Err(ConstitutionsError::Invalid {
+                    alias: alias.clone(),
+                    field: "repo".to_string(),
+                    reason: format!(
+                        "is not URL-shaped: a scheme and a host are required, found {:?} \
+                         (e.g. https://github.com/acme/governance)",
+                        entry.repo
+                    ),
+                });
+            }
+            if entry.path.trim().is_empty() {
+                return Err(ConstitutionsError::Invalid {
+                    alias: alias.clone(),
+                    field: "path".to_string(),
+                    reason: "is empty: it names the local checkout directory, and an empty \
+                             value resolves to the repository root, which then reports the \
+                             operator's own config mistake as a missing document"
+                        .to_string(),
+                });
+            }
+        }
+        Ok(())
     }
 
     /// True when no constitutions are registered.
@@ -104,6 +199,69 @@ impl Constitutions {
             })
             .collect()
     }
+}
+
+/// True when `alias` is spellable as a bare TOML key.
+///
+/// TOML's bare-key grammar is ASCII letters, digits, hyphens and underscores,
+/// which is exactly what the registry's schema declares. A quoted key
+/// (`[constitutions."my org"]`, `[constitutions."a.b"]`) parses fine and lands
+/// here carrying whitespace, a dot, or anything else — legal TOML, and not a
+/// legal alias, because the alias is what every report names the source by and
+/// a quoted one reads as two fields in a single-line report.
+///
+/// Empty is rejected: `[constitutions.""]` is a key nothing can refer to.
+fn is_bare_toml_key(alias: &str) -> bool {
+    !alias.is_empty()
+        && alias
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
+
+/// True when `repo` is URL-shaped — a scheme and a host, which is the whole
+/// requirement the schema states.
+///
+/// Shape only, never reachability: `repo` is identity and navigation and is
+/// **never fetched**, so there is nothing to resolve and nothing that could
+/// fail at a distance. The check is a scheme per RFC 3986
+/// (`ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )`), the `://` separator, and a
+/// non-empty host in the authority once any `userinfo@` prefix and `:port`
+/// suffix are removed — so `https://:8080/x`, which names a port and no host,
+/// is rejected rather than passing on a non-empty authority.
+///
+/// An scp-style git address (`git@github.com:acme/gov.git`) has no scheme and
+/// is therefore rejected. That is the schema as declared, not an oversight:
+/// the URL form (`ssh://git@github.com/acme/gov.git`) says the same thing and
+/// is navigable, which is the field's only job.
+fn is_url_shaped(repo: &str) -> bool {
+    let Some((scheme, rest)) = repo.split_once("://") else {
+        return false;
+    };
+    let mut scheme_chars = scheme.chars();
+    if !scheme_chars.next().is_some_and(|c| c.is_ascii_alphabetic()) {
+        return false;
+    }
+    if !scheme_chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.')) {
+        return false;
+    }
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    // `userinfo@host` — split at the LAST `@`, since userinfo may contain one.
+    let after_userinfo = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, host)| host);
+    // `host:port` — only when what follows the last colon is all digits, which
+    // leaves a bracketed IPv6 literal (`[::1]`) intact rather than truncating
+    // it at one of its own colons.
+    let host = after_userinfo
+        .rsplit_once(':')
+        .map_or(after_userinfo, |(host, port)| {
+            if !port.is_empty() && port.chars().all(|c| c.is_ascii_digit()) {
+                host
+            } else {
+                after_userinfo
+            }
+        });
+    !host.is_empty()
 }
 
 #[cfg(test)]
@@ -227,6 +385,140 @@ path = "../platform-governance"
         // `path` omitted — a malformed entry surfaces as a parse error rather
         // than a silently half-resolved entry.
         let toml = "[constitutions.acme]\nrepo = \"https://github.com/acme/governance\"\n";
-        assert!(Constitutions::from_toml_str(toml).is_err());
+        let err = Constitutions::from_toml_str(toml).expect_err("missing path");
+        assert!(
+            matches!(err, ConstitutionsError::Parse(_)),
+            "an omitted field is serde's to report, not the value check's: {err}"
+        );
+    }
+
+    /// Reduce a rejection to `(alias, field)` so a test asserts what the halt
+    /// names rather than how it is worded.
+    fn reject(toml: &str) -> (String, String) {
+        match Constitutions::from_toml_str(toml).expect_err("entry should be rejected") {
+            ConstitutionsError::Invalid { alias, field, .. } => (alias, field),
+            ConstitutionsError::Parse(err) => {
+                panic!("expected a value rejection, got a parse error: {err}")
+            }
+        }
+    }
+
+    /// The first half of the bug reproduced against `ductus-v0.49.2`:
+    /// `repo = "not-a-url-at-all"` resolved `loaded` with no complaint.
+    #[test]
+    fn a_repo_that_is_not_url_shaped_is_rejected() {
+        let toml = "[constitutions.acme]\nrepo = \"not-a-url-at-all\"\npath = \"../gov\"\n";
+        assert_eq!(reject(toml), ("acme".to_string(), "repo".to_string()));
+    }
+
+    /// The second half: `path = ""` resolved to the repository root and was
+    /// reported `no-constitution-document` — a confidently wrong reason,
+    /// naming the operator's checkout when the mistake is in their config.
+    #[test]
+    fn an_empty_path_is_rejected() {
+        let toml = "[constitutions.acme]\nrepo = \"https://example.test/g\"\npath = \"\"\n";
+        assert_eq!(reject(toml), ("acme".to_string(), "path".to_string()));
+    }
+
+    /// Whitespace-only is empty for this check. It is the same operator
+    /// mistake, and `framework/bootstrap/ductus.md` §Validating the registry
+    /// says so in as many words rather than leaving it to be inferred.
+    #[test]
+    fn a_whitespace_only_path_is_rejected() {
+        let toml = "[constitutions.acme]\nrepo = \"https://example.test/g\"\npath = \"   \"\n";
+        assert_eq!(reject(toml), ("acme".to_string(), "path".to_string()));
+    }
+
+    /// A quoted key is legal TOML and lands here carrying whitespace. The
+    /// alias is what every report names the source by, so one carrying a space
+    /// reads as two fields in a single-line report.
+    #[test]
+    fn a_quoted_alias_is_rejected_when_it_is_not_a_bare_key() {
+        for alias in [r#""my org""#, r#""a.b""#, r#""acme!""#, r#""""#] {
+            let toml = format!(
+                "[constitutions.{alias}]\nrepo = \"https://example.test/g\"\npath = \"../gov\"\n"
+            );
+            let (_, field) = reject(&toml);
+            assert_eq!(field, "alias", "alias {alias} should be rejected");
+        }
+    }
+
+    /// Hyphens and underscores are bare-key characters and stay accepted —
+    /// the check refuses what TOML would have to quote, nothing more.
+    #[test]
+    fn a_bare_alias_with_hyphens_and_underscores_is_accepted() {
+        let toml = "[constitutions.acme-platform_2]\n\
+                    repo = \"https://example.test/g\"\npath = \"../gov\"\n";
+        let registry = Constitutions::from_toml_str(toml).expect("bare key accepted");
+        assert!(registry.0.contains_key("acme-platform_2"));
+    }
+
+    /// The asymmetry the whole feature turns on: validation is pure value
+    /// inspection, so a `path` that does not resolve parses fine and stays the
+    /// warning-level `not-checked-out` state the primitive reports.
+    #[test]
+    fn a_path_that_does_not_resolve_is_not_a_validation_failure() {
+        let toml = "[constitutions.acme]\n\
+                    repo = \"https://example.test/g\"\npath = \"../nowhere-at-all\"\n";
+        assert!(Constitutions::from_toml_str(toml).is_ok());
+    }
+
+    #[test]
+    fn url_shape_accepts_a_scheme_and_a_host() {
+        for repo in [
+            "https://github.com/acme/governance",
+            "http://example.test",
+            "ssh://git@github.com/acme/gov.git",
+            "git+ssh://git@example.test/g",
+            "https://user:pw@example.test:8443/g",
+            "https://[::1]:8080/g",
+            "https://[::1]/g",
+            "file://localhost/srv/gov",
+        ] {
+            assert!(is_url_shaped(repo), "{repo} is URL-shaped");
+        }
+    }
+
+    #[test]
+    fn url_shape_rejects_what_has_no_scheme_or_no_host() {
+        for repo in [
+            "not-a-url-at-all",
+            "",
+            "github.com/acme/governance",
+            // scp-style git: no scheme. The URL form says the same thing.
+            "git@github.com:acme/gov.git",
+            "://example.test",
+            "1http://example.test",
+            "https://",
+            "https:///acme/gov",
+            // a port and no host
+            "https://:8080/g",
+        ] {
+            assert!(!is_url_shaped(repo), "{repo} is not URL-shaped");
+        }
+    }
+
+    /// One message, not a list — a malformed entry halts, so the operator
+    /// fixes it and re-runs. Which one is reported must therefore be stable:
+    /// alias order, and `alias` before `repo` before `path` within an entry.
+    #[test]
+    fn the_first_violation_is_reported_in_alias_order() {
+        let toml = "[constitutions.zulu]\nrepo = \"nope\"\npath = \"../z\"\n\
+                    [constitutions.alpha]\nrepo = \"also-nope\"\npath = \"../a\"\n";
+        assert_eq!(reject(toml).0, "alpha", "alias order, not document order");
+    }
+
+    #[test]
+    fn a_rejection_names_the_alias_and_the_field_in_its_message() {
+        let toml = "[constitutions.acme]\nrepo = \"not-a-url-at-all\"\npath = \"../gov\"\n";
+        let message = Constitutions::from_toml_str(toml)
+            .expect_err("rejected")
+            .to_string();
+        assert!(message.contains("acme"), "names the alias: {message}");
+        assert!(message.contains("repo"), "names the field: {message}");
+        assert!(
+            message.contains("not-a-url-at-all"),
+            "quotes the offending value: {message}"
+        );
     }
 }

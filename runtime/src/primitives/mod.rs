@@ -492,6 +492,29 @@ pub enum PrimitiveError {
         /// Human-readable description of the actual type found.
         got: String,
     },
+    /// A `[constitutions.<alias>]` entry parsed but carries a value the
+    /// registry's schema forbids (spec 055).
+    ///
+    /// Distinct from [`PrimitiveError::Toml`], which covers a document that
+    /// will not parse: this entry *did* parse, so nothing but the value check
+    /// would ever name it. Raised rather than reported as an outcome because
+    /// `framework/bootstrap/ductus.md` §Validating the registry makes it a
+    /// halt per `CFG-ENV-003` — a malformed entry is a mistake in the
+    /// project's own committed config and is always wrong, unlike an
+    /// unresolved checkout, which stays the warning-level `not-checked-out`
+    /// state. The asymmetry is the whole point; collapsing the two would tell
+    /// an operator to clone a repository when the mistake is in their config.
+    #[error("invalid entry in {path}: [constitutions.{alias}] `{field}` {reason}")]
+    InvalidConstitutionEntry {
+        /// Path of the config file carrying the offending entry.
+        path: PathBuf,
+        /// `[constitutions.<alias>]` — the offending entry, verbatim.
+        alias: String,
+        /// Which field was rejected — `alias`, `repo`, or `path`.
+        field: String,
+        /// One-line description of why, phrased to follow the field name.
+        reason: String,
+    },
 }
 
 /// Convenience alias for primitive return values.

@@ -12,6 +12,17 @@
 //! already settled that a missing checkout is a state rather than a config
 //! error, and reusing that path keeps the two registries legible to each other.
 //!
+//! **A malformed entry halts; an unresolved checkout warns.** The two are
+//! deliberately different severities, stated once in
+//! `framework/bootstrap/ductus.md` §Validating the registry and mirrored here
+//! rather than restated: a malformed entry is a mistake in the project's own
+//! committed config and is always wrong, while a `path` that does not resolve
+//! is a machine-local state that is correct for any contributor who has not
+//! cloned the governance repository yet — blocking on it would make the
+//! pipeline a hard dependency on someone else's repo state. The value checks
+//! themselves live in [`crate::schema::constitutions`], inside the parser, so
+//! no caller can obtain an unvalidated registry.
+//!
 //! Results split into `loaded` and `skipped` rather than returning only what
 //! worked. That is `QUAL-CLAIM-001` at the primitive layer: a caller reporting
 //! a clean result over a source in `skipped` has to drop a field it was handed,
@@ -22,7 +33,7 @@
 use std::path::Path;
 
 use crate::primitives::{PrimitiveError, Result, read_text, rel_path, resolve_path};
-use crate::schema::constitutions::Constitutions;
+use crate::schema::constitutions::{Constitutions, ConstitutionsError};
 use crate::schema::paths;
 use crate::schema::primitives::{
     ConstitutionOutcome, ConstitutionRecord, DuplicateConstitutionPath, ResolveConstitutionsArgs,
@@ -39,9 +50,11 @@ const DOCUMENT_NAME: &str = "constitution.md";
 /// # Errors
 ///
 /// Returns [`PrimitiveError::Toml`] when the project config is present but
-/// malformed, or [`PrimitiveError::Io`] when it exists and cannot be read.
-/// Per-entry resolution failures are outcomes, not errors — an absent checkout
-/// is a state this primitive reports, never a condition it fails on.
+/// will not parse, [`PrimitiveError::InvalidConstitutionEntry`] when an entry
+/// parses but carries a value the schema forbids, or [`PrimitiveError::Io`]
+/// when the config exists and cannot be read. Per-entry *resolution* failures
+/// are outcomes, not errors — an absent checkout is a state this primitive
+/// reports, never a condition it fails on.
 pub fn run(_args: &ResolveConstitutionsArgs, repo: &Path) -> Result<ResolveConstitutionsResult> {
     let registry = load_constitutions(repo)?;
 
@@ -87,15 +100,33 @@ pub fn run(_args: &ResolveConstitutionsArgs, repo: &Path) -> Result<ResolveConst
 /// An absent file and an absent table both yield an empty registry, which is
 /// what makes AC1 true by construction: nothing downstream can distinguish
 /// "no config" from "no entries", so neither can produce a different behavior.
+///
+/// The two failure kinds are kept apart on the way out. A document that will
+/// not parse is [`PrimitiveError::Toml`], whose message is serde's; an entry
+/// that parsed and holds a forbidden value is
+/// [`PrimitiveError::InvalidConstitutionEntry`], which names the alias and the
+/// field because nothing else in the run ever will.
 fn load_constitutions(repo: &Path) -> Result<Constitutions> {
     let toml_path = paths::config_path(repo);
     if !toml_path.exists() {
         return Ok(Constitutions::default());
     }
     let content = read_text(&toml_path)?;
-    Constitutions::from_toml_str(&content).map_err(|source| PrimitiveError::Toml {
-        path: toml_path,
-        source,
+    Constitutions::from_toml_str(&content).map_err(|source| match source {
+        ConstitutionsError::Parse(source) => PrimitiveError::Toml {
+            path: toml_path,
+            source,
+        },
+        ConstitutionsError::Invalid {
+            alias,
+            field,
+            reason,
+        } => PrimitiveError::InvalidConstitutionEntry {
+            path: toml_path,
+            alias,
+            field,
+            reason,
+        },
     })
 }
 
@@ -402,5 +433,94 @@ mod tests {
             "[constitutions.acme]\nrepo = \"https://example.test/g\"\n",
         ));
         assert!(run(&ResolveConstitutionsArgs {}, dir.path()).is_err());
+    }
+
+    /// The bug this validation closes, first half. Reproduced against the
+    /// `ductus-v0.49.2` release binary: with a resolvable checkout, a `repo`
+    /// that is not a URL resolved `loaded` with no complaint at all, so the
+    /// operator had nothing to read and nothing to fix.
+    #[test]
+    fn a_repo_that_is_not_url_shaped_halts_instead_of_resolving_loaded() {
+        let dir = repo_with_config(Some(
+            "[constitutions.acme]\nrepo = \"not-a-url-at-all\"\npath = \"gov\"\n",
+        ));
+        let checkout = dir.path().join("gov");
+        fs::create_dir_all(&checkout).unwrap();
+        fs::write(checkout.join("constitution.md"), "# House rules\n").unwrap();
+
+        let err = run(&ResolveConstitutionsArgs {}, dir.path()).expect_err("halts");
+        assert!(
+            matches!(
+                &err,
+                PrimitiveError::InvalidConstitutionEntry { alias, field, .. }
+                    if alias == "acme" && field == "repo"
+            ),
+            "names the offending alias and field: {err}"
+        );
+    }
+
+    /// Second half, and the worse one. `path = ""` resolved to the repository
+    /// root — which exists and holds no `constitution.md` — so the run
+    /// reported `no-constitution-document`: a **confidently wrong** reason,
+    /// telling the operator their checkout lacks the document when the real
+    /// mistake is an empty path in their own config. That is the exact
+    /// conflation 055's Edge Cases forbid between the two failure states.
+    #[test]
+    fn an_empty_path_halts_instead_of_blaming_the_checkout() {
+        let dir = repo_with_config(Some(
+            "[constitutions.acme]\nrepo = \"https://example.test/g\"\npath = \"\"\n",
+        ));
+        let err = run(&ResolveConstitutionsArgs {}, dir.path()).expect_err("halts");
+        let PrimitiveError::InvalidConstitutionEntry { alias, field, .. } = &err else {
+            panic!("expected a value rejection, got: {err}");
+        };
+        assert_eq!((alias.as_str(), field.as_str()), ("acme", "path"));
+    }
+
+    /// The asymmetry, asserted rather than assumed: a `path` that does not
+    /// **resolve** must stay a warning, because it is a machine-local state
+    /// that is correct for a contributor who has not cloned the governance
+    /// repository yet. Blocking on it would make the pipeline a hard
+    /// dependency on someone else's repo state.
+    #[test]
+    fn a_path_that_does_not_resolve_still_only_warns() {
+        let dir = repo_with_config(Some(
+            "[constitutions.acme]\n\
+             repo = \"https://example.test/g\"\npath = \"../nowhere-at-all\"\n",
+        ));
+        let result = run_in(&dir);
+        assert_eq!(result.examined, 1);
+        assert_eq!(
+            result.skipped[0].outcome,
+            ConstitutionOutcome::NotCheckedOut,
+            "an unresolved checkout is a state, never a config error"
+        );
+    }
+
+    /// A quoted alias is legal TOML and reaches the registry carrying
+    /// whitespace; the alias is what every report names the source by.
+    #[test]
+    fn an_alias_that_is_not_a_bare_toml_key_halts() {
+        let dir = repo_with_config(Some(
+            "[constitutions.\"my org\"]\nrepo = \"https://example.test/g\"\npath = \"gov\"\n",
+        ));
+        let err = run(&ResolveConstitutionsArgs {}, dir.path()).expect_err("halts");
+        let PrimitiveError::InvalidConstitutionEntry { alias, field, .. } = &err else {
+            panic!("expected a value rejection, got: {err}");
+        };
+        assert_eq!((alias.as_str(), field.as_str()), ("my org", "alias"));
+    }
+
+    /// A document that will not parse and an entry that parses but is invalid
+    /// are different operator mistakes, so they stay different variants — the
+    /// first carries serde's location, the second names the alias and field.
+    #[test]
+    fn an_unparseable_config_stays_a_toml_error_not_a_value_rejection() {
+        let dir = repo_with_config(Some("[constitutions.acme]\nrepo = \n"));
+        let err = run(&ResolveConstitutionsArgs {}, dir.path()).expect_err("halts");
+        assert!(
+            matches!(err, PrimitiveError::Toml { .. }),
+            "unparseable is not a value rejection: {err}"
+        );
     }
 }

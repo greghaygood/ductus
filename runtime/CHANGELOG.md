@@ -2,6 +2,40 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.3] — 2026-09-13
+
+### Fixed
+
+- **The `[constitutions.*]` registry accepted entries the bootstrap says it
+  rejects, and reported one of them with a confidently wrong reason.**
+  `framework/bootstrap/ductus.md` §Validating the registry states that a
+  malformed entry halts per `CFG-ENV-003` naming the alias and field — an
+  alias that is not a bare TOML key, a `repo` that is not URL-shaped, or an
+  empty `path` — while a `path` that does not *resolve* only warns.
+  Nothing enforced the halt: `schema::constitutions`' `from_toml_str` did
+  TOML parsing and serde required-field enforcement only, and
+  `resolve_constitutions::classify` reads the filesystem without inspecting
+  values. Probed against the `0.49.2` binary, `repo = "not-a-url-at-all"`
+  over a resolvable checkout resolved `loaded` with no complaint, and
+  `path = ""` resolved to the repository root and was reported
+  `no-constitution-document` — telling the operator their checkout lacks
+  the document when the mistake is an empty path in their own config, the
+  exact conflation spec 055's Edge Cases forbid between the two failure
+  states. The three value checks now run inside `from_toml_str`, so a
+  registry built from a config document is validated by construction rather
+  than by a caller remembering to ask; `resolve-constitutions` surfaces a
+  rejection as its own error naming the alias and field, distinct from a
+  TOML parse failure. Only the first violation is reported, in a stated
+  order (alias order, then `alias` / `repo` / `path`), because the entry
+  halts. A `path` that does not resolve is untouched and still warns as
+  `not-checked-out`: validation is pure value inspection and reads no
+  filesystem, which is what keeps a project-config mistake distinguishable
+  from a contributor who has not cloned the governance repository yet.
+  `write-review` and `write-analysis` keep their existing posture and
+  record the unreadable registry rather than failing, so a config typo
+  never costs an operator their findings. Spec 022, scenario
+  `the-constitutions-registry-validates-its-values`.
+
 ## [0.49.2] — 2026-09-13
 
 ### Fixed

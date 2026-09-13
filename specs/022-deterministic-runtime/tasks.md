@@ -421,3 +421,9 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Implement the behavior described in `scenarios/a-review-states-what-it-read.md`
 
 - **Done when**: `write-review` derives `scope` itself and records it beside the caller-supplied `examined` in both `review.md` and the spec's `review:` block, an unstated `examined` is absent rather than zero, and `check-review-agreement` reports `examined-nothing` and `examined-unstated` as distinct findings — each proven to fire before being trusted to pass.
+
+## 115. The `[constitutions.*]` registry validates its values
+
+- [x] Implement the behavior described in `scenarios/the-constitutions-registry-validates-its-values.md`
+
+- **Done when**: `Constitutions::from_toml_str` rejects an alias that is not a bare TOML key, a `repo` that is not URL-shaped, and an empty or whitespace-only `path`, reporting the first violation in alias order and naming the alias and field; `resolve-constitutions` surfaces it as its own operational error distinct from a TOML parse failure; a `path` that does not *resolve* still only warns as `not-checked-out`; and each half was proven to fail against the `ductus-v0.49.2` binary before being trusted to pass.
