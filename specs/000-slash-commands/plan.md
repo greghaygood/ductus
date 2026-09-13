@@ -8,15 +8,15 @@ title: "000-slash-commands — plan"
 
 ## Overview
 
-Create ten generic slash command `.md` files in a `commands/` directory at the governance root. Each command is derived from anvil's working implementation but generalized: anvil-specific references are replaced with `{project}` placeholders, and anvil-specific logic (Go code style, module patterns) is removed in favor of references to the constitution and AGENTS.md.
+Create ten generic slash command `.md` files in a `commands/` directory at the `ductus` root. Each command is derived from anvil's working implementation but generalized: anvil-specific references are replaced with `{project}` placeholders, and anvil-specific logic (Go code style, module patterns) is removed in favor of references to the constitution and AGENTS.md.
 
 ## Technical Decisions
 
 ### Directory location
 
-Commands live at `commands/{command}.md` in the governance root. This is the template source — adopting projects copy these to `.claude/commands/{project}/` and replace `{project}` placeholders.
+Commands live at `commands/{command}.md` in the `ductus` root. This is the template source — adopting projects copy these to `.claude/commands/{project}/` and replace `{project}` placeholders.
 
-Rationale: Keeping them at the governance root (not under `.claude/commands/`) avoids them being treated as active slash commands in the governance repo itself. Governance's own commands (like `/ductus:init`) live separately in `.claude/commands/ductus/`.
+Rationale: Keeping them at the `ductus` root (not under `.claude/commands/`) avoids them being treated as active slash commands in the `ductus` repo itself. `ductus`'s own commands (like `/ductus:init`) live separately in `.claude/commands/ductus/`.
 
 ### Parameterization approach
 

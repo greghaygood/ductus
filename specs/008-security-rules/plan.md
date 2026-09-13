@@ -163,7 +163,7 @@ Could expand the "Secure" principle into multiple paragraphs of guidance. Reject
 
 ### Rule files written in markdown vs. structured format (YAML/JSON)
 
-Per **Technical Decisions**, markdown wins. Heading-anchored rules are grep-friendly, render well in any viewer, and don't fight the rest of governance's markdown-first ethos. The trade-off is that programmatic tooling (if it ever appears) must parse markdown rather than load JSON — but governance has no programmatic tooling and is unlikely to add any.
+Per **Technical Decisions**, markdown wins. Heading-anchored rules are grep-friendly, render well in any viewer, and don't fight the rest of `ductus`'s markdown-first ethos. The trade-off is that programmatic tooling (if it ever appears) must parse markdown rather than load JSON — but governance has no programmatic tooling and is unlikely to add any.
 
 ## Open Questions Resolved
 

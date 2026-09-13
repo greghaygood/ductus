@@ -31,15 +31,15 @@ analyze:
 
 # 002 — Project Scaffolding Templates
 
-Templates for the project-level files that every governance-adopting project needs beyond the constitution, AGENTS.md, and spec templates.
+Templates for the project-level files that every `ductus`-adopting project needs beyond the constitution, AGENTS.md, and spec templates.
 
 ## Problem
 
-Bootstrapping a new project requires creating several files that follow governance conventions but are not currently provided as templates: a project README with a feature status table, a `.gitignore` that excludes claude settings but preserves commands, a `CLAUDE.md` with import directives, and a session state file. Projects like anvil created all of these independently.
+Bootstrapping a new project requires creating several files that follow `ductus` conventions but are not currently provided as templates: a project README with a feature status table, a `.gitignore` that excludes claude settings but preserves commands, a `CLAUDE.md` with import directives, and a session state file. Projects like anvil created all of these independently.
 
 ## Behavior
 
-Governance provides additional templates in the `framework/templates/project/` directory for project-level files.
+`ductus` provides additional templates in the `framework/templates/project/` directory for project-level files.
 
 ### README.md template
 
@@ -56,7 +56,7 @@ A project README that includes:
 
 ### .gitignore template
 
-A minimal baseline `.gitignore` for governance-adopting projects:
+A minimal baseline `.gitignore` for `ductus`-adopting projects:
 
 - Environment and secrets (`.env`, `.env.*`)
 - Claude settings exclusion with commands exception (`.claude/*`, `!.claude/commands/`)

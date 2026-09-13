@@ -58,7 +58,7 @@ The current step 8 in init fetches `.gitignore` patterns based on the "primary l
 
 ## Open Questions Resolved
 
-- **Snippet files**: Not needed. Governance populates only the Tech Stack table. Conventions are the dev project's responsibility.
+- **Snippet files**: Not needed. `ductus` populates only the Tech Stack table. Conventions are the dev project's responsibility.
 - **Composability**: Not applicable — each selection is an independent table row, no merging needed.
 - **User-contributed snippets**: Out of scope — no snippet mechanism exists.
 - **Category filtering**: Static mapping in `init.md`, not dynamic discovery.

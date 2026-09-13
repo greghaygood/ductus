@@ -26,7 +26,7 @@ analyze:
 
 # 012 — Multi-Agent Ductus
 
-A single `ductus.md` command that supports adopting governance for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. Re-runs are additive — a project initialized for one agent can later adopt another by re-running `/ductus` and selecting the new agent.
+A single `ductus.md` command that supports adopting `ductus` for multiple AI coding CLIs in the same project, with the target agent(s) selected at run time rather than baked into the file. Re-runs are additive — a project initialized for one agent can later adopt another by re-running `/ductus` and selecting the new agent.
 
 > **Signpost (post-028):** the two-agent registry described here was generalized by [028-antigravity-agent](../028-antigravity-agent/spec.md), which adds a `layout` field so an agent with a different layout (Antigravity's `.agents/` skills, `mcp_config.json`, and `settings.json` `allow`/`deny`/`ask` permissions) can join the `.claude`-style agents. The "adding a new agent is a one-row append" contract here still holds for `claude-style` agents; a new *layout* additionally branches the scaffolding, permission-setup, and bootstrap sections of `ductus.md`.
 >
@@ -45,7 +45,7 @@ The two-file model also makes the parity rule itself a recurring maintenance cos
 
 ## Distribution Model
 
-The deliverable is a single `ductus/ductus.md` file in the governance repo. The file is self-contained and supports every agent the framework knows about. Each supported agent contributes a small set of per-agent values (config directory name, settings format, setup command source) consumed by the same shared logic.
+The deliverable is a single `ductus/ductus.md` file in the `ductus` repo. The file is self-contained and supports every agent the framework knows about. Each supported agent contributes a small set of per-agent values (config directory name, settings format, setup command source) consumed by the same shared logic.
 
 ### Initial install
 

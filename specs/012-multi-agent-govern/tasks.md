@@ -15,7 +15,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 Done when: `commands/setup/claude.md` and `commands/setup/auggie.md` exist with the previous file contents intact, and the old flat-named files are deleted.
 
-## 2. Refresh governance's own setup command
+## 2. Refresh `ductus`'s own setup command
 
 - [x] Re-derive `.claude/commands/ductus/setup.md` from `commands/setup/claude.md` with `{cli-config-dir}` resolved to `.claude` and `{project}` resolved to `gov`.
 

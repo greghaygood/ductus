@@ -25,7 +25,7 @@ analyze:
 
 # 000 — Slash Command Templates
 
-Generic, project-agnostic slash command templates that operationalize the governance development pipeline. Projects copy these commands into their `.claude/commands/{project}/` directory and customize the project name and any project-specific paths.
+Generic, project-agnostic slash command templates that operationalize the `ductus` development pipeline. Projects copy these commands into their `.claude/commands/{project}/` directory and customize the project name and any project-specific paths.
 
 > **Note:** subsequent specs renamed several commands and removed one. References below to `about`, `setup`, and `next` reflect the original design; the current names are `help` (about), `configure` (setup, renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and the auto-advance `next` command was retired in favor of explicit pipeline gates surfaced by `/{project}:status` and `/{project}:target`.
 >
@@ -39,7 +39,7 @@ The constitution defines the pipeline (spec, plan, tasks, implement) and the spe
 
 ## Behavior
 
-Governance provides a set of `.md` command templates in a `commands/` directory. Each template uses a placeholder `{project}` that adopters replace with their project name. The commands enforce the pipeline gates defined in the constitution.
+`ductus` provides a set of `.md` command templates in a `commands/` directory. Each template uses a placeholder `{project}` that adopters replace with their project name. The commands enforce the pipeline gates defined in the constitution.
 
 ### Command Set
 
@@ -102,7 +102,7 @@ If all answers indicate "small and clear," specify creates `spec-and-plan.md` fr
 
 ### Template References
 
-Pipeline commands reference spec templates from the project's `specs/templates/` directory, not from governance. Each project copies the governance templates into their own `specs/templates/` during bootstrap.
+Pipeline commands reference spec templates from the project's `specs/templates/` directory, not from `ductus`. Each project copies the `ductus` templates into their own `specs/templates/` during bootstrap.
 
 ## Why this spec is still `in-progress` (2026-08-16)
 
@@ -136,7 +136,7 @@ trigger recorded — only `## Open Questions` entries count against the gate.
 - [x] AC8: The `validate` command checks spec integrity, artifact completeness, plan consistency, task consistency, dependencies, and cross-spec references
 - [x] AC9: The `setup` command configures permissions for common operations (git, lint, file reads)
 - [x] AC10: The `specify` command determines the next feature number, creates the spec directory, and updates README
-- [x] AC11: Commands reference `specs/templates/` for templates (not governance templates)
+- [x] AC11: Commands reference `specs/templates/` for templates (not `ductus` templates)
 - [x] AC12: Commands reference `.claude/{project}-session.json` for session state
 - [x] AC13: The `validate` command runs `npx markdownlint-cli2` on the feature's files as part of its checks
 - [x] AC14: The `specify` command prompts qualifying questions and creates `spec-and-plan.md` for lightweight track features

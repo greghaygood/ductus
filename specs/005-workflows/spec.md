@@ -45,12 +45,12 @@ Common development workflows — lint, test, format, migrate — are tech-stack-
 
 ### Workflow registry
 
-Governance maintains a workflow registry at `framework/workflows/registry.json` — a JSON file that maps tech stack selections to recommended workflow files. Each entry in the registry contains:
+`ductus` maintains a workflow registry at `framework/workflows/registry.json` — a JSON file that maps tech stack selections to recommended workflow files. Each entry in the registry contains:
 
 - **Trigger** — a single tech stack field and value that activates this recommendation (e.g., `{"field": "backend_language", "value": "TypeScript"}`)
 - **Workflow name** — human-readable name (e.g., "ESLint", "pytest")
 - **Category** — one of the fixed categories: `Testing`, `Linting`, `Formatting`, `Migrations`, `Code Review`, `Deployment`
-- **Template** — path to the workflow file in governance, relative to `framework/workflows/` (e.g., `eslint.md`). Field name is `template` because the file contains placeholders that get substituted at scaffold time.
+- **Template** — path to the workflow file in `ductus`, relative to `framework/workflows/` (e.g., `eslint.md`). Field name is `template` because the file contains placeholders that get substituted at scaffold time.
 - **Description** — one-line explanation of what the workflow does
 
 Each trigger matches a single tech stack field. A workflow is recommended when the user's selection for that field matches the trigger value. Multiple entries can share the same trigger to recommend several workflows for one selection.
@@ -61,7 +61,7 @@ During `/ductus:init`, after the tech stack questionnaire (step 4 from 004), the
 
 1. **Matches** — scans the registry for entries whose trigger field and value match any of the user's tech stack selections. If no entries match, skip the workflow step entirely — do not prompt the user.
 2. **Presents** — displays matched workflows grouped by category with name and description. The user can accept or skip each category group.
-3. **Scaffolds** — for accepted workflows, copies the workflow file from `framework/workflows/` in governance into `.claude/commands/{slug}/workflows/` in the new project, replacing `{project}` and other standard placeholders.
+3. **Scaffolds** — for accepted workflows, copies the workflow file from `framework/workflows/` in `ductus` into `.claude/commands/{slug}/workflows/` in the new project, replacing `{project}` and other standard placeholders.
 
 ### Workflow files
 
@@ -80,7 +80,7 @@ These are starting points — projects customize them after scaffolding.
 
 ### Ductus integration
 
-When `/{project}:ductus` syncs governance files, it also updates the workflow registry file in the project (using the same `update` strategy as other governance files). After updating, ductus scans for new workflow recommendations that were not previously scaffolded and offers them to the user, following the same present-and-accept flow as init.
+When `/{project}:ductus` syncs `ductus` files, it also updates the workflow registry file in the project (using the same `update` strategy as other `ductus` files). After updating, ductus scans for new workflow recommendations that were not previously scaffolded and offers them to the user, following the same present-and-accept flow as init.
 
 Workflows already scaffolded in `.claude/commands/{slug}/workflows/` are not overwritten — they may have been customized. Only new, unscaffolded workflows are offered.
 
@@ -97,7 +97,7 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 
 ## Acceptance Criteria
 
-- [x] AC1: A workflow registry existed at `framework/workflows/registry.json` in governance, using JSON format. Met at v1 and **since retired** — spec `043-workflows-sunset` deleted the workflows feature and this registry with it (see the sunset note above, which carries the link). Retained as a record of what shipped, not as a live requirement.
+- [x] AC1: A workflow registry existed at `framework/workflows/registry.json` in `ductus`, using JSON format. Met at v1 and **since retired** — spec `043-workflows-sunset` deleted the workflows feature and this registry with it (see the sunset note above, which carries the link). Retained as a record of what shipped, not as a live requirement.
 - [x] AC2: Each registry entry specifies a single-field trigger, workflow name, category, template path, and description
 - [x] AC3: Categories are drawn from the fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment
 - [x] AC4: During init, after tech stack selection, matched workflows are presented to the user grouped by category
@@ -117,9 +117,9 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 ## Resolved Questions
 
 1. **Registry format** — JSON. Consistent with `settings.local.json` and other structured files in the project at the time. No new format dependency. (Note: post-0.10.0 the session file moved from `gov-session.json` to `.ductus/session.toml`, so the file-format consistency argument now applies to fewer artifacts than originally; the choice stands for the registry on path-of-least-resistance grounds.)
-2. **Plugin ecosystem maturity** — v1 focuses exclusively on workflow files that governance fully controls. Plugin/marketplace support is deferred to a future spec when the ecosystem stabilizes.
+2. **Plugin ecosystem maturity** — v1 focuses exclusively on workflow files that `ductus` fully controls. Plugin/marketplace support is deferred to a future spec when the ecosystem stabilizes.
 3. **Trigger complexity** — single-value matching only. Each trigger matches one tech stack field to one value. Compound logic (AND/OR) is deferred — single triggers cover the common cases and keep the registry simple.
-4. **Workflow categories** — fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment. Adding a new category requires a governance update. This ensures consistent grouping in the UI.
+4. **Workflow categories** — fixed set: Testing, Linting, Formatting, Migrations, Code Review, Deployment. Adding a new category requires a `ductus` update. This ensures consistent grouping in the UI.
 5. **Update mechanism** — `/{project}:ductus` updates the registry file and offers new workflow recommendations. This integrates naturally with the existing ductus flow. A standalone `/{project}:workflows` command is not needed for v1 since ductus covers the use case.
 6. **File granularity** — one file per tool (e.g., `eslint.md`). Explicit, easy to maintain. Minimal duplication since each workflow file is small.
 

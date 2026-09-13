@@ -6,7 +6,7 @@ title: "005-workflows — plan"
 
 ## Overview
 
-Add a tech-stack-driven workflow scaffolding bundle to the governance framework. The bundle is a registry (`framework/workflows/registry.json`) plus a flat directory of standalone `.md` workflow files alongside it. Init recommends and scaffolds workflows after the tech stack questionnaire. `ductus.md` syncs the registry to adopted projects and offers any newly registered workflows on subsequent runs. The feature is entirely prompt-and-data — no application code, only markdown commands, JSON, and workflow files.
+Add a tech-stack-driven workflow scaffolding bundle to the `ductus` framework. The bundle is a registry (`framework/workflows/registry.json`) plus a flat directory of standalone `.md` workflow files alongside it. Init recommends and scaffolds workflows after the tech stack questionnaire. `ductus.md` syncs the registry to adopted projects and offers any newly registered workflows on subsequent runs. The feature is entirely prompt-and-data — no application code, only markdown commands, JSON, and workflow files.
 
 ## Technical Decisions
 
@@ -69,7 +69,7 @@ The match source differs by entry point:
 
 ### Init scaffolds for Claude only; ductus loops per selected agent
 
-Init is governance-specific to Claude Code (per `CLAUDE.md` — `init.md` has no source counterpart and is hand-maintained). It scaffolds directly into `.claude/commands/{slug}/workflows/`.
+Init is `ductus`-specific to Claude Code (per `CLAUDE.md` — `init.md` has no source counterpart and is hand-maintained). It scaffolds directly into `.claude/commands/{slug}/workflows/`.
 
 Ductus operates over the agent registry and may scaffold for one or more agents. Workflow scaffolding is performed inside the existing per-agent loop, with `{config_dir}` resolved per agent.
 

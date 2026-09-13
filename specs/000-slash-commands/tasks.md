@@ -10,7 +10,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Create the commands directory and about command
 
-- [x] Create `commands/` directory at governance root
+- [x] Create `commands/` directory at `ductus` root
 - [x] Write `commands/about.md` — static guide with pipeline stages, command table, typical session flow, key concepts
 - [x] Verify `{project}` placeholder is used for all command references
 

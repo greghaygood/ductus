@@ -65,9 +65,9 @@ Embedded as a new step in the existing ductus.md flow, between the agent-selecti
 
 Idempotency falls out of the `---`-check on re-run. The clean-tree precheck makes the migration diff atomic and reviewable.
 
-### Self-migration of governance's own specs
+### Self-migration of `ductus`'s own specs
 
-Governance has no `/ductus`. The work is a manual implementation task: convert each `specs/NNN-*/spec.md` and each scenario file under `specs/*/scenarios/` to frontmatter format. The conversion is mechanical, the agent does it once per file, lint passes confirm correctness.
+This repo has no `/ductus`. The work is a manual implementation task: convert each `specs/NNN-*/spec.md` and each scenario file under `specs/*/scenarios/` to frontmatter format. The conversion is mechanical, the agent does it once per file, lint passes confirm correctness.
 
 ### Tag prompt UX in `/ductus:specify`
 
@@ -93,7 +93,7 @@ Strict ordering matters because later steps depend on earlier work being correct
 3. Slash command sources (read/write the format the templates produce)
 4. Regenerate `.claude/commands/ductus/*` from the updated framework sources
 5. Ductus.md migration logic (relies on schema being canonical in the constitution)
-6. Self-migration of governance's existing specs (uses the new template format and the new commands as their canonical reference)
+6. Self-migration of `ductus`'s existing specs (uses the new template format and the new commands as their canonical reference)
 7. README "Viewing artifacts" section (documents the rendering convention adopted)
 8. Code-location-index scenario note (refers to a constitution section that now exists)
 

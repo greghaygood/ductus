@@ -21,7 +21,7 @@ The project README template is based on anvil's `README.md` structure, generaliz
 
 ### Gitignore stays minimal
 
-The `.gitignore` template contains only governance-universal entries. No language-specific patterns. The file is named `gitignore` (no dot) in `framework/templates/project/` to avoid it being treated as an active gitignore by git. The init command renames it to `.gitignore` during copy.
+The `.gitignore` template contains only `ductus`-universal entries. No language-specific patterns. The file is named `gitignore` (no dot) in `framework/templates/project/` to avoid it being treated as an active gitignore by git. The init command renames it to `.gitignore` during copy.
 
 ### CLAUDE.md is two lines
 
@@ -39,7 +39,7 @@ The template is deliberately minimal — just the two `@import` directives. Proj
 
 ### Considered: naming the README template `readme.md`
 
-Rejected. Using `project-readme.md` avoids confusion — `readme.md` could be mistaken for the governance project's own README. The `project-` prefix makes it clear this is a template for adopting projects.
+Rejected. Using `project-readme.md` avoids confusion — `readme.md` could be mistaken for the `ductus` project's own README. The `project-` prefix makes it clear this is a template for adopting projects.
 
 ### Considered: including `{description}` placeholder in templates
 

@@ -41,11 +41,11 @@ Create one `.md` workflow file directly under `framework/workflows/` for each re
 
 ## 3. Add the workflow recommendation step to init
 
-Modify `.claude/commands/ductus/init.md` to insert the workflow recommendation step after the slash command templates are scaffolded (so `.claude/commands/{slug}/` exists). This is a hand-maintained, governance-specific command (no source counterpart).
+Modify `.claude/commands/ductus/init.md` to insert the workflow recommendation step after the slash command templates are scaffolded (so `.claude/commands/{slug}/` exists). This is a hand-maintained, `ductus`-specific command (no source counterpart).
 
 - [x] Insert a new "Recommend and scaffold workflows" step as scaffolding step 8, after step 7 ("Copy slash command templates"), so the project commands directory exists before workflow files are written into it
 - [x] Renumber steps 8–12 to 9–13 to make room
-- [x] The new step reads `framework/workflows/registry.json` from the governance repo, matches entries case-insensitively against the in-memory tech stack selections, groups matches by category, presents per-category accept/skip prompts, and copies accepted workflow files to `.claude/commands/{slug}/workflows/{file-stem}.md` with `{project}` and `{cli-config-dir}` substituted
+- [x] The new step reads `framework/workflows/registry.json` from the `ductus` repo, matches entries case-insensitively against the in-memory tech stack selections, groups matches by category, presents per-category accept/skip prompts, and copies accepted workflow files to `.claude/commands/{slug}/workflows/{file-stem}.md` with `{project}` and `{cli-config-dir}` substituted
 - [x] Step warns and continues if registry is missing or malformed (`Workflow registry not found or invalid, skipping workflow recommendations`)
 - [x] Step warns and skips individual workflow files whose file is missing
 - [x] Step is silently skipped if no entries match the user's selections
@@ -84,7 +84,7 @@ Run all markdownlint and structural checks, and verify the spec's acceptance cri
 
 ## 6. Cross-spec rename: "skills" → "workflows"
 
-Driven by [010-agent-autonomy](../010-agent-autonomy/spec.md). 010's "skills" capability adopts Anthropic/Claude Code terminology for context-loaded instruction packs, which conflicts with 005's prior use of "skills" for tech-stack-conditional development workflows (lint, test, format, migrate). To free the term, rename 005's internal concept to "workflows" throughout governance code and prose, and flatten the framework directory (the inner `templates/` becomes redundant once the parent already says "workflows"). Implementation is performed by 010's `/ductus:implement` pass; this task tracks completion from 005's side.
+Driven by [010-agent-autonomy](../010-agent-autonomy/spec.md). 010's "skills" capability adopts Anthropic/Claude Code terminology for context-loaded instruction packs, which conflicts with 005's prior use of "skills" for tech-stack-conditional development workflows (lint, test, format, migrate). To free the term, rename 005's internal concept to "workflows" throughout `ductus` code and prose, and flatten the framework directory (the inner `templates/` becomes redundant once the parent already says "workflows"). Implementation is performed by 010's `/ductus:implement` pass; this task tracks completion from 005's side.
 
 - [x] `framework/skills/` renamed to `framework/workflows/` and flattened (registry + nine workflow files at the same level, no inner `templates/`)
 - [x] `specs/005-skills-and-plugins/` renamed to `specs/005-workflows/`
@@ -98,4 +98,4 @@ Driven by [010-agent-autonomy](../010-agent-autonomy/spec.md). 010's "skills" ca
 - [x] `npx markdownlint-cli2` passes on all modified `.md` files
 - [x] After 010's implementation completes, advance 005 from `in-progress` back to `done` via a separate `/ductus:implement` pass
 
-**Done when:** the rename is complete and consistent across governance code and 005's artifacts, the new acceptance criterion in `spec.md` is verifiable, and 005 is ready for re-advancement to `done`.
+**Done when:** the rename is complete and consistent across `ductus` code and 005's artifacts, the new acceptance criterion in `spec.md` is verifiable, and 005 is ready for re-advancement to `done`.

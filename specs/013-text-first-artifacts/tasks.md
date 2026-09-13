@@ -11,7 +11,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Phase 1 must finish b
 ### 1. Add §text-first-artifacts to the constitution
 
 - [x] Add a new `<!-- §text-first-artifacts -->` anchor and section to `framework/constitution.md`, placed immediately after `§scenarios` and before `§pipeline-boundaries`.
-- [x] The section declares: (a) all governance artifacts are markdown by default; (b) structured metadata lives in YAML frontmatter at the top of each markdown file; (c) cross-artifact references use standard relative markdown links, not wiki-links; (d) source-of-truth artifacts are markdown — structured derived views (SQLite caches, JSON indexes) are permitted only as gitignored build artifacts; (e) exceptions to text-first source-of-truth require an explicit constitutional amendment.
+- [x] The section declares: (a) all `ductus` artifacts are markdown by default; (b) structured metadata lives in YAML frontmatter at the top of each markdown file; (c) cross-artifact references use standard relative markdown links, not wiki-links; (d) source-of-truth artifacts are markdown — structured derived views (SQLite caches, JSON indexes) are permitted only as gitignored build artifacts; (e) exceptions to text-first source-of-truth require an explicit constitutional amendment.
 - [x] Below the principle: a markdown table declaring the frontmatter schema for spec files (`status`, `dependencies` required; `tags` optional) and scenario files (`spec-ref` required; `tags` optional). Columns: `Field | Required | Type | Allowed values | Description`. Mirror `data-model.md`.
 - [x] State the schema scope: applies to spec and scenario files only. Other artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan/tasks/rule files) MAY include frontmatter when a consumer benefits.
 - [x] State the open-schema rule: additional fields permitted, ignored by uninterested consumers.
@@ -132,14 +132,14 @@ These tasks may proceed in parallel within a session. Each command file is touch
 - [x] No rough edges discovered. The migration prose in `ductus.md` is sufficient as written.
 - [x] **Done when:** the fixture migration runs cleanly end-to-end; documented findings (if any) are incorporated. (Fixture left in `/tmp/ductus-013-fixture/` — `/tmp` clears on reboot.)
 
-## Phase 4: Self-migration of governance's own specs
+## Phase 4: Self-migration of `ductus`'s own specs
 
-### 18. Migrate existing governance specs to frontmatter
+### 18. Migrate existing `ductus` specs to frontmatter
 
 - [x] For each spec under `specs/000-*` through `specs/012-*`: open `spec.md`, insert a frontmatter block with the existing `status` and `dependencies` values, and remove the bold-prefix lines from the body. Tags remain empty (`tags: []`) — backfill is organic per Q2's resolution. (All 13 specs use `spec.md`; no `spec-and-plan.md` files exist in this repo.)
 - [x] Migrate `specs/013-text-first-artifacts/spec.md` last so the migration process operates on the spec that motivated it. (Tags populated as `[format, migration, pipeline]` reflecting the spec's actual concerns.)
 - [x] Discovered and corrected a pre-existing README/spec-file mismatch for 012: spec file said `done`, README said `clarified`. README updated to match the spec file (source of truth).
-- [x] **Done when:** every existing governance spec uses frontmatter format.
+- [x] **Done when:** every existing `ductus` spec uses frontmatter format.
 
 ## Phase 5: Documentation
 

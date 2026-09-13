@@ -8,13 +8,13 @@ tags: [commands, ux]
 
 ## Context
 
-Claude Code's built-in slash commands (e.g., `/help`, `/clear`, `/model`) show a short summary next to each name in the autocomplete window, so the user can scan options without selecting one to see what it does. Governance's commands currently render with name only — the autocomplete shows `/ductus:specify`, `/ductus:plan`, etc., but not what each one does. Users have to remember the command set or run `/ductus:about` to learn it.
+Claude Code's built-in slash commands (e.g., `/help`, `/clear`, `/model`) show a short summary next to each name in the autocomplete window, so the user can scan options without selecting one to see what it does. `ductus`'s commands currently render with name only — the autocomplete shows `/ductus:specify`, `/ductus:plan`, etc., but not what each one does. Users have to remember the command set or run `/ductus:about` to learn it.
 
 The framework command sources under `framework/commands/*.md` start with a top-level `# Name` heading and a one-line description on the next line. The generated `.claude/commands/ductus/*.md` files inherit that shape. Neither uses YAML frontmatter.
 
 ## Behavior
 
-Each governance command surfaces a one-line summary in the Claude Code autocomplete window, matching the visual treatment of built-in commands.
+Each `ductus` command surfaces a one-line summary in the Claude Code autocomplete window, matching the visual treatment of built-in commands.
 
 The investigation has two parts:
 

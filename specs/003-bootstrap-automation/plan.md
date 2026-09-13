@@ -6,7 +6,7 @@ title: "003-bootstrap-automation — plan"
 
 ## Overview
 
-Create eleven slash commands in `.claude/commands/ductus/`: ten standard pipeline commands copied from `commands/` templates with `{project}` replaced by `ductus`, plus one governance-specific `init.md` that scaffolds new projects. The standard commands give governance the same pipeline enforcement as adopting projects. The init command automates the manual bootstrap process from the README.
+Create eleven slash commands in `.claude/commands/ductus/`: ten standard pipeline commands copied from `commands/` templates with `{project}` replaced by `ductus`, plus one `ductus`-specific `init.md` that scaffolds new projects. The standard commands give `ductus` the same pipeline enforcement as adopting projects. The init command automates the manual bootstrap process from the README.
 
 ## Technical Decisions
 
@@ -14,9 +14,9 @@ Create eleven slash commands in `.claude/commands/ductus/`: ten standard pipelin
 
 Each of the ten command templates in `commands/` is copied to `.claude/commands/ductus/` with every occurrence of `{project}` replaced by `ductus`. No other modifications. This ensures this repo dogfoods the exact same commands adopting projects use. If a command template is updated later, the copy is re-derived from the template — by hand as designed here, and by `scripts/gen-claude-commands.sh` since the Trade-offs entry below was reversed. The copy-and-substitute shape survived that reversal; what changed is that a script does it over a directory glob rather than a contributor over a fixed list.
 
-### Init command is governance-specific
+### Init command is `ductus`-specific
 
-The init command does not exist in `commands/` — it is unique to the governance repo. It lives alongside the standard commands at `.claude/commands/ductus/init.md` and is invoked as `/ductus:init`. It orchestrates file copying, placeholder replacement, and gitignore fetching as a single slash command prompt.
+The init command does not exist in `commands/` — it is unique to the `ductus` repo. It lives alongside the standard commands at `.claude/commands/ductus/init.md` and is invoked as `/ductus:init`. It orchestrates file copying, placeholder replacement, and gitignore fetching as a single slash command prompt.
 
 ### Placeholder replacement in init uses find-and-replace
 
@@ -24,7 +24,7 @@ The init command instructs the agent to replace `{project}` with the user-provid
 
 ### Gitignore language patterns fetched at runtime
 
-The init command fetches `.gitignore` patterns from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` for each primary language. The fetched content is appended below the governance template's entries, separated by a comment header identifying the language. If a fetch fails, the command reports the failure and continues with the minimal template.
+The init command fetches `.gitignore` patterns from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` for each primary language. The fetched content is appended below the `ductus` template's entries, separated by a comment header identifying the language. If a fetch fails, the command reports the failure and continues with the minimal template.
 
 ### Session file path
 
@@ -44,7 +44,7 @@ Standard commands reference `.ductus/session.toml` for session state. (Original 
 | `.claude/commands/ductus/implement.md` | Create | Execute tasks (from template) |
 | `.claude/commands/ductus/analyze.md` | Create | Audit artifacts (from template) |
 | `.claude/commands/ductus/next.md` | Create | Auto-advance phase (from template) |
-| `.claude/commands/ductus/init.md` | Create | Scaffold new projects (governance-specific) |
+| `.claude/commands/ductus/init.md` | Create | Scaffold new projects (`ductus`-specific) |
 
 ## Trade-offs
 
@@ -54,7 +54,7 @@ Rejected here, and **later adopted** — recorded per [§drift-prevention](../..
 
 ### Considered: a single `/ductus:work` command instead of ten standard commands
 
-Rejected. Governance should use the same commands as adopting projects. A custom command would diverge from the dogfooding principle and miss bugs or friction in the templates.
+Rejected. `ductus` should use the same commands as adopting projects. A custom command would diverge from the dogfooding principle and miss bugs or friction in the templates.
 
 ### Considered: skipping the configure command for this repo
 

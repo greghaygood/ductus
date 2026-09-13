@@ -32,7 +32,7 @@ Comprehensive, enforceable security rules for backend and frontend development. 
 
 ## Motivation
 
-The constitution lists "Secure" as a guiding principle but does not operationalize it. Projects adopting governance have no concrete security rules to follow or validate against. Each project reinvents its own security posture, leading to inconsistency and gaps.
+The constitution lists "Secure" as a guiding principle but does not operationalize it. Projects adopting `ductus` have no concrete security rules to follow or validate against. Each project reinvents its own security posture, leading to inconsistency and gaps.
 
 Security rules belong at the governance level because they are cross-cutting — the same rules apply regardless of language, framework, or domain. Project-specific security decisions (which auth provider, which encryption library) belong in the project's `system.md` or feature specs. Governance defines *what* must be secured and *how* to think about it; projects decide the implementation.
 
@@ -95,14 +95,14 @@ Validate does not probe running infrastructure or parse deployment configs — i
 
 ## Ductus Integration
 
-Both files are added to the ductus file manifest with `update` strategy — governance-owned, always overwritten with the latest version on re-run.
+Both files are added to the ductus file manifest with `update` strategy — `ductus`-owned, always overwritten with the latest version on re-run.
 
 | Source Path | Destination Path |
 | --- | --- |
 | `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |
 | `framework/rules/security-frontend.md` | `specs/rules/security-frontend.md` |
 
-Source files live in the governance framework under `framework/rules/`, alongside the constitution and other ship-everything artifacts. Destination is the project's `specs/` directory, alongside `system.md`, `errors.md`, and `events.md` — the other cross-cutting global specs. Projects that do not have a frontend can pin `specs/rules/security-frontend.md` in `.ductus/config.toml` to skip it. Backend rules apply to all projects.
+Source files live in the `ductus` framework under `framework/rules/`, alongside the constitution and other ship-everything artifacts. Destination is the project's `specs/` directory, alongside `system.md`, `errors.md`, and `events.md` — the other cross-cutting global specs. Projects that do not have a frontend can pin `specs/rules/security-frontend.md` in `.ductus/config.toml` to skip it. Backend rules apply to all projects.
 
 **Local edits will be overwritten.** Because both files use the `update` strategy, any local edits to `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` are discarded on the next `/ductus` run. To diverge from the governance-owned ruleset, pin the file in `.ductus/config.toml` — pinned files are never updated. Editing rule files directly without pinning is a path to losing work.
 
@@ -164,7 +164,7 @@ Prefixing every line with the rule ID makes related findings group naturally dur
 
 Audit findings are deduplicated against existing inbox content. Before appending, ductus scans `specs/inbox.md` for any line beginning with `- [ ] {Rule ID}: {affected artifact path}` (the line up to the first em-dash). If a matching line exists, the new finding is skipped. This makes the audit safe to re-run if a user deletes and re-installs a rule file or otherwise re-triggers the "newly created" path.
 
-Inbox items already grommed by the user (lines that have been removed or rewritten by `/{project}:groom`) are not re-emitted — once the adopter has triaged a finding, governance does not resurrect it.
+Inbox items already grommed by the user (lines that have been removed or rewritten by `/{project}:groom`) are not re-emitted — once the adopter has triaged a finding, `ductus` does not resurrect it.
 
 ### Reporting
 
@@ -192,10 +192,10 @@ This connects the principle to its operational detail without duplicating conten
 
 ## Versioning and Evolution
 
-- Rules are added, modified, or deprecated in the governance repo
+- Rules are added, modified, or deprecated in the `ductus` repo
 - Adopting projects receive updates on the next `/ductus` re-run
 - Deprecated rules are marked with a `DEPRECATED` label and removal target version rather than deleted immediately, giving projects time to adjust
-- New rules are announced in governance commit messages so adopters can review changes
+- New rules are announced in `ductus` commit messages so adopters can review changes
 
 ## Edge Cases
 
@@ -213,8 +213,8 @@ How validate behaves when the inputs are unusual:
 
 ### Rule Files
 
-- [x] AC1: `framework/rules/security-backend.md` exists in the governance framework with categorized, numbered rules
-- [x] AC2: `framework/rules/security-frontend.md` exists in the governance framework with categorized, numbered rules
+- [x] AC1: `framework/rules/security-backend.md` exists in the `ductus` framework with categorized, numbered rules
+- [x] AC2: `framework/rules/security-frontend.md` exists in the `ductus` framework with categorized, numbered rules
 - [x] AC3: Every rule has an ID, statement, rationale, and verification method
 - [x] AC4: Rule IDs follow the format `{surface}-{category}-{NNN}` with `{surface}` ∈ `{BE, FE}` and `{NNN}` zero-padded starting at `001`
 - [x] AC5: Rules use RFC 2119 language to distinguish enforced (MUST/MUST NOT) from advisory (SHOULD/SHOULD NOT)
@@ -224,7 +224,7 @@ How validate behaves when the inputs are unusual:
 - [x] AC6: Both files appear in the ductus file manifest with `update` strategy
 - [x] AC7: The ductus command fetches `framework/rules/security-backend.md` and writes it to `specs/rules/security-backend.md` in the project
 - [x] AC8: The ductus command fetches `framework/rules/security-frontend.md` and writes it to `specs/rules/security-frontend.md` in the project
-- [x] AC9: Re-running ductus updates both files to the latest governance version
+- [x] AC9: Re-running ductus updates both files to the latest `ductus` version
 - [x] AC10: Projects can pin either file in `.ductus/config.toml` to skip updates
 
 ### Validate Integration

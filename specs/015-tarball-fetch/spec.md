@@ -39,7 +39,7 @@ Collapse `/ductus`'s ~35–50 individual `curl` fetches into a single archive do
 
 Today `framework/bootstrap/ductus.md` issues one `curl` per file in the manifest. A single-agent run touches:
 
-- ~14 governance-owned shared files (constitution, rules, templates, registry)
+- ~14 `ductus`-owned shared files (constitution, rules, templates, registry)
 - ~4 project-specific shared files (system, errors, events, inbox)
 - 2–3 conditional shared files (AGENTS.md, CLAUDE.md, gitignore template)
 - 1–N per-language gitignore patterns from `github.com/github/gitignore`
@@ -63,7 +63,7 @@ https://codeload.github.com/stonean/ductus/tar.gz/refs/heads/main
 
 This is the target that `https://github.com/stonean/ductus/archive/refs/heads/main.tar.gz` 302-redirects to; fetching it directly avoids a cross-host redirect that some agent hosts gate with a permission prompt even when `curl` is pre-granted (see [029 `archive-fetch-direct-codeload`](../029-bootstrap-runtime-autowire/scenarios/archive-fetch-direct-codeload.md)). The archive's top-level directory is `ductus-main/`; the framework files live at `ductus-main/framework/...` after extraction.
 
-External fetches that are **not** part of the governance repo are unchanged: per-language `.gitignore` patterns continue to come from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` as separate `curl` calls. They are not in the archive, and bundling them is out of scope.
+External fetches that are **not** part of the `ductus` repo are unchanged: per-language `.gitignore` patterns continue to come from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` as separate `curl` calls. They are not in the archive, and bundling them is out of scope.
 
 ### Extract
 
@@ -71,11 +71,11 @@ After fetching the archive:
 
 1. Create a **new** temp directory on every run: `mktemp -d -t ductus-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run, even if one is still on disk — a fresh fetch is the only way `/ductus` picks up upstream changes, so the archive must be re-downloaded each invocation.
 2. Extract the archive into the temp directory: `tar -xzf {archive} -C {tempdir}`.
-3. Compute the framework root: `{tempdir}/ductus-main/`. Treat this as the local mirror of the governance repo for the rest of the run.
+3. Compute the framework root: `{tempdir}/ductus-main/`. Treat this as the local mirror of the `ductus` repo for the rest of the run.
 
 If the fetch or extraction fails — non-zero exit, missing `ductus-main/` directory, or any required manifest entry absent from the extract — abort the run with a clear error:
 
-> Failed to fetch or extract the governance archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
+> Failed to fetch or extract the `ductus` archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
 
 Aborting on archive failure is intentional and a behavior change from the current per-file warning model: a missing archive means **every** file is missing, so there is nothing to scaffold partially. Per-file granularity within the extract is preserved (see **Per-file resolution** below).
 
@@ -139,7 +139,7 @@ The self-update notice (shown when the installed `ductus.md` differs from the fe
 ## Acceptance Criteria
 
 - [x] AC1: `framework/bootstrap/ductus.md`'s **File Fetching** section is replaced with the archive-fetch + extract + local-path-resolution flow above
-- [x] AC2: A successful `/ductus` run on a single-agent project issues exactly one `curl` against the governance repo (plus per-language gitignore fetches, which remain unchanged)
+- [x] AC2: A successful `/ductus` run on a single-agent project issues exactly one `curl` against the `ductus` repo (plus per-language gitignore fetches, which remain unchanged)
 - [x] AC3: All existing manifest strategies (`update`, `create`, `skip`, `merge`, `pinned`) behave identically to today, sourcing files from the extracted archive
 - [x] AC4: A failed archive fetch produces a clean abort with a clear error message and no partial scaffolding
 - [x] AC5: A missing source file within the archive produces a per-entry warning and the remaining manifest continues

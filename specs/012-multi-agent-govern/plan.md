@@ -74,7 +74,7 @@ For each selected agent, run these steps with registry values substituted:
 
 1. Resolve `{cli-config-dir}` to the agent's `config_dir`.
 2. Process the slash-command manifest into `{config_dir}/commands/{project}/`. Substitute `{project}` and `{cli-config-dir}` in each copied file.
-3. Fetch `commands/setup/{key}.md` from the governance repo and write it as `{config_dir}/commands/{project}/setup.md` (strategy: `update`).
+3. Fetch `commands/setup/{key}.md` from the `ductus` repo and write it as `{config_dir}/commands/{project}/setup.md` (strategy: `update`).
 4. Create `{config_dir}/{project}-session.json` with `{}` if missing (strategy: `create`).
 5. Read or create `{config_dir}/settings.local.json` and merge in entries from the agent's `settings_template` if missing. Do not reorder, deduplicate, or overwrite entries beyond the bootstrap set.
 6. Fetch `ductus/ductus.md` and write it to `{config_dir}/commands/ductus.md` (strategy: `update`). Run the post-write integrity check: file must start with `# Ductus`. If not, re-fetch.
