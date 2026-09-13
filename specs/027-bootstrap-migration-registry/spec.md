@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [026-framework-self-audit]
 review:
   last-run: 2026-09-13T12:31:12Z
@@ -15,15 +15,19 @@ review:
   blocking: false
 next-criterion: 31
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T12:31:25Z
+  analyzed-against: 95d39148d26929c33ad403a1a550dae76c9a448a
   hard-fail: 0
   blocking-findings: 0
-  advisory: 1
-  unexamined: 3
-  unexamined-by-reason:
-    not-a-live-claim: 2
-    root-absent: 1
+  advisory: 0
+  unexamined: 0
+  analyzed-digest:
+    plan.md: ed8893c568e09243c87354c3b4c9445d03ac590a081dcde5e26c080af339725c
+    review.md: 072d1fd2248284efa71f6ded83427434d59ffe8a6ea07f3566d29e9529b16898
+    scenarios/migration-chain-reference-integrity.md: 36477abab8b1c268a4a72de4bb4d53b02715ad287469fbe470207aee0c29f9c8
+    scenarios/migrations-apply-once-per-repo.md: 29829288f42c8641dcbad3c58d4431904122d5c429f6ec6e1b7951c205fbeaed
+    spec.md: 43ad17a4cd2b6b87d26d34f845742dd1e48f8af0c1284814974570d9ebc08754
+    tasks.md: 736ed98e8de26110011d411f8143b98953b56f3f2ecc9c6ee8bb53c356913c40
   blocking: false
 ---
 
