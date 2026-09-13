@@ -1,7 +1,9 @@
 //! Cross-service reference resolution: golden records + markdown-only parity.
 //!
 //! Spec 030's deterministic resolution work — resolve each `references:`
-//! entry against the `.govern.toml` `[services]` registry, read the linked
+//! entry against the project config's `[services]` registry — resolved
+//! through `schema::paths`'s three-tier `CONFIG_CHAIN`; the fixture below
+//! deliberately uses the legacy root `.govern.toml` tier — read the linked
 //! spec's `status` from its local checkout, classify the outcome — runs
 //! through the `resolve-references` runtime primitive when the runtime is
 //! installed, and identically via host file tools on the markdown-only path.

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # scripts/audit/fixture-session-shape.sh — Family 12 of /audit.
 #
-# Verifies every fixture session file — legacy-root `.govern.session.toml`
-# and new-layout `.ductus/session.toml` (spec 042) — under runtime/tests/fixtures/:
+# Verifies every fixture session file under runtime/tests/fixtures/. All three
+# tiers of schema::paths::SESSION_CHAIN are matched — `.ductus/session.toml`
+# (spec 049), `.govern/session.toml` (spec 042), and the legacy repo-root
+# `.govern.session.toml` — because a fixture on any one of them is a fixture
+# this family claims to cover:
 #
 #   12a parses cleanly as TOML.
 #   12b does NOT use the legacy camelCase keys `scenarioPath` or
@@ -42,10 +45,12 @@ if [ ! -d "$FIXTURES_DIR" ]; then
   exit 0
 fi
 
-# Find every .govern.session.toml under the fixtures tree. Use a
-# while-read loop instead of `mapfile` for portability — macOS ships
-# bash 3.x and lacks `mapfile`.
-SESSION_FILES=$(find "$FIXTURES_DIR" \( -name ".govern.session.toml" -o -path "*/.ductus/session.toml" \) -print | sort)
+# Find every session file under the fixtures tree, across all three
+# SESSION_CHAIN tiers — omitting the `.govern/` middle tier would let a
+# 049-era fixture escape all three checks below while this family still
+# exited clean. Use a while-read loop instead of `mapfile` for portability —
+# macOS ships bash 3.x and lacks `mapfile`.
+SESSION_FILES=$(find "$FIXTURES_DIR" \( -name ".govern.session.toml" -o -path "*/.ductus/session.toml" -o -path "*/.govern/session.toml" \) -print | sort)
 
 if [ -z "$SESSION_FILES" ]; then
   # No fixtures use a session file — clean exit.

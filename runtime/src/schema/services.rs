@@ -1,4 +1,8 @@
-//! `[services]` registry schema from `.govern.toml`.
+//! `[services]` registry schema from the project config.
+//!
+//! The config file is whichever tier [`crate::schema::paths`]'s `CONFIG_CHAIN`
+//! resolves — `.ductus/config.toml`, `.govern/config.toml`, or the legacy root
+//! `.govern.toml`, newest-wins. This module never spells a tier itself.
 //!
 //! Cross-service references (spec 030) resolve a linked spec's lifecycle
 //! status by matching a reference link's repository URL against a registered
@@ -33,7 +37,7 @@ pub struct ServiceEntry {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Services(pub BTreeMap<String, ServiceEntry>);
 
-/// Wrapper for extracting just the `[services]` table from `.govern.toml`.
+/// Wrapper for extracting just the `[services]` table from the project config.
 /// Unknown top-level tables are accepted and ignored.
 #[derive(Debug, Default, Deserialize)]
 struct ServicesConfig {
@@ -42,7 +46,7 @@ struct ServicesConfig {
 }
 
 impl Services {
-    /// Parse the `[services]` table from `.govern.toml` contents. An absent
+    /// Parse the `[services]` table from project-config contents. An absent
     /// table or an empty document yields an empty registry — never an error.
     ///
     /// # Errors

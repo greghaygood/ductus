@@ -8,12 +8,13 @@
 //! - [`protocol`] — the JSON-over-stdio envelope and message types.
 //! - [`primitives`] — per-primitive args/result shapes.
 //! - [`extensions`] — the three initial-release extension-point payloads.
-//! - [`services`] — the `[services]` registry shape from `.govern.toml`
+//! - [`services`] — the `[services]` registry shape from the project config
 //!   (spec 030 cross-service references).
 //! - [`constitutions`] — the `[constitutions]` registry shape from the
 //!   project config (spec 055 shared constitutions).
-//! - [`paths`] — the `[paths]` block shape from `.govern.toml`, resolving the
-//!   configurable spec-root directory name (spec 040).
+//! - [`paths`] — the `[paths]` block shape from the project config, resolving
+//!   the configurable spec-root directory name (spec 040), and the
+//!   three-tier `CONFIG_CHAIN` / `SESSION_CHAIN` resolution ladders themselves.
 //!
 //! Two constant registries also live here as the single source of truth for
 //! their respective closed sets: [`registry`] (primitive names) and `status`

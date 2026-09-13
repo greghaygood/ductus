@@ -191,8 +191,8 @@ struct HostBlock {
     project: Option<String>,
 }
 
-/// The per-contributor slice of `.govern.session.toml` this module reads —
-/// the flat top-level `cli-config-dir` key. Other session keys (`feature`,
+/// The per-contributor slice of the resolved session file this module reads
+/// — the flat top-level `cli-config-dir` key. Other session keys (`feature`,
 /// `path`, `set-at`, …) are ignored here; serde drops unknown fields.
 #[derive(Deserialize)]
 struct SessionHost {

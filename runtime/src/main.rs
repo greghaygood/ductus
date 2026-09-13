@@ -518,8 +518,9 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
 
     // Seed the walker context: session file (when present) overlaid with
     // CLI `key=value` arg overrides. The session resolves through
-    // `paths::session_path` — `.ductus/session.toml` (spec 042) with a
-    // fallback to the legacy repo-root `.govern.session.toml`; the path is
+    // `paths::session_path` — the newest existing of `.ductus/session.toml`
+    // (spec 049), `.govern/session.toml` (spec 042), or the legacy repo-root
+    // `.govern.session.toml`, per `schema::paths`'s `SESSION_CHAIN`; the path is
     // uniform across every adopter regardless of AI CLI or project name. TOML
     // values are bridged into `serde_json::Value` via serde so nested
     // structures (arrays-of-tables for `entries`, sub-tables for

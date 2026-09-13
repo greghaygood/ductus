@@ -439,8 +439,8 @@ pub enum PrimitiveError {
         /// One-line description of the schema mismatch.
         reason: String,
     },
-    /// TOML parse failure (e.g., `dashboard` reading a malformed
-    /// `.govern.toml`).
+    /// TOML parse failure (e.g., `dashboard` reading a malformed resolved
+    /// project config).
     #[error("TOML parse error in {path}: {source}")]
     Toml {
         /// Path of the file whose TOML failed to parse.

@@ -21,8 +21,10 @@
 #
 # Method:
 #   17a Resolve the effective namespace the way `Host::load` does:
-#       `[host] project` from `.ductus/config.toml` (new-wins) or the
-#       legacy root `.govern.toml`; else the repo directory basename.
+#       `[host] project` from the newest existing tier of
+#       schema::paths::CONFIG_CHAIN — `.ductus/config.toml`,
+#       `.govern/config.toml`, then the legacy root `.govern.toml`; else
+#       the repo directory basename.
 #   17b Collect the installed namespace directories under every agent
 #       config dir present in the repo, trying both the plural
 #       `commands/` and singular `command/` layouts.
@@ -63,9 +65,14 @@ fi
 # --- 17a: resolve the effective namespace -----------------------------------
 
 # New-wins config resolution, mirroring schema::paths::config_display_name.
+# All three CONFIG_CHAIN tiers: skipping the `.govern/` middle one made this
+# find no config on a 049-era layout and fall back to the directory basename,
+# which can emit a false finding or mask a real one.
 CONFIG_FILE=""
 if [ -f ".ductus/config.toml" ]; then
   CONFIG_FILE=".ductus/config.toml"
+elif [ -f ".govern/config.toml" ]; then
+  CONFIG_FILE=".govern/config.toml"
 elif [ -f ".govern.toml" ]; then
   CONFIG_FILE=".govern.toml"
 fi

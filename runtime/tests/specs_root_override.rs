@@ -1,6 +1,9 @@
 //! Integration test (spec 040): every primitive that takes a bare *feature
-//! name* resolves the spec-root directory from `.govern.toml`
-//! `[paths] specs-root` instead of the hardcoded `specs/`.
+//! name* resolves the spec-root directory from the project config's
+//! `[paths] specs-root` instead of the hardcoded `specs/`. The config file is
+//! whichever tier `schema::paths`'s `CONFIG_CHAIN` resolves; the fixtures
+//! below deliberately write the legacy root `.govern.toml` tier, which is
+//! also what proves the fallback still resolves.
 //!
 //! A repo configured with `specs-root = "governance"` is driven through the
 //! filesystem primitives, and a stray default-named `specs/` tree is asserted
@@ -21,7 +24,7 @@ use ductus::schema::primitives::{
     SetStatusArgs, TraverseDepsArgs,
 };
 
-const DUCTUSANCE_TOML: &str = "[paths]\nspecs-root = \"governance\"\n";
+const CONFIG_TOML: &str = "[paths]\nspecs-root = \"governance\"\n";
 
 fn write(path: &Path, body: &str) {
     if let Some(parent) = path.parent() {
@@ -41,7 +44,7 @@ const TASKS_BODY: &str = "# Demo\n\n## 1. Bootstrap\n\n- [ ] Subtask one.\n- [ ]
 /// Seed a repo whose spec root is `governance`, with one feature plus a stray
 /// default-named `specs/` tree that must never be consulted.
 fn seed(repo: &Path) {
-    write(&repo.join(".govern.toml"), DUCTUSANCE_TOML);
+    write(&repo.join(".govern.toml"), CONFIG_TOML);
     write(
         &repo.join("governance/001-demo/spec.md"),
         &spec_body("in-progress"),
@@ -149,7 +152,7 @@ fn mark_criterion_resolves_configured_root() {
 fn traverse_deps_resolves_configured_root() {
     let tmp = tempfile::tempdir().unwrap();
     let repo = tmp.path();
-    write(&repo.join(".govern.toml"), DUCTUSANCE_TOML);
+    write(&repo.join(".govern.toml"), CONFIG_TOML);
     write(
         &repo.join("governance/002-consumer/spec.md"),
         "---\nstatus: in-progress\ndependencies: [001-demo]\n---\n\n# Consumer\n",
@@ -212,7 +215,7 @@ fn error_messages_name_the_configured_root() {
     // hardcoded `specs/` — otherwise a renamed-root adopter sees a misleading
     // path (spec 040).
     let tmp = tempfile::tempdir().unwrap();
-    write(&tmp.path().join(".govern.toml"), DUCTUSANCE_TOML);
+    write(&tmp.path().join(".govern.toml"), CONFIG_TOML);
     let err = primitives::read_spec::run(
         &ReadSpecArgs {
             feature: "404-missing".into(),

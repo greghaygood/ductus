@@ -1413,8 +1413,9 @@ pub struct DashboardSpec {
 }
 
 /// Config review-state summary returned alongside the per-spec
-/// inventory, read from the resolved config file (`.ductus/config.toml`;
-/// legacy root `.govern.toml` pre-migration). The `present` flag
+/// inventory, read from the resolved config file — the newest existing of
+/// `.ductus/config.toml`, `.govern/config.toml`, or the legacy root
+/// `.govern.toml`, per [`crate::schema::paths`]'s `CONFIG_CHAIN`. The `present` flag
 /// distinguishes "config absent" from "config present but section absent
 /// / empty" so callers can drive the callout-suppression rule correctly.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -1444,9 +1445,10 @@ pub struct DashboardScenarioDetail {
     pub open_question_count: u32,
 }
 
-/// Session-target summary returned when the session file
-/// (`.ductus/session.toml`; legacy root `.govern.session.toml`
-/// pre-migration) exists and names a target. The `feature` field always names the targeted
+/// Session-target summary returned when the session file — the newest
+/// existing of `.ductus/session.toml`, `.govern/session.toml`, or the legacy
+/// root `.govern.session.toml`, per [`crate::schema::paths`]'s `SESSION_CHAIN`
+/// — exists and names a target. The `feature` field always names the targeted
 /// feature; `scenario` is populated when a scenario is targeted;
 /// `scenario-detail` is populated alongside `scenario` to spare callers an
 /// extra read.
@@ -2385,8 +2387,9 @@ pub struct MigrateSessionFileResult {
 // -- write-session -----------------------------------------------------------
 
 /// Args for `write-session`. Sets the session state at the active
-/// session file — `.ductus/session.toml`, or the legacy root
-/// `.govern.session.toml` pre-migration (the `/ductus` migration is the
+/// session file — the newest existing of `.ductus/session.toml`,
+/// `.govern/session.toml`, or the legacy root `.govern.session.toml`, per
+/// [`crate::schema::paths`]'s `SESSION_CHAIN` (the `/ductus` migration is the
 /// sole cutover); gitignored either way. The `scenario` and `scenario-path` fields
 /// are paired — both must be supplied together or both omitted; omitting
 /// both clears any previously set scenario.
@@ -2462,8 +2465,9 @@ pub struct WriteSessionArgs {
 #[serde(rename_all = "kebab-case")]
 pub struct WriteSessionResult {
     /// Repo-relative path of the written session file — the active file
-    /// the write resolved (`.ductus/session.toml`, or the legacy root
-    /// `.govern.session.toml` pre-migration); kept on the result for
+    /// the write resolved: the newest existing of `.ductus/session.toml`,
+    /// `.govern/session.toml`, or the legacy root `.govern.session.toml`,
+    /// per [`crate::schema::paths`]'s `SESSION_CHAIN`; kept on the result for
     /// symmetry with other write primitives' return shapes.
     pub path: String,
     /// `true` when the file did not exist before this call, `false` when
@@ -3409,13 +3413,15 @@ pub struct ArtifactFinding {
     /// `scenario-consistency`, `review-state-drift`,
     /// `scenario-open-questions`, `link-adjacent-drift`,
     /// `criterion-path-existence`, `criterion-labels`, or
+    /// `analyze-state-drift` — nine, matching the `family:` literals the
+    /// primitive emits.
     pub family: String,
     /// Severity tier per the reference's assignments: `blocking`
-    /// (artifact completeness, task consistency, review state drift, and
-    /// scenario open questions at `done`) or `advisory` (scenario
-    /// consistency, scenario open questions below `done`, link-adjacent
-    /// drift, criterion path existence, and criterion labels
-    /// reciprocity).
+    /// (artifact completeness, task consistency, review state drift,
+    /// analyze-state drift, and scenario open questions at `done`) or
+    /// `advisory` (scenario consistency, scenario open questions below
+    /// `done`, link-adjacent drift, criterion path existence, and criterion
+    /// labels reciprocity).
     pub severity: String,
     /// Human-readable description of the finding.
     pub message: String,
@@ -3454,10 +3460,10 @@ pub struct CheckArtifactsResult {
     pub feature: String,
     /// Spec frontmatter `status` the tier classification ran against.
     pub status: String,
-    /// Findings across the eight families, in family order (completeness →
+    /// Findings across the nine families, in family order (completeness →
     /// task consistency → scenario consistency → review drift → scenario
     /// open questions → link-adjacent drift → criterion path existence →
-    /// criterion labels).
+    /// criterion labels → analyze-state drift).
     pub findings: Vec<ArtifactFinding>,
     /// `true` when no family produced a finding.
     ///

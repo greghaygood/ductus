@@ -2,6 +2,66 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.2] — 2026-09-13
+
+### Fixed
+
+- **Two `/audit` families resolved only two of the three config/session
+  tiers, so a `.govern/`-layout subject escaped them silently.**
+  `schema::paths`' `CONFIG_CHAIN` / `SESSION_CHAIN` have been three tiers
+  (`.ductus/` -> `.govern/` -> legacy root) since 049, and both families
+  claimed to mirror them. Family 12 (`fixture-session-shape.sh`) matched
+  `.govern.session.toml` and `*/.ductus/session.toml` but not
+  `*/.govern/session.toml`, so a fixture on the 049-era layout was found by
+  none of its three checks (12a parse, 12b camelCase keys, 12c git-tracked)
+  while the family still exited clean — its own header claims it verifies
+  "every fixture session file". Family 17 (`host-namespace-parity.sh`)
+  probed `.ductus/config.toml` then `.govern.toml`, skipping the middle
+  tier, while its comment said it resolves "the way `Host::load` does";
+  on a `.govern/`-layout repo it found no config and fell back to the
+  directory basename, which can emit a false finding or mask a real one.
+  Neither bit today — no fixture uses the middle tier and this repo is on
+  `.ductus/` — which is precisely why nothing had surfaced them. Both are
+  the `QUAL-CLAIM-001` shape §design-principles names: a check that cannot
+  run must never be indistinguishable from one that passed.
+
+### Changed
+
+- **`check-artifacts`' result documentation enumerated eight families where
+  the primitive owns nine.** `ArtifactFinding::family` listed eight and then
+  ended mid-sentence on a dangling "or" with nothing after it;
+  `CheckArtifactsResult::findings` said findings come "across the eight
+  families" and its parenthetical listed eight; and `ArtifactFinding::severity`
+  — a third site not previously recorded — omitted `analyze-state-drift` from
+  its `blocking` list. All three now name `analyze-state-drift`, verified
+  against the `family:` literals `check_artifacts.rs` emits. These are
+  `JsonSchema`-derived doc comments, so they are served as MCP tool-schema
+  descriptions and reach adopters; this is the same eight-for-nine defect
+  0.49.1 fixed in the `check-artifacts` tool description, at the sites that
+  fix missed.
+
+- **`retire-feature`'s `# Errors` contract described pre-052 behaviour.**
+  It stated that `InvalidArgument` fires "when `feature` is not the
+  branch-scoped form" unconditionally. Spec 052's `allow-sequential` gate made
+  that conditional — the module doc documents the gate at length, but the
+  function's own `# Errors` block, which is what a caller reads, still
+  described the ungated refusal.
+
+- **Doc comments across the runtime name the resolved config/session file
+  rather than a single legacy tier.** Continues the 0.49.1 sweep into the
+  sites it did not reach: `main.rs`'s session-seeding comment,
+  `discover_rule_files.rs`'s provenance-tag doc, four `schema/primitives.rs`
+  result/args docs, `primitives/mod.rs`'s `Toml` error variant,
+  `schema/mod.rs`'s module map, `schema/services.rs` (module doc plus two
+  parser docs), `dashboard.rs` (module doc, error contract, config shape,
+  session reader), and `resolve_references.rs` (module doc, error contract,
+  and `load_services`, which also claimed the config is read "from the repo
+  root" — which the primary tier is not). No behaviour change. The
+  legacy-layout test fixtures and the migration records that rename *to* the
+  legacy name are deliberately untouched; the two test module docs now say
+  their fixtures use the legacy tier on purpose, which is what proves the
+  fallback still resolves.
+
 ## [0.49.1] — 2026-09-13
 
 ### Fixed

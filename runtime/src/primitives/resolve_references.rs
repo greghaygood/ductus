@@ -1,7 +1,7 @@
 //! `resolve-references` — classify each cross-service reference (spec 030).
 //!
 //! Reads the consumer feature's derived `references:` index, resolves each
-//! entry's service through the `.govern.toml` `[services]` registry, and
+//! entry's service through the project config's `[services]` registry, and
 //! reads the linked spec's live `status` from the registered local checkout.
 //! Every reference is classified into the closed [`ReferenceOutcome`] enum by
 //! deterministic predicates — no prose is read for intent. Reuses
@@ -54,7 +54,8 @@ struct IndexEntry {
 /// Returns [`PrimitiveError::Io`] when the consumer spec cannot be read,
 /// [`PrimitiveError::MissingFrontmatter`] when it has no `---` block,
 /// [`PrimitiveError::Yaml`] when its frontmatter is not valid YAML, or
-/// [`PrimitiveError::Toml`] when `.govern.toml` is present but malformed.
+/// [`PrimitiveError::Toml`] when the resolved project config is present but
+/// malformed.
 /// Per-reference resolution failures are outcomes, not errors.
 pub fn run(args: &ResolveReferencesArgs, repo: &Path) -> Result<ResolveReferencesResult> {
     super::validate_no_traversal(&args.feature)?;
@@ -89,7 +90,10 @@ pub fn run(args: &ResolveReferencesArgs, repo: &Path) -> Result<ResolveReference
     })
 }
 
-/// Read `.govern.toml` `[services]` from the repo root. An absent file is an
+/// Read `[services]` from the resolved project config — whichever tier
+/// `paths::config_path` returns (`.ductus/config.toml`, `.govern/config.toml`,
+/// or the legacy root `.govern.toml`), so this never spells a tier itself. An
+/// absent file is an
 /// empty registry; a malformed one is an operational error. `pub(crate)`:
 /// shared with `dashboard`, whose rendered references readout appends the
 /// matched service's `description` from the same registry.

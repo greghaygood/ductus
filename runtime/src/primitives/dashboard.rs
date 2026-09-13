@@ -3,10 +3,12 @@
 //! Returns everything `/{project}:status` needs to render the full pipeline
 //! view in one MCP round-trip: per-spec inventory (status, deps, tags,
 //! open-question count, artifact existence, scenarios count, blocked-by),
-//! the repo-wide `tags-union`, the `.govern.toml` review-state summary,
-//! and the optional session target (with scenario detail when one is
-//! targeted). The session is read from `.govern.session.toml` at the repo
-//! root — host-agnostic, project-name-agnostic, no caller-supplied path.
+//! the repo-wide `tags-union`, the review-state summary from the resolved
+//! project config, and the optional session target (with scenario detail when
+//! one is targeted). Both files resolve through [`crate::schema::paths`]'s
+//! three-tier `CONFIG_CHAIN` / `SESSION_CHAIN` ladders (`.ductus/` →
+//! `.govern/` → legacy repo root, newest-wins) — host-agnostic,
+//! project-name-agnostic, no caller-supplied path.
 //! Read-only with respect to filesystem state; no atomic-write concerns.
 //!
 //! Defined by `specs/022-deterministic-runtime/scenarios/dashboard-primitive.md`.
@@ -40,8 +42,8 @@ use crate::schema::status::{ALLOWED_STATUSES, UNBLOCKING_STATUSES};
 /// directory under `specs/` lacks a `spec.md` (the directory naming
 /// convention promises one), [`PrimitiveError::Io`] on filesystem
 /// failures, [`PrimitiveError::Yaml`] when any spec's frontmatter is
-/// malformed, or [`PrimitiveError::Toml`] when `.govern.toml` or
-/// `.govern.session.toml` is malformed. A *targeted scenario* with
+/// malformed, or [`PrimitiveError::Toml`] when the resolved project config
+/// or session file is malformed. A *targeted scenario* with
 /// missing or malformed frontmatter is NOT an error — it degrades to a
 /// detail-less session target (see [`load_scenario_detail`]).
 pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
@@ -613,8 +615,8 @@ fn compute_tags_union(specs: &[DashboardSpec]) -> Vec<String> {
     set.into_iter().collect()
 }
 
-/// Minimal TOML shape: just enough of `.govern.toml` to extract the
-/// `[[review.disabled-rule-files]]` entries' `file` basenames. Unknown
+/// Minimal TOML shape: just enough of the resolved project config to extract
+/// the `[[review.disabled-rule-files]]` entries' `file` basenames. Unknown
 /// keys are accepted; the primitive only reports what it knows.
 #[derive(Deserialize, Default)]
 struct DuctusConfig {
@@ -688,7 +690,7 @@ struct SessionFile {
     scenario_path: Option<String>,
 }
 
-/// Read `<repo>/.govern.session.toml` (when present) and populate the
+/// Read the resolved session file (when present) and populate the
 /// session-target field. When the targeted scenario file exists, also
 /// reads it to populate `scenario-detail`. The session field is echoed
 /// as-recorded; `/{project}:target` is the corrective action for stale

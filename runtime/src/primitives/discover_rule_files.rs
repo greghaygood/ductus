@@ -256,8 +256,8 @@ fn toml_type_name(value: &toml::Value) -> &'static str {
 /// later duplicates warn. Malformed entries warn and are skipped without
 /// dropping anything. `config_name` is the repo-relative resolved config
 /// file the disable came from, rendered in the drop notice's provenance
-/// tag (spec 042: `.ductus/config.toml`, or the legacy root `.govern.toml`
-/// pre-migration).
+/// tag — the newest existing of `.ductus/config.toml`, `.govern/config.toml`,
+/// or the legacy root `.govern.toml`, per `schema::paths`'s `CONFIG_CHAIN`.
 fn apply_disabled_filter(
     review: Option<&ReviewSection>,
     all: &[String],

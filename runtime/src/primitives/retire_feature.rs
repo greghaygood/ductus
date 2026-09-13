@@ -45,7 +45,10 @@ use crate::schema::primitives::{RetireFeatureArgs, RetireFeatureResult};
 /// Returns [`PrimitiveError::InvalidPath`] when either argument is empty,
 /// absolute, or carries a parent-directory component;
 /// [`PrimitiveError::InvalidArgument`] when `feature` is not the
-/// branch-scoped form; [`PrimitiveError::FeatureNotFound`] when
+/// branch-scoped form **and** `allow-sequential` was not set — the
+/// sequential refusal is gated rather than unconditional (spec 052), so a
+/// caller that has opted in retires a sequential directory without error;
+/// [`PrimitiveError::FeatureNotFound`] when
 /// `fold-target` names no feature directory holding a `spec.md`; or
 /// [`PrimitiveError::Io`] when the removal itself fails.
 ///
