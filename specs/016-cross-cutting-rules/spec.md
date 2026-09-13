@@ -1,6 +1,6 @@
 ---
 title: "016-cross-cutting-rules — spec"
-status: in-progress
+status: done
 dependencies: [006-bug-workflow, 008-security-rules]
 tags: [format, process, pipeline]
 review:
@@ -16,14 +16,18 @@ review:
   blocking: false
 next-criterion: 9
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T12:30:18Z
+  analyzed-against: 1390a21b0a0e6a8d2a4a7197f95edfa833eebbd9
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 2
-  unexamined-by-reason:
-    not-a-live-claim: 2
+  unexamined: 0
+  analyzed-digest:
+    plan.md: d5a581ebb818efce747c9f0f30f4eaaeb8da2bdbed1978240f2ca1762c551be5
+    review.md: 4b5c8c14b8f0577a37cee7554d4b03860434f30d84306ab745efee1182de0624
+    scenarios/applicable-rules-consistency-check.md: 654067cf29c934cccf9a88046d9aedf9b61728af9c5353037bb45ff4adf7d145
+    spec.md: f65121daae69f297ff940b29353158904f3bf38c301d0b48485e82947db2e954
+    tasks.md: 603bbca7f3486b6c7d1315e7b4b185becf3e0be5c7a0de1d975405ee50f5d373
   blocking: false
 ---
 
