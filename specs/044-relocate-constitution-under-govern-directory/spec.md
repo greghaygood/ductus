@@ -2,11 +2,14 @@
 status: done
 dependencies: [027-bootstrap-migration-registry, 042-consolidate-govern-per-project-files-under-govern-directory]
 review:
-  last-run: 2026-07-23T03:19:20Z
-  reviewed-against: 500498bf9d37df47db706f557fcda5325a993b63
+  last-run: 2026-09-13T13:26:22Z
+  reviewed-against: b421c51e6f629b5abedd4ac249cc2f0bd48963c0
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 9
+  scope: 15
+  reviewed-digest: {}
   blocking: false
 next-criterion: 11
 analyze:
