@@ -78,7 +78,7 @@ The existing Steps 1–3 become 2–4 with no other changes. Groom still creates
 
 ### 008 signpost: top-of-file note, body untouched
 
-008's spec is `done`. Per the constitution's frozen-archaeology rule, the body is not rewritten. The signpost is a quoted note inserted between the frontmatter and the H1, of the form:
+008's spec is `done`. Under the constitution's frozen-archaeology rule, in force when this plan was written, the body is not rewritten. (023's `living-specs` scenario later removed that rule; the signpost decision stands on its own merits.) The signpost is a quoted note inserted between the frontmatter and the H1, of the form:
 
 > **Signpost:** 008 defines the *security instance* of the general rules tier later formalized in [016 — Cross-Cutting Rules](../016-cross-cutting-rules/spec.md). The rule-file format, ID conventions, and validate enforcement defined here remain authoritative for security rules and serve as the canonical reference for any future rule file. See [§rules](../../framework/constitution.md) in the constitution for the general framing.
 
@@ -108,7 +108,7 @@ No source code, no tests, no migrations. All artifacts are markdown.
 
 - **Validate list remains hardcoded.** The cleaner factoring (single source-of-truth list shared between bootstrap manifest and validate's loader) is deferred to a future spec, likely tied to the `/audit` inbox item. This trades a small ongoing maintenance discipline ("update both lists in the same change") for keeping 016's scope tight.
 - **§rules duplicates a small amount of 008's content.** The conceptual format summary in §rules names ID, Statement, Rationale, Verification, and RFC 2119 — the same fields described more fully in 008's data-model. This duplication is bounded and intentional (the hybrid resolution to Q2). The constitution back-links for the full schema.
-- **008's body remains security-framed.** Its motivation paragraph still reads "Security rules belong at the governance level because they are cross-cutting." The signpost makes the general framing discoverable without rewriting frozen archaeology, but readers who land on 008 and don't notice the signpost may carry forward the security-only mental model. Acceptable — the constitution and 016 are now the canonical entry points.
+- **008's body remains security-framed.** Its motivation paragraph still reads "Security rules belong at the governance level because they are cross-cutting." The signpost makes the general framing discoverable without rewriting a `done` spec's body, but readers who land on 008 and don't notice the signpost may carry forward the security-only mental model. Acceptable — the constitution and 016 are now the canonical entry points.
 - **"Applicable Rules" section is decorative without the deferred consistency check.** Authors can skip it without consequence (validate's existing reference check only fires on cited IDs, not on missing citations). Mitigated by inbox capture of the consistency-check work — when that ships, the section becomes load-bearing.
 - **Adding §rules to canonical-sources is a small drift surface of its own.** The canonical-sources table grows by one row; future readers must remember to update it when the artifact location changes. No mitigation beyond the existing discipline of editing the table when canonical sources move.
 

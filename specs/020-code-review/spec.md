@@ -1,6 +1,6 @@
 ---
 spec: 020-code-review
-status: done
+status: in-progress
 dependencies: []
 review:
   last-run: 2026-09-13T00:43:52Z
@@ -174,9 +174,10 @@ tools — a discipline dependency the framework should remove.
   existing `/ductus:analyze` drift check only fires when `review.blocking` is
   already `true` or `review.last-run` is missing, so rules introduced after
   the last review never re-flip the flag on shipped code. The §drift-prevention
-  "done specs are frozen archaeology" rule applies to the spec body, not to
-  the code the spec describes — that code keeps living and should stay
-  compliant with current rules. Single-target `/ductus:review` already accepts
+  "done specs are frozen archaeology" rule this argued against — deleted since,
+  by 023's `living-specs` scenario — applied to the spec body, never to the
+  code the spec describes; that code keeps living and should stay compliant
+  with current rules. Single-target `/ductus:review` already accepts
   `done` (the gate halts only when status is *not* in `{in-progress, done}`);
   `--all` simply enumerates the same set the gate already permits.
 

@@ -1,6 +1,6 @@
 ---
 title: "013-text-first-artifacts — spec"
-status: done
+status: in-progress
 dependencies: [000-slash-commands, 007-govern-workflow, 012-multi-agent-govern]
 tags: [format, migration, pipeline]
 review:
@@ -45,7 +45,7 @@ The constitution gains a new section declaring text-first artifacts as a guiding
 
 ### Frontmatter Schema
 
-The schema applies to **spec files** (`spec.md`, `spec-and-plan.md`) and **scenario files** (`scenarios/{slug}.md`). Other `ductus` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to. The schema is declared as a markdown table in `framework/constitution.md`, next to the text-first principle, and is the authoritative source for `/ductus:analyze` and any tooling.
+The schema applies to **spec files** (`spec.md`) and **scenario files** (`scenarios/{slug}.md`). (As written it also named `spec-and-plan.md`, the lightweight track's combined document, retired by `023-govern-refinement`.) Other `ductus` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to. The schema is declared as a markdown table in `framework/constitution.md`, next to the text-first principle, and is the authoritative source for `/ductus:analyze` and any tooling.
 
 **Required fields for spec files:**
 
@@ -70,7 +70,7 @@ The schema is open: additional fields beyond those listed are permitted and igno
 
 Every slash command source in `framework/commands/` (and the regenerated `.claude/commands/ductus/` instances) that reads or writes spec metadata is updated to use frontmatter parsing instead of bold-prefix regex. At minimum this covers: `/ductus:status`, `/ductus:target`, `/ductus:clarify`, `/ductus:plan`, `/ductus:implement`, `/ductus:analyze`, `/ductus:groom`, `/ductus:specify`. Commands that don't read metadata are unaffected.
 
-Templates (`framework/templates/spec/spec.md`, `spec-and-plan.md`) ship with the new frontmatter format so newly created specs use it from day one.
+Templates (`framework/templates/spec/spec.md`, and `spec-and-plan.md` until `023-govern-refinement` deleted it) ship with the new frontmatter format so newly created specs use it from day one.
 
 ### Migration via `/ductus`
 

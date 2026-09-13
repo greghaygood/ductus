@@ -4,7 +4,7 @@ Implements [017 — Derive, Don't Ask](spec.md).
 
 ## Overview
 
-Discipline-cleanup pass across templates, commands, constitution, validate, and the bootstrap installer. Adds three new generators (`gen-readme-table.sh`, `gen-help-tables.sh`, `gen-spec-deps.sh`), one new pre-commit hook (`.githooks/pre-commit`), one new install script (`scripts/install-hooks.sh`), one new rule file (`framework/rules/configuration-cross.md`), and one new adopter hook surface under `framework/bootstrap/hooks/`. Migrates existing dogfood specs only insofar as adding inline links to spec bodies for any frontmatter dependency not already linked (so the new `gen-spec-deps.sh` generator does not strip them on first run). Frontmatter field deletions are not retroactively migrated — done specs are frozen archaeology per the constitution. Collapses the twin constitutions to a single canonical file at `framework/constitution.md` and deletes root `constitution.md`.
+Discipline-cleanup pass across templates, commands, constitution, validate, and the bootstrap installer. Adds three new generators (`gen-readme-table.sh`, `gen-help-tables.sh`, `gen-spec-deps.sh`), one new pre-commit hook (`.githooks/pre-commit`), one new install script (`scripts/install-hooks.sh`), one new rule file (`framework/rules/configuration-cross.md`), and one new adopter hook surface under `framework/bootstrap/hooks/`. Migrates existing dogfood specs only insofar as adding inline links to spec bodies for any frontmatter dependency not already linked (so the new `gen-spec-deps.sh` generator does not strip them on first run). Frontmatter field deletions are not retroactively migrated — under the constitution's frozen-archaeology rule, in force when this plan was written, done specs were not edited. (023's `living-specs` scenario removed that rule; the fields were left in place regardless, and the open-schema rule ignores them.) Collapses the twin constitutions to a single canonical file at `framework/constitution.md` and deletes root `constitution.md`.
 
 The work is intentionally additive in mechanism (add generators and hooks) and subtractive in surface (remove fields, sections, and `--fix` mode). No new agent-facing concepts are introduced.
 
@@ -111,7 +111,7 @@ Adopter shipping: added to `framework/bootstrap/ductus.md`'s Shared Files manife
 
 ### Migration of existing dogfood specs
 
-Done specs are frozen archaeology — stale `title:`, `tags:`, `spec-ref:`, and `track:` fields remain. `/validate` stops checking them, so they cause no findings.
+Done specs were not migrated, per the frozen-archaeology rule the constitution carried at the time — stale `title:`, `tags:`, `spec-ref:`, and `track:` fields remain. `/validate` stops checking them, so they cause no findings.
 
 The one exception that needs active migration: **inline links for dependencies**. Each existing spec's frontmatter `dependencies` list must be reflected in the spec body via inline markdown links — otherwise the first run of `gen-spec-deps.sh` strips them. Migration task: for each existing spec, scan the body for inline links to declared deps; add a "References" list at the bottom of the spec body for any declared dep not already inline-linked.
 
@@ -212,7 +212,7 @@ A second workflow file (`.github/workflows/adopter-generators.yml`) ships as a t
 | --- | --- | --- |
 | `specs/000-016/spec.md` (and one `spec-and-plan.md` if any) | Modify | Add inline links in body for any declared frontmatter dependency not already linked (so first `gen-spec-deps.sh` run does not strip them) |
 
-(No frontmatter migration on done specs — frozen archaeology.)
+(No frontmatter migration on done specs — see the trade-off below.)
 
 ### This spec's own artifacts
 
@@ -232,7 +232,7 @@ See `data-model.md` for the configuration rule file structure, ID format, catego
 - **Symmetric hooks across ductus and adopters.** Considered: command-entry recompute only, no adopter hook. Rejected because drift between commits is a real failure mode (a teammate pulls an out-of-date branch and reads stale deps without running a ductus command). The user explicitly pushed for symmetry — if hooks are right for ductus, they're right for adopters.
 - **Adopter hook installs only when no existing hook system is detected.** Considered: always install (clobbering existing hooks). Rejected because adopter projects already use husky/lefthook/pre-commit-py and clobbering their setup is a pipeline-violating action. Skip-and-warn-with-snippet keeps the adopter in control.
 - **No `gen-root-constitution.sh` generator.** Q2 collapsed the twin constitutions; the divergence the generator would have managed is gone.
-- **Existing dogfood specs not migrated for deleted fields.** Done specs are frozen archaeology per `framework/constitution.md` §done-specs-are-frozen-archaeology. Stale `title:`, `tags:`, `spec-ref:`, `track:` fields remain; the open-schema rule ignores them. The cost is one-time visual noise in old specs; the benefit is no rewrite of merged history.
+- **Existing dogfood specs not migrated for deleted fields.** `framework/constitution.md` carved done specs out as *frozen archaeology* when this plan was written; 023's `living-specs` scenario deleted that carve-out, and the anchor it was cited by no longer exists. Stale `title:`, `tags:`, `spec-ref:`, `track:` fields remain; the open-schema rule ignores them. The cost is one-time visual noise in old specs; the benefit is no rewrite of merged history.
 - **CI templates ship but aren't auto-installed for adopters.** Auto-installing requires CI-platform detection (GHA vs. GitLab vs. Buildkite) that's out of scope. Adopters with CI enforcement opt in by copying the template.
 - **The pre-commit hook runs all generators unconditionally** rather than gating on which files changed. Trades sub-second hook execution time for a hook script that can't have wrong gate logic.
 - **`--fix` mode deletion is irreversible.** A user who relied on `/validate --fix` for hand-implementation flows loses that workflow. The framework's position becomes "use `/implement`," and the trade-off is documented in the spec's Q1 resolution. Rolling back requires another spec.

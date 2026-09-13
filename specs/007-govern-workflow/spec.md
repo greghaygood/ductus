@@ -1,6 +1,6 @@
 ---
 title: "007-govern-workflow — spec"
-status: done
+status: in-progress
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap, commands]
 review:
@@ -116,7 +116,6 @@ These files are identical regardless of target CLI:
 - `specs/events.md` — from `templates/events.md`
 - `specs/inbox.md` — from `templates/inbox.md`
 - `specs/templates/spec.md` — from `templates/spec.md`
-- `specs/templates/spec-and-plan.md` — from `templates/spec-and-plan.md` (if it exists)
 - `specs/templates/plan.md` — from `templates/plan.md`
 - `specs/templates/tasks.md` — from `templates/tasks.md`
 - `specs/templates/data-model.md` — from `templates/data-model.md`

@@ -1,6 +1,6 @@
 ---
 title: "008-security-rules — spec"
-status: done
+status: in-progress
 dependencies: [007-govern-workflow]
 tags: [security, format]
 review:
@@ -140,7 +140,7 @@ When neither condition holds — greenfield adoption with no existing specs, or 
 For each newly created rule file:
 
 1. Load the rule file, applying the same integrity checks validate uses (well-formed headings, required fields, valid IDs, no duplicates). If the file fails to load, ductus reports the load failure and skips the audit for that file — same posture as validate.
-2. For each MUST/MUST NOT and SHOULD/SHOULD NOT rule whose Verification trigger fires against any artifact under `specs/NNN-*/` (`spec.md`, `spec-and-plan.md`, `plan.md`, scenario files), produce a finding.
+2. For each MUST/MUST NOT and SHOULD/SHOULD NOT rule whose Verification trigger fires against any artifact under `specs/NNN-*/` (`spec.md`, `plan.md`, scenario files), produce a finding.
 3. Append each finding to `specs/inbox.md` as a new item.
 
 ### Inbox item format

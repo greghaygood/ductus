@@ -41,6 +41,8 @@ Each command is based on the corresponding anvil command with these transformati
 
 ### Spec file detection
 
+> Superseded by [023](../023-govern-refinement/spec.md), which removed the lightweight track and with it the two-filename fallback from every command source. The pattern below is what 000 planned and delivered.
+
 Commands that operate on a feature's spec need to handle both `spec.md` and `spec-and-plan.md`. The pattern is:
 
 1. Check for `spec.md` first

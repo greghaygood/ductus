@@ -1,6 +1,6 @@
 ---
 title: "000-slash-commands — spec"
-status: done
+status: in-progress
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
@@ -47,7 +47,7 @@ Ten commands organized into two groups:
 
 #### Pipeline commands (run in order)
 
-- **specify** — prompt qualifying questions to detect lightweight track, create spec (or spec-and-plan) from template, set as session target, add to README
+- **specify** — prompt qualifying questions to detect lightweight track, create spec (or spec-and-plan) from template, set as session target, add to README (the qualifying questions and the combined document were removed by `023-govern-refinement`; `specify` always creates `spec.md` today)
 - **clarify** — resolve open questions, enumerate edge cases, verify acceptance criteria, advance draft to clarified
 - **plan** — generate plan.md and tasks.md, run readiness check, advance clarified to planned
 - **implement** — walk through tasks, write code/tests, verify acceptance criteria, advance planned to done
@@ -91,14 +91,16 @@ Pipeline commands enforce gates before executing:
 
 ### Lightweight Track Detection
 
-The `specify` command determines whether a feature qualifies for the lightweight track by prompting the user with qualifying questions:
+> **Superseded by [023](../023-govern-refinement/spec.md).** The lightweight track was removed: `framework/templates/spec/spec-and-plan.md` is deleted, the constitution's §lightweight-track section is gone, `specify` no longer asks qualifying questions, and no command source carries the two-filename fallback. The section below records what 000 delivered. The runtime still *reads* a legacy `spec-and-plan.md` so an unmigrated adopter resolves (`is_spec_path`), and `framework/migrations/spec-and-plan-sunset.md` records the rename.
+
+As delivered, the `specify` command determined whether a feature qualified for the lightweight track by prompting the user with qualifying questions:
 
 - Does this touch more than one module or package?
 - Are there open questions or unknowns about the approach?
 - Does it involve data model changes beyond trivial?
 - Will it be more than ~50 lines of spec?
 
-If all answers indicate "small and clear," specify creates `spec-and-plan.md` from a combined template instead of `spec.md`. The `clarify` and `plan` commands detect which file exists and adapt: `clarify` works on whichever file is present, and `plan` skips plan creation if `spec-and-plan.md` already contains the plan section.
+If all answers indicated "small and clear," specify created `spec-and-plan.md` from a combined template instead of `spec.md`. The `clarify` and `plan` commands detected which file existed and adapted: `clarify` worked on whichever file was present, and `plan` skipped plan creation if `spec-and-plan.md` already contained the plan section.
 
 ### Template References
 
@@ -139,8 +141,8 @@ trigger recorded — only `## Open Questions` entries count against the gate.
 - [x] AC11: Commands reference `specs/templates/` for templates (not `ductus` templates)
 - [x] AC12: Commands reference `.claude/{project}-session.json` for session state
 - [x] AC13: The `validate` command runs `npx markdownlint-cli2` on the feature's files as part of its checks
-- [x] AC14: The `specify` command prompts qualifying questions and creates `spec-and-plan.md` for lightweight track features
-- [x] AC15: Pipeline commands detect and handle both `spec.md` and `spec-and-plan.md`
+- [x] AC14: The `specify` command prompts qualifying questions and creates `spec-and-plan.md` for lightweight track features — **delivered, then removed by `023-govern-refinement`**: `specify` asks no qualifying questions and the combined template is deleted. Checked because 000 delivered it; the removal is 023's.
+- [x] AC15: Pipeline commands detect and handle both `spec.md` and `spec-and-plan.md` — **delivered, then removed by `023-govern-refinement`**: its AC10 stripped the two-filename fallback from every command source. The runtime retains the legacy filename in `is_spec_path` so an unmigrated adopter still resolves, which is a read tier rather than the detection branch this criterion describes.
 
 ## Resolved Questions
 
@@ -148,4 +150,4 @@ trigger recorded — only `## Open Questions` entries count against the gate.
 - **Validate and markdown lint** — validate includes a markdownlint check as part of its PASS/FAIL report. Lint compliance is a quality gate defined in the constitution.
 - **Specify and dependencies** — specify accepts only a description. Dependencies are set during writing and clarifying, not at creation time.
 - **Retire/archive command** — deferred. See [specs/README.md](../README.md#future-considerations). Projects can manually update status or delete directories.
-- **Lightweight track handling** — the `specify` command detects lightweight track eligibility by prompting qualifying questions. Creates `spec-and-plan.md` when all answers indicate small and clear. Pipeline commands adapt based on which file exists.
+- **Lightweight track handling** — the `specify` command detected lightweight track eligibility by prompting qualifying questions, created `spec-and-plan.md` when all answers indicated small and clear, and pipeline commands adapted based on which file existed. The decision was reversed by `023-govern-refinement`, which removed the track outright; see §Lightweight Track Detection above.

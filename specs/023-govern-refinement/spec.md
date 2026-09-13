@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [022-deterministic-runtime]
 review:
   last-run: 2026-08-30T23:02:22Z
@@ -53,7 +53,7 @@ Consolidate the slash command surface so the pipeline feels less like a framewor
 - Remove the "check for `spec.md` first, then `spec-and-plan.md`" fallback in every command that performs that detection.
 - Drop the four qualifying questions from `/specify`.
 
-`ductus` never rewrites an existing `spec-and-plan.md` in an adopter project; the framework simply stops emitting new ones, and the `/ductus` migration check offers the rename. See **Open Questions** for how long pipeline commands continue to *read* them.
+`ductus` never rewrites an existing `spec-and-plan.md` in an adopter project; the framework simply stops emitting new ones, and — as shipped — the `/ductus` migration check offered the rename. That check no longer runs: `027-bootstrap-migration-registry` moved it into `framework/migrations.toml` as the `spec-and-plan-sunset` entry carrying `sunset_after = "0.10.0"`, and the bootstrap's §Pre-run Migrations filter selects an entry only while the current release is *below* its sunset, so the entry has been inert since 0.10.0. The procedure file and the registry entry survive as the record of the rename. See **Open Questions** for how long pipeline commands continue to *read* them.
 
 ### 2. `/capture` consolidated into `/specify`
 
@@ -126,7 +126,7 @@ The list is sourced from `framework/runtime-tools.txt` to avoid drift. Each tool
 - [x] AC8: `framework/commands/amend.md` documents the classification heuristic in its prose Instructions section (question signals, scenario signals, status tiebreaker) and surfaces the chosen route in the refinement-approval gate with a one-input override (`flip`) that redrafts under the alternate route.
 - [x] AC9: `framework/commands/amend.md` owns both back-edges: `clarified|planned|in-progress → draft` (on question record) and `done → in-progress` (on scenario record).
 - [x] AC10: No command source under `framework/commands/` retains the `spec.md`-then-`spec-and-plan.md` detection fallback on either the read or write side.
-- [x] AC11: `framework/bootstrap/ductus.md` performs a one-pass migration check on every run: lists any `spec-and-plan.md` files under `specs/` and offers to rename each to `spec.md`. The changelog accompanying this spec's release documents the rename.
+- [x] AC11: `framework/bootstrap/ductus.md` performs a one-pass migration check on every run: lists any `spec-and-plan.md` files under `specs/` and offers to rename each to `spec.md`. The changelog accompanying this spec's release documents the rename. — **Delivered as written; the check no longer fires.** `027-bootstrap-migration-registry` replaced the bespoke prose block with the `spec-and-plan-sunset` entry in `framework/migrations.toml`, whose `sunset_after = "0.10.0"` puts it outside the §Pre-run Migrations selection filter at every release since. Checked because 023 delivered it; the retirement is 027's sunset mechanism working as designed.
 - [x] AC12: `framework/bootstrap/configure/claude.md` includes explicit `Edit({cli-config-dir}/{project}-session.json)` and `Write({cli-config-dir}/{project}-session.json)` entries in the canonical `permissions.allow` array so pipeline commands do not prompt on session-file writes.
 - [x] AC13: `framework/bootstrap/configure/auggie.md`'s existing bare `save-file` and `str-replace-editor` allows are confirmed to cover session-file writes; no Auggie-side addition required (verified at implementation time).
 - [x] AC14: `framework/bootstrap/configure/claude.md` includes a Claude-format permission entry for every MCP tool listed in `framework/runtime-tools.txt`, added to the canonical `permissions.allow` array unconditionally (no runtime-presence detection).
