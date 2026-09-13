@@ -1,12 +1,14 @@
 ---
 spec: 017-derive-dont-ask
-reviewed-at: 2026-09-13T00:17:28Z
-reviewed-against: 19745b4abfdc123f838523cde2f4b1affb9e68bf
-diff-base: 3db3d0e9238f824995b87e3757d97363a76d2029
+reviewed-at: 2026-09-13T12:28:44Z
+reviewed-against: 07901330d423c655f1954e7b6cf1ea8ba1d7147e
+diff-base: 510eb25cfd96bc5ac2bcc714054c482a2c3cbfe1
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 8
+scope: 49
 skipped-passes: []
 ---
 
@@ -14,7 +16,9 @@ skipped-passes: []
 
 ## Summary
 
-Full five-pass review against the 11 loaded rule files. Scope read in full: the two binding cross-cutting rule files; every executable artifact in scope (.githooks/pre-commit, scripts/install-hooks.sh, scripts/gen-help-tables.sh, framework/bootstrap/hooks/pre-commit, .github/workflows/generators.yml, framework/templates/ci/adopter-generators.yml); both permission sets; framework/bootstrap/ductus.md; framework/constitution.md and AGENTS.md; the command sources log, status, groom, plan, amend, implement, analyze, clarify, specify; all five spec templates; README.md; and this spec's own spec.md, plan.md and data-model.md. Twelve defects were found and all twelve are fixed — none stands. QUAL-CLAIM-001 x3: the shipped adopter CI gate hardcoded `find specs`, so on a configured [paths] specs-root it enumerated nothing and exited 0 (proven red against a renamed-root fixture, then green; it now resolves the root from derive-dependencies, reports what it examined, and fails on a zero count); both CI workflows gated on `git diff --exit-code`, blind to untracked generator output (verified by adding a command source and watching the gate pass); the adopter template derived dependencies: and never references: while its step name claimed generators were in sync. Stale claims in live artifacts x9: this spec's §Generators and Hooks named four generators, two deleted, plus .ductus/scripts/, .govern.toml, and a dry-run CI mode that is not how CI runs; "frozen archaeology" phrasing AGENTS.md forbids; data-model.md named a commands-elaborate marker that has never existed (it is commands-refine), credited gen-spec-deps.sh, and described the pre-018 hook sentinel; AGENTS.md pointed at two files as frozen-archaeology drift candidates that are both clean; README claimed inbox.md eventually disappears where the constitution says it persists; implement.md carried a duplicated audit:ignore-promotion marker; analyze.md cited step 18 twice for a record written at step 17, in check-step-references' documented blind spot; clarify.md still dispatched run-generator at the script 022 deleted while its own markdown-only reference already named the primitive; and configure/auggie.md granted the five file-content parsers claude.md deliberately excludes, which also required giving auggie.md the retirement mechanism it lacked. Fixed in de5ccb4, 1e9fa8c, 3d832ae, 19745b4. 0 MUST, 0 SHOULD, 0 low-confidence outstanding.
+Reopened by the retired-filename sweep, which removed the two superseded-naming annotations 017 carried in `spec.md` and `data-model.md`. Reviewing that change found six further stale claims, all corrected in this run and all of the same class: a criterion or contract describing machinery that no longer exists. **AC12** claimed the pre-commit hook runs four generators — `gen-readme-table.sh` was retired with the generated table (AC10) and `gen-spec-deps.sh` was promoted to the `derive-dependencies` / `derive-references` primitives (AC23), so two of the four have not existed for several releases; the hook today runs `gen-configure-mcp`, `gen-claude-commands` and `gen-help-tables` plus those two primitives, verified against `.githooks/pre-commit`. **AC24** still specified the CI step as dry-run, which the spec body itself contradicts. All **four scenarios** carried present-tense MUST statements naming those two retired scripts, while `framework/rules/quality-cross.md`'s `QUAL-CLAIM-001` Source — which cites `generator-sync-claim-honesty` by name — already recorded the promotion, so the rule file and the contracts it cites disagreed. Each was annotated rather than rewritten: the requirements carried across to the primitives unchanged, so the text still binds, and a superseded *mechanism* is not a rename. No MUST or SHOULD violation against the loaded rules is outstanding.
+
+**What this review read, and what it did not.** The five passes read 8 of the 45 in-scope files: `framework/rules/quality-cross.md`, 017's `spec.md` and `data-model.md`, all four scenarios, and `.githooks/pre-commit` (the file AC12's claim had to be checked against). The remaining 37 are `plan.md` Affected Files entries from 017's original 2026 implementation — templates, command sources and bootstrap files it has not touched since — and they were **not** re-read this run, so this report is evidence about 017's own artifacts and the hook, not about those. Eight of the 45 no longer exist at all (`constitution.md`, `framework/commands/capture.md`, `framework/commands/elaborate.md`, `framework/templates/spec/spec-and-plan.md`, `framework/bootstrap/hooks/install.sh`, `scripts/gen-readme-table.sh`, `scripts/gen-spec-deps.sh`, `specs/000-016/spec.md`), retired by later specs; that is the plan being a design record of what was affected then, which AC14 makes explicit, not drift to repair.
 
 ## MUST violations (blocking)
 

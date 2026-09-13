@@ -2,17 +2,19 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-13T00:17:28Z
-  reviewed-against: 19745b4abfdc123f838523cde2f4b1affb9e68bf
+  last-run: 2026-09-13T12:28:44Z
+  reviewed-against: 07901330d423c655f1954e7b6cf1ea8ba1d7147e
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 8
+  scope: 49
   reviewed-digest:
-    data-model.md: 6e24f25156055a0c7a636c72294fdfbc6e0de44556f95d40513028d0410fee4f
-    scenarios/detect-dependency-cycles.md: f7b0ac55bdeb0d2084d59779cd67015635ca2616daf423324713c9217c3d36e8
-    scenarios/generator-sync-claim-honesty.md: e03a245d2efd00b267fd7eeb0690af4fd3877a685c7ab121e9b5dc0ffe598481
-    scenarios/skip-prose-cross-references.md: e57301025e73da4c077a5be9fc7ae821653c37a9ad12ee0d4c10a31798f60380
-    scenarios/tracked-specs-not-worktree.md: 985aeeaa62ab386742d54ffd4b671f6109f53c156431391b5c42d7eb7718287c
+    data-model.md: 660f5669693d42287cd8ae1819165d73a4e9ae3546402e01c8d50a109f5c91d6
+    scenarios/detect-dependency-cycles.md: 000d69d482a589ef696aec878d87fa53a1336b0e220ca2baa71a1b8aff397ceb
+    scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264
+    scenarios/skip-prose-cross-references.md: c70ab9312912ef443049b63f3d3e1915b0f466dcb720c8e88253eeea8e4f2326
+    scenarios/tracked-specs-not-worktree.md: ba42aee5fbee0dfed38fce985200b0ba5775ecd03113a81aa792b25a18383829
   blocking: false
 next-criterion: 27
 analyze:
