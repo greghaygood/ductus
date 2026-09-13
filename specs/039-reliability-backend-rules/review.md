@@ -1,12 +1,14 @@
 ---
 spec: 039-reliability-backend-rules
-reviewed-at: 2026-06-29T02:41:53Z
-reviewed-against: 38ef20a463fe2162ccf0888bcc56954a9b6e9c9d
-diff-base: 38ef20a463fe2162ccf0888bcc56954a9b6e9c9d
+reviewed-at: 2026-09-13T12:43:39Z
+reviewed-against: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
+diff-base: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 2
+scope: 2
 skipped-passes: []
 ---
 
@@ -14,53 +16,40 @@ skipped-passes: []
 
 ## Summary
 
-Rule-introducing, markdown-tier change set: the new rule file
-`framework/rules/reliability-backend.md` (`TIMEOUT`/`RETRY`/`BREAKER`/`DRAIN`/`BULK`,
-eight rules) and its `/ductus` Shared Files manifest row in
-`framework/bootstrap/ductus.md` — no application code, no new surface (the `BE`
-surface already exists, so no `lint-rule-ids.sh` or `data-model.md` change). No
-loaded security rule's Verification trigger fires against a rule-definition file
-or a manifest row, and the reuse/efficiency/simplicity passes find nothing
-actionable: the file mirrors the established backend rule-file schema and
-design-time-commitment framing, and cites `api-backend.md` `BE-IDEMP`,
-`observability-backend.md` `BE-HEALTH-001`, `performance-backend.md`
-`BE-ASYNC`/`BE-POOL-002`, and `configuration-cross.md` `CFG-*` rather than
-restating them. The quality pass confirms each of the eight Statements uses
-exactly one RFC 2119 keyword; the three MUSTs (`BE-TIMEOUT-001` unbounded wait,
-`BE-RETRY-001` retry storm, `BE-DRAIN-001` no graceful drain) are each
-availability or cascading-failure hazards that occur regardless of scale — the
-bar the spec's severity posture reserves MUST for, stated in each rationale —
-while breaker adoption, deadline propagation, retry budgeting, and bulkheading
-stay SHOULD; categories are disjoint from the other backend files and
-`scripts/lint-rule-ids.sh` passes; and all eight acceptance criteria are
-satisfied, including AC #8 — this file resolves 034's forward-reference by
-landing the deferred deadlines, timeouts, retries, and circuit breakers. **0 MUST
-violations — not blocking; the spec may advance to `done`.**
+First review of 039 to record `examined` against a derived `scope`; the prior record predated those fields, so its `0/0/0` could not be distinguished from a run whose passes never fired. **One real gap found and fixed at the source.** AC6 claimed `reliability-backend.md` cites `CFG-*` for tunable config, and the file contained zero mentions of configuration — while mandating a bounded timeout on every outbound call (`BE-TIMEOUT-001`), a maximum attempt count with backoff and jitter (`BE-RETRY-001`), and a failure-rate threshold (`BE-BREAKER-001`). Every one of those is an operator-tunable value, the spec's own Boundaries section assigns them to `configuration-cross.md`, and the sibling set 034 cites `CFG-CONST-003` from `BE-POOL-001`/`BE-POOL-002` for precisely this. Fixed by adding the citation to the rule file rather than by weakening the criterion: `BE-TIMEOUT-001` and `BE-RETRY-001` now require the value to be a named constant per `CFG-CONST-003`. That is the difference between this finding and the cosmetic AC6 discrepancies in 034 and 038 — there, no rule reached the cited surface, so nothing was owed; here the rules reached it and said nothing.
 
-Rule-file selection for this run: `[rules] surfaces` unset in ductus's own
-`.govern.toml`, so step 5 fell back to detected-stack derivation;
-`[review] tech-stack-verified = true` skipped the alignment check.
+**The other seven criteria verified against the tree.** AC1: the file exists with the `-backend.md` suffix and the canonical schema. AC2: the eight IDs span `TIMEOUT`/`RETRY`/`BREAKER`/`DRAIN`/`BULK`, disjoint from the three sibling sets — checked by intersecting the extracted category sets; `lint-rule-ids.sh` exits 0 after the edit. AC3: the header declares all five with their concerns. AC4: timeouts/deadlines, bounded retries, circuit breakers and graceful shutdown are each covered, and all eight Verification clauses are design-time commitments rather than code-pattern greps. AC5: exactly three MUSTs, matching the Severity posture's enumeration precisely — `BE-TIMEOUT-001` (unbounded downstream wait), `BE-RETRY-001` (retry storm), `BE-DRAIN-001` (dropped in-flight work on deploy). AC6 as above. AC7: one **Shared Files** manifest row. AC8: 034's forward-reference resolves here — 034's Boundaries defer deadlines, downstream timeouts, retries and circuit breakers, and `TIMEOUT`/`RETRY`/`BREAKER` land all four, with `BE-POOL-002` correctly left in the performance set and cited rather than moved.
+
+**What this review read: both files in scope** — `framework/rules/reliability-backend.md` and `framework/bootstrap/ductus.md`'s manifest row; `framework/rules/performance-backend.md` was also consulted for the AC8 boundary check and the `CFG-CONST-003` citation pattern, outside this scope. `specs/039-reliability-backend-rules/spec.md` was read in full and is not counted, falling outside the resolved scope. The diff base is an empty window for the reason recorded in 037's review. 039 has no scenarios and no data model, so `reviewed-digest` is empty — taken and empty, which reads as current.
 
 ## MUST violations (blocking)
 
-_None._
+*None.*
 
 ## SHOULD violations (advisory)
 
-_None._
+*None.*
 
 ## Low-confidence findings
 
-_None._
+*None.*
 
 ## Waived findings
 
-_None._
+*None.*
 
-## Captured issues (pending /ductus:groom)
+## Captured issues
 
-_None — no inbox additions since diff-base._
+*None.*
+
+## Observations
+
+*None.*
 
 ## Skipped passes
 
-_None — all five passes ran._
+*None.*
+
+## Unexamined governance
+
+*None.*

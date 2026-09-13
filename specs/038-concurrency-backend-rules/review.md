@@ -1,12 +1,14 @@
 ---
 spec: 038-concurrency-backend-rules
-reviewed-at: 2026-06-29T02:32:22Z
-reviewed-against: 40885b822de1d6ba2196affa71324c4bb1ed2054
-diff-base: 40885b822de1d6ba2196affa71324c4bb1ed2054
+reviewed-at: 2026-09-13T12:43:39Z
+reviewed-against: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
+diff-base: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 2
+scope: 2
 skipped-passes: []
 ---
 
@@ -14,53 +16,40 @@ skipped-passes: []
 
 ## Summary
 
-Rule-introducing, markdown-tier change set: the new rule file
-`framework/rules/concurrency-backend.md` (`RACE`/`LOCK`/`TXN`/`COORD`, eight
-rules) and its `/ductus` Shared Files manifest row in
-`framework/bootstrap/ductus.md` — no application code, no new surface (the `BE`
-surface already exists, so no `lint-rule-ids.sh` or `data-model.md` change). No
-loaded security rule's Verification trigger fires against a rule-definition file
-or a manifest row, and the reuse/efficiency/simplicity passes find nothing
-actionable: the file mirrors the `performance-backend.md` /
-`observability-backend.md` schema and design-time-commitment framing, and cites
-`api-backend.md` `BE-IDEMP`, `performance-backend.md` `BE-POOL-*`, and
-`configuration-cross.md` `CFG-*` rather than restating them (idempotency is not
-duplicated as a colliding category). The quality pass confirms each of the eight
-Statements uses exactly one RFC 2119 keyword; the four MUSTs (`BE-RACE-001` data
-race, `BE-TXN-002` lost update, `BE-COORD-001` missing fencing token,
-`BE-COORD-002` non-idempotent retry) are each silent-corruption hazards that two
-concurrent actors suffice to trigger — the scale-independent corruption bar the
-spec's severity posture reserves MUST for, stated in each rationale — while the
-contextual choices (optimistic vs. pessimistic locking, isolation-level
-selection, race-surface reduction) stay SHOULD; categories are disjoint from the
-other backend files and `scripts/lint-rule-ids.sh` passes; and all seven
-acceptance criteria are satisfied. **0 MUST violations — not blocking; the spec
-may advance to `done`.**
+First review of 038 to record `examined` against a derived `scope`; the prior record predated those fields, so its `0/0/0` could not be distinguished from a run whose passes never fired. One defect found and fixed: **AC6 named a cross-reference the rule file does not make.** It claimed `concurrency-backend.md` cites `BE-POOL-*` for pool interaction; the file does not mention pools or connections anywhere, so there was nothing to cite and — the thing the criterion actually guards — nothing was restated either. The criterion now states the citations delivered (`BE-IDEMP`, `CFG-*`) and why the third was unnecessary. This is the same shape found in 034 and 039 this cycle; in 039 it was a real gap, here it is not.
 
-Rule-file selection for this run: `[rules] surfaces` unset in ductus's own
-`.govern.toml`, so step 5 fell back to detected-stack derivation;
-`[review] tech-stack-verified = true` skipped the alignment check.
+**The other six criteria verified against the tree.** AC1: the file exists with the `-backend.md` suffix and the canonical schema. AC2: the eight IDs span `RACE`/`LOCK`/`TXN`/`COORD`, disjoint from `security-backend.md`, `api-backend.md` and `performance-backend.md` — checked by extracting all four category sets and intersecting; `lint-rule-ids.sh` exits 0. AC3: the header declares all four with their concerns. AC4: shared-state races, locking/deadlock and transaction isolation are each covered, and all eight Verification clauses are design-time commitments phrased against a spec or plan rather than code-pattern greps. AC5: the four MUSTs are the corruption hazards — `BE-RACE-001` (unguarded shared mutable state), `BE-TXN-002`, `BE-COORD-001` and `BE-COORD-002` (fencing tokens and delivery semantics); the contextual choices, optimistic-vs-pessimistic locking and isolation-level selection, are SHOULD. Note the Resolved Questions enumerate the MUSTs by *concern* (three) while the file carries four *rules*, because `COORD` contributes two — that is the enumeration being coarser than the rule set, not a mismatch. AC7: one **Shared Files** manifest row.
+
+**What this review read: both files in scope** — `framework/rules/concurrency-backend.md` and `framework/bootstrap/ductus.md`'s manifest row. `specs/038-concurrency-backend-rules/spec.md` was read in full and is not counted, falling outside the resolved scope. The diff base is an empty window for the reason recorded in 037's review: no commit records 038 entering `in-progress`, and basing on its first commit's parent would resolve hundreds of files and describe a review nobody performed. 038 has no scenarios and no data model, so `reviewed-digest` is empty — taken and empty, which reads as current.
 
 ## MUST violations (blocking)
 
-_None._
+*None.*
 
 ## SHOULD violations (advisory)
 
-_None._
+*None.*
 
 ## Low-confidence findings
 
-_None._
+*None.*
 
 ## Waived findings
 
-_None._
+*None.*
 
-## Captured issues (pending /ductus:groom)
+## Captured issues
 
-_None — no inbox additions since diff-base._
+*None.*
+
+## Observations
+
+*None.*
 
 ## Skipped passes
 
-_None — all five passes ran._
+*None.*
+
+## Unexamined governance
+
+*None.*
