@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [005-workflows]
 review:
   last-run: 2026-08-03T15:03:53Z
@@ -10,12 +10,18 @@ review:
   blocking: false
 next-criterion: 11
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T18:05:00Z
+  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  analyzed-digest:
+    data-model.md: 374db4bfc9f15a15aceb5a08b4e4f6c5f8323ec560eb5bc09d5a52bb7d3f79c3
+    plan.md: 8911597bbe88a0ce581763a840b44231fc5d769a92a4016f4184ecbb330f4f55
+    review.md: 69d852c621dff05fccf52c66a05536378f7b1e354baa4d2082a9a8666f6f1afc
+    spec.md: 76ab64bfd2d4dcbc32a1ea4f464577cc878e08d3a288460f5ae5c7ba931817ec
+    tasks.md: 98fec9c7a4badedc984d985d00024c84d75e48cee837c28902f81f7b5736678f
   blocking: false
 ---
 

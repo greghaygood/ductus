@@ -1,6 +1,6 @@
 ---
 title: "013-text-first-artifacts — spec"
-status: in-progress
+status: done
 dependencies: [000-slash-commands, 007-govern-workflow, 012-multi-agent-govern]
 tags: [format, migration, pipeline]
 review:
@@ -12,12 +12,20 @@ review:
   blocking: false
 next-criterion: 19
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T18:05:00Z
+  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  analyzed-digest:
+    data-model.md: e8af8a3a7c3a40f32e66aa888ec7e7ef6309d9bfabdf9953dcdc371f73144b69
+    plan.md: 777838e0f2abdd5896ba893da6350e3819e6d10c6ce37e3c851e5164af332836
+    review.md: 5a85801c44db8988da45f8171fc2e1aa0ad4b94e1b5e06fc7a6dfec721fa7f48
+    scenarios/criterion-identifiers.md: c0f12a2865306361f4a1060c8f85a02c5195a49476bc1c733f2730ace4929658
+    scenarios/past-tense-motivation-convention.md: 04b9583c6f2f4d56efa0cd7b544afd9811bd7925121ede083fbed9b6f2cdc1d4
+    spec.md: 717260034026409b90429f2105059daa7fcc07e415ed8afc72a2717d7e643dad
+    tasks.md: 5def5f5666ea746ae878ef486fba46ebd3df8c6946392c1491856b312e25f02e
   blocking: false
 ---
 

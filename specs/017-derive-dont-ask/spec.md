@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-13T12:28:44Z
@@ -18,15 +18,15 @@ review:
   blocking: false
 next-criterion: 27
 analyze:
-  last-run: 2026-09-13T12:29:25Z
-  analyzed-against: f05e2fa42e35c3461e7edcdd98d68bc0653a757e
+  last-run: 2026-09-13T18:05:00Z
+  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 1
   analyzed-digest:
     data-model.md: 660f5669693d42287cd8ae1819165d73a4e9ae3546402e01c8d50a109f5c91d6
-    plan.md: 0f39c855071d31a66dbadf94616a98b2c40cab33ca20750367a186a4eedbbd14
+    plan.md: 371921636aa901292a365fd571854ce16a585733c5d0da8fe72a00bf235814ec
     review.md: 3418609794ea63f684883e087b75440ce55e32acc3bf9fbabf9bac0f3f25e0a8
     scenarios/detect-dependency-cycles.md: 000d69d482a589ef696aec878d87fa53a1336b0e220ca2baa71a1b8aff397ceb
     scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264

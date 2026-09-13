@@ -1,6 +1,6 @@
 ---
 title: "000-slash-commands — spec"
-status: in-progress
+status: done
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
@@ -12,14 +12,27 @@ review:
   blocking: false
 next-criterion: 16
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T18:05:00Z
+  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 1
-  unexamined-by-reason:
-    ships-to-adopter: 1
+  unexamined: 0
+  analyzed-digest:
+    plan.md: d0dc9d9867d7a899e633f88a32232a63f959452ad06a1cc91dacd6af3d0ed6af
+    review.md: 4fc8372f96f37f2ee91bcdfc6ec7e1a52db027d2fdb6488ca6af2ce63367160a
+    scenarios/clarify-one-at-a-time.md: 74531377a3ba6862619c2a4aaf861084da5b53d69ac09a39f28740176f5c078d
+    scenarios/command-autocomplete-summary.md: 2d1bbd64b1ced5c5abba7e5160daa0ad9b9319998709e213aaa04ee01ace0ba0
+    scenarios/criterion-route-after-draft.md: 80781ef6092c5f1072106a856b1664f3b2bfb9b72e48df61a1e91e5fd6b8c1d4
+    scenarios/dashboard-dependencies-column.md: dee20040cb8baefeaf59a0283da0b1126f501d8173d70fb052aec6c38eef3a88
+    scenarios/implement-skips-planned-prompt.md: adeb014c4192e84543d733fcf27f12907c2cada0d4950af9782a6168a6fac1c3
+    scenarios/scenario-without-task-visibility.md: 912b16e99355b5fa17a6fd86fc4e640ffbe91375cf95394618c8954136e5960d
+    scenarios/target-argument-parsing.md: b91e1ec533ba1730f5b3760219ef3817c6238298ae8c351670a6edc9b6bb6db3
+    scenarios/target-clear-flag.md: b559bb6b731140c83a6c0733013ccc5fc4a0bdc9a3ec3cab4c26c00528380c43
+    scenarios/validate-fix-mode.md: a2b4b707e7705baab55683bf642c97c8e4e6e09036246dde9f2cdbf9396d6728
+    scenarios/validation-gates.md: 8fc3c93217e0b2ce5cc23812db08f9e31aff8f2ea5d04bcb998528d4b9548d58
+    spec.md: c1bacd18539dc509f3054f115f557f3be62a31e89f20b2a96a60a3a361b3e910
+    tasks.md: 12dc83f2b8b99cfdeaf8978b0b9ff9a4d7f49126b596e05d15150fa7f7a40cf2
   blocking: false
 ---
 

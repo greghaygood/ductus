@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [022-deterministic-runtime]
 review:
   last-run: 2026-08-30T23:02:22Z
@@ -10,15 +10,23 @@ review:
   blocking: false
 next-criterion: 41
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T18:05:00Z
+  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
-  advisory: 2
-  unexamined: 24
-  unexamined-by-reason:
-    not-a-live-claim: 19
-    root-absent: 5
+  advisory: 0
+  unexamined: 0
+  analyzed-digest:
+    plan.md: 410153412a5cf06d8a00b53474c699bf6fbaf3d8718470614a71665c616c2931
+    review.md: e034347aa35371fa386b2f3831f5354a2ec79c6c7e969c33aa0deebfc3602432
+    scenarios/configure-dedup-permissions.md: 61f154523cf65426a4b56fdc38662e8d7f822bace8418ae30952322d7e627036
+    scenarios/configure-inert-write-path-entries.md: fb2b3383713428e9006dff42edbb89a6bab99995f612161eefee69412c757f9d
+    scenarios/configure-permission-pattern-safety.md: 6c6f71741c7fdfcd96b9f6017b649eb6396dd0edc6b90944372f3078d12b18f0
+    scenarios/configure-retires-formerly-canonical-entries.md: ef72a39cf3ab9b373ce3e0b59783fe91719f011b0df663ae6bac9469bbd07815
+    scenarios/extend-existing-scenario-task.md: 61622769bcd38f91e2e6cf8aab86dab3f408df20beabdc747cbde2dbba7c36bf
+    scenarios/living-specs.md: 3c88dc74f397eefbe50213c92698c6a1093747158f651f6f7a8b215a2b556c69
+    spec.md: b638dece4b7532a336df211754e700849ec36f9a90001e04845dc4a0b04feef5
+    tasks.md: 520ea25b2ea0550787a9188e4c6dd61eecd61495b8d8452acc88c057105413e1
   blocking: false
 ---
 

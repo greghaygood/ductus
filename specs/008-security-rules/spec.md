@@ -1,6 +1,6 @@
 ---
 title: "008-security-rules — spec"
-status: in-progress
+status: done
 dependencies: [007-govern-workflow]
 tags: [security, format]
 review:
@@ -12,15 +12,19 @@ review:
   blocking: false
 next-criterion: 29
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T18:05:00Z
+  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 6
-  unexamined-by-reason:
-    not-a-live-claim: 4
-    ships-to-adopter: 2
+  unexamined: 0
+  analyzed-digest:
+    data-model.md: aebe69cc552e30ad8013322f5c7b1387dd24a191184457bbd56c734648af6a9e
+    plan.md: e66b5581be935d59ee6755fc77c57b7a20c6be82798be406d321a611416ef639
+    research.md: 6075b5a18e90c71de2635ed54f32994038a336b725f56e9bd12ee0e692f6c359
+    review.md: 387b2b0c0c640932a0add45bd668cf8908e1455b0402ab6288e1147e6ebd2918
+    spec.md: 43c4e379b160d1c71ba6bf840497dcb2559f1230c70234c4df6cf2bb7e0d270a
+    tasks.md: 67d9369e329b12e4a20d2636bafff006fb7935cedba8a501a6a766f54610bcef
   blocking: false
 ---
 
