@@ -120,7 +120,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 - **Dependencies** — Features declare dependencies in their spec. A feature is blocked until its dependencies reach `clarified` or later.
 - **Artifacts** — Each feature directory can contain `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, and a `scenarios/` subdirectory.
 - **Scenarios** — A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture bugs, edge cases, and detailed behavior. Each scenario gets a linked task in `tasks.md`.
-- **Bug decision tree** — When a bug is reported: (1) no spec → write the spec first, (2) spec is ambiguous → fix the spec, (3) spec is clear → add a scenario.
+- **Bug decision tree** — When a bug is reported, the first matching condition decides the route: (1) no rule covers the cross-cutting concern → promote it to a rule, (2) no spec exists → write the spec first, (3) spec is ambiguous → fix the spec, (4) spec is clear → add a scenario.
 - **Inbox** — `specs/inbox.md` is a temporary inbox for known issues. Items are recorded with `/{project}:log` and groomed into specs or scenarios with `/{project}:groom`.
 - **Finish before moving on** — Prefer completing a feature through the full pipeline before starting the next. Depth-first keeps context focused.
 
