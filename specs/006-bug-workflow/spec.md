@@ -1,6 +1,6 @@
 ---
 title: "006-bug-workflow — spec"
-status: in-progress
+status: done
 dependencies: []
 tags: [process, scenarios, brownfield]
 review:
@@ -15,14 +15,17 @@ review:
   blocking: false
 next-criterion: 20
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T13:02:02Z
+  analyzed-against: c7832d1f79dd5c700f2ee95f9560e644a2109450
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 3
-  unexamined-by-reason:
-    root-absent: 3
+  unexamined: 0
+  analyzed-digest:
+    plan.md: 18c9feab4b1f07ce9363981a8f3f700a63fda7a1b0300ae56ff274e8b9e0592d
+    review.md: e4823de0b4957867d98199308cbdabb3695e9324558099ad33894f9984286369
+    spec.md: 513e56edb18949f21050fcb72d596353a9e76f9f47102ef31bd3da9d8238c440
+    tasks.md: 68569c3b334cb43ec894c94a8c99b0a273d2d3112aa0b496996dcc9d27f771eb
   blocking: false
 ---
 
