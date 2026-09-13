@@ -1,12 +1,14 @@
 ---
 spec: 027-bootstrap-migration-registry
-reviewed-at: 2026-08-30T15:22:00Z
-reviewed-against: d1c56d429153541bbdbb6111eaaca8db9968245f
-diff-base: 0ce71ab99fe2268a8f52ba9e05787758016ea365
+reviewed-at: 2026-09-13T12:31:12Z
+reviewed-against: 2e93663a90b6344a5cf63d4f9bc15b1424d40479
+diff-base: 510eb25cfd96bc5ac2bcc714054c482a2c3cbfe1
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 9
+scope: 23
 skipped-passes: []
 ---
 
@@ -14,7 +16,13 @@ skipped-passes: []
 
 ## Summary
 
-0 MUST, 0 SHOULD, 0 low-confidence — non-blocking. Re-run correcting a defective first pass, which recorded 0/0/0 on the claim that this repo has no rule files. That is wrong: rules live at `framework/rules/` in ductus's own repo (`framework/commands/review.md:46`), and `discover-rule-files` selects eight for the backend surface. The first pass loaded none, so its zeros asserted a property it had no basis to assert. This pass loaded all eight. Scope is the AC30 delta, which is documentation only — §Adopter State and `framework/migrations.toml`'s header comment; no code changed under this spec, and the eight rule files govern code paths, so none of their verification clauses has a subject here. That is why the count is genuinely zero rather than unexamined, and the distinction is the point of this re-run. The substantive check on this delta is not rule-mapped but corpus-grounded, and it was performed: all twelve registry entries' `target_paths` were enumerated, and the two touching per-contributor state — `session-file-consolidate` and `ductus-rename`, both moving the gitignored session file — were confirmed self-healing, since a skipped contributor's next `/{project}:target` writes the active path under the newest-tier rule and the procedure exits silently when the legacy file is absent. That enumeration corrected an earlier draft of this scenario, which claimed every entry targets repo-shared state; the recorded rule is about remedy rather than paths precisely because the broader claim is false. `{config_dir}/commands/` was verified tracked rather than per-contributor (the shipped `.gitignore` excepts it), so `workflows-sunset` is not a counter-example. `target_paths` needed no change: `gitignore-marker-rename` already targets a file it edits rather than removes, and Family 10 constrains only `framework/`-prefixed entries, so Family 10 still passes.
+Reopened by the retired-filename sweep. AC6, AC23 and AC24 carried superseded-naming annotations added before the rule was settled; after the substitution they would have read *"`.ductus/config.toml` no longer exists"*, so they were removed and the paragraph that existed to explain them was rewritten. The criteria now name `.ductus/config.toml` directly — the requirement each states is unchanged, since only the file's name moved. Removing an annotation rewords a line, which is why 027 took the back-edge rather than riding the sweep's exemption. No MUST or SHOULD violation against the loaded rules is outstanding.
+
+**The load-bearing check for this spec specifically.** 027 owns the migration chain, and the retired name is *deliberately* live inside it — a migration must name the file it migrates *from*. Verified that the sweep did not touch it: `framework/migrations/governance-config-rename.md` still names `.governance.toml` and `.govern.toml` four times each, `framework/migrations.toml` still carries its 12 entries, and `scripts/audit/migration-coverage.sh` (Family 10) exits 0 standalone. AC6's subject — the `[migrations]` section in the config schema — is documented in `framework/bootstrap/ductus.md` §Project Configuration and at its three call sites, verified against the file.
+
+**One pre-existing defect found and fixed.** `§Project-level consistency` at `spec.md:39` did not resolve: the line named the command `/{project}:analyze` rather than a markdown document, so `resolve-anchor` read it as a claim about the constitution, where no such marker exists. It has been unresolved since 027 closed. Fixed by naming `framework/commands/analyze.md` on the reference's own line — the document match is line-scoped, so a name on the preceding line does not qualify it, which the first attempt at this fix demonstrated. All three of the spec's anchors now resolve.
+
+**What this review read, and what it did not.** The five passes read 9 of the 23 in-scope files: 027's `spec.md`, `framework/rules/quality-cross.md`, `framework/migrations.toml`, `framework/migrations/governance-config-rename.md`, `framework/bootstrap/ductus.md` (the §Project Configuration and Pre-run Migrations regions AC6 asserts against), `scripts/audit/migration-coverage.sh` by execution, and the three artifacts the anchor and criterion checks resolved against. The remaining 14 are the other five migration procedure files, `CHANGELOG.md`, the generated `.claude/` copy, and 016's and 017's artifacts — in scope only because the sweep modified them in the same window, and each carries its own review. None was re-read this run.
 
 ## MUST violations (blocking)
 
@@ -41,5 +49,9 @@ skipped-passes: []
 *None.*
 
 ## Skipped passes
+
+*None.*
+
+## Unexamined governance
 
 *None.*
