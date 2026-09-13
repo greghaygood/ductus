@@ -73,6 +73,15 @@ Path references in prose move to `.ductus/…` as a uniform token substitution (
 
 The default write-boundary seed (`interpreter/mod.rs`) and generator-script detection (`derive_boundary.rs`, `primitives/mod.rs`) recognize `.ductus/scripts/**` in addition to `scripts/**`, so `/ductus:implement` can write the moved generators and `run-generator` still classifies them. `run_generator.rs` itself needs no change — it resolves whatever caller-supplied path the (now-updated) command literal passes.
 
+> **Not built as planned, and correctly so.** No such special-casing was ever
+> added — `git log -S` over these three files finds no `.govern/scripts` or
+> `.ductus/scripts` hit. `derive-boundary` emits a `{dir}/**` zone glob derived
+> from each changed path, so a write under `.ductus/scripts/` already produced
+> `.ductus/scripts/**` with no enumeration to maintain, and an explicit tier
+> would have been a second copy of a rule the generic derivation already
+> states. The point is moot either way since `022-deterministic-runtime`
+> retired the generators.
+
 ### Dogfooding + fixtures
 
 ductus's own repo moves to the new layout in one step: `git mv .govern.toml .ductus/config.toml`; move the gitignored `.govern.session.toml` → `.ductus/session.toml` and fix `.gitignore`; `git mv scripts/gen-spec-deps.sh scripts/gen-cross-service-refs.sh scripts/lib/specs-root.sh` into `.ductus/scripts/`; update `.githooks/pre-commit:32-36` (the two shipped gens → `.ductus/scripts/`, the three maintainer gens stay); update `.shellcheckrc` comments. For the runtime fixtures, the fallback changes the calculus: because the new-then-legacy resolver reads the existing root-layout fixtures correctly, they become valid end-to-end *fallback* coverage as-is, and relocating the fixture dirs only churns the parity stream-goldens for no correctness gain. So the fixtures stay at the legacy root layout (fallback proof), the new layout is proven end-to-end by pointing `exec_subprocess.rs` at `.ductus/session.toml`, and the resolvers are exhaustively unit-tested in `paths.rs` (see task 5).

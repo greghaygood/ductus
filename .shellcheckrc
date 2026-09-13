@@ -1,9 +1,13 @@
-# Follow `source`d files (e.g. .ductus/scripts/lib/specs-root.sh via the `# shellcheck
-# source=` directives) so a variable a script sets for its sourced helpers to
-# consume — like ROOT / SPECS_ROOT for lib/specs-root.sh's resolve_specs_root /
-# list_specs / staged_specs — is seen as used rather than mis-flagged SC2034.
+# Follow `source`d files (via `# shellcheck source=` directives) so a variable
+# a script sets for its sourced helpers to consume is seen as used rather than
+# mis-flagged SC2034.
 external-sources=true
-# Resolve `source=` paths relative to each script's own directory, so
-# `.ductus/scripts/gen-*.sh`'s `source=lib/specs-root.sh` finds `.ductus/scripts/lib/...`
-# regardless of the cwd shellcheck runs from.
+# Resolve `source=` paths relative to each script's own directory, so a
+# `source=lib/helper.sh` directive resolves against the sourcing script rather
+# than the cwd shellcheck runs from.
 source-path=SCRIPTDIR
+# Both settings are inert today: the shipped generators that sourced
+# `lib/specs-root.sh` were promoted to the `derive-dependencies` and
+# `derive-references` runtime primitives (spec 022), and no tracked script
+# currently sources another. They are kept so the next one that does is
+# analysed correctly rather than silently mis-flagged.

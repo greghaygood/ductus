@@ -26,8 +26,8 @@
 *.sqlite-journal
 
 # ductus session state — per-user, ephemeral; managed by the target command.
-# Anchored to the session file only, so committed .ductus/config.toml and
-# .ductus/scripts/ stay tracked.
+# Anchored to the session file only, so the committed .ductus/config.toml
+# beside it stays tracked.
 /.ductus/session.toml
 
 # ductus runtime pointer — per-contributor, per-machine; resolves to the
