@@ -303,7 +303,7 @@ This repo is the source for everything `ductus` ships, plus its own dogfooded sp
 - **[specs/](specs/)** — `ductus`'s own feature specs; it develops itself with its own pipeline. See [specs/README.md](specs/README.md) for cross-cutting decisions and deferred work.
 - **[scripts/](scripts/)** — maintenance and generator scripts
 
-`ductus` currently distributes to four AI coding agents: **Claude Code** (`.claude/` paths), **Auggie** (`.augment/` paths), **Antigravity** (`.agents/` paths, installed as a skill), and **OpenCode** (`.opencode/` command tree plus a committed root `opencode.json`). Adding another is a single registry row plus a permission file (or, for a new layout, a derived-values branch) — see [framework/bootstrap/ductus.md](framework/bootstrap/ductus.md#agent-registry).
+`ductus` currently distributes to four AI coding agents: **Claude Code** (`.claude/` paths), **Auggie** (`.augment/` paths), **Antigravity** (`.agents/` paths, installed as a skill), and **OpenCode** (`.opencode/` command tree plus a committed root `opencode.json`). Adding another is a registry row, a permission file, an `install.sh` `case` arm, and a row in the install table above (or, for a new layout, a derived-values branch too) — `/ductus:audit` Family 14 fails when the registry and the installer disagree, so a missed arm is loud rather than silent. See [framework/bootstrap/ductus.md](framework/bootstrap/ductus.md#agent-registry).
 
 ## Contributing
 
