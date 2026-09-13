@@ -46,7 +46,7 @@ Add the capture command to the ductus file manifests and add a triage → inbox 
 
 - [x] Add `commands/capture.md` to `ductus/ductus.md` slash command manifest with `update` strategy
 - [x] Add `commands/capture.md` to `ductus/ductus-auggie.md` slash command manifest with `update` strategy
-- [x] Add triage → inbox migration to `ductus/ductus.md`: rename `specs/inbox.md` to `specs/inbox.md` if needed, merge if both exist, delete old triage command
+- [x] Add triage → inbox migration to `ductus/ductus.md`: rename `specs/triage.md` to `specs/inbox.md` if needed, merge if both exist, delete old triage command
 - [x] Add triage → inbox migration to `ductus/ductus-auggie.md`: same migration with Auggie paths
 - [x] Migration is reported in post-scaffolding summary
 - [x] Add signpost to `specs/007-govern-workflow/spec.md` noting the ductus command changes by this spec

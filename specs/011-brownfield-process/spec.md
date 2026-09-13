@@ -1,6 +1,6 @@
 ---
 title: "011-brownfield-process — spec"
-status: done
+status: in-progress
 dependencies: [007-govern-workflow, 023-govern-refinement]
 tags: [brownfield, process]
 review:
@@ -25,15 +25,9 @@ analyze:
 
 A formalized process for initializing and incrementally building out specs in brownfield projects. Unlike greenfield specs that aim for completeness upfront, brownfield specs start as skeletons — capturing what is known about an existing feature — and gain precision over time through real work: bug fixes, enhancements, and clarification.
 
-> **Note:** the `/inbox` command this spec introduces was subsequently renamed to `/{project}:groom`. The artifact remains `specs/inbox.md`. References below to `/inbox` reflect the original design.
->
-> **Note:** the `/scenario` command referenced below was renamed to `/{project}:amend` (see [006-bug-workflow](../006-bug-workflow/spec.md)). References below to `/scenario` reflect the original design.
->
-> **Note:** this spec originally introduced a separate `/capture` command for brownfield initialization. [023-govern-refinement](../023-govern-refinement/spec.md) consolidated it into `/specify` as an input-driven mode (terse description → sparse `draft` AC; rich description → AC filled in). The §Capture phase name survives; the prose below has been rewritten to point at `/specify`.
-
 ## Problem
 
-After a brownfield project adopts governance, the team faces existing features with no specs. The current framework assumes specs are written before code, but brownfield features already have code and no documentation. Reverse-engineering full acceptance criteria from existing code is impractical, and gathering accurate information from issue trackers and wikis is unreliable.
+After a brownfield project adopts `ductus`, the team faces existing features with no specs. The current framework assumes specs are written before code, but brownfield features already have code and no documentation. Reverse-engineering full acceptance criteria from existing code is impractical, and gathering accurate information from issue trackers and wikis is unreliable.
 
 The current `/specify` command assumes a new feature is being defined. There is no path for initializing a spec that captures an existing feature's known behavior without pressure to be comprehensive.
 
@@ -51,14 +45,14 @@ The brownfield path suggests starting broad. It is easier to decompose a broad f
 - Sets status to `draft`
 - Sets the new feature as the session target
 - Does not read existing code — the spec captures intended behavior as understood by the user, not implementation details from the codebase
-- Does not create scenarios — the user runs `/scenario` separately to decompose
+- Does not create scenarios — the user runs `/{project}:amend` separately to decompose
 - Presents the draft for review before writing
 
 ### Post-capture
 
 `/specify` creates the spec and stops. It does not prescribe a next step. The post-capture message lists the user's options:
 
-- Run `/scenario` to capture a bug or edge case
+- Run `/{project}:amend` to capture a bug or edge case
 - Run `/clarify` to flesh out the spec
 - Leave at `draft` and come back when real work arrives
 
@@ -99,23 +93,23 @@ Promotion is a user decision, not automated. The framework provides the pattern;
 
 ## Inbox
 
-`specs/inbox.md` is the entry point for known issues in brownfield projects. When items are processed via `/inbox`, each item migrates to either:
+`specs/inbox.md` is the entry point for known issues in brownfield projects. When items are processed via `/{project}:groom`, each item migrates to either:
 
 - **Acceptance criteria** on an existing or new spec — when the item reveals a high-level behavior gap
 - **A scenario** under an existing spec — when the item elaborates a specific situation within a known behavior
 
-When an item does not map to any existing spec, `/inbox` tells the user to run `/specify` to initialize a spec first, then come back to process the item. The commands stay decoupled.
+When an item does not map to any existing spec, `/{project}:groom` tells the user to run `/specify` to initialize a spec first, then come back to process the item. The commands stay decoupled.
 
-No inbox item remains as a standalone artifact. The spec or scenario is the permanent home. The goal is for `specs/inbox.md` to eventually be empty and deleted.
+An item that names a requirement gap does not remain standalone — the spec or scenario is its permanent home. A **chore** is the exception the framework added later: project maintenance belonging to no feature has no spec home, so it stays an inbox checkbox and is resolved by being *done*, then removed. The brownfield backlog drains toward empty as adoption completes, but the file persists — capturing incidental findings is an ongoing role, not a migration phase ([§brownfield-inbox](../../framework/constitution.md#brownfield-inbox)).
 
 ### Rename from triage
 
 This spec renames `triage` to `inbox` throughout the framework:
 
-- `specs/inbox.md` → `specs/inbox.md`
-- `templates/triage.md` → `templates/inbox.md`
-- `/triage` command → `/inbox` command
-- All references in constitution, sdd-context, README, and other commands
+- `specs/triage.md` → `specs/inbox.md`
+- `templates/triage.md` → `templates/inbox.md` (now `framework/templates/project/inbox.md`)
+- `/triage` command → `/{project}:groom` command
+- All references in the constitution, README, and other commands (plus `sdd-context.md`, an artifact the framework/ reorganization has since removed)
 
 The term "inbox" describes the artifact's purpose (a temporary holding area) without implying a process methodology. Items should not stay there — the name communicates that naturally.
 
@@ -151,15 +145,15 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 - [x] AC7: Brownfield skeleton specs pass validation at `draft` status without requiring comprehensive acceptance criteria
 - [x] AC8: Bug fixes on a brownfield spec add either an acceptance criterion or a scenario
 - [x] AC9: Enhancements to a brownfield spec follow the normal pipeline (spec change before implementation)
-- [x] AC10: Inbox items migrate to acceptance criteria or scenarios — never remain standalone
-- [x] AC11: `/inbox` directs user to `/specify` when an item has no matching spec
+- [x] AC10: Inbox items migrate to acceptance criteria or scenarios — never remain standalone. Delivered as written; the framework later added the **chore** route, under which an item with no feature home deliberately *does* remain an inbox checkbox until it is done and removed (§bug-handling's durability test). The claim holds for requirement gaps, which is what this spec's inbox carried, and no longer holds universally.
+- [x] AC11: `/{project}:groom` directs user to `/specify` when an item has no matching spec
 - [x] AC12: Scenario promotion pattern is documented in `constitution.md`
-- [x] AC13: `triage` is renamed to `inbox` across all governance artifacts (templates, commands, constitution, sdd-context, README)
+- [x] AC13: `triage` is renamed to `inbox` across all framework artifacts (templates, commands, constitution, `sdd-context.md`, README)
 - [x] AC14: 006-bug-workflow spec includes a signpost noting the `triage` → `inbox` rename by this spec
 - [x] AC15: 007-govern-workflow spec includes a signpost noting the ductus command gains a triage → inbox migration and brownfield-initialization handling by this spec
 - [x] AC16: Cross-spec impact pattern is documented in `constitution.md`
 - [x] AC17: The brownfield process is documented in `constitution.md` under brownfield adoption
-- [x] AC18: `sdd-context.md` is updated to reflect the brownfield process
+- [x] AC18: `sdd-context.md` is updated to reflect the brownfield process. Delivered as written; `sdd-context.md` was removed by the framework/ reorganization (`3fc76b7`) and has no successor — the brownfield process is documented in the constitution (§brownfield-process, AC17) and `README.md` (AC19). The claim was superseded rather than renamed, so it is annotated rather than swept.
 - [x] AC19: `README.md` brownfield section references the process
 
 ## Open Questions
@@ -177,11 +171,11 @@ For this spec specifically: 006-bug-workflow gets a signpost noting that `triage
 - **Code reading during capture:** No. The spec captures intended behavior as understood by the user. Existing code is referenced during `/implement` for task context, not during spec creation.
 - **Template:** Standard `spec.md`. The output is indistinguishable from any other spec. The command provides brownfield framing; the artifact is the same.
 - **Pipeline fit:** `/specify` creates the spec and stops. The normal pipeline applies from that point. No prescribed next step — depends on why the user captured it.
-- **Interaction with inbox:** `/inbox` tells the user to run `/specify` when an item has no matching spec. Commands stay decoupled.
-- **Scenario creation during capture:** No. `/specify` creates the spec only. The user runs `/scenario` separately.
+- **Interaction with inbox:** `/{project}:groom` tells the user to run `/specify` when an item has no matching spec. Commands stay decoupled.
+- **Scenario creation during capture:** No. `/specify` creates the spec only. The user runs `/{project}:amend` separately.
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [007-govern-workflow](../007-govern-workflow/spec.md)

@@ -56,21 +56,21 @@ A brief note is added to 007-govern-workflow's spec.md indicating that the ductu
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `commands/capture.md` | Create | Platform-agnostic capture command template |
-| `.claude/commands/ductus/capture.md` | Create | Claude Code capture command instance |
-| `commands/triage.md` | Rename → `commands/inbox.md` | Rename triage command to inbox |
-| `.claude/commands/ductus/triage.md` | Rename → `.claude/commands/ductus/inbox.md` | Rename Claude Code triage instance |
-| `templates/triage.md` | Rename → `templates/inbox.md` | Rename triage template |
-| `commands/inbox.md` | Modify | Update heading, references, and content from triage to inbox |
-| `.claude/commands/ductus/inbox.md` | Modify | Update heading, references, and content from triage to inbox |
-| `templates/inbox.md` | Modify | Update heading and content from triage to inbox |
-| `ductus/ductus.md` | Modify | Update file manifest, command manifest, post-scaffolding output; add capture command |
-| `ductus/ductus-auggie.md` | Modify | Same updates as ductus.md for Auggie paths |
-| `constitution.md` | Modify | Rename triage section to inbox; add brownfield process, scenario promotion, cross-spec impact |
-| `sdd-context.md` | Modify | Rename triage to inbox; add capture command, scenario promotion, cross-spec impact |
+| `commands/capture.md` | Create | Platform-agnostic capture command template. **Retired** — 023 merged `/capture` into `/{project}:specify` as an input-driven mode; the file no longer exists. |
+| `.claude/commands/ductus/capture.md` | Create | Claude Code capture command instance. **Retired** with `/capture`. |
+| `commands/triage.md` | Rename → `commands/inbox.md` | Rename triage command to inbox. Now `framework/commands/groom.md` after a further rename. |
+| `.claude/commands/ductus/triage.md` | Rename → `.claude/commands/ductus/inbox.md` | Rename Claude Code triage instance. Now `.claude/commands/ductus/groom.md`. |
+| `framework/templates/project/inbox.md` | Rename → `templates/inbox.md` | Rename the triage template (relocated by the framework/ reorganization). |
+| `framework/commands/groom.md` | Modify | Update heading, references, and content from triage to inbox. |
+| `.claude/commands/ductus/groom.md` | Modify | Update heading, references, and content from triage to inbox. |
+| `framework/templates/project/inbox.md` | Modify | Update heading and content from triage to inbox. |
+| `framework/bootstrap/ductus.md` | Modify | Update file manifest, command manifest, post-scaffolding output; add capture command. |
+| `ductus/ductus-auggie.md` | Modify | Same updates as ductus.md for Auggie paths. **Retired** — 012 replaced the per-agent bootstrap variants with one registry-driven file. |
+| `framework/constitution.md` | Modify | Rename triage section to inbox; add brownfield process, scenario promotion, cross-spec impact. |
+| `sdd-context.md` | Modify | Rename triage to inbox; add capture command, scenario promotion, cross-spec impact. **Retired** — removed by the framework/ reorganization (`3fc76b7`) with no successor. |
 | `README.md` | Modify | Rename triage to inbox; update brownfield section; add capture to slash commands table |
-| `commands/about.md` | Modify | Update triage references to inbox |
-| `.claude/commands/ductus/about.md` | Modify | Update triage references to inbox |
+| `framework/commands/help.md` | Modify | Update triage references to inbox. |
+| `.claude/commands/ductus/help.md` | Modify | Update triage references to inbox. |
 | `AGENTS.md` | Modify | Update triage references to inbox |
 | `specs/006-bug-workflow/spec.md` | Modify | Add signpost noting triage → inbox rename by 011 |
 
