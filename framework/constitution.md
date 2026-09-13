@@ -35,7 +35,7 @@ These are evaluation criteria, not implementation instructions. Use them to iden
 
 ### Cost levers
 
-Per-task token tracking and budget ceilings require a runtime `ductus` does not have — that work belongs to the AI platform. `ductus` contributes by offering cost-aware patterns the user can opt into. The current levers: the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
+Per-task token tracking and budget ceilings require instrumenting the model call itself, which [§runtime-boundary](#runtime-boundary) principle 2 forbids the `ductus` runtime from doing — so that work belongs to the AI platform. `ductus` contributes by offering cost-aware patterns the user can opt into. The current levers: the stuck-detection step in `/{project}:implement` catches runaway loops before they compound spend; default-off autonomy keeps the human in the loop unless `--auto` is explicitly passed. For runtime cost controls, point the adopter at the platform's tooling — Claude Code's `/cost`, the Anthropic usage dashboard, Cursor's request limits, and equivalents.
 
 <!-- §design-principles -->
 

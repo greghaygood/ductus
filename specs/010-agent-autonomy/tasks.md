@@ -57,18 +57,18 @@ Modify `framework/commands/implement.md` to accept and document the `--auto` fla
 Modify `framework/templates/project/agents.md` to insert an optional `## Skills` section after `## Project Structure` and before `## Code Style`.
 
 - [x] Insert empty `## Skills` section with an HTML-comment guide explaining what skills are (Anthropic/Claude Code "skills" — context-loaded instruction packs), when to populate the section, and a copy-friendly example table of skill files and their activation conditions
-- [x] Make explicit that per-platform mapping (Claude Code skills, Cursor rules, etc.) is the adopter's call — governance defines the index pattern, not the location
+- [x] Make explicit that per-platform mapping (Claude Code skills, Cursor rules, etc.) is the adopter's call — `ductus` defines the index pattern, not the location
 - [x] Section is empty by default (backwards-compatible for projects that don't decompose)
 - [x] File passes `npx markdownlint-cli2`
 
-**Done when:** the template has the new section in the correct location, with the in-place guide, and adopters can populate it without re-reading governance docs.
+**Done when:** the template has the new section in the correct location, with the in-place guide, and adopters can populate it without re-reading `ductus` docs.
 
 ## 6. Add `### Cost levers` subsection to the constitution
 
 Modify `framework/constitution.md` to add a new subsection immediately after the `### Business` principles list.
 
 - [x] Insert `### Cost levers` heading after the `### Business` list
-- [x] Paragraph names governance's existing cost levers: lightweight track (§lightweight-track), `[simple]` marker (010), stuck detection (010), default-off autonomy (010)
+- [x] Paragraph names `ductus`'s existing cost levers: lightweight track, `[simple]` marker (010), stuck detection (010), default-off autonomy (010) — the first two were later removed, along with the `§lightweight-track` section this line used to link; see AC11
 - [x] Paragraph points at the adopter's platform tooling for runtime cost controls (Claude Code's `/cost`, Anthropic usage dashboard, Cursor's request limits — examples, not commitments)
 - [x] Paragraph stays short (4–6 sentences); reads as guidance, not a manual
 - [x] File passes `npx markdownlint-cli2`

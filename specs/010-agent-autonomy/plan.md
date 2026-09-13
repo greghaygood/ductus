@@ -6,7 +6,7 @@ title: "010-agent-autonomy — plan"
 
 ## Overview
 
-Land six small, independent governance changes plus one cross-spec rename:
+Land six small, independent `ductus` changes plus one cross-spec rename:
 
 1. `[simple]` task tier marker (template + plan command)
 2. Stuck detection in `/ductus:implement` (no new artifact — reads `git log` and `tasks.md`)
@@ -91,7 +91,7 @@ Add a new short subsection `### Cost levers` immediately following the `### Busi
 - The `Cost-conscious` line is a one-line bullet in a structured list; a multi-sentence paragraph would break the list's visual rhythm.
 - A named subsection (`### Cost levers`) is greppable and gets its own anchor for cross-references.
 
-Content: one paragraph naming governance's existing levers (lightweight track, `[simple]` marker, stuck detection, default-off autonomy) and pointing at the adopter's platform tooling for runtime cost controls (Claude Code's `/cost`, Anthropic usage dashboard, Cursor's request limits). No commitment to a specific platform — just examples. Paragraph stays short (4–6 sentences) so it reads as guidance, not a manual.
+Content: one paragraph naming `ductus`'s existing levers (lightweight track, `[simple]` marker, stuck detection, default-off autonomy) and pointing at the adopter's platform tooling for runtime cost controls (Claude Code's `/cost`, Anthropic usage dashboard, Cursor's request limits). No commitment to a specific platform — just examples. Paragraph stays short (4–6 sentences) so it reads as guidance, not a manual.
 
 ### Concurrent-features note: location
 
@@ -121,7 +121,7 @@ Insert a new optional `## Skills` section after `## Project Structure` and befor
      | `skills/db-migration.md` | Editing migration files |
 
      Per-platform mapping (Claude Code skills, Cursor rules, etc.) is the
-     adopter's call — governance defines the index pattern, not the location.
+     adopter's call — `ductus` defines the index pattern, not the location.
 -->
 ```
 
@@ -168,10 +168,10 @@ Two of 010's deliverables touch `framework/commands/*.md`: `plan.md` (proposes `
 Explicit non-goals to keep the scope tight:
 
 - No new file format, no new artifact type, no schema change. Everything rides on existing markdown conventions.
-- No platform-specific shipping (no Claude Code skills directory, no Cursor rules directory). Governance documents the pattern only.
+- No platform-specific shipping (no Claude Code skills directory, no Cursor rules directory). `ductus` documents the pattern only.
 - No execution log, no per-task token tracking, no budget files, no `[complex]` tier — all explicitly declined in the spec.
 - No multi-target session, no `--feature` flag on commands, no worktree management — declined in the spec.
-- No platform-specific install of the new workflow files (governance ships the registry + workflow definitions; init/ductus scaffold them per agent).
+- No platform-specific install of the new workflow files (`ductus` ships the registry + workflow definitions; init/ductus scaffold them per agent).
 
 ## Affected Files
 
@@ -217,19 +217,19 @@ Push is hard-to-reverse and externally visible. Keeping it gated preserves the s
 
 ### Cross-spec rename has broad blast radius
 
-The 005 rename touches both 005's spec directory and three governance-owned files (`ductus.md`, `init.md`, `configure.md`) plus templates. We accept the churn because:
+The 005 rename touches both 005's spec directory and three `ductus`-owned files (`ductus.md`, `init.md`, `configure.md`) plus templates. We accept the churn because:
 
 - Leaving 005's "skills" term in place would create permanent terminology ambiguity ("skills" meaning two different things depending on which spec you're reading).
-- The spec directory name stays, so cross-references from other specs and external docs continue to resolve.
+- The spec **number** stays, so `dependencies:` entries and `NNN-` pointers continue to resolve. (This bullet read *"the spec directory name stays"* until 2026-09-13. That was the plan-time decision, and implementation reversed it — see the "Scope of the rename" list under `### Cross-spec rename of 005's "skills" → "workflows"` above, where a blast-radius check found only seven files referencing the old slug — so `specs/005-skills-and-plugins/` became `specs/005-workflows/` and AC14 records the rename as delivered. The bullet was arguing from the option that lost.)
 - The rename happens once and is one PR.
 
 ### Skills index empty by default
 
-An empty section with an HTML-comment guide adds slight visual weight to AGENTS.md compared to omitting the section entirely. Acceptable because the section teaches the pattern in place — adopters who don't decompose see exactly what skills would look like and can add them when ready, without re-reading governance docs.
+An empty section with an HTML-comment guide adds slight visual weight to AGENTS.md compared to omitting the section entirely. Acceptable because the section teaches the pattern in place — adopters who don't decompose see exactly what skills would look like and can add them when ready, without re-reading `ductus` docs.
 
 ### Concurrent-features note in constitution, not AGENTS.md template
 
-Pipe-and-pull on this one: AGENTS.md is the adopter's customizable doc, but single-target sessions are a constitutional invariant of governance. Putting the note in the constitution communicates the invariant correctly; putting it in AGENTS.md would imply it's an adopter choice (it isn't). Adopters can still reference the constitutional section from their own docs.
+Pipe-and-pull on this one: AGENTS.md is the adopter's customizable doc, but single-target sessions are a constitutional invariant of `ductus`. Putting the note in the constitution communicates the invariant correctly; putting it in AGENTS.md would imply it's an adopter choice (it isn't). Adopters can still reference the constitutional section from their own docs.
 
 ## Open Questions Resolved
 
