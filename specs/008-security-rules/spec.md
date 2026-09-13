@@ -12,7 +12,7 @@ review:
   blocking: false
 next-criterion: 29
 analyze:
-  last-run: 2026-09-13T18:05:00Z
+  last-run: 2026-09-13T20:24:59Z
   analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
@@ -23,7 +23,7 @@ analyze:
     plan.md: e66b5581be935d59ee6755fc77c57b7a20c6be82798be406d321a611416ef639
     research.md: 6075b5a18e90c71de2635ed54f32994038a336b725f56e9bd12ee0e692f6c359
     review.md: 387b2b0c0c640932a0add45bd668cf8908e1455b0402ab6288e1147e6ebd2918
-    spec.md: 43c4e379b160d1c71ba6bf840497dcb2559f1230c70234c4df6cf2bb7e0d270a
+    spec.md: 65f696198e865ace5d90ca52e033dda81f795138bd0802664622d5d08c1a647c
     tasks.md: 67d9369e329b12e4a20d2636bafff006fb7935cedba8a501a6a766f54610bcef
   blocking: false
 ---

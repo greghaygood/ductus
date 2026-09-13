@@ -12,7 +12,7 @@ review:
   blocking: false
 next-criterion: 16
 analyze:
-  last-run: 2026-09-13T18:05:00Z
+  last-run: 2026-09-13T20:24:59Z
   analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
@@ -31,7 +31,7 @@ analyze:
     scenarios/target-clear-flag.md: b559bb6b731140c83a6c0733013ccc5fc4a0bdc9a3ec3cab4c26c00528380c43
     scenarios/validate-fix-mode.md: a2b4b707e7705baab55683bf642c97c8e4e6e09036246dde9f2cdbf9396d6728
     scenarios/validation-gates.md: 8fc3c93217e0b2ce5cc23812db08f9e31aff8f2ea5d04bcb998528d4b9548d58
-    spec.md: c1bacd18539dc509f3054f115f557f3be62a31e89f20b2a96a60a3a361b3e910
+    spec.md: 6555da7947db6293178508adc07e9ce187ad0a4b9cf6fa756a0b65278c088960
     tasks.md: 12dc83f2b8b99cfdeaf8978b0b9ff9a4d7f49126b596e05d15150fa7f7a40cf2
   blocking: false
 ---

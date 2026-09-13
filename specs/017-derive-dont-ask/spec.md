@@ -18,7 +18,7 @@ review:
   blocking: false
 next-criterion: 27
 analyze:
-  last-run: 2026-09-13T18:05:00Z
+  last-run: 2026-09-13T20:24:59Z
   analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
@@ -32,7 +32,7 @@ analyze:
     scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264
     scenarios/skip-prose-cross-references.md: c70ab9312912ef443049b63f3d3e1915b0f466dcb720c8e88253eeea8e4f2326
     scenarios/tracked-specs-not-worktree.md: ba42aee5fbee0dfed38fce985200b0ba5775ecd03113a81aa792b25a18383829
-    spec.md: a0c8e7626a04544bad26067fe0b653da02c3b64780289f7a6212b76d221e5ee6
+    spec.md: 7e0aac65e5d1ab59869e9f3da4286764f9746f5cf076b5d537a261f89e69d04a
     tasks.md: 375377a3d6f43f25b3f0565d366a534d5841744f5db3653b31993ad0b57b37a7
   unexamined-by-reason:
     no-readable-state: 1

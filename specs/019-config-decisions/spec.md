@@ -10,7 +10,7 @@ review:
   blocking: false
 next-criterion: 11
 analyze:
-  last-run: 2026-09-13T18:05:00Z
+  last-run: 2026-09-13T20:24:59Z
   analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
@@ -20,7 +20,7 @@ analyze:
     data-model.md: 374db4bfc9f15a15aceb5a08b4e4f6c5f8323ec560eb5bc09d5a52bb7d3f79c3
     plan.md: 8911597bbe88a0ce581763a840b44231fc5d769a92a4016f4184ecbb330f4f55
     review.md: 69d852c621dff05fccf52c66a05536378f7b1e354baa4d2082a9a8666f6f1afc
-    spec.md: 76ab64bfd2d4dcbc32a1ea4f464577cc878e08d3a288460f5ae5c7ba931817ec
+    spec.md: 13d52ee9302510e7db04ec5ca2048c73382bda4d04ce117ebc9803c3a32c447c
     tasks.md: 98fec9c7a4badedc984d985d00024c84d75e48cee837c28902f81f7b5736678f
   blocking: false
 ---

@@ -10,7 +10,7 @@ review:
   blocking: false
 next-criterion: 41
 analyze:
-  last-run: 2026-09-13T18:05:00Z
+  last-run: 2026-09-13T20:24:59Z
   analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
   hard-fail: 0
   blocking-findings: 0
@@ -25,7 +25,7 @@ analyze:
     scenarios/configure-retires-formerly-canonical-entries.md: ef72a39cf3ab9b373ce3e0b59783fe91719f011b0df663ae6bac9469bbd07815
     scenarios/extend-existing-scenario-task.md: 61622769bcd38f91e2e6cf8aab86dab3f408df20beabdc747cbde2dbba7c36bf
     scenarios/living-specs.md: 3c88dc74f397eefbe50213c92698c6a1093747158f651f6f7a8b215a2b556c69
-    spec.md: b638dece4b7532a336df211754e700849ec36f9a90001e04845dc4a0b04feef5
+    spec.md: a65550cc1ffc6fb2f1c26df5cb11c751e8ba9be390017d44677dcac17c243cb6
     tasks.md: 520ea25b2ea0550787a9188e4c6dd61eecd61495b8d8452acc88c057105413e1
   blocking: false
 ---
