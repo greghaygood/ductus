@@ -4,11 +4,14 @@ status: done
 dependencies: [007-govern-workflow, 012-multi-agent-govern, 029-bootstrap-runtime-autowire]
 tags: [bootstrap, performance]
 review:
-  last-run: 2026-06-12T01:08:23Z
-  reviewed-against: 7e19b6925f862d60bae30c1b19f05d79d4030419
+  last-run: 2026-09-13T13:12:55Z
+  reviewed-against: 74ae1723556897c5ea696d612a7b6c2c064793f3
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 1
+  scope: 1
+  reviewed-digest: {}
   blocking: false
 next-criterion: 14
 analyze:
