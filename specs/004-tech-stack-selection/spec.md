@@ -1,6 +1,6 @@
 ---
 title: "004-tech-stack-selection — spec"
-status: in-progress
+status: done
 dependencies: [003-bootstrap-automation]
 tags: [bootstrap]
 review:
@@ -16,12 +16,18 @@ review:
   blocking: false
 next-criterion: 10
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T14:04:31Z
+  analyzed-against: f5b8594e1d23b75aae5a0b813ddb29c3860bf024
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  analyzed-digest:
+    plan.md: 7f6cfc35674baac372af81bf072832ac597ebc6f5295ffaa42db771f1723272a
+    review.md: 99634bd5a5b638307b9e7e4b25038365462f10065d3bc3131d5c259359071e8e
+    scenarios/framework-implies-language.md: fb39f0f619d5199df17337ce5d293773d1834457dea4be27dbf9d86b0f39ce6f
+    spec.md: c416221baa74092dfc3b5b105618f0c0021326c0f8963cf5468753a1eab160f0
+    tasks.md: 89b4f5175b51d70540a03f718ea04b4fe681c4ad79b061cdeb1db6093c7d0e15
   blocking: false
 ---
 
