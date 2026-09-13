@@ -1,6 +1,6 @@
 ---
 title: "014-reclarify-backedge — spec"
-status: done
+status: in-progress
 dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts, 023-govern-refinement]
 tags: [pipeline, commands]
 review:
@@ -29,7 +29,7 @@ Wire up `/amend` to own the `clarified` / `planned` / `in-progress` → `draft` 
 
 ## Problem
 
-Prior to this spec, the constitution §spec-lifecycle (`framework/constitution.md` lines 96–99) defined two back-edges:
+Prior to this spec, the constitution §spec-lifecycle (`framework/constitution.md`) defined two back-edges:
 
 1. `done → in-progress` via `/amend` adding a scenario (originally a separate `/{project}:elaborate` command, consolidated into `/amend` per [023](../023-govern-refinement/spec.md)).
 2. `planned/in-progress → clarified` via `/amend` recording a new open question.
@@ -63,7 +63,7 @@ This mirrors the `done → in-progress` back-edge `/amend` already owns (origina
 | --- | --- |
 | `draft` | Refine question; append to `## Open Questions`. No status change. (Existing behavior.) |
 | `clarified` / `planned` / `in-progress` | Refine question; append to `## Open Questions`; revert status to `draft`. Display impact: prior status, plan artifacts that exist (with timestamps), scenario files. |
-| `done` | Refuse. Report: "Spec is `done`. Run `/{project}:amend` to capture this as a scenario instead." A question on a `done` spec means either the behavior needs lower-level elaboration (a scenario) or the spec is wrong (manual revision); `/amend`'s back-edge does not cover either. |
+| `done` | Refuse; redirect to the scenario path. A question on a `done` spec means either the behavior needs lower-level elaboration (a scenario) or the spec is wrong (manual revision); `/amend`'s back-edge does not cover either. **As delivered this reported "Run `/{project}:elaborate` …", naming the then-separate command; per the note above, `023-govern-refinement` folded that command into `/amend`, so the redirect now resolves to `/amend`'s own scenario branch. The refusal itself was superseded — the state is unreachable rather than refused (see AC3).** |
 
 When `/amend` mutates status, it does so after the user accepts the refined question — that acceptance is the explicit consent for the mutation. A separate yes/no prompt at status-change time would be redundant friction.
 
@@ -119,7 +119,7 @@ This protection applies to every `/plan` run, not only those triggered after a b
 
 ## Constitution Updates
 
-`framework/constitution.md` §spec-lifecycle (lines 96–99) needs revision so it matches what's wired up. The original wording is close to correct; only the destination state and the mechanism need clarification:
+`framework/constitution.md` §spec-lifecycle needs revision so it matches what's wired up. The original wording is close to correct; only the destination state and the mechanism need clarification:
 
 - Back-edge 1 stays as written (originally delivered by `/{project}:elaborate`; now part of `/amend` per [023](../023-govern-refinement/spec.md)).
 - Back-edge 2 changes from "`planned` or `in-progress` → `clarified` when `/amend` records a new open question" to "`clarified` / `planned` / `in-progress` → `draft` when `/amend` records a new open question; the next `/clarify` resolves the question and the spec advances forward again." The destination is `draft` (the only state that tolerates open questions), not `clarified`.
@@ -132,7 +132,7 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 
 - [x] AC1: `framework/commands/amend.md` reverts spec status to `draft` after appending an open question to a spec at `clarified`, `planned`, or `in-progress`
 - [x] AC2: On a `draft` spec, `/amend` records the question without status mutation (existing behavior preserved)
-- [x] AC3: On a `done` spec, `/amend` refuses and reports: "Spec is `done`. Run `/{project}:amend` to capture this as a scenario instead." No question is recorded; no status mutation occurs
+- [x] AC3: On a `done` spec, `/amend` refuses and reports a redirect to the scenario path. No question is recorded; no status mutation occurs. **Superseded in part.** As delivered the quoted message named the then-separate `/{project}:elaborate` command, which owned the `done → in-progress` scenario back-edge; `023-govern-refinement` consolidated that command into `/{project}:amend`, and the rename sweep rewrote the quote to name `/{project}:amend` itself — an instruction to run the command the user is already inside, which no release ever emitted. The refusal is superseded too: a `done` spec on the question route is now **unreachable** rather than refused, because the classifier's status tiebreaker routes a `done` spec to the scenario path and `flip` toward the question route is rejected there with its own message (`framework/commands/amend.md` §Classify the input, §Approval gate, and the `done`/question row of §Status mutation summary). What still holds exactly is the guarantee this criterion exists for — on a `done` spec the question route records no question and mutates no status. The same redirect quoted in AC11 is **not** affected: issued by `/{project}:clarify`, it names a different command and remains correct
 - [x] AC4: When `/amend` mutates status, it displays the prior status, plan artifacts that exist (with last-modified timestamps), and scenario files — so the user can see what may need re-review
 - [x] AC5: `/amend` does not prompt for separate yes/no confirmation before mutating status — the user's acceptance of the refined question is the consent
 - [x] AC6: When `/amend` targets a scenario (per spec 009), it appends to the scenario's `## Open Questions` and does not mutate any spec or scenario status (scenarios have no status field)
@@ -212,3 +212,4 @@ Declared dependencies for this spec, surfaced here so the `derive-dependencies` 
 - [000-slash-commands](../000-slash-commands/spec.md)
 - [009-scenario-targeting](../009-scenario-targeting/spec.md)
 - [013-text-first-artifacts](../013-text-first-artifacts/spec.md)
+- [023-govern-refinement](../023-govern-refinement/spec.md)

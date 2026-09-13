@@ -16,7 +16,7 @@ The post-record step in `framework/commands/amend.md` is rewritten from a passiv
 
 - `draft` → no mutation (existing behavior preserved).
 - `clarified` / `planned` / `in-progress` → mutate `status` to `draft` in the same write that appends the question.
-- `done` → refuse the entire recording (no question added) and redirect the user to `/{project}:amend`.
+- `done` → refuse the entire recording (no question added) and redirect the user to `/{project}:elaborate`, the separate command that owned the scenario back-edge when this plan was written. `023-govern-refinement` has since folded `/elaborate` into `/{project}:amend`, so the redirect resolves to `/amend`'s own scenario branch, and the refusal became unreachable rather than refused — see the spec's AC3.
 
 The mutation fires after the user accepts the refined question. The existing refinement loop is the consent point — adding a separate yes/no prompt at status-change time was rejected during clarify (see the spec's Resolved Questions) because it duplicates that consent.
 
@@ -67,11 +67,11 @@ In `framework/commands/plan.md`, before copying `specs/templates/plan.md` and `s
 - Keep → skip the template copy, run the existing readiness check on the kept files, advance status to `planned` only if all checks pass. Failures are reported and the user edits and retries.
 - Replace → copy fresh templates over the existing files, then proceed with the standard plan flow.
 
-The existing lightweight-track branch (when the spec file is `spec-and-plan.md`, plan creation is skipped because the plan is already in the combined document) is unchanged. The protection applies to every `/plan` run, not only those triggered after a back-edge cycle.
+The existing lightweight-track branch (when the spec file is `spec-and-plan.md`, plan creation is skipped because the plan is already in the combined document) was left unchanged by this spec; it has since been retired altogether — `framework/migrations/spec-and-plan-sunset.md` records the sunset, and no command source mentions the combined document today. The protection applies to every `/plan` run, not only those triggered after a back-edge cycle.
 
 ### Constitution bullet rewrite
 
-In `framework/constitution.md` §spec-lifecycle (around lines 96–99), the second back-edge bullet is rewritten:
+In `framework/constitution.md` §spec-lifecycle, the second back-edge bullet is rewritten:
 
 - Before: "`planned` or `in-progress` → `clarified` when `/amend` records a new open question. The next `/clarify` resolves it and the spec advances forward again."
 - After: "`clarified` / `planned` / `in-progress` → `draft` when `/amend` records a new open question; the next `/clarify` resolves the question and the spec advances forward again."
@@ -84,7 +84,7 @@ The first back-edge bullet (`/elaborate` for `done → in-progress`) is left unt
 
 ### Regeneration of `.claude/commands/ductus/` mirrors
 
-Per `CLAUDE.md`, files under `.claude/commands/ductus/` are generated from `framework/commands/` and are never hand-edited. After the source edits land, run `./scripts/gen-claude-commands.sh`. The generator overwrites `.claude/commands/ductus/amend.md`, `clarify.md`, and `plan.md` from their `framework/commands/` sources.
+Per `AGENTS.md` §Boundaries ("Never edit an installed command file directly"), files under `.claude/commands/ductus/` are generated from `framework/commands/` and are never hand-edited. After the source edits land, run `./scripts/gen-claude-commands.sh`. The generator overwrites `.claude/commands/ductus/amend.md`, `clarify.md`, and `plan.md` from their `framework/commands/` sources.
 
 ## Affected Files
 
