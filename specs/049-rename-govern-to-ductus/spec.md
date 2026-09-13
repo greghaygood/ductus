@@ -2,11 +2,14 @@
 status: in-progress
 dependencies: [022-deterministic-runtime, 027-bootstrap-migration-registry, 042-consolidate-govern-per-project-files-under-govern-directory, 048-govern-acquired-runtime]
 review:
-  last-run: 2026-08-16T02:19:31Z
-  reviewed-against: 34b8f22ff997d54dd9e3344226b4d03032959914
+  last-run: 2026-09-13T13:40:49Z
+  reviewed-against: 2266ed4361305b3bdd0b6d8b41c89b6127c05adc
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 6
+  scope: 21
+  reviewed-digest: {}
   blocking: false
 next-criterion: 14
 analyze:
