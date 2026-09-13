@@ -603,6 +603,7 @@ For every kind of fact described in multiple places, one location is authoritati
 | Runtime contract / boundary | `framework/constitution.md` §runtime-boundary |
 | Security rule file format and ID conventions (`BE-`/`FE-`) | `specs/008-security-rules/data-model.md` |
 | Configuration rule file format and ID conventions (`CFG-`) | `specs/017-derive-dont-ask/data-model.md` |
+| Code-quality rule file format and ID conventions (`QUAL-`) | `specs/036-quality-cross-rules/data-model.md` |
 | Service registry schema (`.ductus/config.toml` `[services]`) | `specs/030-cross-service-references/data-model.md` |
 | Where contributor knowledge is recorded (git vs. per-user agent memory) | `framework/constitution.md` §drift-prevention (Shared knowledge stays in git) |
 | Open-state tell list and decision-drift check grammars | `specs/045-decision-state-drift-detection/data-model.md` |
