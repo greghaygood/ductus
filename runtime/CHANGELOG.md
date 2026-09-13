@@ -32,6 +32,24 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
   No behaviour change. `schema/paths.rs` also carried one `/gov:review`
   reference under the retired command namespace.
 
+- **`discover-rule-files` documentation names the resolved config, not the
+  legacy tier.** Two doc comments described current behaviour with the retired
+  filename: the `run` error contract said `.govern.toml` is what fails to
+  parse, and the `DuctusToml` struct doc called itself a "`.govern.toml`
+  shape". Both now name `.ductus/config.toml` and the newest-wins ladder. The
+  third occurrence in that file is load-bearing and deliberately untouched —
+  `apply_disabled_filter`'s doc explains the provenance tag rendered in a
+  drop notice, which really does print the legacy root on a pre-migration
+  layout. Same class as the `host.rs` entry above. No behaviour change.
+
+- **The `check-artifacts` MCP tool description enumerates all nine families.**
+  It listed eight, silently omitting `analyze-state-drift` — the family whose
+  whole point is that the second gate left no trace until it existed. The
+  primitive's own module doc says nine and `framework/commands/analyze.md`
+  lists nine; only the description an agent host actually reads was short.
+  Same stale-enumeration defect `089ba252` fixed in spec 054's AC10, surviving
+  in a second place. Description text only; no behaviour change.
+
 ## [0.49.0] — 2026-09-13
 
 ### Added

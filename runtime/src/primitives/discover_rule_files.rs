@@ -65,7 +65,7 @@ fn classify(basename: &str) -> Surface {
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::Toml`] when `.govern.toml` is malformed,
+/// Returns [`PrimitiveError::Toml`] when the resolved config file is malformed,
 /// [`PrimitiveError::InvalidSurfacesMember`] when `[rules] surfaces` names a
 /// value outside `{backend, frontend}`, [`PrimitiveError::InvalidSurfacesType`]
 /// when the key is not a list of strings, or [`PrimitiveError::Io`] on
@@ -353,8 +353,10 @@ fn load_ductus_toml(repo: &Path) -> Result<(DuctusToml, &'static str)> {
     Ok((parsed, name))
 }
 
-/// Minimal `.govern.toml` shape: the `[rules]` and `[review]` sections this
-/// primitive consults. Unknown keys are accepted.
+/// Minimal `.ductus/config.toml` shape: the `[rules]` and `[review]` sections
+/// this primitive consults. Unknown keys are accepted. Resolution is the
+/// newest-wins ladder in `schema::paths` (`.ductus/` → `.govern/` → legacy
+/// root), so an older tier still parses into this same shape.
 #[derive(Deserialize, Default)]
 struct DuctusToml {
     #[serde(default)]
