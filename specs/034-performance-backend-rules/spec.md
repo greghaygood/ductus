@@ -2,11 +2,14 @@
 status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 033-rule-surface-setting]
 review:
-  last-run: 2026-06-28T13:49:21Z
-  reviewed-against: 0f28ba44089461eca4e7f8378ae836fee6a62936
+  last-run: 2026-09-13T12:41:39Z
+  reviewed-against: 0357294b85a852d24feca4c6289ac528380a4414
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 3
+  scope: 3
+  reviewed-digest: {}
   blocking: false
 next-criterion: 8
 analyze:

@@ -1,12 +1,14 @@
 ---
 spec: 034-performance-backend-rules
-reviewed-at: 2026-06-28T13:49:21Z
-reviewed-against: 0f28ba44089461eca4e7f8378ae836fee6a62936
-diff-base: 0f28ba44089461eca4e7f8378ae836fee6a62936
+reviewed-at: 2026-09-13T12:41:39Z
+reviewed-against: 0357294b85a852d24feca4c6289ac528380a4414
+diff-base: 40d0a9fb537d0a9ff35833579358e7efbfff8848
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 3
+scope: 3
 skipped-passes: []
 ---
 
@@ -14,30 +16,40 @@ skipped-passes: []
 
 ## Summary
 
-The change set is a new rule file (`framework/rules/performance-backend.md`, 13 rules) and a one-row addition to the `/ductus` Shared Files manifest in `framework/bootstrap/ductus.md` — rule-set authoring, not application code. No loaded security rule's Verification trigger fires against rule-file prose or a manifest table row, and the reuse/efficiency/simplicity passes find nothing actionable (the file cross-references `BE-PAGE` / `BE-AUTHZ` / `BE-STATUS` / `CFG-CONST-003` rather than restating them). Schema conformance, ID grammar, category disjointness, and the MUST/SHOULD severity posture were verified by the validation gate (`lint-rule-ids`, `lint-rule-filenames`, markdownlint, procedure-parseability, and both audits — all green). **0 MUST violations — not blocking; the spec may advance to `done`.**
+First review of 034 to record `examined` against a derived `scope`; the prior record predated those fields, so its `0/0/0` could not be distinguished from a run whose passes never fired. One defect found and fixed in this cycle: **AC6 named two cross-references the rule file does not make.** Its parenthetical claimed `performance-backend.md` cites `BE-INPUT-006` for input bounds and `BE-IDEMP` for retry-safe async; neither appears anywhere in the file. Checking whether the rules that would need them restate instead — which is what the criterion exists to prevent — `BE-PAYLOAD-001` bounds *response* size and cites `BE-PAGE`, and `BE-ASYNC-001` cites `BE-STATUS-001` for the async acknowledgment. No rule in the set reaches request-size limits or retry semantics, so there was nothing to cite and nothing was duplicated. The requirement held; the enumeration, carried over from the Boundaries section at clarify time, did not. AC6 now states the citations actually made (`BE-PAGE`, `BE-STATUS-001`, `CFG-CONST-003`) and why the other two were unnecessary.
 
-Rule-file selection for this run: `[rules] surfaces` unset in ductus's own `.govern.toml`, so step 5 fell back to detected-stack derivation; `[review] tech-stack-verified = true` skipped the alignment check.
+**The other six criteria verified against the tree.** AC1: the file exists with the `-backend.md` suffix and the canonical `### {ID}` / Statement / Rationale / Verification schema. AC2: all 13 IDs use `BE-{CATEGORY}-{NNN}` over `QUERY`/`CACHE`/`POOL`/`PAYLOAD`/`ASYNC`, disjoint from `security-backend.md`'s eight and `api-backend.md`'s seven — checked by extracting all four category sets and intersecting them; `lint-rule-ids.sh` exits 0. AC3: the header declares all five. AC4: query, caching, pooling and payload each carry design-time-commitment Verification clauses rather than code-pattern greps. AC5: the eight MUSTs are exactly the DoS/exhaustion cases the Severity posture enumerates (unbounded query and result set, never-expiring cache, per-request connection, unsized pool, unbounded pool wait, unbounded response, request-blocking slow work); the five SHOULDs are the tunable trade-offs. AC7: one **Shared Files** manifest row in `framework/bootstrap/ductus.md`.
+
+**What this review read: all 3 files in scope.** `specs/034-performance-backend-rules/spec.md`, `framework/rules/performance-backend.md` (the artifact every criterion asserts about), and `framework/bootstrap/ductus.md`'s manifest row for AC7. The category-disjointness check additionally extracted the ID sets from `security-backend.md` and `api-backend.md`, which are outside this scope. 034 has no scenarios and no data model, so its `reviewed-digest` is empty — taken and empty, which reads as current, rather than absent and unjudgeable as before.
 
 ## MUST violations (blocking)
 
-_None._
+*None.*
 
 ## SHOULD violations (advisory)
 
-_None._
+*None.*
 
 ## Low-confidence findings
 
-_None._
+*None.*
 
 ## Waived findings
 
-_None._
+*None.*
 
-## Captured issues (pending /ductus:groom)
+## Captured issues
 
-_None — no inbox additions since diff-base._
+*None.*
+
+## Observations
+
+*None.*
 
 ## Skipped passes
 
-_None — all five passes ran._
+*None.*
+
+## Unexamined governance
+
+*None.*
