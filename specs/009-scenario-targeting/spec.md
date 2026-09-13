@@ -4,11 +4,14 @@ status: in-progress
 dependencies: [006-bug-workflow, 012-multi-agent-govern]
 tags: [scenarios, pipeline]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T13:06:57Z
+  reviewed-against: 7339abcc7c12b74f2210031ab67cb3df309d7498
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 6
+  scope: 11
+  reviewed-digest: {}
   blocking: false
 next-criterion: 19
 analyze:
