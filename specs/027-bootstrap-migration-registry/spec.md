@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [026-framework-self-audit]
 review:
   last-run: 2026-08-30T15:22:00Z
