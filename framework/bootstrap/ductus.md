@@ -518,7 +518,7 @@ The file is a flat collection of top-level sections. There is no umbrella namesp
 # `project` only — the team-shared slash-command namespace. The per-contributor
 # `cli-config-dir` lives in the gitignored `.ductus/session.toml` (teammates may
 # use different agents), never here.
-project = "gov"
+project = "my-service"
 
 [project]
 # The inputs /ductus collects (§Collect Project Inputs), persisted so re-runs

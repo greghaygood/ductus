@@ -6,13 +6,13 @@ title: "003-bootstrap-automation — plan"
 
 ## Overview
 
-Create eleven slash commands in `.claude/commands/ductus/`: ten standard pipeline commands copied from `commands/` templates with `{project}` replaced by `gov`, plus one governance-specific `init.md` that scaffolds new projects. The standard commands give governance the same pipeline enforcement as adopting projects. The init command automates the manual bootstrap process from the README.
+Create eleven slash commands in `.claude/commands/ductus/`: ten standard pipeline commands copied from `commands/` templates with `{project}` replaced by `ductus`, plus one governance-specific `init.md` that scaffolds new projects. The standard commands give governance the same pipeline enforcement as adopting projects. The init command automates the manual bootstrap process from the README.
 
 ## Technical Decisions
 
 ### Standard commands are literal copies with placeholder replacement
 
-Each of the ten command templates in `commands/` is copied to `.claude/commands/ductus/` with every occurrence of `{project}` replaced by `gov`. No other modifications. This ensures governance dogfoods the exact same commands adopting projects use. If a command template is updated later, the governance copy should be re-derived from the template.
+Each of the ten command templates in `commands/` is copied to `.claude/commands/ductus/` with every occurrence of `{project}` replaced by `ductus`. No other modifications. This ensures governance dogfoods the exact same commands adopting projects use. If a command template is updated later, the governance copy should be re-derived from the template.
 
 ### Init command is governance-specific
 
