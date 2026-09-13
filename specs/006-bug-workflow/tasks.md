@@ -6,11 +6,11 @@ title: "006-bug-workflow — tasks"
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
-## 1. Create scenario and triage templates
+## 1. Create scenario and inbox templates
 
-- [x] Create `templates/scenario.md` with spec-ref, Context, Behavior, and Edge Cases sections
-- [x] Create `templates/triage.md` with flat inbox format and migration rules
-- [x] Update `templates/spec.md` to reference the `scenarios/` directory convention
+- [x] Create `framework/templates/spec/scenario.md` with a `section` frontmatter field, Context, Behavior, and Edge Cases sections
+- [x] Create `framework/templates/project/inbox.md` with flat inbox format and migration rules
+- [x] Update `framework/templates/spec/spec.md` to reference the `scenarios/` directory convention
 
 Done when: all three template files exist with correct structure, and `spec.md` template mentions scenarios.
 
@@ -20,41 +20,41 @@ Done when: all three template files exist with correct structure, and `spec.md` 
 - [x] Add scenario lifecycle documentation (scenarios as first-class artifacts, directory convention, when to create vs. not)
 - [x] Update the spec phase file structure to include `scenarios/` subdirectory
 
-Done when: `constitution.md` includes bug handling, scenario lifecycle, and updated file structure showing `scenarios/`.
+Done when: `framework/constitution.md` includes bug handling, scenario lifecycle, and updated file structure showing `scenarios/`.
 
-## 3. Create `/ductus:scenario` command
+## 3. Create `/ductus:amend` command
 
-- [x] Create `commands/scenario.md` template: requires active session target, confirms target, walks decision tree, creates scenario file in `scenarios/`, appends task to `tasks.md`
+- [x] Create `framework/commands/amend.md` template: requires active session target, confirms target, walks decision tree, creates scenario file in `scenarios/`, appends task to `tasks.md`
 - [x] Handle edge cases: no session target, no `tasks.md`, duplicate scenario name, parent spec is `done`
-- [x] Create `.claude/commands/ductus/scenario.md` by copying template and replacing `{project}` with `gov`
+- [x] Create `.claude/commands/ductus/amend.md` by copying template and replacing `{project}` with `gov`
 
-Done when: both command files exist, `/ductus:scenario` creates scenario files under the correct feature's `scenarios/` directory and appends linked tasks to `tasks.md`.
+Done when: both command files exist, `/ductus:amend` creates scenario files under the correct feature's `scenarios/` directory and appends linked tasks to `tasks.md`.
 
 ## 4. Create `/ductus:groom` command
 
-- [x] Create `commands/triage.md` template: reads `specs/inbox.md`, walks each item through the decision tree, migrates items to specs or scenarios, removes resolved items
-- [x] Handle edge cases: `triage.md` does not exist, `triage.md` is empty
-- [x] Create `.claude/commands/ductus/triage.md` by copying template and replacing `{project}` with `gov`
+- [x] Create `framework/commands/groom.md` template: reads `specs/inbox.md`, walks each item through the decision tree, migrates items to specs or scenarios, removes resolved items
+- [x] Handle edge cases: `specs/inbox.md` does not exist, `specs/inbox.md` is empty
+- [x] Create `.claude/commands/ductus/groom.md` by copying template and replacing `{project}` with `gov`
 
-Done when: both command files exist, `/ductus:groom` processes triage items and migrates them.
+Done when: both command files exist, `/ductus:groom` processes inbox items and migrates them.
 
 ## 5. Update existing command templates
 
-- [x] Update `commands/about.md` to document `/scenario`, `/triage`, scenario conventions, and bug workflow
-- [x] Update `commands/status.md` to display scenario counts per spec
-- [x] Update `commands/next.md` to suggest `/scenario` as a next action when appropriate
-- [x] Update `commands/analyze.md` to check that scenario-linked tasks are complete
+- [x] Update `framework/commands/help.md` to document `/amend`, `/groom`, scenario conventions, and bug workflow
+- [x] Update `framework/commands/status.md` to display scenario counts per spec
+- [x] Update `commands/next.md` to suggest `/amend` as a next action when appropriate (the `/next` command was retired by a later spec; this records what was done at the time)
+- [x] Update `framework/commands/analyze.md` to check that scenario-linked tasks are complete
 
 Done when: all four command templates include the new functionality.
 
-## 6. Re-derive governance command copies
+## 6. Re-derive dogfooded command copies
 
-- [x] Re-derive `.claude/commands/ductus/about.md` from updated `commands/about.md` (replace `{project}` with `gov`)
-- [x] Re-derive `.claude/commands/ductus/status.md` from updated `commands/status.md`
-- [x] Re-derive `.claude/commands/ductus/next.md` from updated `commands/next.md`
-- [x] Re-derive `.claude/commands/ductus/analyze.md` from updated `commands/analyze.md`
+- [x] Re-derive `.claude/commands/ductus/help.md` from updated `framework/commands/help.md` (replace `{project}` with `gov`)
+- [x] Re-derive `.claude/commands/ductus/status.md` from updated `framework/commands/status.md`
+- [x] Re-derive `.claude/commands/ductus/next.md` from updated `commands/next.md` (both retired with the command)
+- [x] Re-derive `.claude/commands/ductus/analyze.md` from updated `framework/commands/analyze.md`
 
-Done when: all four governance copies match their templates with `{project}` replaced by `gov`.
+Done when: all four dogfooded copies match their templates with `{project}` replaced by `gov`.
 
 ## 7. Update README
 
