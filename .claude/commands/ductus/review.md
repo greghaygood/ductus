@@ -210,8 +210,10 @@ The numbered Instructions above are the deterministic path — the runtime's pri
      ```
 
      `<config-file>` is the repo-relative resolved config file the
-     disable came from — `.ductus/config.toml`, or the legacy root
-     `.govern.toml` on a pre-migration layout. Collapse internal
+     disable came from — `.ductus/config.toml`, or `.govern/config.toml`
+     / the legacy root `.govern.toml` on a pre-migration layout. The
+     ladder is three tiers, not two (`schema/paths.rs`'s `CONFIG_CHAIN`);
+     `status.md` states the same set in the same sentence shape. Collapse internal
      whitespace in `reason` (including newlines from TOML multi-line
      strings) to single spaces before emitting — the notice is
      single-line by contract.

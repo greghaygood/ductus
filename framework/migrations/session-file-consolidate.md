@@ -5,7 +5,7 @@
 
 ## Background
 
-Pre-0.10.0 the session lived at `{cli-config-dir}/{project}-session.json`, e.g. `.claude/gov-session.json` for an adopter using Claude Code with project `gov`, `.claude/anvil-session.json` for one using Claude with `anvil`, or `.augment/anvil-session.json` for the same adopter on Auggie. The path baked in the AI CLI's config directory and the adopter's project name, which broke whenever those didn't match the runtime's hardcoded constant (`.claude/gov-session.json`).
+Pre-0.10.0 the session lived at `{cli-config-dir}/{project}-session.json`, e.g. `.claude/gov-session.json` for an adopter using Claude Code with project `gov`, `.claude/acme-session.json` for one using Claude with project `acme`, or `.augment/acme-session.json` for the same adopter on Auggie. The path baked in the AI CLI's config directory and the adopter's project name, which broke whenever those didn't match the runtime's hardcoded constant (`.claude/gov-session.json`).
 
 The consolidation moves the file to `.ductus/session.toml` at the repo root: gitignored, host-agnostic, project-name-agnostic, and uniform across every adopter. TOML replaces JSON to align with `.govern.toml`'s on-disk format. Keys are kebab-case (`scenario-path`, `set-at`) rather than the legacy camelCase (`scenarioPath`, `setAt`).
 
@@ -13,7 +13,7 @@ The consolidation moves the file to `.ductus/session.toml` at the repo root: git
 
 > **For agent runtimes**: the backticked primitive name `migrate-session-file` in this section maps to the MCP tool `mcp__ductus__migrate-session-file` (Claude) or `mcp:ductus:migrate-session-file` (Auggie). When the `ductus` runtime is registered, **call the tool** for each legacy session file — that is the deterministic path. When no `ductus` MCP server is configured, walk the markdown-only fallback below to produce the same result. The two paths share a contract; neither one wraps the other.
 
-1. **Locate candidate legacy files.** Iterate every selected agent's `config_dir`. The legacy filename per agent is `{config_dir}/{project}-session.json` after the bootstrap's placeholder substitution (e.g., `.claude/gov-session.json` on Claude with project `gov`, `.augment/anvil-session.json` on Auggie with project `anvil`).
+1. **Locate candidate legacy files.** Iterate every selected agent's `config_dir`. The legacy filename per agent is `{config_dir}/{project}-session.json` after the bootstrap's placeholder substitution (e.g., `.claude/gov-session.json` on Claude with project `gov`, `.augment/acme-session.json` on Auggie with project `acme`).
 
 2. **For each candidate path, invoke `migrate-session-file`** with the candidate path as the `legacy-path` argument. The primitive:
 

@@ -9,7 +9,7 @@ The project was renamed (spec 049). The in-repo sweep reaches everything the fra
 
 The runtime reads `.ductus/` first and falls back to `.govern/` and then the pre-042 root files, so an adopter who upgrades the binary before re-running the bootstrap is never broken; this migration completes the cutover rather than performing it.
 
-**What does *not* change.** The slash-command namespace is `host.project`, written from the adopter's own `project.name` — `/anvil:specify` stays `/anvil:specify`. Only the bootstrap entry point carries the project's own name, so only it is renamed here. An adopter whose `project` happens to be `gov` or `govern` is the sole case where the namespace itself moves, and that is handled in step 7.
+**What does *not* change.** The slash-command namespace is `host.project`, written from the adopter's own `project.name` — `/{project}:specify` keeps whatever namespace the adopter already had. Only the bootstrap entry point carries the project's own name, so only it is renamed here. An adopter whose `project` happens to be `gov` or `govern` is the sole case where the namespace itself moves, and that is handled in step 7.
 
 ## Procedure
 

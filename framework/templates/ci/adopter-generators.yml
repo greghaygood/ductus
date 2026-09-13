@@ -23,10 +23,14 @@
 name: ductus-generators
 
 on:
+  # No `paths:` filter, deliberately. GitHub evaluates `on.paths` before any
+  # job runs, so it cannot interpolate the configured spec root the way the
+  # `derive` step below does ([paths] specs-root, spec 040). A hardcoded
+  # 'specs/**' silently disables BOTH gates for every adopter who renamed
+  # their spec root — the workflow simply never triggers, which reads as a
+  # clean CI rather than an absent one. Running on every PR is the cheaper
+  # error: a gate that cannot run must never look like one that passed.
   pull_request:
-    paths:
-      - 'specs/**'
-      - '.githooks/**'
   push:
     branches:
       - main
