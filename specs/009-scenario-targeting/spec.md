@@ -1,7 +1,7 @@
 ---
 title: "009-scenario-targeting — spec"
-status: done
-dependencies: [006-bug-workflow]
+status: in-progress
+dependencies: [006-bug-workflow, 012-multi-agent-govern]
 tags: [scenarios, pipeline]
 review:
   last-run: 2026-05-10T00:00:00Z
@@ -23,32 +23,30 @@ analyze:
 
 # 009 — Scenario Targeting
 
-Promote scenarios to first-class targets in the governance pipeline. Currently, the session target is always a feature — commands operate on the feature's spec, plan, and tasks. This spec extends targeting so that individual scenarios within a feature can be targeted, allowing commands like `question`, `clarify`, `status`, and `implement` to operate at scenario granularity.
+Promote scenarios to first-class targets in the pipeline. Currently, the session target is always a feature — commands operate on the feature's spec, plan, and tasks. This spec extends targeting so that individual scenarios within a feature can be targeted, allowing commands like `amend`, `clarify`, `status`, and `implement` to operate at scenario granularity.
 
 The motivation is context management: as specs grow, loading the entire spec to work on a single scenario wastes agent context. Scenario-level targeting keeps the agent focused on a bounded artifact.
 
-> **Note:** the `question` and `scenario` commands are now both `/{project}:amend`. Behavior described below is unchanged; only the command names differ in the current framework.
-
 ## Session Target Extension
 
-The session file gains an optional `scenario` field. When present, commands that support scenario-level operation use the scenario file as their primary context instead of the feature spec.
+The session file (`.ductus/session.toml`) gains an optional `scenario` field. When present, commands that support scenario-level operation use the scenario file as their primary context instead of the feature spec.
 
 Session file with feature-only target (current behavior, unchanged):
 
-```text
-feature: "{NNN-feature-name}"
-path: "specs/{NNN-feature-name}"
-setAt: "{ISO 8601 timestamp}"
+```toml
+feature = "{NNN-feature-name}"
+path = "specs/{NNN-feature-name}"
+set-at = "{ISO 8601 timestamp}"
 ```
 
 Session file with scenario target:
 
-```text
-feature: "{NNN-feature-name}"
-path: "specs/{NNN-feature-name}"
-scenario: "{scenario-slug}"
-scenarioPath: "specs/{NNN-feature-name}/scenarios/{scenario-slug}.md"
-setAt: "{ISO 8601 timestamp}"
+```toml
+feature = "{NNN-feature-name}"
+path = "specs/{NNN-feature-name}"
+scenario = "{scenario-slug}"
+scenario-path = "specs/{NNN-feature-name}/scenarios/{scenario-slug}.md"
+set-at = "{ISO 8601 timestamp}"
 ```
 
 When a scenario is targeted, the feature context is always available — the scenario refines which artifact within the feature is the primary focus.
@@ -61,7 +59,7 @@ The `target` command accepts an extended syntax to target scenarios:
 - `target {feature}` — targets the feature, clears any scenario (current behavior)
 - `target {feature}/{scenario-slug}` — targets the feature and a specific scenario within it
 
-When targeting a scenario, the command validates that the scenario file exists under the feature's `scenarios/` directory. If the `scenarios/` directory does not exist, it reports "No scenarios exist for this feature. Run `/{project}:amend` to create one." (Per the rename signpost above, this spec drafted the message with `/ductus:scenario`; the shipped command is `/{project}:amend`.) If the directory exists but the slug does not match a file, it lists available scenarios and asks the user to choose.
+When targeting a scenario, the command validates that the scenario file exists under the feature's `scenarios/` directory. If the `scenarios/` directory does not exist, it reports "No scenarios exist for this feature. Run `/{project}:amend` to create one." If the directory exists but the slug does not match a file, it lists available scenarios and asks the user to choose.
 
 When targeting a feature that does not exist, it reports "Feature `{feature}` does not exist."
 
@@ -72,9 +70,11 @@ The target display includes scenario information when one is targeted: scenario 
 The scenario template gains `## Open Questions` and `## Resolved Questions` sections. This allows questions to be captured and resolved directly against the scenario rather than bubbling up to the parent spec — the same pattern specs use.
 
 ```text
-# {Scenario Name}
+---
+section: "{Section name}"
+---
 
-**spec-ref:** {NNN-feature-name} — {Section name}
+# {Scenario Name}
 
 ## Context
 
@@ -95,9 +95,9 @@ Commands fall into three categories based on how they respond to scenario target
 
 These commands change behavior when a scenario is targeted:
 
-- **question** — reads the scenario file for context, appends the refined question to the scenario's Open Questions section instead of the spec's
+- **amend** (question route) — reads the scenario file for context, appends the refined question to the scenario's Open Questions section instead of the spec's
 - **clarify** — resolves open questions in the targeted scenario file; when no scenario is targeted, operates on the spec as today
-- **status** — displays scenario-level detail (open questions, spec-ref, context summary) when a scenario is targeted
+- **status** — displays scenario-level detail (open questions, section, context summary) when a scenario is targeted
 - **implement** — scopes implementation context to the targeted scenario when one is set
 
 ### Feature-only commands
@@ -106,11 +106,11 @@ These commands always operate at the feature level regardless of scenario target
 
 - **specify** — creates features, not scenarios
 - **plan** — plans are feature-level artifacts
-- **validate** — validates the feature spec and all its artifacts
+- **analyze** — audits the feature spec and all its artifacts
 
 ### Scenario-creating commands
 
-- **scenario** — after creating a scenario file, sets it as the session target (both feature and scenario) without prompting for confirmation
+- **amend** (scenario route) — after creating a scenario file, sets it as the session target (both feature and scenario) without prompting for confirmation
 
 ## Clarify Behavior for Scenarios
 
@@ -128,24 +128,24 @@ When `clarify` is run with only a feature targeted (no scenario):
 
 ## Acceptance Criteria
 
-- [x] AC1: Session file supports an optional `scenario` and `scenarioPath` field
+- [x] AC1: Session file supports an optional `scenario` and `scenario-path` field
 - [x] AC2: `target` command accepts `{feature}/{scenario-slug}` syntax
 - [x] AC3: `target` command validates scenario existence and lists alternatives on mismatch
 - [x] AC4: `target` command displays scenario detail when one is targeted
 - [x] AC5: Scenario template includes `## Open Questions` and `## Resolved Questions` sections
-- [x] AC6: `question` command appends to the scenario's Open Questions when a scenario is targeted
-- [x] AC7: `question` command appends to the spec's Open Questions when no scenario is targeted
+- [x] AC6: `amend` (question route) appends to the scenario's Open Questions when a scenario is targeted
+- [x] AC7: `amend` (question route) appends to the spec's Open Questions when no scenario is targeted
 - [x] AC8: `clarify` command resolves scenario-level open questions when a scenario is targeted
 - [x] AC9: `clarify` command resolves spec-level open questions when no scenario is targeted (unchanged)
-- [x] AC10: `scenario` command sets the newly created scenario as the session target
+- [x] AC10: `amend` (scenario route) sets the newly created scenario as the session target
 - [x] AC11: `status` command shows scenario detail when a scenario is targeted
-- [x] AC12: Feature-only commands (specify, plan, validate) ignore the scenario field
+- [x] AC12: Feature-only commands (specify, plan, analyze) ignore the scenario field
 - [x] AC13: `target` command with no arguments displays the current target including scenario when set
 - [x] AC14: `target` command with no arguments informs user how to change focus
 - [x] AC15: `target` command reports no scenarios exist when the feature has no `scenarios/` directory
 - [x] AC16: `target` command reports feature not found when the feature does not exist
-- [x] AC17: Command file parity maintained between `commands/` and `.claude/commands/ductus/`
-- [x] AC18: Ductus file parity maintained across `ductus/` variants
+- [x] AC17: Command file parity maintained between `framework/commands/` and `.claude/commands/ductus/`
+- [x] AC18: Ductus file parity maintained across `ductus/` variants. Delivered as written against the per-agent bootstrap files of the time (`ductus/ductus.md` and `ductus/ductus-auggie.md`). [012](../012-multi-agent-govern/spec.md) replaced them with a single registry-driven `framework/bootstrap/ductus.md`, so the variants this criterion keeps in parity no longer exist — the claim was superseded rather than renamed. The surviving parity obligation is between `ductus.md` and the retired `govern.md` alias, held byte-identical by `/ductus:audit` Family 21.
 
 ## Open Questions
 
@@ -159,6 +159,6 @@ When `clarify` is run with only a feature targeted (no scenario):
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [006-bug-workflow](../006-bug-workflow/spec.md)

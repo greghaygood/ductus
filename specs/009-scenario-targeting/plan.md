@@ -6,13 +6,13 @@ title: "009-scenario-targeting — plan"
 
 ## Overview
 
-Extend the governance pipeline so individual scenarios can be targeted alongside features. This involves modifying the session file format, updating the target command to support scenario syntax and no-argument display, adding an Open Questions section to the scenario template, and updating four scenario-aware commands (question, clarify, status, implement) plus the scenario-creating command. All artifacts are markdown command files and a template — no application code, no persistence.
+Extend the pipeline so individual scenarios can be targeted alongside features. This involves modifying the session file format, updating the target command to support scenario syntax and no-argument display, adding an Open Questions section to the scenario template, and updating four scenario-aware commands (question, clarify, status, implement) plus the scenario-creating command. All artifacts are markdown command files and a template — no application code, no persistence.
 
 ## Technical Decisions
 
-### Session file gains optional `scenario` and `scenarioPath` fields
+### Session file gains optional `scenario` and `scenario-path` fields
 
-The existing session JSON structure is extended with two optional fields. When present, scenario-aware commands use `scenarioPath` to locate the primary artifact. When absent, behavior is unchanged. The `scenario` field holds the slug; `scenarioPath` holds the full relative path for direct file access without path construction.
+The existing session JSON structure is extended with two optional fields. When present, scenario-aware commands use `scenario-path` to locate the primary artifact. When absent, behavior is unchanged. The `scenario` field holds the slug; `scenario-path` holds the full relative path for direct file access without path construction.
 
 ### Target command supports three invocation modes
 
@@ -24,11 +24,11 @@ Validation order for `{feature}/{scenario-slug}`: check feature exists → check
 
 ### Scenario template extended with Open Questions section
 
-The `templates/scenario.md` file gets `## Open Questions` and `## Resolved Questions` sections appended — the same pattern specs use. Existing scenario files are not retroactively modified — they gain the sections when questions are added via the question command.
+The `framework/templates/spec/scenario.md` file gets `## Open Questions` and `## Resolved Questions` sections appended — the same pattern specs use. Existing scenario files are not retroactively modified — they gain the sections when questions are added via the question command.
 
 ### Scenario-aware commands check session for scenario field
 
-Each scenario-aware command (question, clarify, status, implement) reads the session file and checks for the `scenario`/`scenarioPath` fields. If present, the command operates on the scenario file instead of the spec. The branching is at the "target file detection" step — the rest of each command's logic operates on whichever file was selected.
+Each scenario-aware command (question, clarify, status, implement) reads the session file and checks for the `scenario`/`scenario-path` fields. If present, the command operates on the scenario file instead of the spec. The branching is at the "target file detection" step — the rest of each command's logic operates on whichever file was selected.
 
 ### Clarify operates on scenario Open Questions when scenario-targeted
 
@@ -40,33 +40,33 @@ After creating a scenario file, the scenario command writes the session file wit
 
 ### Feature-only commands ignore the scenario field
 
-Specify, plan, and validate read the session file for the feature but disregard the scenario field entirely. No changes needed to these commands beyond documenting the behavior (which the spec already covers).
+Specify, plan, and analyze read the session file for the feature but disregard the scenario field entirely. No changes needed to these commands beyond documenting the behavior (which the spec already covers).
 
 ### Command file parity maintained via paired edits
 
-Every command change is applied to both `commands/` (templates with `{project}` and `{cli-config-dir}` placeholders) and `.claude/commands/ductus/` (governance-specific copies with `gov` and `.claude`). The ductus file manifest already includes these command files, so adopting projects get the updates on next `/ductus` run.
+Every command change is applied to both `framework/commands/` (templates with `{project}` and `{cli-config-dir}` placeholders) and `.claude/commands/ductus/` (dogfooded copies with `ductus` and `.claude`). The ductus file manifest already includes these command files, so adopting projects get the updates on next `/ductus` run.
 
 ### Ductus file parity maintained across variants
 
-The scenario template's Open Questions section is already in the ductus file manifest (`templates/scenario.md` → `specs/templates/scenario.md`). No new files need to be added to the manifest. The ductus files themselves need no structural changes — only the command files they reference are updated.
+The scenario template's Open Questions section is already in the ductus file manifest (`framework/templates/spec/scenario.md` → `specs/templates/scenario.md`). No new files need to be added to the manifest. The ductus files themselves need no structural changes — only the command files they reference are updated.
 
 ## Affected Files
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `templates/scenario.md` | Modify | Add `## Open Questions` section |
-| `commands/target.md` | Modify | Add no-argument display, scenario targeting syntax, validation, error messages |
-| `commands/scenario.md` | Modify | Set session target after scenario creation (no confirmation) |
-| `commands/question.md` | Verify | Already scenario-aware — verify target file detection covers scenario path |
-| `commands/clarify.md` | Modify | Add scenario-targeted behavior (resolve scenario open questions, skip spec questions) |
-| `commands/status.md` | Modify | Add scenario-level detail display when scenario is targeted |
-| `commands/implement.md` | Modify | Add scenario context loading when scenario is targeted |
-| `.claude/commands/ductus/target.md` | Modify | Re-derive from updated `commands/target.md` |
-| `.claude/commands/ductus/scenario.md` | Modify | Re-derive from updated `commands/scenario.md` |
-| `.claude/commands/ductus/question.md` | Verify | Re-derive from updated `commands/question.md` if changed |
-| `.claude/commands/ductus/clarify.md` | Modify | Re-derive from updated `commands/clarify.md` |
-| `.claude/commands/ductus/status.md` | Modify | Re-derive from updated `commands/status.md` |
-| `.claude/commands/ductus/implement.md` | Modify | Re-derive from updated `commands/implement.md` |
+| `framework/templates/spec/scenario.md` | Modify | Add `## Open Questions` section |
+| `framework/commands/target.md` | Modify | Add no-argument display, scenario targeting syntax, validation, error messages |
+| `framework/commands/amend.md` | Modify | Set session target after scenario creation (no confirmation) |
+| `framework/commands/amend.md` | Verify | Already scenario-aware — verify target file detection covers scenario path |
+| `framework/commands/clarify.md` | Modify | Add scenario-targeted behavior (resolve scenario open questions, skip spec questions) |
+| `framework/commands/status.md` | Modify | Add scenario-level detail display when scenario is targeted |
+| `framework/commands/implement.md` | Modify | Add scenario context loading when scenario is targeted |
+| `.claude/commands/ductus/target.md` | Modify | Re-derive from updated `framework/commands/target.md` |
+| `.claude/commands/ductus/amend.md` | Modify | Re-derive from updated `framework/commands/amend.md` |
+| `.claude/commands/ductus/amend.md` | Verify | Re-derive from updated `framework/commands/amend.md` if changed |
+| `.claude/commands/ductus/clarify.md` | Modify | Re-derive from updated `framework/commands/clarify.md` |
+| `.claude/commands/ductus/status.md` | Modify | Re-derive from updated `framework/commands/status.md` |
+| `.claude/commands/ductus/implement.md` | Modify | Re-derive from updated `framework/commands/implement.md` |
 
 ## Trade-offs
 
@@ -76,7 +76,7 @@ Rejected. Scenarios do not have their own status field (per 006-bug-workflow). R
 
 ### Considered: making all commands scenario-aware
 
-Rejected. Specify, plan, and validate are inherently feature-level operations. Making them scenario-aware would add complexity without benefit — there is nothing to specify, plan, or validate at the scenario level that isn't already covered by the feature-level operation.
+Rejected. Specify, plan, and analyze are inherently feature-level operations. Making them scenario-aware would add complexity without benefit — there is nothing to specify, plan, or analyze at the scenario level that isn't already covered by the feature-level operation.
 
 ### Considered: requiring target confirmation when scenario is set
 
