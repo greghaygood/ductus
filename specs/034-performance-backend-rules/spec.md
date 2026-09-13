@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 033-rule-surface-setting]
 review:
   last-run: 2026-06-28T13:49:21Z
@@ -59,7 +59,7 @@ Performance rules default to **SHOULD** (advisory; thresholds are context-depend
 - [x] AC3: The file header declares the five performance category abbreviations (per the constitution's per-file category-declaration policy, as framed in [016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
 - [x] AC4: The rule set covers, at minimum, query efficiency (N+1 + indexes + bounded results), caching (TTL/invalidation, scope-complete keys, stampede), connection pooling (pooled + sized + bounded acquisition + release), and payload budgets (size cap + field selection + compression) — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/ductus:analyze` audits artifacts.
 - [x] AC5: Each MUST rule is one whose absence is a DoS/exhaustion risk regardless of scale; tunable efficiency trade-offs are SHOULD. The split is evident from the Statements.
-- [x] AC6: Rules whose surface overlaps an existing rule cite it rather than restating it (BE-PAGE for pagination, BE-INPUT-006 for input bounds, BE-IDEMP for retry-safe async, CFG-* for tunable-value config).
+- [x] AC6: Rules whose surface overlaps an existing rule cite it rather than restating it. As delivered the citations are `BE-PAGE` (pagination, from `BE-PAYLOAD-001`), `BE-STATUS-001` (async acknowledgment, from `BE-ASYNC-001`) and `CFG-CONST-003` (tunable values). The `BE-INPUT-006` and `BE-IDEMP` citations this criterion originally anticipated were **not** needed and are not present: no rule in the set reaches request-size limits or retry semantics, so there is nothing to cite and nothing was restated — the requirement holds, the anticipated enumeration did not.
 - [x] AC7: The file is added to the `/ductus` **Shared Files** manifest in `framework/bootstrap/ductus.md` and is selected under the `backend` surface by `/ductus:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
 
 ## Resolved Questions
