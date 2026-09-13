@@ -1,6 +1,6 @@
 ---
 title: "001-system-spec-templates — spec"
-status: in-progress
+status: done
 dependencies: []
 tags: [templates, pipeline]
 review:
@@ -15,14 +15,17 @@ review:
   blocking: false
 next-criterion: 7
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T12:54:57Z
+  analyzed-against: fa640bd978f62277eba20022f9e5b6494a0d66d8
   hard-fail: 0
   blocking-findings: 0
-  advisory: 0
-  unexamined: 3
-  unexamined-by-reason:
-    root-absent: 3
+  advisory: 1
+  unexamined: 0
+  analyzed-digest:
+    plan.md: f6f024c8bd9365842c615bc556b5e70dd654ad68fe7237d7b28eebd22fe5b4f6
+    review.md: 292a2a4a3084fc69347b5df193ac1b27474a2f80b04789b1a96f7c9ab450626c
+    spec.md: eaa52d569a2e5b67efb9b73ee579d430e2dd816503a21e4c6c3338483e8b90aa
+    tasks.md: 27fba330e2e88fa2084352625386da19e50eb0e268608652abc2e10ac2415574
   blocking: false
 ---
 
