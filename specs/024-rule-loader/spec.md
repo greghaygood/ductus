@@ -2,11 +2,14 @@
 status: in-progress
 dependencies: [020-code-review, 023-govern-refinement]
 review:
-  last-run: 2026-05-17T20:00:00Z
-  reviewed-against: 041b8ccc1fa655b76608fd7c65ec5781c28eeda3
+  last-run: 2026-09-13T13:23:05Z
+  reviewed-against: bbb1f4169533a355263e85fc98d5d62add4bb953
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 8
+  scope: 11
+  reviewed-digest: {}
   blocking: false
 next-criterion: 10
 analyze:
