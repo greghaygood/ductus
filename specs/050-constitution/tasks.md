@@ -158,3 +158,13 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Keep the prose substitutions free of any reworded line so the sweep exemption holds, exactly as task 15's mechanical half did — the annotations are what reopen a spec
 
 - **Done when**: Every `.govern.session.toml`, `.govern/` and `.governance.toml` occurrence under `specs/` has been judged individually against §drift-prevention's retired-filename rule, the compatibility-path and decision-record occurrences are named as deliberate survivors with a count, and nothing outside `specs/` moved.
+
+## 18. A canonical source is pointed at, not copied
+
+- [ ] Implement the behavior described in `scenarios/a-canonical-source-is-pointed-at-not-copied.md`
+- [ ] State under §drift-prevention's *Canonical sources* that referencing means a pointer and that a reproduction is never one — the existing MUST says "reference rather than restate", which a verbatim copy satisfies on its face
+- [ ] Give both reasons, since the rule is read as a style preference without them: nothing can detect an embedded copy (a fenced snapshot is unreachable by every link check, anchor resolver and audit family this project has), and every reader pays for it in every session while a pointer costs one line
+- [ ] Name the disposition: git history already holds what a copy was preserving, and replacing a copy with a pointer changes what the document asserts, so it takes the back-edge rather than the mechanical-sweep exemption
+- [ ] Land it in the constitution rather than AGENTS.md — an adopter's corpus accumulates embedded copies for the same reasons, and a contributor-side entry does not propagate; reduce the AGENTS.md entry to a mirror that references the section rather than restating it
+
+- **Done when**: `framework/constitution.md` §drift-prevention states the pointer-not-copy rule with both the detectability and the per-session cost reasons, the scenario records the 020 instance that exposed it and names what nothing enforces, and `AGENTS.md`'s entry is a contributor-side mirror rather than a second copy of the rule. 020's own §Embedded artifacts is **not** remediated here — that is its own back-edge, tracked in `specs/inbox.md`.
