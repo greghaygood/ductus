@@ -1,6 +1,6 @@
 ---
 title: "006-bug-workflow — spec"
-status: done
+status: in-progress
 dependencies: []
 tags: [process, scenarios, brownfield]
 review:
@@ -104,6 +104,8 @@ A bug file is only justified when:
 The rule: a bug file should never be the first artifact created. The spec or scenario always comes first.
 
 ## Brownfield Inbox
+
+> **Signpost.** `triage` was renamed to `inbox` by [011-brownfield-process](../011-brownfield-process/spec.md), which also replaced the `/triage` command with `/{project}:groom`. Recorded here rather than only in 011 because [§cross-spec-impact](../../framework/constitution.md#cross-spec-impact) puts a change in the spec it affects, and 011's AC14 is discharged by this back-link.
 
 For projects adopting `ductus` incrementally, a `specs/inbox.md` file serves as a temporary inbox for known issues not yet assigned to a feature spec.
 
