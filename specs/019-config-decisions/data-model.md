@@ -34,7 +34,9 @@ files = [
 
 ### `[workflows]` — workflow recommendation declines (new)
 
-Records categories the user has chosen to permanently decline at the per-category workflow recommendation prompt defined in [005-workflows](../005-workflows/spec.md).
+> **Removed from the product by [043-workflows-sunset](../043-workflows-sunset/spec.md).** The `[workflows]` section, the `declined_categories` key, and the recommendation prompt they served no longer exist: 043 deleted the workflows feature and its migration strips the section from adopters' config. This section stands as the record of the schema as shipped, not as a live table — `/ductus` neither reads nor writes these keys today.
+
+Records categories the user has chosen to permanently decline at the per-category workflow recommendation prompt defined in `005-workflows` (consolidated into 043 on 2026-09-13; the flow it defined is in git history).
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -47,7 +49,7 @@ declined_categories = ["Linting", "Formatting"]
 
 #### Allowed values
 
-The category list is the canonical set defined in [005-workflows](../005-workflows/spec.md):
+The category list was the canonical set defined in `005-workflows`:
 
 - `Linting`
 - `Formatting`

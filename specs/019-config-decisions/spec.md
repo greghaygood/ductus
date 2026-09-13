@@ -1,6 +1,6 @@
 ---
-status: done
-dependencies: [005-workflows]
+status: in-progress
+dependencies: []
 review:
   last-run: 2026-08-03T15:03:53Z
   reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
@@ -29,7 +29,7 @@ analyze:
 
 > **Note (post-completion, [043-workflows-sunset](../043-workflows-sunset/spec.md)):** the `[workflows] declined_categories` section this spec introduced was removed with the workflows feature — the `workflows-sunset` migration deletes it from adopter configs. The config-persistence *mechanism* this spec established (sections as persisted decisions, additive writes, the schema data-model) survives in the remaining sections; body references to `[workflows]` below are historical.
 
-`.ductus/config.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/ductus` from overwriting customized files. Other interactive choices `/ductus` makes — most visibly, the per-category workflow recommendation prompts in [005-workflows](../005-workflows/spec.md) — are forgotten the moment the run ends. A user who declines `Linting` workflows is asked again on every subsequent `/ductus`, with no way to say "stop offering this."
+`.ductus/config.toml` is currently a single-purpose pin file: `[pinned] files = [...]` keeps `/ductus` from overwriting customized files. Other interactive choices `/ductus` makes — most visibly, the per-category workflow recommendation prompts in `005-workflows` — are forgotten the moment the run ends. A user who declines `Linting` workflows is asked again on every subsequent `/ductus`, with no way to say "stop offering this."
 
 This feature extends `.ductus/config.toml` from a pin-only file into the project's persisted-decisions store, with declining workflow recommendations as the motivating use case.
 
@@ -46,7 +46,7 @@ Persisted declines fix this: the user answers once, the answer is recorded, and 
 
 ## Behavior
 
-Before running the per-category workflow recommendation flow defined in [005-workflows](../005-workflows/spec.md), `/ductus` reads `.ductus/config.toml` (if it exists) and collects any categories listed under `[workflows] declined_categories`. For each candidate category in this run's recommendation list, if the category matches a recorded decline (case-insensitive) the prompt is suppressed entirely — no `AskUserQuestion` fires, the matching workflows are not scaffolded, and the post-scaffolding summary emits a `suppressed (workflow): {Category} (declined in .ductus/config.toml)` line for that category.
+Before running the per-category workflow recommendation flow defined in `005-workflows`, `/ductus` reads `.ductus/config.toml` (if it exists) and collects any categories listed under `[workflows] declined_categories`. For each candidate category in this run's recommendation list, if the category matches a recorded decline (case-insensitive) the prompt is suppressed entirely — no `AskUserQuestion` fires, the matching workflows are not scaffolded, and the post-scaffolding summary emits a `suppressed (workflow): {Category} (declined in .ductus/config.toml)` line for that category.
 
 For categories without a recorded decline, `/ductus` presents the per-category prompt with three options instead of two:
 
