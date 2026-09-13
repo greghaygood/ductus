@@ -2,11 +2,14 @@
 status: in-progress
 dependencies: [020-code-review, 024-rule-loader]
 review:
-  last-run: 2026-05-17T20:35:00Z
-  reviewed-against: 95aacc64728bdefed5f658db5fa8814f6c039e11
+  last-run: 2026-09-13T13:24:13Z
+  reviewed-against: fd5bb62ba9931a2794904a5d402e481a97b81013
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 5
+  scope: 5
+  reviewed-digest: {}
   blocking: false
 next-criterion: 10
 analyze:
