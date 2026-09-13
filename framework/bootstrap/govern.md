@@ -369,7 +369,7 @@ There is no `ductus` runtime primitive for this merge: State B is the runtime-ab
 - **Auggie** — `auggie mcp add ductus --command {store-path} --args "mcp"` (the documented, schema-stable subcommand; it writes `~/.augment/settings.json`). The **absolute store path**, not the pointer: this config is per-machine and shared across every project, so no project-relative path could be correct in it.
 - **Antigravity** — add a `ductus` block to `~/.gemini/config/mcp_config.json` naming the **absolute store path** (`{"mcpServers": {"ductus": {"command": "{store-path}", "args": ["mcp"]}}}`), then reload via the in-prompt `/mcp` overlay (there is no scriptable `agy mcp add`; project-local `.agents/mcp_config.json` is ignored). Absolute for the same reason as Auggie: the file is per-machine and serves every project.
 
-The permission write (State B step 2) still happens for these agents — it targets the project-level settings file the agent reads, independent of the home-level MCP-server location.
+The permission write (State B step 4) still happens for these agents — it targets the project-level settings file the agent reads, independent of the home-level MCP-server location.
 
 ### Self-update check
 
@@ -458,6 +458,7 @@ When prompting (AskUserQuestion), every question **must** include an `options` a
 - **Project name** — example options: the current directory name, `my-service`.
 - **Project description** — example options: `A new microservice`, `CLI tool for X`.
 - **Primary language(s)** — comma-separated list. Example options: `Go`, `Python`, `Node`, `Go, Python`.
+- **Rule surfaces** — example options: `backend`, `frontend`, `both`.
 - **Spec-root directory** — example options: `specs` (the default), `governance`, `design`.
 
 Validate the project name: must be lowercase, alphanumeric, and hyphens only. If invalid, reject with: "Project name must be lowercase, alphanumeric, and hyphens only."

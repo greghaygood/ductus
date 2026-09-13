@@ -543,8 +543,10 @@ distinct from an absent digest, which cannot be judged at all.
 
 `blocking: true` when `must-violations > 0`. This is the field other commands
 read. (`write-review` writes `last-run`, `reviewed-against`, `must-violations`,
-`should-violations`, `low-confidence`, and `blocking`, plus the `waivers` list
-when present.)
+`should-violations`, `low-confidence`, `scope`, `reviewed-digest`, and
+`blocking` on every run; `examined` when the run stated it, and
+`reviewed-unreadable` when a contract could not be read; plus the `waivers`
+list when present.)
 
 ## Blocking semantics
 
