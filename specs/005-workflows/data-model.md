@@ -88,7 +88,7 @@ Each workflow file is a `.md` file at `framework/workflows/{filename}` matching 
 
 **Scaffolded destination:** `{config_dir}/commands/{project}/workflows/{filename}`. The scaffold copy preserves the file stem; e.g., `eslint.md` is scaffolded as `eslint.md` under the project's `workflows/` subdirectory.
 
-Workflow files are not synced into adopted projects on `/ductus` runs. They are fetched on demand from upstream at scaffold time using the same URL pattern as other `ductus` file fetches.
+Workflow files are not synced into adopted projects on `/ductus` runs. They are fetched on demand from upstream at scaffold time using the same URL pattern as other governance file fetches.
 
 ## Project-level state
 

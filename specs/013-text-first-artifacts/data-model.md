@@ -41,7 +41,7 @@ Delimiters are `---` on the first line and a closing `---` on a subsequent line.
 
 ### Open-schema rule
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers. This applies uniformly to both spec and scenario files. Examples that adopters or future `ductus` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/ductus:analyze` reports unknown fields as informational findings (not errors).
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers. This applies uniformly to both spec and scenario files. Examples that adopters or future governance work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/ductus:analyze` reports unknown fields as informational findings (not errors).
 
 ## Validation Severity
 
@@ -64,12 +64,12 @@ Hard fails block the validation pass. Advisory and informational findings are re
 
 ## Starter Tag Vocabulary
 
-Published in the constitution as guidance, not enforcement. Adopters and future `ductus` specs MAY introduce new tags as needed; the agent's prompt in `/ductus:specify` surfaces existing tags from sibling specs as autocomplete to drive convergence by reuse rather than ceremony.
+Published in the constitution as guidance, not enforcement. Adopters and future governance specs MAY introduce new tags as needed; the agent's prompt in `/ductus:specify` surfaces existing tags from sibling specs as autocomplete to drive convergence by reuse rather than ceremony.
 
 | Tag | Suggested use |
 | --- | --- |
 | `cli` | Specs about slash commands or command-line interactions |
-| `bootstrap` | Specs about adopting `ductus`, project scaffolding, or initialization |
+| `bootstrap` | Specs about adopting governance, project scaffolding, or initialization |
 | `process` | Specs about workflow, lifecycle, or pipeline behavior |
 | `templates` | Specs about template files (spec, plan, scenario, project-readme, etc.) |
 | `security` | Specs about security rules, authentication, authorization |
