@@ -4,6 +4,12 @@ section: "Generators and Hooks"
 
 # Skip-prose-cross-references
 
+> **Superseded mechanism (022):** `scripts/gen-spec-deps.sh` no longer exists.
+> [022-deterministic-runtime](../../022-deterministic-runtime/spec.md)'s `adopter-generator-promotion`
+> replaced it with the `derive-dependencies` and `derive-references` runtime primitives, which carry the
+> requirements below across unchanged. The behaviour below still binds — read the script name as the
+> primitives that took it over.
+
 ## Context
 
 `scripts/gen-spec-deps.sh` (per Q7 / AC23) is authoritative — the pre-commit hook regenerates each spec's frontmatter `dependencies` from inline markdown links to sibling spec directories in the body (links matching `](../NNN-slug/...)` or `](specs/NNN-slug/...)` outside fenced code blocks; script lines 39–70). The design assumes every body link expresses a dependency.

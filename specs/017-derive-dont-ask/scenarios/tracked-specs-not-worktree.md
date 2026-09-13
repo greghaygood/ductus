@@ -4,6 +4,13 @@ section: "Generators and Hooks"
 
 # Tracked-specs-not-worktree
 
+> **Superseded mechanism (022):** the shell generators this scenario names no longer exist.
+> [022-deterministic-runtime](../../022-deterministic-runtime/spec.md)'s `adopter-generator-promotion`
+> replaced the dependency derivation with the `derive-dependencies` and `derive-references` runtime
+> primitives, which carry the requirements below across unchanged, and `gen-readme-table.sh` was retired
+> with the generated README table (AC10). The behaviour below still binds — read each script name as the
+> primitive that took it over.
+
 ## Context
 
 §Generators and Hooks / AC12 specify the ductus-repo and adopter pre-commit hooks as: *"Runs all generators unconditionally on every commit and stages any changes — trades a fraction of a second per commit for a one-line implementation that can't get the gate logic wrong."* The implementation enumerated specs with a **worktree glob** (`specs/[0-9][0-9][0-9]-*/spec.md`) inside both `gen-spec-deps.sh` and `gen-readme-table.sh`, and the hooks then force-`git add`ed every matched `spec.md` plus `README.md`.

@@ -4,6 +4,12 @@ section: "Behavior"
 
 # Generator-sync-claim-honesty
 
+> **Superseded mechanism (022):** `scripts/gen-spec-deps.sh` no longer exists.
+> [022-deterministic-runtime](../../022-deterministic-runtime/spec.md)'s `adopter-generator-promotion`
+> replaced it with the `derive-dependencies` and `derive-references` runtime primitives, which carry the
+> requirements below across unchanged. The behaviour below still binds — read the script name as the
+> primitives that took it over.
+
 ## Context
 
 `gen-spec-deps.sh` prints `No changes (all specs in sync)` whenever its rewrite count is zero. Zero means "I rewrote nothing", not "everything is in sync": [tracked-specs-not-worktree](tracked-specs-not-worktree.md) scopes `list_specs()` to `git ls-files`, so an untracked draft is never examined — and the message makes a positive claim about exactly the files the generator cannot vouch for.

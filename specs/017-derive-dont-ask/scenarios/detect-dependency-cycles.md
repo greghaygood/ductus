@@ -4,6 +4,12 @@ section: "Generators and Hooks"
 
 # Detect-dependency-cycles
 
+> **Superseded mechanism (022):** `scripts/gen-spec-deps.sh` no longer exists.
+> [022-deterministic-runtime](../../022-deterministic-runtime/spec.md)'s `adopter-generator-promotion`
+> replaced it with the `derive-dependencies` and `derive-references` runtime primitives, which carry the
+> requirements below across unchanged. The behaviour below still binds — read the script name as the
+> primitives that took it over.
+
 ## Context
 
 `scripts/gen-spec-deps.sh` rewrites every spec's frontmatter `dependencies` from body links on every commit (Q7 / AC23). The generator currently treats the resulting edges as the truth of the dep graph but never checks the graph for cycles. A cycle is a structural defect — `traverse-deps` cannot order such a graph, `/anvil:status` ordering by `blocked-by` becomes unstable, and the dashboard's blocked-by callout reports nonsense.
