@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [050-constitution, 052-spec-supersession-and-consolidation]
 review:
   last-run: 2026-09-13T13:44:25Z
@@ -13,14 +13,17 @@ review:
   blocking: false
 next-criterion: 27
 analyze:
-  last-run: 2026-09-06T14:12:55Z
-  analyzed-against: 683a1e03c463c62ea644a4466acc5873eba0d1a4
+  last-run: 2026-09-13T13:44:43Z
+  analyzed-against: 79daf880ac6974c113505ff18e0caa27570242a0
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 1
-  unexamined-by-reason:
-    not-a-live-claim: 1
+  unexamined: 0
+  analyzed-digest:
+    plan.md: c2c6880f0cef6c770660dfe7048bffcb853ba08d36a44a57a828ed50fb3e432f
+    review.md: bb3bd975ebcd348b7c144098832c66c8275580fc6739f55dc9da4e264407d721
+    spec.md: 6617b4c78bfcfb4fb9303926770ad4d07f0a1909c219e6ee62e6508e6e167715
+    tasks.md: f84fe3bc825998f53727b74a68e5a6af6fed1de3f2d8115061303daf078fdc08
   blocking: false
 ---
 
