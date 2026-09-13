@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [027-bootstrap-migration-registry, 040-configurable-specs-dir]
 review:
   last-run: 2026-09-13T19:35:53Z
@@ -160,7 +160,7 @@ The [constitution §drift-prevention](../../framework/constitution.md) canonical
 - [x] AC12: Every verbatim `scripts/…` reference to one of the three shipped generators (command bodies, adopter pre-commit hook, adopter CI template, constitution generator-provenance notes, all four agents' permission allowlists) resolves to `.ductus/scripts/…`, and the shipped generators still source `lib/specs-root.sh` correctly from the new location. — superseded by 022-deterministic-runtime: the three shipped generators were promoted to runtime primitives and removed from adopter trees by the `generator-primitives` migration, so none of the listed surfaces carries a generator reference any more and there is no `lib/specs-root.sh` left to source
 - [x] AC13: After the migration runs, `.ductus/session.toml` is gitignored and no dangling `.govern.session.toml` ignore line remains — both the shipped managed-block form and ductus's own out-of-block anchored form are superseded by `/.ductus/session.toml`.
 - [x] AC14: Moving the generators does not silently break a pinned invoker: a pinned command body or `ductus-pre-commit` hook still referencing an old `scripts/…` generator path is left unmodified (pinning opts out of updates) but is named in a migration warning.
-- [x] AC15: ductus's own repository dogfoods the new layout: its config, session, and the three adopter-facing generators live under `.ductus/`, its maintainer-only scripts remain at root `scripts/`, and its own pipeline (`/ductus:*`) and pre-commit generators run without path errors. — the generators clause is superseded by 022-deterministic-runtime: the three adopter-facing generators were promoted to runtime primitives, so nothing lives under `.ductus/scripts/` and the pre-commit hook invokes `derive-dependencies` / `derive-references` instead; the config, session, maintainer-script and no-path-errors clauses still hold
+- [x] AC15: ductus's own repository dogfoods the new layout: its config, session, and the three adopter-facing generators live under `.ductus/`, its maintainer-only scripts remain at root `scripts/`, and its own pipeline (`/ductus:*`) and pre-commit generators run without path errors. — the generators clause is superseded by 022-deterministic-runtime: the three adopter-facing generators were promoted to runtime primitives, so `.ductus/scripts/` no longer exists and the pre-commit hook invokes `derive-dependencies` / `derive-references` instead; the config, session, maintainer-script and no-path-errors clauses still hold
 - [x] AC16: The constitution's canonical-sources table and session-state / generator-provenance prose, `AGENTS.md`, and `README.md` reference the `.ductus/` paths; no stale root-path reference to the moved files remains in framework documentation.
 
 ## Open Questions
