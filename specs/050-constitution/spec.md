@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-13T17:58:00Z
@@ -21,15 +21,15 @@ review:
   blocking: false
 next-criterion: 20
 analyze:
-  last-run: 2026-09-13T17:57:20Z
-  analyzed-against: 49085a8c35ae7acd0042fd4a1ffe7b66794e4cf3
+  last-run: 2026-09-13T17:58:17Z
+  analyzed-against: 68d547c60437a7508a030059097e3dfa814fb99e
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
   analyzed-digest:
     plan.md: cc73c3c7af6784205158b9b957264e5fbfaafa5ac4708d0a9ba097fcb52028af
-    review.md: 284070c07c2de8c67863309bee8e20e6b863304a3a1457c1d837b5fc0abe8606
+    review.md: 6597325bb1d46bb3a5e63de4d2971f929e93351c3085f893bcc6c865c01e2298
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 98f635cb1fa72345d7413ba49e7a57fe046a265db1b790db79d9aca867c234a9
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
     scenarios/a-partial-read-is-not-a-read.md: 21a78c9fe7d1b8d76f6f6f35097fce17e1ca1fe1ae3723bcb7ec007b7c9aeb56
@@ -38,7 +38,7 @@ analyze:
     scenarios/completion-claims-carry-no-caveats.md: 2b2e43f4cea73ba9c81dc21848b5c668e1db5bf6a5e3becd7467ce025c4179c4
     scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
-    spec.md: 0a936b0f95613e528c5fbd3b319b08fbbf9f29e0ffafd13e6ae9d18a0f994bf3
+    spec.md: 495f4a5f9644e2bcb8ad13a06549a22408a812043d3be663d16d19e0ea7a1d91
     tasks.md: 10dbf54f881b62be9bfc572e519445aac6d874a24f3eea3b6c642e74d945ddba
   blocking: false
 ---
