@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [020-code-review, 024-rule-loader]
 review:
   last-run: 2026-05-17T20:35:00Z
@@ -65,7 +65,7 @@ The fix: a deliberate, recorded, file-level opt-out. `.ductus/config.toml` alrea
 - [x] AC6: `/ductus:status` surfaces the disabled list (when present) in the pipeline dashboard, so the override is visible at-a-glance and doesn't hide in `.ductus/config.toml`.
 - [x] AC7: `/ductus:analyze` does NOT error on the new key. The key is a `.ductus/config.toml` extension owned by this spec, not a spec-frontmatter change.
 - [x] AC8: The mechanism is uniform across all rule files. Adopters CAN disable [`security-backend.md`](../../framework/rules/security-backend.md) or [`security-frontend.md`](../../framework/rules/security-frontend.md) — the reason field is the audit trail. The framework does not enforce a "security files cannot be disabled" carve-out: enforcing it would require a hardcoded list of "real security" files that drifts from reality, and dropping security rules is a high-stakes decision that the reason field already makes visible. PR review and the operator's own policy are the safeguards, not the framework.
-- [x] AC9: Documentation: the new `[[review.disabled-rule-files]]` schema is documented in this spec's body and reflected in `framework/commands/review.md` (per AGENTS.md line 42 — `.ductus/config.toml` keys are documented in the spec that owns them and in the embedded command artifact, NOT retro-added to spec 019 or any earlier config spec). Spec 020 established this precedent for `[review] tech-stack-verified`; spec 025 follows the same pattern.
+- [x] AC9: Documentation: the new `[[review.disabled-rule-files]]` schema is documented in this spec's body and reflected in `framework/commands/review.md` (per AGENTS.md's *a `.ductus/config.toml` change is cross-spec impact only when it modifies a key another spec already documented* entry — keys are documented in the spec that owns them and in the embedded command artifact, NOT retro-added to spec 019 or any earlier config spec). Spec 020 established this precedent for `[review] tech-stack-verified`; spec 025 follows the same pattern.
 
 ## Non-goals
 

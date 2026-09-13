@@ -64,7 +64,7 @@ Verified during planning: the script does not exist. The spec body Affected file
 | `framework/commands/review.md` | edit | §Inputs (add `[[review.disabled-rule-files]]` Config bullet); §Behavior step 5 (apply disabled-files filter after stack filter, emit per-entry notices); §Output (document the new notices); §Notes for adopters (one bullet on the override and a link to `.ductus/config.toml`'s `[[review.disabled-rule-files]]`) |
 | `framework/commands/status.md` | edit | Step 6 — add a fourth below-the-table callout when the disabled list is non-empty |
 | `framework/constitution.md` | edit | §rules — append a brief paragraph after the filename-suffix subsection mentioning the file-level opt-out |
-| `framework/bootstrap/ductus.md` | edit | Example TOML block (lines 246–262) — add a commented-out `[[review.disabled-rule-files]]` example alongside `[pinned]` and `[workflows]` |
+| `framework/bootstrap/ductus.md` | edit | Example TOML block in §Project Configuration — add a commented-out `[[review.disabled-rule-files]]` example alongside `[pinned]` (and, at the time, `[workflows]`, since sunset by 043) |
 | `specs/025-rule-opt-out/spec.md` | edit | Mark all 9 AC checkboxes after implementation is verified; record the analyze/lint-script drops in the frontmatter `review` block via `/ductus:review` |
 
 ## Trade-offs
