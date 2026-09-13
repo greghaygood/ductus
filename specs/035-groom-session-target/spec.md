@@ -2,11 +2,16 @@
 status: in-progress
 dependencies: [006-bug-workflow, 017-derive-dont-ask, 023-govern-refinement]
 review:
-  last-run: 2026-08-03T15:03:53Z
-  reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
+  last-run: 2026-09-13T17:41:03Z
+  reviewed-against: 3141463ab739f72882171628484f41bf797f8aee
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 4
+  scope: 4
+  reviewed-digest:
+    scenarios/confirmation-names-reopen.md: 62f7f04097775cd8b7e33dc38cb05b47dcbef834e6b4eb54d60bf1bf1ead7829
+    scenarios/reopen-done-spec-on-scenario.md: 5f1b1f7cc9a4fb3d5042d48ef2aae191697ff3821a0170ead1d019460cd6d6b2
   blocking: false
 next-criterion: 8
 analyze:
