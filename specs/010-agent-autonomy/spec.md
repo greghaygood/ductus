@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [000-slash-commands]
 tags: [agent, process]
 review:
-  last-run: 2026-08-17T00:14:48Z
-  reviewed-against: d8c5c616648e9ae2ee06af0e8c9abd4e09613bc1
+  last-run: 2026-09-13T16:22:03Z
+  reviewed-against: 76e5aeb5dada16ade73307ce40bbd8d3f65163f7
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 21
+  scope: 25
+  reviewed-digest:
+    scenarios/implement-offers-the-next-step.md: 1927295a78b92a769f4050d240464aead2d5221c8f36fa3cdbaee05983f301e4
   blocking: false
 next-criterion: 15
 analyze:
