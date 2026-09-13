@@ -504,7 +504,13 @@ pub enum PrimitiveError {
     /// unresolved checkout, which stays the warning-level `not-checked-out`
     /// state. The asymmetry is the whole point; collapsing the two would tell
     /// an operator to clone a repository when the mistake is in their config.
-    #[error("invalid entry in {path}: [constitutions.{alias}] `{field}` {reason}")]
+    ///
+    /// The alias is escaped for display, never raw: a TOML quoted key may
+    /// carry a newline, and a non-bare key is precisely what this error
+    /// reports, so a raw rendering would let committed config forge a second
+    /// line in an operator-facing message (`BE-INPUT-011`). The field stays
+    /// verbatim for callers.
+    #[error("invalid entry in {path}: [constitutions.{}] `{field}` {reason}", .alias.escape_debug())]
     InvalidConstitutionEntry {
         /// Path of the config file carrying the offending entry.
         path: PathBuf,

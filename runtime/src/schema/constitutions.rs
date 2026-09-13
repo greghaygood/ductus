@@ -42,7 +42,17 @@ pub enum ConstitutionsError {
     /// An entry parsed but holds a value the schema forbids. Names the alias
     /// and the field, which is what `framework/bootstrap/ductus.md`
     /// §Validating the registry requires of the halt.
-    #[error("[constitutions.{alias}] `{field}` {reason}")]
+    ///
+    /// The alias is **escaped** for display. A TOML quoted key may carry a
+    /// newline (`[constitutions."a\nb"]`), and that alias is exactly the one
+    /// this error reports, since a non-bare key is what the first check
+    /// rejects — so rendering it raw would let a config value forge a second
+    /// line in an operator-facing message (`BE-INPUT-011`). The `alias` field
+    /// itself stays verbatim for callers; only the rendering is escaped, so a
+    /// bare alias reads unchanged. This module already takes the same posture
+    /// one field over, where `resolve-constitutions` collapses a multi-line
+    /// `description` before it can break a single-line report.
+    #[error("[constitutions.{}] `{field}` {reason}", .alias.escape_debug())]
     Invalid {
         /// The offending entry's registry alias, verbatim.
         alias: String,
@@ -221,47 +231,27 @@ fn is_bare_toml_key(alias: &str) -> bool {
 /// True when `repo` is URL-shaped — a scheme and a host, which is the whole
 /// requirement the schema states.
 ///
+/// Delegates to the URL parser the crate already depends on and already uses
+/// for exactly this question (`fetch_archive`'s `validate_fetch_url`), rather
+/// than hand-rolling a second one. A hand-rolled scheme/authority split is a
+/// fresh copy of a parse the tree already owns and has tested, and the copies
+/// drift — the same reasoning §runtime-boundary gives for not reimplementing a
+/// primitive in shell. It is also where the subtle cases live: an authority of
+/// `:8080` is a port with no host, and a bracketed IPv6 literal carries colons
+/// of its own.
+///
 /// Shape only, never reachability: `repo` is identity and navigation and is
 /// **never fetched**, so there is nothing to resolve and nothing that could
-/// fail at a distance. The check is a scheme per RFC 3986
-/// (`ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )`), the `://` separator, and a
-/// non-empty host in the authority once any `userinfo@` prefix and `:port`
-/// suffix are removed — so `https://:8080/x`, which names a port and no host,
-/// is rejected rather than passing on a non-empty authority.
+/// fail at a distance. `host()` is what carries the *host* half — a URL the
+/// parser accepts as cannot-be-a-base (`mailto:someone@example.test`) has a
+/// scheme and no host, and is rejected.
 ///
 /// An scp-style git address (`git@github.com:acme/gov.git`) has no scheme and
 /// is therefore rejected. That is the schema as declared, not an oversight:
 /// the URL form (`ssh://git@github.com/acme/gov.git`) says the same thing and
 /// is navigable, which is the field's only job.
 fn is_url_shaped(repo: &str) -> bool {
-    let Some((scheme, rest)) = repo.split_once("://") else {
-        return false;
-    };
-    let mut scheme_chars = scheme.chars();
-    if !scheme_chars.next().is_some_and(|c| c.is_ascii_alphabetic()) {
-        return false;
-    }
-    if !scheme_chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.')) {
-        return false;
-    }
-    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
-    // `userinfo@host` — split at the LAST `@`, since userinfo may contain one.
-    let after_userinfo = authority
-        .rsplit_once('@')
-        .map_or(authority, |(_, host)| host);
-    // `host:port` — only when what follows the last colon is all digits, which
-    // leaves a bracketed IPv6 literal (`[::1]`) intact rather than truncating
-    // it at one of its own colons.
-    let host = after_userinfo
-        .rsplit_once(':')
-        .map_or(after_userinfo, |(host, port)| {
-            if !port.is_empty() && port.chars().all(|c| c.is_ascii_digit()) {
-                host
-            } else {
-                after_userinfo
-            }
-        });
-    !host.is_empty()
+    reqwest::Url::parse(repo).is_ok_and(|parsed| parsed.host().is_some())
 }
 
 #[cfg(test)]
@@ -473,7 +463,10 @@ path = "../platform-governance"
             "https://user:pw@example.test:8443/g",
             "https://[::1]:8080/g",
             "https://[::1]/g",
-            "file://localhost/srv/gov",
+            // The parser skips the extra slash in an authority position for a
+            // special scheme, so this resolves a host of `acme` rather than an
+            // empty one. Verified against the parser rather than assumed.
+            "https:///acme/gov",
         ] {
             assert!(is_url_shaped(repo), "{repo} is URL-shaped");
         }
@@ -490,9 +483,16 @@ path = "../platform-governance"
             "://example.test",
             "1http://example.test",
             "https://",
-            "https:///acme/gov",
             // a port and no host
             "https://:8080/g",
+            // a scheme the parser accepts as cannot-be-a-base: no host
+            "mailto:someone@example.test",
+            // a port with no host, and a non-numeric variant of it
+            "https://:abc",
+            // `file://` normalises `localhost` away, leaving no host. `repo`
+            // is the remote identity; the local half is `path`.
+            "file://localhost/srv/gov",
+            "file:///srv/gov",
         ] {
             assert!(!is_url_shaped(repo), "{repo} is not URL-shaped");
         }
@@ -506,6 +506,30 @@ path = "../platform-governance"
         let toml = "[constitutions.zulu]\nrepo = \"nope\"\npath = \"../z\"\n\
                     [constitutions.alpha]\nrepo = \"also-nope\"\npath = \"../a\"\n";
         assert_eq!(reject(toml).0, "alpha", "alias order, not document order");
+    }
+
+    /// A TOML quoted key may carry a newline, and a non-bare key is exactly
+    /// what the first check rejects — so the offending alias reaches the
+    /// message. Rendering it raw would let committed config forge a second
+    /// line in an operator-facing error (`BE-INPUT-011`).
+    #[test]
+    fn a_newline_in_an_alias_cannot_forge_a_line_in_the_message() {
+        let toml = "[constitutions.\"a\\nb\"]\n\
+                    repo = \"https://example.test/g\"\npath = \"../gov\"\n";
+        let err = Constitutions::from_toml_str(toml).expect_err("rejected");
+        let ConstitutionsError::Invalid { alias, .. } = &err else {
+            panic!("expected a value rejection: {err}");
+        };
+        assert!(alias.contains('\n'), "the field stays verbatim for callers");
+        let message = err.to_string();
+        assert!(
+            !message.contains('\n'),
+            "the rendering is single-line: {message:?}"
+        );
+        assert!(
+            message.contains("a\\nb"),
+            "escaped, not dropped: {message:?}"
+        );
     }
 
     #[test]

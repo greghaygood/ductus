@@ -33,7 +33,23 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
   from a contributor who has not cloned the governance repository yet.
   `write-review` and `write-analysis` keep their existing posture and
   record the unreadable registry rather than failing, so a config typo
-  never costs an operator their findings. Spec 022, scenario
+  never costs an operator their findings.
+
+  The URL shape check delegates to the parser the crate already depends
+  on and already uses for the same question in `fetch-archive`'s SSRF
+  screen, rather than hand-rolling a second one: a `repo` is URL-shaped
+  when that parser accepts it and reports a host. Two consequences are
+  worth knowing. `file://` is **not** URL-shaped — the parser normalises
+  `file://localhost/…` and `file:///…` to no host — and `repo` is the
+  remote identity anyway, with `path` as the local half. And
+  `https:///acme/gov` **is** accepted, resolving a host of `acme`, since
+  the parser skips the extra slash exactly as a browser does.
+
+  The offending alias is escaped where the error renders it. A TOML
+  quoted key may carry a newline and a non-bare key is precisely what
+  the first check rejects, so a raw rendering would let committed config
+  forge a second line in an operator-facing message; a bare alias reads
+  unchanged. Spec 022, scenario
   `the-constitutions-registry-validates-its-values`.
 
 ## [0.49.2] — 2026-09-13
