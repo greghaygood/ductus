@@ -125,6 +125,6 @@ If the user's tech stack selections match no registry entries (e.g., all categor
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [004-tech-stack-selection](../004-tech-stack-selection/spec.md)

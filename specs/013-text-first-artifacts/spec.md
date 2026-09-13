@@ -144,7 +144,7 @@ _All open questions resolved. See Resolved Questions below._
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [000-slash-commands](../000-slash-commands/spec.md)
 - [007-govern-workflow](../007-govern-workflow/spec.md)

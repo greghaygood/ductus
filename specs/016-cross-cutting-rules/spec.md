@@ -109,7 +109,7 @@ The artifact tier and validate plumbing already exist. This spec generalizes the
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [006-bug-workflow](../006-bug-workflow/spec.md)
 - [008-security-rules](../008-security-rules/spec.md)

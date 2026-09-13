@@ -202,6 +202,6 @@ None — all resolved.
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [003-bootstrap-automation](../003-bootstrap-automation/spec.md)

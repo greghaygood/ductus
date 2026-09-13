@@ -207,7 +207,7 @@ Both back-edges then read as command-owned, status-mutating actions triggered by
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [000-slash-commands](../000-slash-commands/spec.md)
 - [009-scenario-targeting](../009-scenario-targeting/spec.md)

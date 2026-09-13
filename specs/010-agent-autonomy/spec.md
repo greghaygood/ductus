@@ -189,6 +189,6 @@ No new artifact, no per-task estimates, no budget files. The cross-reference par
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [000-slash-commands](../000-slash-commands/spec.md)

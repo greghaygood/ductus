@@ -157,7 +157,7 @@ The self-update notice (shown when the installed `ductus.md` differs from the fe
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [007-govern-workflow](../007-govern-workflow/spec.md)
 - [012-multi-agent-govern](../012-multi-agent-govern/spec.md)

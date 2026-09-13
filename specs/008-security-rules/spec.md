@@ -273,6 +273,6 @@ None — all resolved during clarification.
 
 ## References
 
-Declared dependencies for this spec, surfaced here so the dependency-derivation generator (`scripts/gen-spec-deps.sh`) sees them in the body.
+Declared dependencies for this spec, surfaced here so the `derive-dependencies` runtime primitive sees them in the body.
 
 - [007-govern-workflow](../007-govern-workflow/spec.md)
