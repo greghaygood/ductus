@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-13T12:33:13Z
@@ -20,23 +20,24 @@ review:
   blocking: false
 next-criterion: 20
 analyze:
-  last-run: 2026-09-12T23:07:55Z
-  analyzed-against: c6d53d752c9a01928837a4556c1ff7a330bd7eb9
+  last-run: 2026-09-13T12:33:26Z
+  analyzed-against: ff840b6c6c2c493c8c0fb4dce59842c82395363d
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
   analyzed-digest:
     plan.md: cc73c3c7af6784205158b9b957264e5fbfaafa5ac4708d0a9ba097fcb52028af
-    review.md: ceb15927330098d72fca82ccb56ffb44eaba9ed1da846e5565ed99db8f61cc81
+    review.md: 32c9be395f8dd641a4eea0c09e6611234150afd3e46c7e195ca55e958399070c
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
     scenarios/a-partial-read-is-not-a-read.md: 21a78c9fe7d1b8d76f6f6f35097fce17e1ca1fe1ae3723bcb7ec007b7c9aeb56
     scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
+    scenarios/a-retired-filename-leaves-a-decision-record.md: f84a3177744eb03a859d82a4017495c24bcf24466448b7c49ad1a253147ab581
     scenarios/completion-claims-carry-no-caveats.md: 2b2e43f4cea73ba9c81dc21848b5c668e1db5bf6a5e3becd7467ce025c4179c4
     scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
-    spec.md: 1856cd934cd06e2493df46979016d0aa0305763bf0e7522c53464415f51defd7
-    tasks.md: b00827c39400a81dc269f10da971439f4037bbbfc14d657a65d458ee15514d04
+    spec.md: a86cb353a8578704d58e4076f55b8459bf862aa7eeae7943328d073ac20ffe2d
+    tasks.md: 6e2c7803fea9c6c9d6bd5981ce60530e1792bbdd543029c34b9b7f323e65488d
   blocking: false
 ---
 
