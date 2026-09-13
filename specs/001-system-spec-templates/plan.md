@@ -6,7 +6,7 @@ title: "001-system-spec-templates — plan"
 
 ## Overview
 
-Create three new template files in the existing `templates/` directory: `system.md`, `errors.md`, and `events.md`. Each follows the established template pattern — a top-level heading, placeholder sections with HTML comments containing commented-out examples, and no technology-specific content.
+Create three new template files in the existing `framework/templates/project/` directory: `system.md`, `errors.md`, and `events.md`. Each follows the established template pattern — a top-level heading, placeholder sections with HTML comments containing commented-out examples, and no technology-specific content.
 
 ## Technical Decisions
 
@@ -39,9 +39,9 @@ The templates should reflect this: each starts with conventions and structure up
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `templates/system.md` | Create | Architecture overview template with sections for configuration, lifecycle, request flow, shared infrastructure, module pattern |
-| `templates/errors.md` | Create | Error handling conventions template with sections for response format, codes, status mapping, validation, logging |
-| `templates/events.md` | Create | Event catalog template with structure for documenting event types, envelope format, naming convention |
+| `framework/templates/project/system.md` | Create | Architecture overview template with sections for configuration, lifecycle, request flow, shared infrastructure, module pattern |
+| `framework/templates/project/errors.md` | Create | Error handling conventions template with sections for response format, codes, status mapping, validation, logging |
+| `framework/templates/project/events.md` | Create | Event catalog template with structure for documenting event types, envelope format, naming convention |
 
 ## Trade-offs
 

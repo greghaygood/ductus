@@ -13,7 +13,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Include a multi-tenancy section as optional (commented guidance on when to include)
 - [x] Ensure examples are technology-agnostic
 
-Done when: `templates/system.md` exists with all sections, examples are commented out, no technology-specific references, passes markdownlint.
+Done when: `framework/templates/project/system.md` exists with all sections, examples are commented out, no technology-specific references, passes markdownlint.
 
 ## 2. Create templates/errors.md
 
@@ -22,7 +22,7 @@ Done when: `templates/system.md` exists with all sections, examples are commente
 - [x] Include example error response structure (using generic JSON, not framework-specific)
 - [x] Include example error code naming convention
 
-Done when: `templates/errors.md` exists with all sections, examples are commented out, no technology-specific references, passes markdownlint.
+Done when: `framework/templates/project/errors.md` exists with all sections, examples are commented out, no technology-specific references, passes markdownlint.
 
 ## 3. Create templates/events.md
 
@@ -31,12 +31,12 @@ Done when: `templates/errors.md` exists with all sections, examples are commente
 - [x] Include a comment suggesting projects consider specifying retry policy and dead-letter handling as dedicated feature specs
 - [x] Include publisher/subscriber documentation pattern in the example
 
-Done when: `templates/events.md` exists with catalog structure, example entry, retry/dead-letter suggestion, passes markdownlint.
+Done when: `framework/templates/project/events.md` exists with catalog structure, example entry, retry/dead-letter suggestion, passes markdownlint.
 
 ## 4. Final review and lint
 
 - [x] Run `npx markdownlint-cli2` on all three new templates
-- [x] Verify consistency with existing template style (compare against `templates/spec.md` and `templates/plan.md`)
+- [x] Verify consistency with existing template style (compare against `framework/templates/spec/spec.md` and `framework/templates/spec/plan.md`)
 - [x] Verify no technology-specific language, framework, or library references
 - [x] Update spec status to `planned`
 

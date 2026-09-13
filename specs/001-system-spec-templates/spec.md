@@ -1,6 +1,6 @@
 ---
 title: "001-system-spec-templates — spec"
-status: done
+status: in-progress
 dependencies: []
 tags: [templates, pipeline]
 review:
@@ -27,15 +27,13 @@ analyze:
 
 Templates for the cross-cutting system specs that the constitution references but does not provide: `system.md`, `errors.md`, and `events.md`.
 
-> **Note:** path references below (`templates/system.md`, etc.) reflect the original layout. The repository was later reorganized so project-scaffolding templates live in `framework/templates/project/`. Adopting projects' destination paths did not change.
-
 ## Problem
 
 The constitution's spec phase defines a directory structure that includes `system.md`, `errors.md`, and `events.md` under `specs/`. The README tells adopters to "write `specs/system.md` describing your architecture" but provides no template or guidance on what sections to include. Projects like anvil have built these from scratch, establishing patterns that should be reusable.
 
 ## Behavior
 
-Governance provides three new templates in the `templates/` directory. Each template has placeholder sections with comments explaining what to fill in, following the same pattern as existing templates (spec.md, plan.md, etc.).
+`ductus` provides three new templates in the `framework/templates/project/` directory. Each template has placeholder sections with comments explaining what to fill in, following the same pattern as existing templates (spec.md, plan.md, etc.).
 
 ### system.md template
 
@@ -71,9 +69,9 @@ An event catalog — a registry of event types populated as features are built. 
 
 ## Acceptance Criteria
 
-- [x] AC1: `templates/system.md` exists with placeholder sections for configuration, lifecycle, request flow, shared infrastructure, and module pattern
-- [x] AC2: `templates/errors.md` exists with placeholder sections for error format, code convention, status mapping, validation errors, and logging
-- [x] AC3: `templates/events.md` exists with placeholder sections for event catalog, envelope format, naming convention, and a comment suggesting retry/dead-letter as feature specs
+- [x] AC1: `framework/templates/project/system.md` exists with placeholder sections for configuration, lifecycle, request flow, shared infrastructure, and module pattern
+- [x] AC2: `framework/templates/project/errors.md` exists with placeholder sections for error format, code convention, status mapping, validation errors, and logging
+- [x] AC3: `framework/templates/project/events.md` exists with placeholder sections for event catalog, envelope format, naming convention, and a comment suggesting retry/dead-letter as feature specs
 - [x] AC4: Each template uses HTML comments with commented-out example content, consistent with existing template style
 - [x] AC5: Templates are technology-agnostic — no language-specific code or framework references
 - [x] AC6: Each template starts with a top-level heading and passes markdownlint
