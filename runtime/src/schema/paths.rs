@@ -179,15 +179,23 @@ fn active_path(repo: &Path, chain: &[&'static str; TIERS]) -> PathBuf {
 /// A well-formed name is a single directory-name segment using only the
 /// conservative charset `[A-Za-z0-9_-]` (letters, digits, hyphen, underscore)
 /// and is non-empty. This is deliberately stricter than "no separators / no
-/// `..`": the runtime uses the name only as a literal path component (safe at
-/// any charset), but the bash generators interpolate it **unescaped** into
-/// `grep -E` / awk regexes, where a `.`, `+`, `*`, `(`, … would act as a
-/// regex metacharacter (over-matching, or a syntax error that silently drops a
-/// spec). Restricting the charset keeps both sides safe with one rule and also
-/// rejects a lone `.` (which would resolve the spec-root to the repo root).
-/// See spec 040's review. The predicate is shared so the runtime's
-/// best-effort resolver ([`Paths::load`]) and the `/ductus` configuration
-/// prompt apply the same rule.
+/// `..`", and the reason it was originally *this* strict is now historical:
+/// the shipped bash generators interpolated the name **unescaped** into
+/// `grep -E` / awk regexes, where a `.`, `+`, `*`, `(`, … acted as a regex
+/// metacharacter (over-matching, or a syntax error that silently dropped a
+/// spec). Those generators were promoted to the `derive-dependencies` /
+/// `derive-references` primitives (spec 022) and the adopter pre-commit hook
+/// now matches the spec root by *shape* rather than interpolating the
+/// configured name, so no shell consumer interpolates it any more.
+///
+/// The strictness is kept rather than relaxed, on the reasons that outlived
+/// that one: it rejects a lone `.` (which would resolve the spec-root to the
+/// repo root), it keeps the name safe as a literal path component on every
+/// platform, and relaxing a validator is a one-way door — an adopter who
+/// configures a newly-permitted name cannot be un-configured by a later
+/// tightening. See spec 040's review. The predicate is shared so the
+/// runtime's best-effort resolver ([`Paths::load`]) and the `/ductus`
+/// configuration prompt apply the same rule.
 ///
 /// # Errors
 ///
@@ -370,9 +378,11 @@ mod tests {
 
     #[test]
     fn validate_rejects_regex_metachars_and_dot() {
-        // Characters outside [A-Za-z0-9_-] are rejected so they cannot act as
-        // regex metacharacters when the bash generators interpolate the name
-        // (spec 040 review). A lone `.` (repo-root) is rejected too.
+        // Characters outside [A-Za-z0-9_-] are rejected. The original reason
+        // was the shipped bash generators interpolating the name unescaped
+        // into regexes (spec 040 review); those are runtime primitives now
+        // (spec 022), and the constraint is retained on the reasons given on
+        // `validate_specs_root`. A lone `.` (repo-root) is rejected too.
         for name in [
             ".", "v1.0", "a.b", "spec+s", "spec(s", "spec*s", "a b", "a[b",
         ] {
