@@ -93,7 +93,7 @@ Adopters are not expected to author future sections by hand. Each future section
 - `[pinned] files` — entries that don't match a known manifest path are silently no-op (today's behavior, unchanged).
 - `[workflows] declined_categories` — entries that don't match a registry-derived category name are surfaced in the post-scaffolding summary (per this spec).
 
-There is no commit hook or `/ductus:analyze` rule for `.ductus/config.toml`. The post-scaffolding summary is the only enforcement layer, by design.
+There is no commit hook for `.ductus/config.toml`, and the post-scaffolding summary was the only enforcement layer when this spec shipped. **Two layers have since been added, both per-key rather than schema-wide, so the design above holds and the "only" does not.** `030-cross-service-references` gave `/ductus:analyze` a rule that reads the `[services]` registry and reports a **broken** reference — registered, checked out, target spec does not resolve — as an Advisory finding. And `/ductus:audit` Family 17 (`host-namespace-parity.sh`) reads `[host] project` to verify the slash-command namespace this repo renders matches the one it installed. Neither validates the file as a whole; each consumes one section and enforces at its own point, which is the per-key posture this section describes.
 
 ## Backwards compatibility
 
