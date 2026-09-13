@@ -2,11 +2,14 @@
 status: done
 dependencies: [017-derive-dont-ask]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T13:14:20Z
+  reviewed-against: 91741dfb77a5e46e184257c2313afa9684f2da62
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 5
+  scope: 7
+  reviewed-digest: {}
   blocking: false
 next-criterion: 14
 analyze:
