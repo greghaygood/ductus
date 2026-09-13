@@ -2,6 +2,36 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.1] — 2026-09-13
+
+### Fixed
+
+- **A corrupt session file no longer resolves a silently-wrong agent.**
+  `Host::load_session_cli_config_dir` read the per-contributor session file
+  and returned `None` for *any* failure — missing, unreadable, or malformed —
+  while its sibling `load_host_block` logged a warning to stderr on exactly
+  the same parse failure. The asymmetry was the defect: a corrupt session file
+  was indistinguishable from an absent one, so resolution fell through to the
+  default `.claude` and the mistake surfaced far from its cause, as a
+  "command file not found" for an agent the contributor does in fact use.
+  A missing file stays silent — not having one is the ordinary state — while
+  a file that exists and does not parse now names itself and the parse error.
+  Behaviour is otherwise unchanged: the fallback chain and its existing test
+  (`malformed_session_falls_back_to_legacy_then_default`) are untouched. This
+  is `QUAL-CLAIM-001` — *a fully-implemented path whose output overstates what
+  it verified* — found reviewing spec 049.
+
+### Changed
+
+- **`host.rs` documentation describes the resolved ladder rather than its
+  oldest tier.** Its module doc and four function docs still said the runtime
+  reads `project` from `.govern.toml` and `cli-config-dir` from
+  `.govern.session.toml`, naming the *legacy* tier as the current source. The
+  code has resolved through `schema::paths`' newest-wins chain
+  (`.ductus/` → `.govern/` → legacy root) since 049; only the prose lagged.
+  No behaviour change. `schema/paths.rs` also carried one `/gov:review`
+  reference under the retired command namespace.
+
 ## [0.49.0] — 2026-09-13
 
 ### Added

@@ -6,14 +6,18 @@
 //! (`main::run_exec` and `interpreter::payload::locate_command_file`),
 //! both of which used to bake in Claude Code's config-dir name and
 //! this repo's slash-command namespace. This module reads `project` from
-//! `.govern.toml`'s `[host]` block (team-shared — the slash-command
-//! namespace is identical for every contributor) and `cli-config-dir` from
-//! the gitignored, per-contributor `.govern.session.toml` (teammates may
-//! each use a different agent, so the config-dir name must never be
-//! committed). For adopters predating that relocation, `cli-config-dir`
-//! falls back to the legacy `.govern.toml` `[host]` value, then to defaults
-//! that preserve the framework repo's behavior (`.claude` and the repo
-//! directory basename).
+//! the resolved config file's `[host]` block (team-shared — the
+//! slash-command namespace is identical for every contributor) and
+//! `cli-config-dir` from the resolved, gitignored, per-contributor session
+//! file (teammates may each use a different agent, so the config-dir name
+//! must never be committed). Both paths come from [`crate::schema::paths`],
+//! which resolves a newest-wins ladder — `.ductus/config.toml` /
+//! `.ductus/session.toml` post-049, the `.govern/` tier between 042 and 049,
+//! and the legacy root `.govern.toml` / `.govern.session.toml` before that —
+//! so this module never spells a tier itself. For adopters predating the
+//! session relocation, `cli-config-dir` falls back to the config file's
+//! `[host]` value, then to defaults that preserve the framework repo's
+//! behavior (`.claude` and the repo directory basename).
 //!
 //! The two callsites resolve the installed command file via
 //! [`Host::command_file_candidates`], which covers both flat-namespaced
@@ -26,8 +30,8 @@ use serde::Deserialize;
 
 use crate::schema::paths;
 
-/// Default `cli-config-dir` when `.govern.toml`'s `[host]` block is
-/// missing the key. Matches the framework repo's own layout, so this
+/// Default `cli-config-dir` when the resolved config file's `[host]` block
+/// is missing the key. Matches the framework repo's own layout, so this
 /// repo's behavior is unchanged when no `[host]` block is declared.
 const DEFAULT_CLI_CONFIG_DIR: &str = ".claude";
 
@@ -51,15 +55,16 @@ pub struct Host {
 }
 
 impl Host {
-    /// Load `Host` for `repo`: `project` from `.govern.toml`'s `[host]`
-    /// block (team-shared), `cli-config-dir` from the per-contributor
-    /// `.govern.session.toml` with a legacy `.govern.toml` `[host]` fallback.
+    /// Load `Host` for `repo`: `project` from the resolved config file's
+    /// `[host]` block (team-shared), `cli-config-dir` from the resolved
+    /// per-contributor session file with a config-file `[host]` fallback.
     /// Returns defaults (`.claude` / repo directory basename) for any value
     /// not found in those sources.
     ///
-    /// A malformed `.govern.toml` or `.govern.session.toml` is treated as
-    /// absent (the `.govern.toml` case logs a warning to stderr) — command
-    /// resolution should not fail because of an unrelated config error.
+    /// A malformed config or session file is treated as absent, and **both
+    /// cases log a warning to stderr** — command resolution should not fail
+    /// because of an unrelated config error, but it must not resolve a
+    /// silently-wrong value either.
     /// Mismatches between the resolved values and the on-disk layout surface
     /// as the existing "command file not found" error at lookup time.
     #[must_use]
@@ -68,7 +73,7 @@ impl Host {
         let host_block = Self::load_host_block(repo);
         // `project` is shared across the team — it names the slash-command
         // namespace and is identical for every contributor — so it stays in
-        // the committed `.govern.toml` `[host]` block.
+        // the committed config file's `[host]` block.
         let project = host_block
             .as_ref()
             .and_then(|b| b.project.clone())
@@ -76,9 +81,8 @@ impl Host {
         // `cli-config-dir` is per-contributor: teammates on one project may
         // each use a different agent (`.claude` / `.augment` / `.opencode` /
         // `.agents`), so it must NOT live in committed config. Prefer the
-        // gitignored `.govern.session.toml`; fall back to the legacy
-        // `.govern.toml` `[host]` value for adopters predating the
-        // relocation; then the default.
+        // gitignored session file; fall back to the config file's `[host]`
+        // value for adopters predating the relocation; then the default.
         let cli_config_dir = Self::load_session_cli_config_dir(repo)
             .or_else(|| host_block.and_then(|b| b.cli_config_dir))
             .unwrap_or(defaults.cli_config_dir);
@@ -88,7 +92,7 @@ impl Host {
         }
     }
 
-    /// Read the `[host]` block from `<repo>/.govern.toml`. Returns `None`
+    /// Read the `[host]` block from the resolved config file. Returns `None`
     /// when the file is missing, has no `[host]` block, or fails to parse
     /// (a parse error logs to stderr and yields `None` — command resolution
     /// should not fail because of an unrelated config error).
@@ -107,14 +111,31 @@ impl Host {
         }
     }
 
-    /// Read the per-contributor `cli-config-dir` from the gitignored
-    /// `<repo>/.govern.session.toml`. Best-effort: a missing or malformed
-    /// session file yields `None` so resolution falls through to the legacy
-    /// `.govern.toml` value and then the default.
+    /// Read the per-contributor `cli-config-dir` from the resolved,
+    /// gitignored session file. Best-effort: a missing or malformed session
+    /// file yields `None` so resolution falls through to the config file's
+    /// `[host]` value and then the default.
+    ///
+    /// A **missing** file is silent — not having one is the ordinary state.
+    /// A file that exists but does not parse logs to stderr, matching
+    /// [`Self::load_host_block`]: both are the same failure class, and
+    /// swallowing one of them made a corrupt session file indistinguishable
+    /// from an absent one (`QUAL-CLAIM-001`). The caller then resolved a
+    /// silently-wrong `cli_config_dir` and the mistake surfaced far away, as
+    /// a "command file not found" for an agent the contributor does use.
     fn load_session_cli_config_dir(repo: &Path) -> Option<String> {
         let session_path = paths::session_path(repo);
         let content = std::fs::read_to_string(&session_path).ok()?;
-        toml::from_str::<SessionHost>(&content).ok()?.cli_config_dir
+        match toml::from_str::<SessionHost>(&content) {
+            Ok(parsed) => parsed.cli_config_dir,
+            Err(err) => {
+                eprintln!(
+                    "ductus: failed to parse {} for cli-config-dir: {err}; using defaults",
+                    session_path.display()
+                );
+                None
+            }
+        }
     }
 
     /// Repo-relative paths where an installed slash-command file named
