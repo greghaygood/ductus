@@ -14,6 +14,8 @@ Cross-service references are informative links from a spec to a spec in another 
 
 Comprehensive tests are a first-class deliverable (per the planning decision): Rust unit tests per outcome, generator tests, markdown-only↔runtime parity with golden output, and the no-runtime CI job exercising the fallback.
 
+> Two premises above were later reversed, and the text is left as planned rather than rewritten. `048-govern-acquired-runtime` made the runtime **required, and acquired by the pipeline**, so "never a prerequisite" (D3 and item 3) no longer holds and the no-runtime CI job (`.github/workflows/markdown-only-pipeline.yml`) was deleted with the opt-in invariant it asserted; `.github/workflows/runtime-acquisition.yml` carries the acquisition invariant that replaced it. `022-deterministic-runtime` promoted the harvest generator of item 2 and D2 to the `derive-references` primitive, so `scripts/gen-cross-service-refs.sh` and its CI and hook wiring in **Affected Files** no longer exist. The markdown-only path itself is unaffected and still ships (§runtime-host-integration). See `spec.md` AC10.
+
 ## Technical Decisions
 
 ### D1 — Registry: `.ductus/config.toml [services]`

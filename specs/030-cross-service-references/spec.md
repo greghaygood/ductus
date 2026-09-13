@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: []
 review:
   last-run: 2026-06-30T15:51:10Z
@@ -85,7 +85,7 @@ Introducing a reference into an existing spec is a body edit. Because references
 - [x] AC7: A registered, reachable reference that does not resolve to a spec (malformed URL, or the spec renamed/moved/deleted/mistyped upstream) is reported as a broken-reference `/{project}:analyze` finding — distinct from an unknown status.
 - [x] AC8: A registered, reachable reference whose linked file exists but whose `status` is unreadable (no or malformed frontmatter, missing or out-of-set `status`, or a scenario target) shows status `unknown — status unreadable`: surfaced, never silent.
 - [x] AC9: References are harvested into a derived index, distinct from `dependencies:`, and never hand-authored in frontmatter.
-- [x] AC10: The deterministic work — harvest references, resolve via `[services]`, read the linked status, classify the outcome — runs through `ductus` MCP primitives when the runtime is installed, and completes identically via the markdown-only path (host file tools) when it is not; `ductus` is never a prerequisite, and the no-runtime CI job exercises the fallback end-to-end.
+- [x] AC10: The deterministic work — harvest references, resolve via `[services]`, read the linked status, classify the outcome — runs through `ductus` MCP primitives when the runtime is installed, and completes identically via the markdown-only path (host file tools) when it is not; `ductus` is never a prerequisite, and the no-runtime CI job exercises the fallback end-to-end. **Half superseded by `048-govern-acquired-runtime`.** The two-paths half still holds exactly: `derive-references` and `resolve-references` are the runtime path, `framework/commands/analyze.md` step 13 carries the host-file-tools procedure as the markdown-only path, and `runtime/tests/parity/cross-service/` plus `runtime/tests/golden/cross-service-basic.jsonl` still hold the two to one result. The last clause was reversed: 048 made the runtime **required, and acquired by the pipeline** ([§runtime-boundary](../../framework/constitution.md#runtime-boundary) principle 3), so acquisition failure halts the run rather than degrading, and it deleted `.github/workflows/markdown-only-pipeline.yml` — the no-runtime job this criterion names — replacing the opt-in invariant with the **acquisition invariant** asserted by `.github/workflows/runtime-acquisition.yml`. The markdown-only path remains a supported execution path (§runtime-host-integration in `framework/constitution.md`); what it is no longer is a guarantee that `ductus` can be absent.
 - [x] AC11: Adding or removing an informative cross-service reference does not reopen a `done` spec — it is a non-reopening (mechanical-class) edit under §spec-lifecycle.
 - [x] AC12: A single-service adopter that declares no cross-service references sees no behavior change and creates no new configuration.
 
