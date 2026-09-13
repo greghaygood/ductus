@@ -1,12 +1,14 @@
 ---
 spec: 046-scenario-open-question-visibility
-reviewed-at: 2026-08-16T17:09:11Z
-reviewed-against: ec40f796433bf8e6fa25ce33c542166e6703a368
-diff-base: 2e24054345cd91bf0932dad3418e61d4cbf615b4
+reviewed-at: 2026-09-13T13:27:44Z
+reviewed-against: 444c51ae9cc16910bae086b071d1919d7e0238d4
+diff-base: 444c51ae9cc16910bae086b071d1919d7e0238d4
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 4
+scope: 14
 skipped-passes: []
 ---
 
@@ -14,17 +16,17 @@ skipped-passes: []
 
 ## Summary
 
-0 MUST violation(s), 0 SHOULD violation(s), 0 low-confidence finding(s). blocking: no.
+First review of 046 to record `examined` against a derived `scope`; the prior record predated both fields, so its `0/0/0` could not be distinguished from a run whose five passes never fired. No MUST or SHOULD violation. All thirty-two criteria verified against the tree; **one was half false**, and tracing it surfaced a stale durable contract in a neighbouring spec.
 
-One finding was raised and **fixed before this report was finalised**, so the counts state what is outstanding rather than what was found; it is recorded below with a Status line naming the commit.
+**What this review read: 4 of the 14 files in scope in full, and here is the other 10.** Read in full: `framework/commands/analyze.md`, `status.md`, `target.md`, and `framework/constitution.md` — between them the subjects of roughly two-thirds of the criteria. **Read in part, at the sites the criteria name:** `framework/commands/implement.md` (its pre-`done` gate ordering), `runtime/src/primitives/check_review_gate.rs` (`scenario_question_block` in full, not the 2000-line file), `check_artifacts.rs` (its family documentation and the `artifact-unreadable` records), and `specs/022-deterministic-runtime/scenarios/scenario-open-question-signal.md` (its Context and ownership split). **Not examined:** `runtime/src/primitives/{create_scenario,dashboard,read_spec}.rs`, `specs/022-deterministic-runtime/data-model.md`, `scenario-question-parser-fix.md`, and this spec's own `tasks.md`.
 
-Re-run after this spec took the `done → in-progress` back-edge to record a decision 022's `scenario-open-question-signal` revised: feature-targeted `/{project}:clarify` now *reports* scenario open questions, where this spec had asserted it "does not surface" them and is "unchanged".
+**AC22 was half false, and the halves had genuinely diverged.** It claims an unreadable or malformed scenario "never blocks the `done` gate **and** never produces a blocking finding". The **gate** half is exactly right and verified at source: `scenario_question_block` returns `None` on an empty question list, with the reasoning in the code — "this gate must not fail closed on its own inability to read". The **finding** half was reversed by `8c4ca74`, which made `artifact-unreadable` a **blocking** `check-artifacts` finding on a `done` spec; `check_artifacts.rs`'s own header names `scenario-open-questions` as the motivating family, because an unreadable scenario contributed no questions and, as a skip, no finding — so a scenario carrying unresolved questions that would not parse passed the gate *this spec exists to build*. Annotated rather than rewritten: the claim was true as delivered, and the gate half still is. AC32 carried the looser form of the same claim ("blocks nothing"), narrowed here to the pre-`done` gate, which is what it remains true of.
 
-**A note on why the gate did not force this re-review.** `check-review-gate` reported 046 current, and that is correct rather than a miss: staleness is deliberately scoped to a spec's **durable contracts** — `scenarios/*.md` and `data-model.md` — and 046 has neither. The scoping was chosen under measurement, not assumption: the first cut used the plan's Affected Files and blocked 34 of 48 specs, because old specs list shared surfaces every later spec also touches. The consequence worth stating plainly is that a spec with no durable contracts is structurally exempt from the staleness check, so a passing gate is not evidence its verdict is current. This spec's verdict dated from 2026-07-31 while five of the runtime primitives in its Affected Files moved underneath it. That is the same gap already logged as 022 task 88 (staleness on `done` specs), viewed from a second angle.
+**The same reversal left a durable contract stale, and that is logged rather than swept.** `022/scenarios/unreadable-scenario-is-reported.md` states "**Nothing gains a block**" and, of the skipped record, "**It is not a finding: the file is an unknown, not a defect**". The first is still correct; the second is now contradicted by the shipped runtime and by `analyze.md`'s own Unexamined-targets exception. A scenario is a durable requirement document, so this is a stale behavioural claim inside a `done` spec's artifact — a meaningful edit taking 022's back-edge and staling its `reviewed-digest`, which is why it is an inbox item with the exact wording and the gate/finding split recorded, rather than folded into this pass. The split matters: a blanket sweep would destroy the half that is right.
 
-Scope resolved to the plan's 14 Affected Files — five runtime primitives, four command sources, the constitution and 022's artifacts — with `modified-since` empty because the diff base is the commit this spec reopened at. That is a genuinely reviewable surface rather than the whole-repo scope the long-lived specs produce, and it is the spec's real subject.
+**How the rest were checked.** AC7: §spec-lifecycle's `done` row names "no scenario under the spec carries unresolved open questions", and §readiness-check says "the spec body's **and** those carried by any scenario under it" — both halves the criterion requires. AC8–AC10: `target.md` §Scenario open questions displays the total, names every carrying scenario in case-insensitive filename order, recommends no specific one with the reason stated, and overrides the next step to scenario-targeted clarify. AC11–AC13: `status.md` suffixes the existing Scenarios column with `({N} open)` and leaves it a bare count at zero, overrides Next Action, and renders the scenario callout **independently** of the recovery callout — which is AC13's case, where only the cell is exclusive. AC3, AC31: `clarify.md` surfaces scenario questions but resolves none on the feature-targeted path. AC14, AC15, AC23: `analyze.md`'s family is blocking at `done` and advisory otherwise, produces nothing for a feature with no scenarios or no questions section, and carries **no grandfather rule** — stated there in contrast to review-state drift. AC16–AC18, AC26, AC27: the parser reads `## Open Questions` only, excludes `## Resolved Questions`, HTML comments and fenced blocks, and skips both placeholder forms; the gate's own doc comment states why an exemptible section was refused. AC20, AC21, AC24, AC25: the gate check is ordered ahead of the `review:` checks with the reason recorded, its message names every carrying scenario via `scenarios.join(", ")` with no cap, and its guidance offers both exits — resolve, or move to Resolved Questions with the trigger. AC28, AC29: the runtime half lives in 022's scenarios, which back-link this spec and state the ownership split explicitly, while the constitution amendments landed here.
 
-The scenario-question implementation holds up otherwise: one shared collector feeds `read-spec`, `check-review-gate`, `check-artifacts` and `dashboard`, so the count the user sees, the count the gate blocks on, and the count analyze reports cannot disagree — which is the property this spec chose it for. Ordering goes through the one shared scenario listing (case-insensitive, raw-byte tiebreak), so two surfaces never present two orders. The `done`-only blocking tier with no grandfather rule is deliberate and argued in the spec. QUAL-STUB-001 and QUAL-GROUND-001 are clean across the scope.
+**On the diff base.** No commit records 046 entering `in-progress`, so the natural derivation is empty and the denominator would collapse to `scope: 0`. `HEAD` is passed instead. 046 has no scenarios of its own and no data model, so `reviewed-digest` is `{}` — taken and empty, which reads as current.
 
 ## MUST violations (blocking)
 
@@ -32,15 +34,7 @@ The scenario-question implementation holds up otherwise: one shared collector fe
 
 ## SHOULD violations (advisory)
 
-*None outstanding.* The finding below was fixed in-window.
-
-### SHOULD: QUAL-CLAIM-001 — an unreadable scenario read as a clean one
-
-- **File**: `runtime/src/primitives/read_spec.rs:80-82`
-- **Rule**: A result that reports a clean, empty, or in-sync state SHOULD distinguish *"examined the subject and found nothing"* from *"could not examine the subject"*, rather than emitting the same value for both.
-- **Finding**: This spec and 022's signal scenario both record one decision about failure — an unreadable scenario contributes nothing and never blocks, because nothing can be proven about a file that will not parse. That decision is right and is retained. It is also only half the obligation: `collect_scenario_open_questions` implemented *not blocking* as *not reporting*, taking a bare `continue` on the unreadable branch and returning a plain `Vec`. A feature whose only scenario could not be read therefore produced an empty question list byte-identical to one whose scenarios were all read and carried nothing, and every consumer asserted the reassuring reading: `check-review-gate` returned no block, `check-artifacts`' family reported clean with no skipped record, the dashboard rendered no callout, and the feature-targeted clarify report added in the same session was suppressed entirely. The asymmetry is the dangerous one — a scenario file that will not parse is disproportionately a scenario something is wrong with — and the rule names exactly the missing forms: a distinct variant, a skipped list, or a count of what *was* examined.
-- **Auto-fixable**: no
-- **Status**: fixed in `ec40f79`. The collector returns a scan carrying the questions **and** the slugs it could not read; `read-spec` surfaces `scenario-files-unreadable`, and `check-artifacts` records each as a `skipped` target with the existing `artifact-unreadable` reason. Nothing gained a block — the gate still fails open, since a gate that failed closed on its own inability to read is one people route around. The field is omitted when empty, so payloads and the parity goldens are byte-unchanged and *empty now means* every scenario was read. Two tests cover both directions (an unread scenario reported and not counted clean; a fully-examined feature reporting nothing unread), and the pre-existing single-skip assertion was scoped by family, since one unread file is legitimately recorded by two families. Routed per the runtime-work rule as 022's `unreadable-scenario-is-reported` (task 89), back-linked here, with 022's data-model updated; this spec gains AC32.
+*None.*
 
 ## Low-confidence findings
 
@@ -54,6 +48,14 @@ The scenario-question implementation holds up otherwise: one shared collector fe
 
 *None.*
 
+## Observations
+
+*None.*
+
 ## Skipped passes
+
+*None.*
+
+## Unexamined governance
 
 *None.*
