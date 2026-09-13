@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [020-code-review]
 review:
   last-run: 2026-05-10T00:00:00Z
@@ -20,6 +20,32 @@ analyze:
 ---
 
 # 021 — Runtime Boundary
+
+> **Signpost (post-048):** the §runtime-boundary subsection this spec created was
+> substantially amended by [048-govern-acquired-runtime](../048-govern-acquired-runtime/spec.md),
+> which made the runtime **required and pipeline-acquired** rather than optional. Four
+> surfaces below describe the pre-048 design and are retained as the record of what this
+> spec shipped:
+>
+> - **Principle 3** was *Opt-in for adopters* ("MUST NOT be a prerequisite for any pipeline
+>   gate"); it is now *Required, and acquired by the pipeline* — acquisition failure halts
+>   the run rather than degrading, "because a requirement that quietly is not one leaves
+>   both paths alive".
+> - **Eligibility criterion 3** was *Degradation, not failure, when removed*; it is now
+>   *Specifiable as prose*, which is what keeps the markdown reference and the primitive
+>   one thing.
+> - **The opt-in invariant** — a CI job exercising a full cycle with the binary absent from
+>   `PATH` — was replaced by the **acquisition invariant**, which proves the binary is
+>   *obtainable* on every supported platform. The constitution states the replacement in so
+>   many words.
+> - **AC1, AC2, AC3, AC7 and AC8** reflect that pre-048 design. AC7's CI workflow
+>   (`.github/workflows/markdown-only-pipeline.yml`) and two of the three generators it
+>   named (`gen-spec-deps.sh`, `gen-readme-table.sh`) no longer exist; the checks it
+>   describes live in `framework-checks.yml`, and the two derivations are the
+>   `derive-dependencies` and `derive-references` primitives.
+>
+> AC5 and AC6 — the `<!-- §runtime-boundary -->` marker and the canonical-sources row —
+> still hold exactly as written.
 
 Establish the constitutional scope, eligibility criteria, and opt-in invariant for an optional deterministic runtime that adopters may install alongside the markdown framework. This spec ships the constitutional amendment and the CI invariant that makes it enforceable. No binary, no MCP tools, no slash-command rewiring — those are scoped to a follow-up spec (022).
 
