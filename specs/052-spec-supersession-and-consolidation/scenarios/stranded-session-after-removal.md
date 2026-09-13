@@ -26,9 +26,9 @@ The framework takes one position on what happens to a session target whose featu
 
 ## Edge Cases
 
-- **Clearing rather than re-targeting is a third option** neither command currently takes. `write-session`'s clear mode removes the target block while preserving `cli-config-dir`, which leaves the operator explicitly untargeted rather than pointed at a directory that is gone or at a spec they did not choose. It may be the honest answer for consolidation specifically.
+- **Clearing rather than re-targeting was a third option, and it is the one consolidation took.** `write-session`'s clear mode removes the target block while preserving `cli-config-dir`, which leaves the operator explicitly untargeted rather than pointed at a directory that is gone or at a spec they did not choose. [§concurrent-features](../../../framework/constitution.md#concurrent-features) resolved it that way and states the reason: `/{project}:fold` re-targets because its content moved to a spec that continues the work, while `/{project}:consolidate` clears, because its target is a spec that already existed and that the operator may have no interest in — they were removing something, not adopting it.
 - **The session file is per-contributor and gitignored.** A teammate's session may point at the removed directory and nothing in this repository can reach it — so whatever the position, the first command that teammate runs must fail legibly rather than confusingly. This is a bound on what the decision can achieve, and it should be stated rather than left to be discovered.
-- **`/{project}:fold`'s behavior is settled** by spec 051 and is not reopened by this scenario; if the position lands the other way, changing fold is a cross-spec impact on 051 to record rather than a silent edit.
+- **`/{project}:fold`'s behavior is settled** by spec 051 and was not reopened by this scenario; had the position landed the other way, changing fold would have been a cross-spec impact on 051 to record rather than a silent edit. It landed on fold keeping its re-target, so nothing was owed there.
 
 ## Open Questions
 

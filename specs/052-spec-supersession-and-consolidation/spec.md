@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [041-task-pruning]
 review:
   last-run: 2026-08-31T00:00:00Z
@@ -46,7 +46,7 @@ Adding `--into` to `/{project}:fold` was considered and rejected. Fold's purpose
 
 Consolidation is its own command rather than a flag, and the reason is scope rather than taste. The commands split on how many specs they write: `amend`, `prune`, `clarify`, `plan`, and `implement` each write one and each declares that single-spec scope. `fold` and `consolidate` write two, so neither fits inside a single-spec command as a flag — widening one to accommodate a two-spec operation qualifies every statement it makes about its own scope.
 
-That distinction was undocumented, and it is the thing that explains why several operations are separate commands rather than flags. The README states it, and names which commands sit on each side.
+That distinction was undocumented, and it is the thing that explains why several operations are separate commands rather than flags. `docs/slash-commands.md` states it, and names which commands sit on each side.
 
 ## Interruption and re-runs
 
@@ -63,7 +63,7 @@ An already-applied step reports that outcome as a domain result rather than a fa
 - [x] AC11: `retire-feature` accepts a sequential feature directory only through an explicitly targeted consolidation, and `/{project}:fold` remains unable to reach one
 - [x] AC12: `/{project}:fold` gains no flag or argument for naming a fold target, and its `folds-into:` single-source rule is unchanged
 - [x] AC25: `/{project}:consolidate` is installed into adopter projects by the bootstrap, and its documentation identifies it as the only command that removes a durable artifact
-- [x] AC34: The README states which commands write to one spec and which write to two, and places `fold` and `consolidate` in the two-spec group
+- [x] AC34: `docs/slash-commands.md` states which commands write to one spec and which write to two, and places `fold` and `consolidate` in the two-spec group
 - [x] AC39: Spec 051's account of `retire-feature`'s sequential-form refusal is updated to record that this spec relaxes it for an explicitly targeted consolidation
 - [x] AC42: Consolidation destroys the source spec's scenarios with its directory and migrates none of them to the target, and the confirmation names the scenarios individually
 - [x] AC44: An interrupted consolidation converges when re-run, each step reporting an already-applied outcome as a domain result rather than a failure
