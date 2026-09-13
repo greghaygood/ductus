@@ -2,11 +2,15 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-08-03T15:03:53Z
-  reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
+  last-run: 2026-09-13T20:36:35Z
+  reviewed-against: 67f2c20b640c56ad0fcd902d88eba4fe01231145
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 4
+  scope: 12
+  reviewed-digest:
+    data-model.md: 5dfef4053828f509aeb168d0be6948dfbe6c2cad1d6ac865a3b58822497d23a9
   blocking: false
 next-criterion: 11
 analyze:
