@@ -6,7 +6,7 @@ title: "002-project-scaffolding — plan"
 
 ## Overview
 
-Create three new template files in the existing `templates/` directory: `project-readme.md`, `gitignore`, and `claude-md.md`. These are project-level files that the init command (spec 003) copies into new projects. They use `{project}` placeholders that get replaced during bootstrap.
+Create three new template files in the existing `framework/templates/project/` directory: `project-readme.md`, `gitignore`, and `claude-md.md`. These are project-level files that the init command (spec 003) copies into new projects. They use `{project}` placeholders that get replaced during bootstrap.
 
 ## Technical Decisions
 
@@ -17,11 +17,11 @@ The project README template is based on anvil's `README.md` structure, generaliz
 - Anvil-specific content (Go, PostgreSQL, NATS, Docker commands) replaced with `{project}` placeholders and generic sections
 - Feature table format preserved — it's the standard from the constitution's numbering convention
 - Slash command references use `/{project}:*` pattern
-- Getting Started section references `/{project}:setup` and `/{project}:status` as decided during clarification
+- Getting Started section references `/{project}:configure` and `/{project}:status` as decided during clarification
 
 ### Gitignore stays minimal
 
-The `.gitignore` template contains only governance-universal entries. No language-specific patterns. The file is named `gitignore` (no dot) in `templates/` to avoid it being treated as an active gitignore by git. The init command renames it to `.gitignore` during copy.
+The `.gitignore` template contains only governance-universal entries. No language-specific patterns. The file is named `gitignore` (no dot) in `framework/templates/project/` to avoid it being treated as an active gitignore by git. The init command renames it to `.gitignore` during copy.
 
 ### CLAUDE.md is two lines
 
@@ -31,9 +31,9 @@ The template is deliberately minimal — just the two `@import` directives. Proj
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `templates/project-readme.md` | Create | Project README with quick start, getting started, docs, feature table, pipeline, slash commands |
-| `templates/gitignore` | Create | Minimal .gitignore for secrets, claude settings, IDE, OS files |
-| `templates/claude-md.md` | Create | CLAUDE.md with @import directives |
+| `framework/templates/project/project-readme.md` | Create | Project README with quick start, getting started, docs, feature table, pipeline, slash commands |
+| `framework/templates/project/gitignore` | Create | Minimal .gitignore for secrets, claude settings, IDE, OS files |
+| `framework/templates/project/claude-md.md` | Create | CLAUDE.md with @import directives |
 
 ## Trade-offs
 

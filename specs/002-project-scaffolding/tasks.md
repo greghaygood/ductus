@@ -6,27 +6,27 @@ title: "002-project-scaffolding — tasks"
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
-## 1. Create templates/project-readme.md
+## 1. Create framework/templates/project/project-readme.md
 
 - [x] Create the template with sections: project name/description, Quick Start, Getting Started (referencing setup and status commands), Documentation, Feature Specs table, Development Pipeline, Slash Commands table, Working on Existing Specs
 - [x] Use `{project}` placeholder in all command references and project name locations
 - [x] Include an empty feature table with correct column headers (Spec, Status, Dependencies, Description)
 - [x] Include the pipeline diagram with `/{project}:*` command references
 
-Done when: `templates/project-readme.md` exists with all sections, uses `{project}` placeholders, includes getting started with setup/status references, passes markdownlint.
+Done when: `framework/templates/project/project-readme.md` exists with all sections, uses `{project}` placeholders, includes getting started with configure/status references, passes markdownlint.
 
-## 2. Create templates/gitignore
+## 2. Create framework/templates/project/gitignore
 
 - [x] Create the template with sections: secrets (`.env`, `.env.*`), Claude settings (`.claude/*`, `!.claude/commands/`), IDE files (`.vscode/`, `.idea/`, `*.swp`, `*.swo`, `*~`), OS files (`.DS_Store`, `Thumbs.db`)
 - [x] Name the file `gitignore` (no dot) to avoid being treated as active gitignore
 
-Done when: `templates/gitignore` exists with minimal entries, preserves `.claude/commands/`, no language-specific patterns.
+Done when: `framework/templates/project/gitignore` exists with minimal entries, preserves `.claude/commands/`, no language-specific patterns.
 
-## 3. Create templates/claude-md.md
+## 3. Create framework/templates/project/claude-md.md
 
 - [x] Create the template with `@import constitution.md` and `@import AGENTS.md`
 
-Done when: `templates/claude-md.md` exists with both import directives, passes markdownlint.
+Done when: `framework/templates/project/claude-md.md` exists with both import directives, passes markdownlint.
 
 ## 4. Final review and lint
 
