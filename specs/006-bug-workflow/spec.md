@@ -4,11 +4,14 @@ status: in-progress
 dependencies: []
 tags: [process, scenarios, brownfield]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T13:01:47Z
+  reviewed-against: 3b5bcd011801267c17aac17e6f85002b22808757
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 10
+  scope: 17
+  reviewed-digest: {}
   blocking: false
 next-criterion: 20
 analyze:
