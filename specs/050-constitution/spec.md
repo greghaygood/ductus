@@ -15,7 +15,7 @@ review:
     scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
   blocking: false
-next-criterion: 19
+next-criterion: 20
 analyze:
   last-run: 2026-09-12T23:07:55Z
   analyzed-against: c6d53d752c9a01928837a4556c1ff7a330bd7eb9
@@ -226,6 +226,7 @@ a fact already banked.
 - [x] AC16: §spec-lifecycle states that a retired feature's spec is deleted rather than left at `done`, naming the three cases (consolidate when content survives elsewhere, delete outright when nothing does, ordinary body edit for partial retirement) and why inbound pointers are re-pointed before removal. `AGENTS.md` carries the contributor-side mirror as a pointer rather than a second copy, and the scenario records that nothing enforces the rule yet.
 - [x] AC17: §Classification names a third destination, **shared** — true across one organization's projects and no one else's, with its canonical text in a constitution that organization registers under `[constitutions.*]` — and states the three tiers as one question about the rule's population. §Promotion mechanism and the reword test carry over with the test's scope narrowed to match the tier, the framework-as-floor bound is stated with a pointer to §governance-precedence rather than a second copy, and no existing `AGENTS.md` entry is reclassified.
 - [x] AC18: §cross-spec-impact separates what the framework enforces from what it cannot: a **declared** impact is recorded in `cross-spec-impact:` frontmatter and gates `done`, discharge is the affected spec's reciprocal back-link rather than the key's removal, and nothing detects an **undeclared** impact — stated as the author's and reviewer's judgment rather than implied to be covered. The acceptance-criterion sentence that previously stood as the enforcement story is replaced rather than kept alongside, and the frontmatter schema in §text-first-artifacts carries the new key.
+- [x] AC19: §drift-prevention distinguishes a retired **name** from a retired **filename a compatibility path still reads**, naming the sites that must survive as a category — a resolution ladder or fallback tier, a migration procedure, and the prose, shell and configuration spelling either — rather than as one repository's paths. It states the end state: the current name wherever an artifact states current behaviour, the retired name only in the few references recording the decision to change it. It states that a ticked acceptance criterion is swept like any other reference, because only the filename moved and the requirement is unchanged, reserving annotation for a criterion whose *behaviour* was superseded. And it states that which specs the pass reopens is computed by the runtime from the diff rather than chosen by the author, so a reworded line — a removed annotation, a corrected fact — takes the back-edge on its own.
 
 ## Open Questions
 
