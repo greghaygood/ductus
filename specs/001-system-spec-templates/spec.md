@@ -4,11 +4,14 @@ status: in-progress
 dependencies: []
 tags: [templates, pipeline]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T12:54:02Z
+  reviewed-against: 4ba8a955a5c7a7b843b1bff2d9e188dbd166a712
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 3
+  scope: 3
+  reviewed-digest: {}
   blocking: false
 next-criterion: 7
 analyze:
