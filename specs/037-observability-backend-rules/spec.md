@@ -2,11 +2,14 @@
 status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 024-rule-loader, 033-rule-surface-setting, 034-performance-backend-rules]
 review:
-  last-run: 2026-06-29T02:16:18Z
-  reviewed-against: e375c1cffc3e2127cd3520fb61fd108d211d1c24
+  last-run: 2026-09-13T12:42:21Z
+  reviewed-against: e9b511ff8e22bef2bc45926e45b6c63a05405402
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 2
+  scope: 2
+  reviewed-digest: {}
   blocking: false
 next-criterion: 8
 analyze:
