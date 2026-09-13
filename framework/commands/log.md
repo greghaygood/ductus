@@ -9,7 +9,7 @@ Record a raw item to the inbox.
 
 ## Purpose
 
-Append an item to `specs/inbox.md` for later grooming. Use this when a bug, observation, or open issue surfaces and you want to capture it without breaking flow. The item stays raw until `/{project}:groom` walks it through the bug decision tree and routes it to a spec, scenario, or spec edit.
+Append an item to `specs/inbox.md` for later grooming. Use this when a bug, observation, or open issue surfaces and you want to capture it without breaking flow. The item stays raw until `/{project}:groom` walks it through the bug decision tree and routes it to one of five destinations: a rule, a new spec, a spec edit, a scenario, or — for project maintenance belonging to no feature — a chore, done in the grooming pass and removed. An item that is not actionable is discarded.
 
 ## Context
 

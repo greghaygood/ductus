@@ -40,7 +40,7 @@
 /{project}:specify ──▶ draft ──/{project}:clarify──▶ clarified ──/{project}:plan──▶ planned ──/{project}:implement──▶ in-progress ──▶ done
 ```
 
-Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. Two back-edges exist, both owned by `/{project}:amend`: recording an open question on a `clarified` / `planned` / `in-progress` spec reverts status to `draft` (the only state that tolerates open questions), and recording a scenario on a `done` spec reverts status to `in-progress`. The next pipeline command resumes from there — the spec evolves rather than spawning a new one.
+Each command enforces its pipeline gate — you cannot plan without a clarified spec, and you cannot implement without a plan. Three back-edges exist: recording an open question on a `clarified` / `planned` / `in-progress` spec reverts status to `draft` (the only state that tolerates open questions), recording a scenario on a `done` spec reverts status to `in-progress`, and a meaningful body edit to a `done` spec's artifacts takes that same edge. `/{project}:amend` is the entry point for all three. The next pipeline command resumes from there — the spec evolves rather than spawning a new one.
 
 Three cycles are supported:
 

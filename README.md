@@ -80,7 +80,7 @@ Each entry below says what the command **does**; the section it links to says wh
   - [`/consolidate`](docs/slash-commands.md#consolidate--an-entire-spec-directory) — re-point every reference to a replaced spec, then remove it
 - **Brownfield — absorb existing reality**
   - [`/log`](docs/slash-commands.md#log--one-raw-line-in-specsinboxmd) — add an item to `specs/inbox.md` to be picked up later with `/groom`
-  - [`/groom`](docs/slash-commands.md#groom--every-inbox-item-routed-to-its-real-home) — walk the inbox and route each item to a rule, a spec, or a scenario
+  - [`/groom`](docs/slash-commands.md#groom--every-inbox-item-routed-to-its-real-home) — walk the inbox and route each item to a rule, a spec, a scenario, a chore, or discard
 - **Orient**
   - [`/target`](docs/slash-commands.md#target--the-sessions-working-feature) — set the feature the other commands act on
   - [`/status`](docs/slash-commands.md#status--the-pipeline-view-of-every-feature) — show every feature's pipeline status and what is holding it back
