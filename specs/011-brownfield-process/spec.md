@@ -4,11 +4,14 @@ status: in-progress
 dependencies: [007-govern-workflow, 023-govern-refinement]
 tags: [brownfield, process]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T13:10:23Z
+  reviewed-against: b195ba16754c62ca10f7ee7a79f2b80096595765
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 7
+  scope: 16
+  reviewed-digest: {}
   blocking: false
 next-criterion: 20
 analyze:
