@@ -4,11 +4,14 @@ status: in-progress
 dependencies: [000-slash-commands, 001-system-spec-templates]
 tags: [templates, bootstrap]
 review:
-  last-run: 2026-05-10T00:00:00Z
-  reviewed-against: 3d7c50beb1aa9e82783cb2a7f9ed5b0540068625
+  last-run: 2026-09-13T12:56:02Z
+  reviewed-against: 674925045d17b0843724db970bed4ff6fb457ef8
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 3
+  scope: 3
+  reviewed-digest: {}
   blocking: false
 next-criterion: 8
 analyze:
