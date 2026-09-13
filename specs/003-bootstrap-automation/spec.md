@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
 tags: [bootstrap, commands]
 review:
-  last-run: 2026-08-03T15:03:53Z
-  reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
+  last-run: 2026-09-13T14:07:50Z
+  reviewed-against: 5a519cbb66d888ad05df3476925bc5c894711d6b
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 8
+  scope: 11
+  reviewed-digest:
+    scenarios/curl-sh-installer.md: 63eaebf34fe95db7e26a926ca06f6e73d57936901b75269601465a8ef108d069
   blocking: false
 next-criterion: 18
 analyze:
