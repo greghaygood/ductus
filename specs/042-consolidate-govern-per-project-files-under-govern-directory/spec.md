@@ -2,11 +2,16 @@
 status: in-progress
 dependencies: [027-bootstrap-migration-registry, 040-configurable-specs-dir]
 review:
-  last-run: 2026-07-23T00:50:37Z
-  reviewed-against: 50cc0702cf621c3766668c66275a83c47c0c6455
+  last-run: 2026-09-13T19:35:53Z
+  reviewed-against: 8fb42bfedd552a975c88d6c11e4d3acc2cb1a3a9
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 16
+  scope: 30
+  reviewed-digest:
+    scenarios/provenance-tags-name-resolved-config-path.md: aef26b78a9e3eab0f62f3947d24b08214c94809f3f77c480c9fb5049fba22296
+    scenarios/runtime-doc-strings-name-active-paths.md: 5799c0f7c23e431c48a83c8d2a4696beded3861629e767b5fc1fa8e67e06c527
   blocking: false
 next-criterion: 17
 analyze:
