@@ -2,13 +2,13 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-13T17:56:30Z
-  reviewed-against: 4ef49b83fa005373827f63d6cda70d1a2b6fe9b7
+  last-run: 2026-09-13T17:58:00Z
+  reviewed-against: 4703223d8ca930c77118645c61ca7e7730799f97
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 8
-  scope: 8
+  examined: 6
+  scope: 6
   reviewed-digest:
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 98f635cb1fa72345d7413ba49e7a57fe046a265db1b790db79d9aca867c234a9
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
