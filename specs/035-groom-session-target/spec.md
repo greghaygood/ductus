@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [006-bug-workflow, 017-derive-dont-ask, 023-govern-refinement]
 review:
   last-run: 2026-08-03T15:03:53Z
@@ -34,7 +34,7 @@ This is the same "don't make the operator remember session state" gap that self-
 - When groom routes an item to an **existing spec** — a spec edit (Step 3) or a scenario created under the matching spec (Step 4, durable-requirement branch) — it sets `.ductus/session.toml` to that feature as part of the routing action. The target is the feature the decision tree matched in Step 2 (reinforced by, but not dependent on, any `specs/NNN-*/` link in the item text).
 - The per-item routing confirmation groom already requires before acting now **names the target it will set** — e.g., *"Create a scenario under `033-rule-surface-setting` and set it as the session target? (Y/n)"*. That single confirmation is the consent for both the routing and the target write; no separate target prompt is added (consistent with the procedural-fidelity / don't-add-prompts stance). The operator sees and confirms the target without having to recall it.
 - **New-spec items** (Step 2, no spec exists → `/ductus:specify`) are unchanged: `/ductus:specify` already targets the spec it creates.
-- **Rule items** (Step 1, amend a rule file) and **chores** (Step 4 chore, left in the inbox) set no target — neither has a single spec home.
+- **Rule items** (Step 1, amend a rule file) and **chores** (Step 4 chore, done in the pass and then removed) set no target — neither has a single spec home.
 - Across a multi-item run, the session target **follows the current item**: each spec-routed item sets it, so when the run ends the target points at the most recently groomed spec (the one the operator is most likely to act on next).
 - The session write **preserves any existing `cli-config-dir`** (the per-contributor agent identity), using the same `write-session` target-write semantics from [023-govern-refinement](../023-govern-refinement/spec.md); it must not be dropped.
 - The completion summary names the resulting session target (or states it is unchanged when no item set one).
