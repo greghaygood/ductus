@@ -2,11 +2,15 @@
 status: done
 dependencies: [017-derive-dont-ask, 020-code-review, 024-rule-loader, 025-rule-opt-out]
 review:
-  last-run: 2026-06-29T01:00:19Z
-  reviewed-against: cbc5117e7d5fa009bcf7fec0a4c7c0fd48bd4d13
+  last-run: 2026-09-13T13:55:00Z
+  reviewed-against: 6fe820ee7a0443b14f7dc9b7bf6995063ebee2ce
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 6
+  scope: 6
+  reviewed-digest:
+    scenarios/degenerate-surfaces-config.md: 784f190fe471163f83966d39a6467480bda2de9f498cfd43e56b206ec14a4cb9
   blocking: false
 next-criterion: 11
 analyze:
