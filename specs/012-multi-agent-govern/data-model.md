@@ -4,11 +4,11 @@ title: "012-multi-agent-govern — data-model"
 
 # 012 — Multi-Agent Ductus Data Model
 
-The agent registry is a structured, in-file data model carried by `ductus/ductus.md`. It is a table of supported agents that the unified ductus command iterates over during scaffolding. There is no database, no language-level type — the "data" is markdown rows the prompt reads at run time.
+The agent registry is a structured, in-file data model carried by `ductus/ductus.md` (now `framework/bootstrap/ductus.md` — the repository was reorganised after this spec shipped). It is a table of supported agents that the unified ductus command iterates over during scaffolding. There is no database, no language-level type — the "data" is markdown rows the prompt reads at run time.
 
 ## Agent Registry
 
-Each row describes one supported agent. Five fields per row.
+Each row describes one supported agent. Five fields per row. **Now six** — `028-antigravity-agent` added `layout` (`claude-style` | `antigravity` | `opencode`), which is what lets an agent whose tree differs structurally join the registry. The table below is 012's schema as delivered; `framework/bootstrap/ductus.md` §Agent Registry is the current one.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -22,12 +22,12 @@ Each row describes one supported agent. Five fields per row.
 
 These are computed from the registry by convention; they are not stored as fields.
 
-| Derived value | Formula |
-| --- | --- |
-| Setup source | `commands/setup/{key}.md` |
-| Session JSON path | `{config_dir}/{project}-session.json` |
-| Project commands directory | `{config_dir}/commands/{project}/` |
-| Ductus install path | `{config_dir}/commands/ductus.md` |
+| Derived value | Formula | Still current? |
+| --- | --- | --- |
+| Setup source | `commands/setup/{key}.md` | Renamed and relocated — `framework/bootstrap/configure/{key}.md` |
+| Session JSON path | `{config_dir}/{project}-session.json` | **No** — replaced by a single `.ductus/session.toml` for every adopter, so it is no longer derived per agent |
+| Project commands directory | `{config_dir}/commands/{project}/` | For `claude-style` only; `antigravity` and `opencode` derive their own |
+| Ductus install path | `{config_dir}/commands/ductus.md` | For `claude-style` only; see §Derived values in `framework/bootstrap/ductus.md` |
 
 ### Initial population
 
@@ -46,10 +46,12 @@ A new agent is a one-row addition to the registry plus two satellite files:
 
 No other changes are required — the rest of the ductus logic references registry values, not agent names.
 
+**Current cost, for a `claude-style` agent: four edits.** The row now carries six fields; the permission source is `framework/bootstrap/configure/{key}.md`; the README change is a row in the per-agent table rather than a curl snippet; and `install.sh` needs a per-agent `case` arm, which did not exist when this was written. An agent introducing a **new `layout`** costs more again — it branches the scaffolding, permission-setup and bootstrap sections, so the one-row-append contract holds only within an existing layout.
+
 ## Invariants
 
 - `key` values are unique across the registry.
 - `key` is a valid filename component — lowercase letters, digits, hyphens only — because it is interpolated into a path (`commands/setup/{key}.md`).
 - `config_dir` is a project-relative path, no trailing slash, no leading `./`.
 - `settings_template` is valid JSON and matches the agent's native settings format. Merging the template into an existing settings file must preserve all entries the user or `/{project}:setup` has previously written.
-- The set of rows is intrinsic to `ductus/ductus.md` — no runtime registration, no external file. Adding an agent is a code change to ductus, reviewed in PR.
+- The set of rows is intrinsic to `ductus/ductus.md` (now `framework/bootstrap/ductus.md`) — no runtime registration, no external file. Adding an agent is a code change to ductus, reviewed in PR.

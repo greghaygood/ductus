@@ -77,6 +77,6 @@ Done when: the spec status is `done` and the change is committed.
 
 ## 10. Implement scenario: settings-template-bash-allowlist
 
-- [x] - [ ] Implement the behavior described in [`scenarios/settings-template-bash-allowlist.md`](scenarios/settings-template-bash-allowlist.md).
+- [x] Implement the behavior described in [`scenarios/settings-template-bash-allowlist.md`](scenarios/settings-template-bash-allowlist.md).
 
 - **Done when**: Both agent rows' `settings_template` in `framework/bootstrap/ductus.md` include every Bash pattern a routine `/ductus` run invokes (audit pass complete); the additions are mirrored in Auggie's native format; an end-to-end `/ductus` smoke test produces no Bash-permission prompts during routine bootstrap.
