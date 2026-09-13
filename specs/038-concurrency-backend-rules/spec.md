@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 024-rule-loader, 033-rule-surface-setting, 034-performance-backend-rules]
 review:
   last-run: 2026-06-29T02:32:22Z
@@ -59,7 +59,7 @@ Concurrency rules default to **SHOULD** where the right approach is contextual. 
 - [x] AC3: The file header declares the concurrency category abbreviations per the per-file category-declaration policy ([016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
 - [x] AC4: The rule set covers, at minimum, shared-state races, locking/deadlock avoidance, and transaction isolation — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/ductus:analyze` audits artifacts.
 - [x] AC5: Each MUST rule is one whose absence is a correctness/corruption hazard regardless of scale; contextual trade-offs are SHOULD. The split is evident from the Statements.
-- [x] AC6: Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-IDEMP` for retry safety, `BE-POOL-*` for pool interaction, `CFG-*` for tunable config).
+- [x] AC6: Rules whose surface overlaps an existing rule cite it rather than restating it. As delivered the citations are `BE-IDEMP` (retry safety) and `CFG-*` (tunable config). The `BE-POOL-*` citation this criterion anticipated is **not** present and was not needed: no rule in the set reaches connection pooling — the file does not mention pools or connections at all — so there is nothing to cite and nothing was restated.
 - [x] AC7: The file is added to the `/ductus` **Shared Files** manifest in `framework/bootstrap/ductus.md` and is selected under the `backend` surface by `/ductus:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md) and [024-rule-loader](../024-rule-loader/spec.md).
 
 ## Open Questions

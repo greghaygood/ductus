@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 024-rule-loader, 033-rule-surface-setting, 034-performance-backend-rules]
 review:
   last-run: 2026-06-29T02:41:53Z
@@ -61,7 +61,7 @@ Reliability rules default to **SHOULD** where the approach is contextual. A rule
 - [x] AC3: The file header declares the reliability category abbreviations per the per-file category-declaration policy ([016-cross-cutting-rules](../016-cross-cutting-rules/spec.md)).
 - [x] AC4: The rule set covers, at minimum, deadlines/timeouts, bounded retries (backoff + jitter, idempotent only), circuit breakers, and graceful shutdown — each with a Verification clause expressed as a **design-time commitment** the spec/plan must make (not a code-pattern grep), consistent with how `/ductus:analyze` audits artifacts.
 - [x] AC5: Each MUST rule is one whose absence is an availability/cascading-failure risk regardless of scale; contextual trade-offs are SHOULD. The split is evident from the Statements.
-- [x] AC6: Rules whose surface overlaps an existing rule cite it rather than restating it (`BE-POOL-002` for pooling, `BE-IDEMP` for retry safety, `BE-ASYNC` for offloaded work, `CFG-*` for tunable config).
+- [x] AC6: Rules whose surface overlaps an existing rule cite it rather than restating it: `BE-POOL-002` (pooling), `BE-IDEMP` (retry safety), `BE-ASYNC` (offloaded work), and `CFG-CONST-003` (tunable config). The `CFG-*` citation was **missing as originally delivered** — the file mandated timeouts, attempt bounds, backoff parameters and breaker thresholds, every one an operator-tunable value, while never naming where such a value is defined. It is now cited from `BE-TIMEOUT-001` and `BE-RETRY-001`, matching how `034-performance-backend-rules` cites it from `BE-POOL-001`/`BE-POOL-002`.
 - [x] AC7: The file is added to the `/ductus` **Shared Files** manifest in `framework/bootstrap/ductus.md` and is selected under the `backend` surface by `/ductus:review`, composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md) and [024-rule-loader](../024-rule-loader/spec.md).
 - [x] AC8: 034's forward-reference to a future `reliability-backend.md` resolves to this rule set (the deferred deadlines/timeouts/retries/circuit-breakers land here).
 

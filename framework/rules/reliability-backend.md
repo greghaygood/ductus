@@ -18,7 +18,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** An unbounded wait on a slow or hung dependency holds the calling thread, connection, or goroutine indefinitely; under any load that exhausts the pool and the failure cascades back to every caller — independent of scale, since a single hung dependency suffices. Pool-acquisition timeouts are governed by `performance-backend.md` `BE-POOL-002`; this rule bounds the call itself.
 
-**Verification:** Any spec or plan that introduces an outbound or blocking call MUST name the timeout that bounds it. Validate flags plans that add a downstream or I/O call with no stated timeout.
+**Verification:** Any spec or plan that introduces an outbound or blocking call MUST name the timeout that bounds it, as a named constant per `configuration-cross.md` `CFG-CONST-003` rather than a bare literal. Validate flags plans that add a downstream or I/O call with no stated timeout.
 
 **Source:** Nygard, *Release It!* — Timeouts.
 
@@ -38,7 +38,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Unbounded or fixed-interval retries synchronize across callers and amplify a transient downstream blip into a self-sustaining retry storm that prevents recovery; backoff with jitter de-correlates and bounds the added load, and retrying a non-idempotent operation double-applies it. The storm is scale-independent — even a small fleet retrying in lockstep overwhelms a single recovering dependency — which is why it is MUST. This rule owns the retry mechanics (bound, backoff, jitter); the delivery-side duplicate-handling obligation for at-least-once consumers is `concurrency-backend.md` `BE-COORD-002`.
 
-**Verification:** Any spec or plan that introduces automatic retries MUST state the attempt bound, the backoff-with-jitter policy, and the idempotency basis for the retried operation. Validate flags retry plans missing a bound, jitter, or an idempotency basis.
+**Verification:** Any spec or plan that introduces automatic retries MUST state the attempt bound, the backoff-with-jitter policy, and the idempotency basis for the retried operation; the attempt bound and backoff parameters are operator-tunable values and are named constants per `configuration-cross.md` `CFG-CONST-003`. Validate flags retry plans missing a bound, jitter, or an idempotency basis.
 
 **Source:** AWS Architecture Blog — exponential backoff and jitter.
 
