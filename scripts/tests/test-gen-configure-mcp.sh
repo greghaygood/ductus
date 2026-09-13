@@ -31,7 +31,7 @@ mcp_block() {
 
 echo "Running gen-configure-mcp tests..."
 
-# A. all three sources in sync
+# A. all four sources in sync
 if "$GEN" --dry-run >/dev/null 2>&1; then
   pass "A: gen-configure-mcp --dry-run is in sync"
 else

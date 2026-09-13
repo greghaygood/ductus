@@ -13,8 +13,11 @@
 #   <!-- generated:mcp-allow:end -->
 #
 # Per-host mapping (deterministic; no host-presence detection). The
-# `ductus` server-name prefix comes from the adopter's `.mcp.json`
-# registration; tool names in this list are bare `<verb>-<noun>`.
+# `ductus` server-name prefix comes from each agent's own MCP registration
+# target (ductus.md §MCP registration) — `.mcp.json` for Claude and
+# `opencode.json` for OpenCode, both repo-committed; `~/.augment/settings.json`
+# for Auggie and `~/.gemini/config/mcp_config.json` for Antigravity, both
+# registered by the user. Tool names in this list are bare `<verb>-<noun>`.
 #   <verb>-<noun>  →  Claude:  mcp__ductus__<verb>-<noun>
 #                  →  Auggie:  toolName "mcp:ductus:<verb>-<noun>",
 #                              permission { type: "allow" }
@@ -53,7 +56,7 @@ for arg in "$@"; do
   case "$arg" in
     --dry-run) dry_run=1 ;;
     -h|--help)
-      sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
       echo
       echo "Usage: $(basename "$0") [--dry-run]"
       echo "  --dry-run  Report what would change; exit 1 if any source needs updating."

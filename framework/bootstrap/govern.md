@@ -41,7 +41,7 @@ The same `ductus.md` supports every agent the framework knows about. The set of 
 
 9. Invoke `apply-manifest` (MCP: `apply-manifest`) a second time with a single entry for the per-agent `ductus` self-install (the `{cli-config-dir}/commands/ductus.md` path) and an **empty substitutions map** (`{}`). `ductus.md`'s body contains prose references to every placeholder name the bulk step substitutes — `{project}`, `{cli-config-dir}`, `{project-name}`, `{One-line project description.}` — describing what those placeholders mean in *other* files. None of them are values to substitute in `ductus.md` itself, so the self-install call passes no substitutions rather than relying on `keep-literals` to mask individual keys from the full map. The split from step 4 isolates the no-substitute concern from the bulk substitute step.
 
-10. Render the completion message (host responsibility): list the agents configured, the next pipeline command (`/{project}:specify`), the acquired runtime's store path, and any per-agent post-install reminders from the registry rows above.
+10. Render the completion message (host responsibility): list the agents configured, the next pipeline command — `specify`, written in **each agent's derived Invocation form** (§Derived values), not the `claude-style` colon form for everyone — the acquired runtime's store path, and any per-agent post-install reminders from the registry rows above.
 
 ## Agent Registry
 
@@ -1139,7 +1139,7 @@ This summary complements `/{project}:groom`, which is the user's path to working
 
 Adopted agents: {comma-separated `name` of selected agents}.
 
-Next steps:
+Next steps (render each command in **the adopted agent's own invocation form** — the §Derived values **Invocation** row: `/{project}:<name>` for `claude-style`, `/{project}-<name>` for `antigravity`, `/{project}/<name>` for `opencode`. The colon form below is the `claude-style` default; printing it to an Antigravity or OpenCode adopter names six commands that do not exist on their agent. When several agents were adopted, render the list once per agent under its name):
 
 1. Run `/{project}:configure` in each adopted agent to apply the full permission set.
 2. Fill in `AGENTS.md` — tech stack, project structure, code style, testing conventions, gotchas.

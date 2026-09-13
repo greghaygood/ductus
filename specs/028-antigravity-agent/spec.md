@@ -247,7 +247,10 @@ unchanged.
 - [x] AC10: The README documents the Antigravity bootstrap (curl the `ductus` skill
       into `.agents/skills/ductus/SKILL.md`, then run `/ductus`)
 - [x] AC11: All shipped markdown passes `npx markdownlint-cli2`; the emitted
-      `.agents/mcp_config.json` and `.agents/settings.json` are valid JSON
+      `.agents/mcp_config.json` and `.agents/settings.json` are valid JSON.
+      The markdown half holds. Of the JSON half only `.agents/settings.json`
+      remains a file ductus emits — `.agents/mcp_config.json` is no longer
+      written at all, per AC5's supersession above
 
 ## Open Questions
 

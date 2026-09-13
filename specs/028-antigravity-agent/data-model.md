@@ -14,7 +14,7 @@ column. Existing fields are unchanged; `layout` selects the derived-value set.
 | `key` | string | registry key; `configure/{key}.md` source path |
 | `name` | string | display name |
 | `config_dir` | string | per-agent config root (`.claude`, `.augment`, `.agents`) |
-| `layout` | enum `claude-style` \| `antigravity` | selects command/skill location, MCP-wiring file, settings format, rules location, native rules file |
+| `layout` | enum `claude-style` \| `antigravity` (\| `opencode`, added by `032-opencode-agent`) | selects command/skill location, settings format, rules location, native rules file. **Not** the MCP-wiring file — `031-agent-mcp-wiring` made MCP registration a per-agent descriptor rather than a layout-derived value |
 | `settings_template` | JSON | bootstrap-only permission seed, in the layout's native shape |
 | `rules_file_note` | string | which file the agent reads natively |
 
@@ -25,15 +25,17 @@ column. Existing fields are unchanged; `layout` selects the derived-value set.
 | Command/skill path | `{config_dir}/commands/{project}/<name>.md` | `.agents/skills/{project}-<name>/SKILL.md` |
 | Invocation | `/{project}:<name>` | `/{project}-<name>` |
 | `ductus` install path | `{config_dir}/commands/ductus.md` | `.agents/skills/ductus/SKILL.md` |
-| MCP-wiring file | `.mcp.json` | `.agents/mcp_config.json` |
+| ~~MCP-wiring file~~ (no longer layout-derived — see `031-agent-mcp-wiring`) | `.mcp.json` | ~~`.agents/mcp_config.json`~~ → home-level `~/.gemini/config/mcp_config.json`, written by the user, not ductus |
 | Settings file | `{config_dir}/settings.local.json` | `.agents/settings.json` |
 | Permission shape | `permissions.allow/deny` (Claude) / `toolPermissions[]` (Auggie) | `permissions.allow/deny/ask` (action grammar) |
 | Rules location | filesystem `specs/rules/` | `.agents/rules/<name>.md` |
 | Native rules file | `CLAUDE.md` | `AGENTS.md` |
 | Cleanup glob | `*.md` | `{project}-*/` skill dirs |
 
-Rows: `claude` (`.claude`, `claude-style`), `auggie` (`.augment`,
-`claude-style`), `antigravity` (`.agents`, `antigravity`).
+Rows as this spec left them: `claude` (`.claude`, `claude-style`), `auggie`
+(`.augment`, `claude-style`), `antigravity` (`.agents`, `antigravity`).
+`032-opencode-agent` later added a fourth row, `opencode` (`.opencode`,
+`opencode`), on a third layout.
 
 ## `.agents/skills/{project}-<name>/SKILL.md`
 
@@ -54,7 +56,15 @@ description: <one-line, carried from the source command's frontmatter>
   frontmatter.
 - `ductus` installer skill keeps `{project}` / `{cli-config-dir}` literal.
 
-## `.agents/mcp_config.json`
+## `.agents/mcp_config.json` — superseded by `031-agent-mcp-wiring`
+
+**ductus never writes this file.** Antigravity ignores project-local
+`.agents/mcp_config.json` (measured at 0 server spawns against a positive
+control that did spawn); it reads MCP servers only from home-level
+`~/.gemini/config/mcp_config.json`, which lives outside the repo. Antigravity's
+registration `mechanism` is therefore `surface-instruction`: the user adds the
+block once per machine and reloads with `/mcp`. The schema below is retained as
+the record of what this spec designed, not as a file ductus emits.
 
 ductus server definition (local stdio). Additive: ductus adds the `ductus` key if
 absent, preserving any adopter servers.
