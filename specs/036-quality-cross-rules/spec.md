@@ -2,11 +2,15 @@
 status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
 review:
-  last-run: 2026-08-02T23:41:12Z
-  reviewed-against: 6e84c2a5ff4ef012a265af79ad46919c4ade3901
+  last-run: 2026-09-13T18:52:58Z
+  reviewed-against: 8384deb0b245e53e974f7578b6f13c4efa39603e
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 6
+  scope: 7
+  reviewed-digest:
+    data-model.md: d2b50651c6a32eafeb1673d032c04fe6cd31fc82d3b4d3b33faf5831260c7248
   blocking: false
 next-criterion: 10
 analyze:
