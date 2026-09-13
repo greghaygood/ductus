@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts, 023-govern-refinement]
 tags: [pipeline, commands]
 review:
-  last-run: 2026-08-03T15:03:53Z
-  reviewed-against: 1eda6f6f626eb368473b1dcae957392ba0e210d0
+  last-run: 2026-09-13T19:01:43Z
+  reviewed-against: 5d8b492c1e2c6a0f3a99f5d1408829efb48c4639
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 8
+  scope: 11
+  reviewed-digest:
+    scenarios/reopen-after-informal-edits.md: 969e20fe262affefdceaaa1e3b5ac900f0877d743f456035bc4de5f37cfe1a23
   blocking: false
 next-criterion: 27
 analyze:
