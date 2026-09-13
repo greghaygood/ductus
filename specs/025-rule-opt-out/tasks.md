@@ -25,7 +25,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Update `framework/bootstrap/ductus.md` example TOML block
 
-- [x] In the example TOML block (currently lines 246–262, showing `[pinned]` and `[workflows]`), add a commented-out `[[review.disabled-rule-files]]` example block. Show the `file` and `reason` fields with realistic placeholder content.
+- [x] In the example TOML block in §Project Configuration (then showing `[pinned]` and `[workflows]`), add a commented-out `[[review.disabled-rule-files]]` example block. Show the `file` and `reason` fields with realistic placeholder content.
 - [x] Done when: an adopter running through bootstrap sees the three TOML sections side-by-side and the new block is unambiguously commented out (will not actually disable anything if uncommented without editing).
 
 ## 5. Update `framework/constitution.md` §rules

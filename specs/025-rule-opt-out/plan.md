@@ -47,7 +47,7 @@ Single line; no verbose mode. Adopters who need the reasons read `.ductus/config
 
 ### Example TOML block
 
-The canonical `.ductus/config.toml` schema example lives in `framework/bootstrap/ductus.md` lines 246–262 (showing `[pinned]` and `[workflows]`). Add a commented-out `[[review.disabled-rule-files]]` block alongside, so adopters running through bootstrap see the schema at the same place they see the others. This replaces the spec body's reference to a `framework/templates/project/ductus-toml.md` file that does not exist.
+The canonical `.ductus/config.toml` schema example lives in `framework/bootstrap/ductus.md` §Project Configuration (showing `[pinned]` and, at the time, `[workflows]`). Add a commented-out `[[review.disabled-rule-files]]` block alongside, so adopters running through bootstrap see the schema at the same place they see the others. This replaces the spec body's reference to a `framework/templates/project/ductus-toml.md` file that does not exist.
 
 ### `framework/commands/analyze.md` — no edit needed
 
