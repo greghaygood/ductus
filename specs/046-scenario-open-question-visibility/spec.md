@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [009-scenario-targeting, 022-deterministic-runtime]
 review:
   last-run: 2026-08-16T17:09:11Z
@@ -125,7 +125,7 @@ What stays with this spec: the constitution amendments to §spec-lifecycle's `do
 - [x] AC1: Scenario open questions are reported as a field distinct from the spec body's open-question count, with each entry tagged by its source scenario file
 - [x] AC2: The spec body's open-question count is unchanged in meaning and value by this feature
 - [x] AC3: Feature-targeted `/{project}:clarify` resolves no scenario question — it walks none, writes to no scenario file, and leaves resolution to the scenario-targeted branch
-- [x] AC32: A scenario file that cannot be read is reported rather than silently dropped — it contributes no questions and blocks nothing, but the reading surface names it and `/{project}:analyze` records it as an unexamined target, so an empty scenario-question result distinguishes "every scenario examined, none carries a question" from "a scenario could not be examined"
+- [x] AC32: A scenario file that cannot be read is reported rather than silently dropped — it contributes no questions and does not block the pre-`done` gate, but the reading surface names it and `/{project}:analyze` records it as an unexamined target, so an empty scenario-question result distinguishes "every scenario examined, none carries a question" from "a scenario could not be examined"
 - [x] AC31: Feature-targeted `/{project}:clarify` reports outstanding scenario open questions in every gate branch where the field is non-empty — including the `already {status}` and `done` branches, which still modify no file — naming every carrying scenario and the scenario-targeted command that resolves them, and is suppressed entirely rather than rendered as "0 outstanding" when the field is empty
 - [x] AC4: A spec with one or more unresolved scenario open questions cannot be advanced to `done`
 - [x] AC5: The `done` block is reported with the blocking scenario named, not as a generic gate failure
@@ -145,7 +145,7 @@ What stays with this spec: the constitution amendments to §spec-lifecycle's `do
 - [x] AC19: Recording a scenario that carries open questions on a `done` spec takes the scenario back-edge to `in-progress`, not the question back-edge to `draft`; the spec body's `## Open Questions` section is not written to
 - [x] AC20: The pre-done review gate evaluates scenario open questions as a third check, ordered after markdown lint and before the `review:` block, and the first failing check still wins
 - [x] AC21: The gate's blocked message names the scenarios carrying unresolved questions
-- [x] AC22: An unreadable or malformed scenario file never blocks the `done` gate and never produces a blocking finding
+- [x] AC22: An unreadable or malformed scenario file never blocks the `done` gate and never produces a blocking finding. **Half superseded.** The gate half still holds exactly — `check-review-gate` yields no block for an unreadable scenario, and the fail-open posture is deliberate (a gate that failed closed on its own inability to read is one people route around). The finding half was reversed by 022's `artifact-unreadable at done` work: `check-artifacts` now emits a **blocking** finding when a `done` spec's own artifact cannot be read, with `scenario-open-questions` named as the motivating family — an unreadable scenario contributed no questions and, as a skip, no finding, so a scenario carrying unresolved questions that would not parse passed the gate this spec built to catch exactly that
 - [x] AC23: A `done` spec carrying unresolved scenario questions when this feature ships is reported and reverted with no grandfather exemption
 - [x] AC24: All scenarios carrying questions are listed with no cap or truncation
 - [x] AC25: The gate's guidance and the analyze finding's suggested fix both offer two exits — resolve the question, or record it in `## Resolved Questions` as deferred with its trigger condition
