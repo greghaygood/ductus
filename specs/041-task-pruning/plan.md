@@ -138,7 +138,7 @@ is added to `runtime/legacy-prose-commands.txt` as the documented escape hatch.
 Registration is generator-driven: add the row to `scripts/gen-help-tables.sh`,
 then run the generators (or the pre-commit hook) to regenerate
 `framework/commands/help.md` and materialize `.claude/commands/ductus/prune.md`.
-Adopter materialization (`/ductus` bootstrap, `gov:init`) enumerates
+Adopter materialization (`/ductus` bootstrap, `/{project}:init`) enumerates
 `framework/commands/*.md` dynamically — no per-command edit there. Slash
 commands are not individually permission-gated, so no `settings` entry is
 needed beyond the `prune-tasks` MCP allow-block that already flows from

@@ -145,7 +145,6 @@ Result (a **compact summary — never the file body**):
   "mode": "keep-pending",
   "applied": false,
   "gate": "not-applicable",
-  "status": null,
   "nothing-to-prune": false,
   "removed-count": 3,
   "kept-count": 2,
@@ -171,7 +170,10 @@ Result (a **compact summary — never the file body**):
   `gate: "blocked-needs-force"`, and writes nothing. The command surfaces the
   refusal (name the status, point at keep-pending, mention `--reset --force`).
 - `status` — the spec's frontmatter status, read from `spec.md` only when
-  `reset` is true (keep-pending leaves it `null`; it does not read `spec.md`).
+  `reset` is true. On keep-pending the field is `None` and is **omitted from
+  the JSON entirely** (`skip_serializing_if`) rather than serialized as
+  `null`, which is why the example above carries no `status` key — a host
+  must treat it as absent, not as a present null.
 - `sections` — one compact record per task section: its identity, its
   classification, checkbox counts, and the `action` taken
   (`"removed"` | `"kept"`). Bounded by the task count; the section **bodies

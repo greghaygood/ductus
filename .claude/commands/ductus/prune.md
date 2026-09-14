@@ -39,7 +39,7 @@ A feature's `tasks.md` accumulates completed work across the whole life of the f
 
 ## Markdown-only reference
 
-With no ductus runtime registered, the host reaches the same result with its own file tools — no shell-pipeline substitution — producing byte-for-byte the output the `prune-tasks` primitive would write (the two-paths guarantee, §runtime-host-integration).
+With no ductus runtime registered, the host reaches the same result with its own file tools — no shell-pipeline substitution — producing byte-for-byte the output the `prune-tasks` primitive would write (the two-paths guarantee, §runtime-host-integration) — with one bound, stated under **reset** below: the reset body is compiled into the primitive, so a project that has customized its own tasks template diverges there, and only there.
 
 Segment `tasks.md` with the same grammar every tasks command uses (see [data-model](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/data-model.md)): detect flat (`## N.`) versus phased (`### N.` under `## …` containers), then split the file into its preamble, phase containers, and task sections. Classify each task section by its checkboxes — **spent** (≥ 1 checkbox, all checked), **pending** (any unchecked), or **no-checkbox** (zero checkboxes) — counting only real task-list checkboxes (a `- **Done when**:` line is not one).
 
