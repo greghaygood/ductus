@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-14T01:14:10Z
@@ -15,19 +15,21 @@ review:
   blocking: false
 next-criterion: 16
 analyze:
-  last-run: 2026-09-07T16:31:03Z
-  analyzed-against: 6de65e2bf56ba750272e562fd47a9b4420c0ae1b
+  last-run: 2026-09-14T01:14:55Z
+  analyzed-against: 9808f98e4f6d41c828adc67caffbc2fea40b9a9d
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 0
+  unexamined: 1
   analyzed-digest:
-    plan.md: 08dac3180de455db59bd2c848533eec6b30b49ab5c57c499bc9ee5a87a41ce71
-    review.md: f8ae499e295a6dd72a8cc188157ea35d85120b21c6427f233635d86ff0cccb59
-    scenarios/analyze-record-freshness.md: 03d60b0a578ea1539fd65e40fe61dd3393ec9e41f1d26a5627c7d6a9998b1c36
-    scenarios/analyze-run-durability.md: a04ef3b0e6cf667127918e5ba9bab6d7119a5627f375785842894ef4606f99cc
-    spec.md: fcd5b27f5995016b4576f1b90d9f2b8bcf2c8474c94ae7d8720fede65591bb86
+    plan.md: e0f7210908debadb717599294d0eea1b896eb482bd78aae38414753ca4aef6ae
+    review.md: 860d3995b685448757e9a33ac5292ea542fa2334394822e118c7954a255f0475
+    scenarios/analyze-record-freshness.md: b79ba39909899e6f8662e8882e04b54e66c04cd17febae782af1443cdd05091d
+    scenarios/analyze-run-durability.md: 287dacba26b62b8f72ba377b8f07f92063cdd28a351ede9568035dd0fd811046
+    spec.md: 2f776ae0efa8c1728b99a84067f4601259db1879113c7e87f4d92ba2bfb21c1a
     tasks.md: 53aedadc4b04804c9ced3f4f223b85bd9c638f7a04e87430549edcf55d065d40
+  unexamined-by-reason:
+    no-readable-state: 1
   blocking: false
 ---
 
