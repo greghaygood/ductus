@@ -23,7 +23,10 @@ classification, and request/response schema.
 `prune-tasks` builds its segmentation from the shared helpers in
 `runtime/src/primitives/mod.rs`: `detect_tasks_structure` (Flat → task level
 2, `## N.`; Phased → task level 3, `### N.` under `## …` containers),
-`parse_atx_heading`, `iter_phase_ranges`, and `checkbox::find_checkbox_line`.
+`parse_atx_heading`, `split_numbered_heading`, `SkipScanner`, and
+`checkbox::find_checkbox_line`. Phase tracking is inline rather than through
+`iter_phase_ranges`, because the empty-phase-drop rule needs the governing
+phase as an index into the block list rather than as a line range.
 A task section's line range terminates at the next heading whose level is
 `<= task_level` — the same rule `mark-task`'s `locate_task_range` uses. This
 guarantees the section-boundary grammar the spec deferred to the plan matches

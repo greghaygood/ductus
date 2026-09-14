@@ -12,9 +12,13 @@ the primitive-schema convention in
 
 The parsing reuses the existing `tasks.md` machinery in
 `runtime/src/primitives/mod.rs` — `detect_tasks_structure`, `parse_atx_heading`,
-`iter_phase_ranges`, and the `checkbox::find_checkbox_line` helper — so
-`prune-tasks` recognizes exactly the same task set as `read-tasks` and
-`mark-task`. Nothing about the grammar is re-invented.
+`split_numbered_heading`, `SkipScanner`, and the `checkbox::find_checkbox_line`
+helper — so `prune-tasks` recognizes exactly the same task set as `read-tasks`
+and `mark-task`. Nothing about the grammar is re-invented. It does **not** use
+`iter_phase_ranges` (which `append-task` does): that helper yields line ranges,
+while the reduction needs each task's governing phase as an *index into its own
+block list* so an emptied phase container can be dropped, so `segment` tracks
+the current phase inline as it walks.
 
 ## Segmentation
 
