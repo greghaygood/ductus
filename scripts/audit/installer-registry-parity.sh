@@ -28,7 +28,8 @@
 # Directions 1-2 are pure text extraction — no jq, no associative arrays
 # (macOS bash 3.2). Direction 3 uses python3 (already a ductus bootstrap
 # dependency, and used by sibling audit scripts) because the three permission
-# formats make an order-insensitive JSON compare the only reliable check.
+# formats (one per layout, plus opencode's action map) make an
+# order-insensitive JSON compare the only reliable check.
 # This is the audit check spec 003's curl-sh-installer scenario calls for,
 # resolving its installer<->registry parity open question per the
 # "never depend on human diligence" design principle.
@@ -148,7 +149,8 @@ EOF
 # shell commands) by hard-coding a copy of that agent's registry settings_template.
 # That duplicate must not silently drift. The three permission formats (claude
 # Bash()/Read(), auggie toolPermissions/regex, antigravity command()) make a text
-# diff unreliable, so this pass uses python3 for an order-insensitive JSON compare
+# diff unreliable — and opencode adds a fourth, its `permission` action map — so
+# this pass uses python3 for an order-insensitive JSON compare
 # of each install.sh seed against its §Agent Registry settings_template.
 seed_drift="$(
 python3 - "$DUCTUS" "$INSTALLER" <<'PY'

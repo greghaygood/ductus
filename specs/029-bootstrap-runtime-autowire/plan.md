@@ -2,6 +2,8 @@
 
 Implements [029 — Bootstrap Runtime Auto-Detect and Wire](spec.md).
 
+> **Signpost (post-031, post-032, post-048):** this plan is the design record for what 029 built, and two of its decisions have since been superseded. The **MCP wiring** target is per-agent rather than per-layout, and only a `write-file` agent gets a file written (`031-agent-mcp-wiring`, extended by `032-opencode-agent`); the `ductus` entry now names the repo-relative pointer rather than a bare `ductus` on `PATH`, and State B acquires the binary rather than requiring the adopter to have installed it (`048-govern-acquired-runtime`, whose scenario `state-b-continues-in-session` also removed the single combined pre-flight abort this plan's first Technical Decision chose). `framework/bootstrap/ductus.md` §MCP registration and the spec's Signpost and Post-completion note carry the current model; the decisions below are left as the record of what was chosen at plan time.
+
 ## Overview
 
 This feature is entirely a change to the bootstrap **procedure prose** plus the per-layout **permission seeds** — there is no runtime (Rust) code to write. State B (binary present, not wired) is by definition the runtime-absent case, so every action it performs is host/markdown-side; no new MCP primitive is introduced.
@@ -28,7 +30,7 @@ Per-layout probe permission form:
 
 - **Claude** (`permissions.allow`): `Bash(command -v *)`
 - **Auggie** (`toolPermissions[]`): `{ "toolName": "launch-process", "shellInputRegex": "^command -v ", "permission": { "type": "allow" } }`
-- **Antigravity** (`permissions.allow`, token-prefix grammar): `command(command -v)` — **open implementation detail**: antigravity's token-prefix matcher treats `command` as the leading token (a shell builtin, not a binary). Validate `command(command -v)` actually matches `command -v ductus`; if the grammar over-broadens or fails, fall back to a `which ductus` probe with `command(which)`. Decide at implement time and keep the probe form identical between the registry seed and the configure file for that layout.
+- **Antigravity** (`permissions.allow`, token-prefix grammar): `command(command -v)` was proposed with an **open implementation detail** — antigravity's token-prefix matcher treats `command` as the leading token (a shell builtin, not a binary), so `command(command -v)` might over-broaden or fail to match `command -v ductus`, with a `which ductus` probe under `command(which)` as the fallback. **Resolved at implement time to the fallback:** `command(which)` is what ships, in both the §Agent Registry seed and `framework/bootstrap/configure/antigravity.md`, and audit Family 15 (`scripts/audit/runtime-probe-parity.sh`) holds the two in parity — the scenario `runtime-probe-parity-audit` records it as "the resolved antigravity form — *not* `command(command -v)`".
 
 ### MCP wiring — additive, idempotent, in-place JSON merge (host-side)
 
@@ -50,7 +52,7 @@ No `merge-mcp-config` primitive is added — State B is runtime-absent by defini
 
 ### ductus tool permissions granted at wiring time (State B)
 
-Alongside the wiring write, State B adds the `ductus` tool permission to the layout's settings file (additively) so the **next** session calls the tools prompt-free. Use the per-layout wildcard — `mcp__ductus__*` (Claude), `mcp:ductus:*` (Auggie), `mcp(ductus/*)` (Antigravity) — the minimal bootstrap grant. The enumerated per-tool set already lives in the generated `<!-- generated:mcp-allow -->` blocks of the configure files and is applied later by `/{project}:configure`; the wildcard at wiring time coexists harmlessly (exact-match dedup leaves both). Rationale: spec §Permission Setup + Resolved Q3.
+Alongside the wiring write, State B adds the `ductus` tool permission to the layout's settings file (additively) so the **next** session calls the tools prompt-free. Use the per-layout wildcard — `mcp__ductus__*` (Claude), `mcp:ductus:*` (Auggie), `mcp(ductus/*)` (Antigravity) — the minimal bootstrap grant. The enumerated per-tool set already lives in the generated `<!-- generated:mcp-allow -->` blocks of the configure files and is applied later by `/{project}:configure`; the wildcard at wiring time coexists harmlessly (exact-match dedup leaves both). Rationale: `spec.md` §Permission Setup + Resolved Q3.
 
 ### Reverse the "wired separately, not scaffolded" decision
 
@@ -85,6 +87,6 @@ Cross-spec (informational, not in this scope): a back-linked scenario on **003**
 - **Probe in the always-applied seed vs. only at State B.** The *binary probe* permission goes in the always-applied seed (it must be authorized before the state is known); the *ductus tool* permissions go in at State-B wiring time (they only matter once wired). Considered seeding the tool perms too — rejected as noise for State-C projects that never wire.
 - **No `merge-mcp-config` runtime primitive.** Rejected: State B is runtime-absent by definition, so a primitive could never run there. Revisit only if a future "re-assert wiring while runtime is live" need appears.
 - **Wildcard vs. enumerated ductus tool grant at wiring time.** Chose the per-layout wildcard for the bootstrap grant (minimal, robust); the enumerated set stays owned by the generated configure blocks applied by `/{project}:configure`.
-- **Antigravity probe grammar is unresolved at the prose level.** `command(command -v)` may over-broaden or mis-match under token-prefix matching; the fallback is a `which ductus` probe. Flagged as an implement-time decision rather than guessed here.
-- **Known limitation — mid-session settings reload.** Seeding the probe permission only avoids a prompt if the host re-reads its settings file mid-session (the same assumption the existing §Permission Setup already relies on). On a host that doesn't, the probe prompts once on first run; the graceful-degradation path (deny ⇒ State C) keeps that from being fatal.
+- **Antigravity probe grammar was left to implement time rather than guessed here.** `command(command -v)` risked over-broadening or mis-matching under token-prefix matching, with a `which ductus` probe as the fallback. It resolved to the fallback — `command(which)` — and Family 15 now guards that the seed and the configure file keep spelling it the same way.
+- **Known limitation — mid-session settings reload.** Seeding the probe permission only avoids a prompt if the host re-reads its settings file mid-session (the same assumption `framework/bootstrap/ductus.md` §Permission Setup already relies on). On a host that doesn't, the probe prompts once on first run; the graceful-degradation path (deny ⇒ State C) keeps that from being fatal.
 - **Known limitation — no automated test for agent-driven detection.** The three-state logic is prose the agent executes; verification is the audit parity check (static parts) plus a manual walk-through of each state. No runtime unit test is added.
