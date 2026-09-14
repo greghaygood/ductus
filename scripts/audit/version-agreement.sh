@@ -4,9 +4,13 @@
 # The product has one version, recorded in more than one place. This family
 # asserts the places agree.
 #
-# Spec 048 makes `/ductus` acquire the runtime and pin it to the version the
-# fetched framework revision declares, read from the repo-root `version`
-# file. That pin is only as good as its agreement with what actually ships:
+# Spec 048 makes `/ductus` acquire the runtime and pin it to the version this
+# framework revision declares in the repo-root `version` file, which pre-flight
+# fetches directly from raw.githubusercontent.com (spec 048, scenario
+# pin-is-readable-when-acquisition-needs-it, which moved the read off the
+# framework archive because pre-flight runs before the archive is fetched).
+#
+# That pin is only as good as its agreement with what actually ships:
 # if `version` says 0.28.0 while the runtime crate builds 0.27.2, every
 # adopter downloads assets for a release that does not exist, and the failure
 # surfaces as a halt during someone else's bootstrap rather than here.
@@ -14,7 +18,7 @@
 # Three artifacts must carry the same SemVer, and all three are advanced by
 # the same release commit:
 #
-#   20a  version                    — the pin /ductus reads from the archive
+#   20a  version                    — the pin /ductus fetches from raw at run time
 #   20b  runtime/Cargo.toml         — what the crate builds and publishes as
 #   20c  runtime/CHANGELOG.md       — the newest `## [X.Y.Z]` heading
 #

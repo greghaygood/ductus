@@ -101,7 +101,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The same pin /ductus reads out of the fetched archive.
+          # The same pin /ductus fetches from raw.githubusercontent.com in pre-flight.
           version="${{ inputs.version }}"
           if [ -z "$version" ]; then
             version="$(tr -d '[:space:]' < version)"
