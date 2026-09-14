@@ -46,7 +46,7 @@ File existence still governs whether a target is examinable at all: a target tha
 
 ## Finding shape
 
-Reuses the existing `ArtifactFinding` (`runtime/src/schema/primitives.rs:2189`) with no structural change:
+Reuses the existing `ArtifactFinding` (`runtime/src/schema/primitives.rs:3430`) with no structural change:
 
 | Field | `link-adjacent-drift` | `criterion-path-existence` |
 | --- | --- | --- |
@@ -88,6 +88,7 @@ pub struct SkippedTarget {
 | `root-absent` | a criterion's path names a top-level segment this repo does not contain |
 | `ships-to-adopter` | a criterion's path is a **Shared Files** manifest destination — a file this repo scaffolds into an adopter's checkout, so it resolves in the repo the criterion is about rather than this one |
 | `artifact-unreadable` | a scanned *citing* artifact could not be read at all |
+| `not-a-live-claim` | a criterion's path sits under a criterion that claims absence rather than presence, so a finding would be backwards |
 
 `clean` keeps its existing definition — `findings.is_empty()` — so no existing consumer changes. A non-empty `skipped` alongside `clean: true` is the state the host renders in the Informational tier.
 
@@ -118,7 +119,7 @@ A path is only checked when its criterion actually claims the path is **present*
 | adopter scope | `in the project` | Describes a scaffolded checkout, not this one |
 | hedge / example | `if it exists`, `e.g.` | Claims nothing at all |
 
-Three of these arrived after the first measurement, under 022's [criterion-non-assertion-phrasings](../022-deterministic-runtime/scenarios/criterion-non-assertion-phrasings.md) scenario: `deleted` subsumes the original `is deleted` / `are deleted` pair so the past-tense-agent form (``after `531e3ea` deleted both`` — this spec's own AC18) is caught; `(was` + space covers the parenthetical rename history; and `target paths` is a fifth group for a path named as the subject of a migration record. They cleared the four **residual** false positives in the triage below, taking the repo-wide sweep from 25 findings to 21.
+Three of these arrived after the first measurement, under 022's [criterion-non-assertion-phrasings](../022-deterministic-runtime/scenarios/criterion-non-assertion-phrasings.md) scenario: `deleted` subsumes the original `is deleted` / `are deleted` pair so the past-tense-agent form (``after `531e3ea` and `3ff65445` deleted them`` — this spec's own AC18) is caught; `(was` + space covers the parenthetical rename history; and `target paths` is a fifth group for a path named as the subject of a migration record. They cleared the four **residual** false positives in the triage below, taking the repo-wide sweep from 25 findings to 21.
 
 This is the open-state tell list's co-occurrence design **inverted**. There, a phrase asserting an open state is contradicted by a target that is closed. Here, a phrase asserting *absence* is **confirmed** by a path that does not resolve. Same closed-list, framework-fixed discipline, for the same reason: a per-project list would make the promotion threshold measure configuration rather than drift.
 
@@ -128,7 +129,7 @@ The whole criterion is exempted rather than the matched path, because a criterio
 
 An unresolved candidate emits a finding **only when its own top-level segment exists in this repo**. When that segment is absent, nothing can be proven — a framework repo's criteria legitimately name paths that live in an *adopter's* checkout (`.ductus/…`, `.agents/…`) — so the candidate is recorded as `root-absent` instead. The rule self-corrects where it matters: in an adopter repo those roots do exist, so real drift beneath them is provable again.
 
-Worked example — 026's AC5 (AC18), after `531e3ea` deleted both subjects:
+Worked example — 026's AC5 (AC18), after `531e3ea` and `3ff65445` deleted both subjects:
 
 | Span content | Candidate | Resolves |
 | --- | --- | --- |
@@ -162,4 +163,4 @@ The five true positives are `specs/triage.md` in 006 (×2, renamed to `specs/inb
 
 **Correction to a prior record.** An earlier pass reported 35 true positives at 69% precision. That number came from classifying findings by *path prefix* without reading the criteria they came from, and it was wrong — most of what it counted were deletion criteria (`X is deleted`, satisfied *because* the path is gone), rename criteria naming their own source path, and adopter-scoped paths. Reading the criterion text is what produced both the live-claim exemption above and the honest figure here. The verdict happened to be right; the reasoning behind it was not.
 
-The originating case behaves better in the wild than the acceptance criterion anticipated. 026's AC5 has itself been rewritten since this spec was authored — it now reads in past tense (`verified … Met at v1 and since retired`), so the live-claim exemption now skips it rather than flagging it. That is the correct outcome and the scope boundary §Behavior argued for, observed rather than asserted: a contract claiming a path is present is a defect when it is gone, the same path in a past-tense record is a true statement. The unit test pins both paths in the present-tense form the criterion had when the case was found, which is what AC18 specifies.
+The originating case behaves better in the wild than the acceptance criterion anticipated. 026's AC5 has itself been rewritten since this spec was authored — it now reads in past tense (`verified … Met at v1 and since retired`), so the live-claim exemption now skips it rather than flagging it. That is the correct outcome and the scope boundary this spec's `## Behavior` section argued for, observed rather than asserted: a contract claiming a path is present is a defect when it is gone, the same path in a past-tense record is a true statement. The unit test pins both paths in the present-tense form the criterion had when the case was found, which is what AC18 specifies.

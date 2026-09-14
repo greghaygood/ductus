@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [013-text-first-artifacts, 022-deterministic-runtime, 046-scenario-open-question-visibility]
 review:
   last-run: 2026-08-30T23:39:53Z
@@ -39,7 +39,7 @@ The framework covers the *document → back-link* case: §drift-prevention's Cro
 
 ### Observed case
 
-Adopter repo `svc-zmc-api`, spec `020-server-config`, 2026-07-28. A scenario's five open questions were resolved and its worker was implemented, tested, and shipped. The `plan.md` that links to that scenario was not swept, and continued to assert:
+An adopter repo running a backend service, spec `020-server-config`, 2026-07-28. A scenario's five open questions were resolved and its worker was implemented, tested, and shipped. The `plan.md` that links to that scenario was not swept, and continued to assert:
 
 | `plan.md` claim | Actual state |
 | --- | --- |
@@ -56,7 +56,7 @@ Repo `ductus`, spec `026-framework-self-audit`, 2026-08-02, found while running 
 
 | 026 criterion | Actual state |
 | --- | --- |
-| AC5: "Registry equivalence verifies every entry in `framework/workflows/registry.json`…" | `framework/workflows/` and `scripts/audit/registry-equivalence.sh` deleted by `531e3ea` |
+| AC5: "Registry equivalence verifies every entry in `framework/workflows/registry.json`…" | `framework/workflows/` deleted by `531e3ea`, `scripts/audit/registry-equivalence.sh` by `3ff65445` |
 | AC2: "The nine check families listed in Behavior are implemented" | Eight; Family 3 was retired with the workflows feature |
 
 Spec 043 sunset the workflows feature without unchecking 026's criteria or updating its Behavior section, which still documented `#### 3. Registry equivalence`.
@@ -130,7 +130,7 @@ Both ship as `check-artifacts` families on the runtime path, with the markdown-o
 - [x] AC15: Both checks ship as `check-artifacts` families, with the markdown-only path performing the same procedure as prose
 - [x] AC16: `/{project}:analyze` emits an advisory finding for each filesystem path named in a `done` spec's acceptance criterion that no longer resolves, reading inside inline code spans
 - [x] AC17: The path-existence check is scoped to `## Acceptance Criteria` and does not scan body prose, so a correct historical mention of a deleted path produces no finding
-- [x] AC18: The path-existence check reproduces the originating case: 026's AC5 naming `framework/workflows/registry.json` and `scripts/audit/registry-equivalence.sh` after `531e3ea` deleted both
+- [x] AC18: The path-existence check reproduces the originating case: 026's AC5 naming `framework/workflows/registry.json` and `scripts/audit/registry-equivalence.sh` after `531e3ea` and `3ff65445` deleted them
 
 ## Open Questions
 
@@ -169,5 +169,5 @@ Both ship as `check-artifacts` families on the runtime path, with the markdown-o
 
 ## Prior art
 
-Adopter-side interim: `svc-zmc-api` `AGENTS.md` §"Never Knowingly Leave Stale Information" (commit `8b077a77`) carries the rule, the trigger list, the sweep greps, and the worked example. It was placed in `AGENTS.md` rather than a rule file because the concern is artifact discipline enforced by `/analyze`, and because adopter edits to shipped rule files are overwritten by `/ductus` unless
+Adopter-side interim: that adopter repo's `AGENTS.md` §"Never Knowingly Leave Stale Information" (commit `8b077a77`) carries the rule, the trigger list, the sweep greps, and the worked example. It was placed in `AGENTS.md` rather than a rule file because the concern is artifact discipline enforced by `/analyze`, and because adopter edits to shipped rule files are overwritten by `/ductus` unless
 pinned. If this spec ships, that section becomes a candidate for replacement by the framework rule.
