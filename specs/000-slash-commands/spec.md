@@ -1,6 +1,6 @@
 ---
 title: "000-slash-commands — spec"
-status: in-progress
+status: done
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
@@ -25,27 +25,29 @@ review:
   blocking: false
 next-criterion: 16
 analyze:
-  last-run: 2026-09-13T20:24:59Z
-  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
+  last-run: 2026-09-14T22:41:17Z
+  analyzed-against: d3b1488c970508153fc9eca58e3c01ab42ed04fa
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 0
+  unexamined: 1
   analyzed-digest:
-    plan.md: d0dc9d9867d7a899e633f88a32232a63f959452ad06a1cc91dacd6af3d0ed6af
-    review.md: 4fc8372f96f37f2ee91bcdfc6ec7e1a52db027d2fdb6488ca6af2ce63367160a
+    plan.md: 5f265eda92ac46ff3df6310531c3d731021a504c82a9478f2add4aa442431157
+    review.md: 02b64bfefd55fb4916f7fed3497d34423e4cd8897bc3a6fbc08118345349a55f
     scenarios/clarify-one-at-a-time.md: 74531377a3ba6862619c2a4aaf861084da5b53d69ac09a39f28740176f5c078d
-    scenarios/command-autocomplete-summary.md: 2d1bbd64b1ced5c5abba7e5160daa0ad9b9319998709e213aaa04ee01ace0ba0
-    scenarios/criterion-route-after-draft.md: 80781ef6092c5f1072106a856b1664f3b2bfb9b72e48df61a1e91e5fd6b8c1d4
-    scenarios/dashboard-dependencies-column.md: dee20040cb8baefeaf59a0283da0b1126f501d8173d70fb052aec6c38eef3a88
+    scenarios/command-autocomplete-summary.md: 48af7d83e799466a0a7530e6bad4ea3a9e4666f484caa1fd07d378b358df2c63
+    scenarios/criterion-route-after-draft.md: b08bf71669de7980442f8246be334fac4440d43c1920eca95c770878f5c45386
+    scenarios/dashboard-dependencies-column.md: e471757b1a1f7167129935144362f08c47c5da2dea585405a85f9ce2bcbc8f67
     scenarios/implement-skips-planned-prompt.md: adeb014c4192e84543d733fcf27f12907c2cada0d4950af9782a6168a6fac1c3
     scenarios/scenario-without-task-visibility.md: 912b16e99355b5fa17a6fd86fc4e640ffbe91375cf95394618c8954136e5960d
     scenarios/target-argument-parsing.md: b91e1ec533ba1730f5b3760219ef3817c6238298ae8c351670a6edc9b6bb6db3
-    scenarios/target-clear-flag.md: b559bb6b731140c83a6c0733013ccc5fc4a0bdc9a3ec3cab4c26c00528380c43
-    scenarios/validate-fix-mode.md: a2b4b707e7705baab55683bf642c97c8e4e6e09036246dde9f2cdbf9396d6728
-    scenarios/validation-gates.md: 8fc3c93217e0b2ce5cc23812db08f9e31aff8f2ea5d04bcb998528d4b9548d58
-    spec.md: 6555da7947db6293178508adc07e9ce187ad0a4b9cf6fa756a0b65278c088960
+    scenarios/target-clear-flag.md: b7dd0b1df765a600403715a0012afacc9c13749122cd15d7d56ad2b69252eb52
+    scenarios/validate-fix-mode.md: ce87d6a7473de97a20fb7cf4120a8a6e8bce588db355e7f1f39cd3baf40f447f
+    scenarios/validation-gates.md: 07dc0f7d1d5c494503cca763dbfcfd75e497395621cf43d0b20b73b0048ef934
+    spec.md: 4630ba7bb6ea1eba8f1a89fcac04746b1998f89299b5bb63b3ad603e219c28b3
     tasks.md: 12dc83f2b8b99cfdeaf8978b0b9ff9a4d7f49126b596e05d15150fa7f7a40cf2
+  unexamined-by-reason:
+    ships-to-adopter: 1
   blocking: false
 ---
 
