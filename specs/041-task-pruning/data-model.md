@@ -3,10 +3,11 @@
 Defines the structures the `prune-tasks` primitive owns: the in-memory
 **segmentation** it builds from a `tasks.md`, the per-section
 **classification**, the two reduction **modes**, and the primitive's
-request/response **schema**. The types live in
-`runtime/src/schema/primitives.rs` as Rust types with
-`serde::{Serialize, Deserialize}` derives; their serialized JSON is the stable
-host contract, consistent with the primitive-schema convention in
+request/response **schema**. The **serialized** types — `PruneTasksArgs`, `PruneMode`, `Classification`,
+`PruneGate`, `PruneAction`, `SizeSummary` and `PruneSection` — live in
+`runtime/src/schema/primitives.rs` with `serde::{Serialize, Deserialize}`
+derives; their serialized JSON is the stable host contract, consistent with
+the primitive-schema convention in
 [022 — Deterministic Runtime](../022-deterministic-runtime/data-model.md).
 
 The parsing reuses the existing `tasks.md` machinery in
@@ -17,8 +18,8 @@ The parsing reuses the existing `tasks.md` machinery in
 
 ## Segmentation
 
-A `tasks.md` is segmented into a preamble followed by an ordered list of
-blocks. Structure detection is shared: `detect_tasks_structure` yields
+A `tasks.md` is segmented into one ordered `Vec<Block>`; the preamble is
+simply the first `Structure` block, not a separate field. Structure detection is shared: `detect_tasks_structure` yields
 `Flat` (task headings at level 2, `## N.`) or `Phased` (task headings at
 level 3, `### N.`, under `## …` phase containers). `task_level` is 2 or 3
 accordingly.
@@ -26,29 +27,29 @@ accordingly.
 ```rust
 enum PruneMode { KeepPending, Reset }
 
-struct Segmentation {
-    /// Lines from file start up to the first task heading (flat) or the
-    /// first phase container / task heading (phased), whichever comes
-    /// first. Preserved verbatim by keep-pending; supplies only the H1
-    /// for reset.
-    preamble: LineRange,
-    /// Phase containers and task sections in document order.
-    blocks: Vec<Block>,
+/// Private to `primitives/prune_tasks.rs` — never serialized. A block owns
+/// its own lines, so keep-pending rebuilds the file by concatenating the
+/// survivors rather than by slicing ranges out of the original.
+enum Kind {
+    /// The preamble, the `# …` heading, and any other non-task heading
+    /// group. Always kept.
+    Structure,
+    /// Phased files only: a `## …` non-numeric heading. Kept iff a task
+    /// section within it survives.
+    Phase,
+    /// A numbered task section. Dropped when spent.
+    Task,
 }
 
-enum Block {
-    /// Phased files only: a `## …` non-numeric heading. Structural, not a
-    /// task section.
-    PhaseHeading { heading: String, line: usize },
-    TaskSection {
-        number: String,            // "1", "12", …
-        heading: String,           // title text, sans the `N.` prefix
-        phase: Option<String>,     // containing phase heading (phased only)
-        classification: Classification,
-        checkbox_total: u32,       // task-list checkboxes in the section
-        checkbox_checked: u32,     // of which are `[x]`
-        range: LineRange,          // heading line .. next heading at <= task_level
-    },
+struct Block {
+    kind: Kind,
+    lines: Vec<String>,            // the block's own lines, verbatim
+    number: String,                // "1", "12", … (Task only)
+    heading: String,               // title text, sans the `N.` prefix
+    phase: Option<String>,         // containing phase heading (phased only)
+    checkbox_total: u32,           // task-list checkboxes in the section
+    checkbox_checked: u32,         // of which are `[x]`
+    governing_phase: Option<usize>, // index of the phase container, if any
 }
 
 enum Classification {
@@ -64,8 +65,8 @@ enum Classification {
 
 A section's checkboxes are counted with `checkbox::find_checkbox_line`,
 which already excludes `- **Done when**:` lines (they are not `[ ]`/`[x]`
-markers). A `TaskSection`'s `range` terminates at the next heading whose
-level is `<= task_level` — identical to `mark-task`'s `locate_task_range`.
+markers). A `Task` block's lines run up to the next heading whose level is
+`<= task_level` — identical to `mark-task`'s `locate_task_range`.
 
 **Classification rule.**
 
@@ -81,14 +82,15 @@ level is `<= task_level` — identical to `mark-task`'s `locate_task_range`.
 
 Output, in document order:
 
-1. `preamble`, verbatim.
-2. For each `Block`:
-   - `TaskSection` with classification `Spent` → **dropped**.
-   - `TaskSection` with `Pending` or `NoCheckbox` → **kept verbatim** (its
-     own already-checked boxes included; prune never edits a section's
-     interior).
-   - `PhaseHeading` → kept **iff at least one `TaskSection` within its phase
-     range survives**; otherwise dropped so no empty phase container lingers.
+For each `Block`, in order:
+
+- `Structure` (the preamble, the `# …` heading, any other non-task heading
+  group) → **kept verbatim**.
+- `Task` classified `Spent` → **dropped**.
+- `Task` classified `Pending` or `NoCheckbox` → **kept verbatim** (its own
+  already-checked boxes included; prune never edits a section's interior).
+- `Phase` → kept **iff at least one `Task` it governs survives**; otherwise
+  dropped so no empty phase container lingers.
 
 Seams between kept blocks are normalized to a single blank line and the file
 ends with exactly one trailing newline, so the result is `markdownlint`-clean.
