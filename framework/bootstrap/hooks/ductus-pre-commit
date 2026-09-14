@@ -137,8 +137,11 @@ done
 # every branch-scoped spec went unlabelled, silently. A hook demanding exactly three
 # would silently stop labelling that spec's criteria. This is a copy of a rule
 # whose home is the runtime, and a copy on purpose — the hook runs before any
-# binary is resolvable — so a runtime test holds the two in agreement rather
-# than trusting a reader to notice they drifted.
+# binary is resolvable. Audit Family 22
+# (`scripts/audit/adopter-shell-behavior.sh`) holds this file in agreement with
+# the runtime by driving it against fixtures named `1000-thousandth` and
+# `1234.1-staged`, so a digits-only filter here fails a check rather than
+# waiting for an adopter to find it.
 staged_specs="$(git diff --cached --name-only \
   | { grep -E "^[^/]+/(([0-9][0-9][0-9]|[1-9][0-9][0-9][0-9]+)|[a-z0-9]+(-[a-z0-9]+)*\.[1-9][0-9]*)-[^/]+/(spec|spec-and-plan)\.md\$" || true; })"
 

@@ -35,7 +35,7 @@ The rule is a property of *rewriting*, not of `rewrite-spec-links`. Measured acr
 | `write_review` (frontmatter splice) | frontmatter → LF, body preserved → **mixed** |
 | `invalidate_review` | **mixed**, inherited from the splice it reuses |
 
-The two **mixed** outcomes are the sharper failure. A clean conversion is at least uniform and shows up as one large diff; a partial one leaves a file whose halves disagree, which no subsequent reader can distinguish from a hand-edit. Every spec reviewed on a CRLF checkout is in that state today.
+The two **mixed** outcomes are the sharper failure. A clean conversion is at least uniform and shows up as one large diff; a partial one leaves a file whose halves disagree, which no subsequent reader can distinguish from a hand-edit. Every spec reviewed on a CRLF checkout was in that state when this was measured.
 
 So the detection belongs in **one** shared place that every writer calls, and the three existing copies are retired into it. Fixing only the writer that was reported would leave six traps set and a helper with one caller — which is the same duplication one level up.
 

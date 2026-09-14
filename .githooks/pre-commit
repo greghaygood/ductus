@@ -112,8 +112,12 @@ git add framework/commands/help.md
 # every branch-scoped spec went unlabelled, silently. A hook that demanded exactly three
 # would silently stop labelling that spec's criteria. This is a copy of a rule
 # whose home is the runtime, and it is a copy on purpose — the hook runs before
-# any binary is resolvable — so `runtime/tests/spec_path_shape.rs` holds the two
-# in agreement rather than trusting a reader to notice.
+# any binary is resolvable. Audit Family 22
+# (`scripts/audit/adopter-shell-behavior.sh`) holds the *shipped* copy of this
+# pattern in agreement with the runtime, by driving it against fixtures named
+# `1000-thousandth` and `1234.1-staged`. It does not reach this file, which is a
+# separate one, so this copy is held by a reader — keep the two alternations
+# identical when either changes.
 staged_specs="$(git diff --cached --name-only \
   | { grep -E "^[^/]+/(([0-9][0-9][0-9]|[1-9][0-9][0-9][0-9]+)|[a-z0-9]+(-[a-z0-9]+)*\.[1-9][0-9]*)-[^/]+/(spec|spec-and-plan)\.md\$" || true; })"
 

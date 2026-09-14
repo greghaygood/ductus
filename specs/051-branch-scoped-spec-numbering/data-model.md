@@ -6,7 +6,8 @@ The feature introduces one directory-name grammar, one parsed form, one frontmat
 
 ```text
 feature-dir  := sequential | branch-scoped
-sequential   := NNN "-" any                   ; NNN = three ASCII digits
+sequential   := NNN "-" any                   ; NNN = three or more ASCII digits,
+                                              ;   unpadded beyond three (no `0500-`)
 branch-scoped:= identifier "." n "-" slug
 identifier   := segment ("-" segment)*        ; excludes "." by construction
 slug         := segment ("-" segment)*
@@ -17,7 +18,7 @@ any          := one or more characters        ; not held to the slug grammar
 
 The parse splits `branch-scoped` on the **first** `.`. That is unambiguous because `identifier` cannot contain one: the operator's input is sanitized to `segment ("-" segment)*` before it is used, collapsing any `.` to a hyphen.
 
-`sequential` is unchanged from today and is recognized by the absence of a `.`.
+`sequential` is recognized by the absence of a `.`. **Three digits is a minimum width, not a fixed one** — `create-feature` formats with `{number:03}`, which pads *up to* three and then keeps counting, so the 1000th spec is `1000-slug` and the predicate has to accept it or the formatter produces a name its own corpus reader cannot see. A run longer than three carrying a leading zero is rejected, so the name/number mapping stays injective: `0500-` is not a name the formatter emits, and accepting it would give `500` two spellings. This widened in `599f0ef8`, under this spec, alongside the matching amendment to constitution §numbering; the grammar block above did not follow it until the 2026-09-14 backfill pass.
 
 **The two forms are held to different standards, deliberately.** The branch-scoped form is machine-generated end to end — `create-feature` sanitizes the identifier and derives the slug — so both halves are validated against the slug grammar. The sequential form's trailing slug is accepted as-is, exactly as it is today: that form predates the grammar's enforcement, and an adopter's spec root may hold a directory that would fail it. Tightening the rule there would make such a directory invisible to every corpus reader at once — a silent regression rather than a reported one — so the legacy form keeps the legacy leniency.
 
