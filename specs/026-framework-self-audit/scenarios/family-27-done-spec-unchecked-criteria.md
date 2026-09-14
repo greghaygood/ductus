@@ -58,8 +58,10 @@ section of a file with known frontmatter, so there is nothing to infer.
 
 - **A spec with no Acceptance Criteria section at all.** Not a finding here.
   Section-completeness is `/ductus:analyze`'s artifact-tier concern, and
-  duplicating it would cross the boundary `audit.md` §Notes draws between the
-  two commands. This family asks only about criteria that exist.
+  duplicating it would cross the boundary `audit.md` draws between the two
+  commands under its **Boundary with `/ductus:analyze`** heading — this bullet
+  used to cite a `§Notes` section of that file, which has never existed.
+  This family asks only about criteria that exist.
 - **A criterion inside a fenced code block.** Documentation quotes checkbox
   syntax — `analyze.md` and `implement.md` both do — so a fence-blind scan
   would report a document *describing* a criterion as carrying one. Fences are

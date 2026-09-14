@@ -15,17 +15,21 @@ Origin: spec 026 review SHOULD / low-confidence findings, 2026-05-18. Captured v
 
 ## Behavior
 
-REUSE-001 ships as a shared `scripts/audit/lib.sh` that family check scripts source:
+**Both shipped, and the signatures differ from the ones sketched here — what shipped is what this section now records.**
+
+REUSE-001 shipped as a shared `scripts/audit/lib.sh` that every family check script sources (`00286b10`, 2026-07-30):
 
 ```bash
-. "$(dirname "$0")/lib.sh"      # provides ROOT, cd, audit_emit, drift
+set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh" || exit 1   # provides ROOT, cd, emit, drift
+audit_family cross-doc
 ```
 
-`audit_emit FAMILY LOCATION MESSAGE FIX` writes the existing pipe-separated row and increments `drift`. Family check scripts shrink to their per-family check logic plus a final `exit $drift`. The orchestrator [`run-all.sh`](../../../scripts/audit/run-all.sh) is unaffected — it shells out to each family script, so the lib is internal to the family scripts.
+The family label is set once by `audit_family NAME` rather than repeated as a first argument, so the emitter is `emit LOCATION MESSAGE FIX` — three arguments, not the four `audit_emit FAMILY LOCATION MESSAGE FIX` sketched above. It writes the pipe-separated row and sets `drift=1`; family scripts shrink to their per-family logic plus a final `exit "$drift"`. Two details the sketch did not have and that carry weight: the path is derived from `${BASH_SOURCE[0]}` rather than `$0`, so sourcing still resolves when the script is invoked through `bash <path>`, and the `|| exit 1` makes a missing `lib.sh` fail closed instead of running on with `emit` undefined — which would let a family that exits 0 by design report clean. The orchestrator [`run-all.sh`](../../../scripts/audit/run-all.sh) is unaffected, as expected: it shells out to each family script, so the lib stays internal to them.
 
-QUALITY-001 ships as a refactor of `flush_step` to take its state as explicit arguments and return the emit count via stdout (or exit code), eliminating the caller-scope reads. The per-file loop in `primitive-promotion-candidates.sh` is restructured to build a step list first, then iterate the returned list to apply flush logic — same observable output, no fragile caller-scope dependency.
+QUALITY-001 shipped in `cc897efc` (2026-08-01). `flush_step` is gone; `primitive-promotion-candidates.sh` carries `report_step FILE START_LINE HAS_IGNORE HAS_PRIMITIVE HAS_LLM BUFFER`, a pure function of its arguments that reads no caller-scope state and clears none, leaving the walker owning step state end-to-end. That is the explicit-arguments half of the sketch; the return-the-count-via-stdout half was not needed, because `emit` already owns `drift` and nothing has to be handed back.
 
-Both changes are pure refactors with no observable behavior change. Verification is `bash scripts/audit/run-all.sh` exit code parity and stdout-row diff against the pre-refactor state on a representative tree.
+Both were pure refactors with no observable behavior change, verified by `bash scripts/audit/run-all.sh` exit-code parity and a stdout-row diff against the pre-refactor state.
 
 ## Edge Cases
 

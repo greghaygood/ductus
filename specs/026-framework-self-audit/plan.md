@@ -4,7 +4,7 @@ Implements [026 — Framework self-audit](spec.md).
 
 ## Overview
 
-`/audit` ships as a parseable slash command at `framework/commands/audit.md` (NOT scaffolded into adopters). The command orchestrates a check-zero precondition pass over the project's generators and lints, then walks the eight family checks defined in the spec. Each family check is implemented as a focused shell script under `scripts/audit/{family}.sh`, invoked from the command procedure via the runtime's existing `run-generator` primitive.
+`/audit` ships as a parseable slash command at `framework/commands/audit.md` (NOT scaffolded into adopters). The command orchestrates a check-zero precondition pass over the project's generators and lints, then walks the family checks — the eight defined in the spec at v1, and every family `scripts/audit/run-all.sh` registers since. No count is stated: Family 28 holds the registry, the command's enumeration, and `scripts/audit/README.md` §Scripts in agreement, and a number in prose is the copy nothing updates. Each family check is implemented as a focused shell script under `scripts/audit/{family}.sh`, invoked from the command procedure via the runtime's existing `run-generator` primitive.
 
 Per [Q2's resolution](spec.md#resolved-questions), v1 uses shell-first orchestration with the runtime as the invocation mechanism — no new primitives are added in 026. The pattern is intentional: when a check pattern proves common enough across multiple commands, it graduates to a runtime primitive in a follow-on. Inventing primitives for `/audit` alone would overengineer ahead of data.
 
@@ -187,9 +187,11 @@ A persistent on-disk report would let CI consumers parse findings programmatical
 
 Mirroring `/ductus:review`'s convention would unify the framework's audit shape. Rejected per Q3 — the heterogeneity that justifies MUST/SHOULD in `/ductus:review` (adopter risk profiles) doesn't exist for `/audit` (ductus's own internal framework, uniform risk profile). Binary severity is simpler and CI-trivial.
 
-### Considered: scenario-promotion check as Family 9
+### Considered and then adopted: primitive-promotion check as Family 9
 
-Scan slash command prose for deterministic steps without primitive calls, surface as primitive-candidate findings. Rejected for v1 (captured in spec's Future Considerations section). Different shape (opportunity vs drift), requires LLM judgment, best deferred until `/audit` is live and there's data on which patterns recur.
+Scan slash command prose for deterministic steps without primitive calls, surface as primitive-candidate findings. Rejected at plan time — different shape (opportunity vs drift), requires LLM judgment, best deferred until `/audit` is live and there is data on which patterns recur — and **adopted the same day**, in `b160cfbe`, as Family 9. The objection that carried the rejection is the one the shipped design answers: `scripts/audit/primitive-promotion-candidates.sh` decides nothing about whether a step *should* be a primitive, it reports every numbered Instructions step carrying neither a backticked primitive name nor an `<!-- llm:* -->` marker, and `<!-- audit:ignore-promotion -->` is how host-responsibility prose opts out — deterministic throughout, so the binary-severity model is untouched. The spec's own §9 and AC11 are the live statement of it. This entry is kept rather than deleted because the reversal is the decision record; what is corrected is that it read as a road not taken while the family it describes was a hard release gate.
+
+The pointer that rejection carried — *"captured in spec's Future Considerations section"* — went dead in the same commit: `0c26aa41` gave `spec.md` a `## Future Considerations` section holding exactly this item, and adopting it removed the section. Nothing in the spec or in `specs/README.md` §Future Considerations has carried it since.
 
 ### Known limitation: SSOT curated list grows by author discipline
 
@@ -201,7 +203,7 @@ Detecting current-tense vs past-tense prose is heuristic. Sentences like *"`/cap
 
 ### Known limitation: new generators require manual update in two places
 
-When a future spec adds a new generator or lint, the author updates `scripts/audit/check-zero.sh` AND `.github/workflows/markdown-only-pipeline.yml`. Family 5 (template-validate alignment) does not catch this — both files enumerate the same list textually. A follow-on enhancement could add a Family 1d sub-check comparing the two lists; for v1, the requirement is documented in the §Future Considerations section of the spec.
+When a future spec adds a new generator or lint, the author updates `scripts/audit/check-zero.sh` AND the PR workflow's generator-orchestration step — `.github/workflows/framework-checks.yml`, which `048-govern-acquired-runtime` renamed from `markdown-only-pipeline.yml`. Family 5 (template-validate alignment) does not catch this — both files enumerate the same list textually. A follow-on enhancement could add a Family 1d sub-check comparing the two lists; it has not shipped, and this entry is the only place the requirement is recorded. It formerly pointed at the spec's `## Future Considerations` section, which was removed when Family 9 was adopted (see the trade-off above), so the pointer named nothing.
 
 ### Known limitation: suppression contract is literal-phrase-fragile
 

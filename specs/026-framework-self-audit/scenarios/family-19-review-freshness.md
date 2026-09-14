@@ -56,11 +56,13 @@ it, because a check's value is its precision, not its coverage.
 
 ## Edge Cases
 
-- **Deliberately not wired into `run-all.sh`.** It reported 10 pre-existing
-  stale reviews when it landed, so wiring it would block the next `ductus-v*` tag
-  until every one is re-reviewed. That is real debt and the findings are real,
-  but imposing a release freeze is the maintainer's call, not a side effect of
-  landing the check. Wiring is one `run_check` line once the debt is cleared.
+- **Deliberately not wired into `run-all.sh` at first — since wired.** It
+  reported 10 pre-existing stale reviews when it landed, so wiring it would have
+  blocked the next `ductus-v*` tag until every one was re-reviewed. That was real
+  debt and the findings were real, but imposing a release freeze is the
+  maintainer's call, not a side effect of landing the check. The debt was cleared
+  and the one `run_check` line went in: Family 19 runs in `run-all.sh` today and
+  is a hard release gate.
 - **Different scope from the runtime gate, on purpose.** `check-review-gate`
   reads Affected Files because it judges one spec at the moment someone
   completes it, where a broad scope costs one re-review. This family judges all
