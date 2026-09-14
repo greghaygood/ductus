@@ -2,11 +2,18 @@
 status: in-progress
 dependencies: [022-deterministic-runtime, 040-configurable-specs-dir]
 review:
-  last-run: 2026-08-31T01:00:00Z
-  reviewed-against: 8edc39c497185d9e8f0f76bfd8ba169e3118ef6a
+  last-run: 2026-09-14T21:19:18Z
+  reviewed-against: a31a7ee2cd66c54862a2a6c73e8baa9d2e165e83
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 6
+  scope: 28
+  reviewed-digest:
+    data-model.md: 416e488447e1fb195e85babd92882b3d5eefa1cb5e3e2876809a59f487420818
+    scenarios/fold-target-checked-before-the-rewrite.md: 40bfa2011fb9af497ae85dac6f23f2ad8719dddcc8c5f5654dda7560aade7f32
+    scenarios/rewrites-preserve-line-endings.md: 1ab09161757ade0d1f4a3959f574e54d68dab19f275ec84b345b8d16a75ccd26
+    scenarios/the-numbering-grammar-reaches-every-surface.md: d4f11334754c65e3cf73346d224aaf8d782f5385a266a2bf22d3339a1079089a
   blocking: false
 next-criterion: 38
 analyze:
