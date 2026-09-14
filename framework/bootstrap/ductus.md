@@ -700,7 +700,6 @@ For each file that needs migration:
   ---
   status: {value}
   dependencies: [{slug, slug, ...}]
-  tags: []
   ---
   ```
 
@@ -715,11 +714,18 @@ For each file that needs migration:
   ```yaml
   ---
   spec-ref: "{value}"
-  tags: []
   ---
   ```
 
   Quote the `spec-ref` value because it conventionally contains an em-dash and spaces.
+
+  **`spec-ref`, not `section`, is deliberate here — do not "correct" it.** A scenario's required field
+  is `section` (§text-first-artifacts), and `spec-ref` is the legacy fallback the constitution keeps for
+  pre-017 scenarios. A project still on bold-prefix metadata *is* pre-017, and its `**spec-ref:**` value
+  names the parent feature *and* the section, which is what `spec-ref` means and is not what `section`
+  means. Writing that value under `section` would rename the field while silently changing what it
+  asserts; writing it under `spec-ref` is lossless, and every reader resolves it. The hard fail fires
+  only when both keys are missing, so the migrated file is valid.
 
 - Remove the bold-prefix line from the body.
 - Insert the frontmatter block at the very top of the file, with one blank line separating it from the heading.
