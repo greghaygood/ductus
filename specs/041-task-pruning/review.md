@@ -1,12 +1,14 @@
 ---
 spec: 041-task-pruning
-reviewed-at: 2026-08-28T01:24:04Z
-reviewed-against: a9be853143093fc9891a87048ba286fc187ddfcd
-diff-base: 9ab3163db47064584fd29ef4a7eb041865be3767
+reviewed-at: 2026-09-14T12:40:49Z
+reviewed-against: 5538c5c99b769a1ac2c381166d1af4465c8ef648
+diff-base: 8de657817c5ac0eabc675011e4923da7fce1aa90
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 8
+scope: 22
 skipped-passes: []
 ---
 
@@ -14,17 +16,21 @@ skipped-passes: []
 
 ## Summary
 
-Re-run 2026-08-28 against the current rule set. 0 MUST, 0 SHOULD, 0 low-confidence; not blocking.
+Backfill pass over a review record written before `ductus-v0.49.0`: no `examined`, no `scope`, no `reviewed-digest`, so freshness read as undeterminable and a run that skipped its passes would have been byte-identical to one that did not. All five passes ran against the resolved scope. No MUST, SHOULD or low-confidence findings.
 
-**Why this re-run happened.** The original review ran 2026-07-11 and recorded one SHOULD. Two rule IDs now in force did not exist then — `FE-DEPS-005` (2026-07-21) and `QUAL-CLAIM-001` (2026-08-02) — so the verdict was re-derived rather than trusted, and the prior finding re-checked against the code as it stands rather than against its own Status line.
+**Scope and base.** Both measured after this pass's first correction commit and recorded before choosing. The natural base `8de65781` resolves 6 modified-since / 22 in scope against a plan affecting 20; `--since HEAD` gave 0 / 20 at the moment the base was chosen. The modified-since figure was 5 when the base was selected and is 6 as recorded here, because a later correction in this same pass added a sixth file — the count is evidence about the commit this review names, not about the selection. The natural base was taken because it covers the files this pass edited, which HEAD excludes by construction. The pre-reopen natural base `5ec4b7c3` resolved **805 modified-since / 805 in scope at 154,617 bytes** — over the MCP output cap, so that leg was run through the CLI and read with `jq`. The reopen collapsed it to 1,579 bytes, so the deciding leg returned inline: the friction is a property of the pre-reopen window only, which is now the fifth pass running to find that.
 
-**The prior SHOULD is genuinely resolved, verified in the code.** It reported `heading_is_numeric` / `split_numbered_heading` triplicated across `prune_tasks.rs`, `read_tasks.rs`, and `mod.rs`. Those local definitions are gone: `primitives/mod.rs` is now the single `pub(crate)` home for both, with `heading_is_numeric` defined as `.is_some()` on the splitter so the predicate cannot drift from it, and a unit test asserting the two agree. Landed under 022's `numbered-heading-grammar-single-source` (022 task 78, 2026-08-02). The count drops out because the finding no longer fires, not because it was reclassified.
+**examined 8 of 22.** Read in full: this spec's `spec.md`, `plan.md` and `data-model.md`; `framework/commands/prune.md`; `framework/runtime-tools.txt`; `runtime/legacy-prose-commands.txt`; `runtime/Cargo.toml`; and `runtime/src/primitives/prune_tasks.rs`, all 631 lines including its 11 inline tests. Named rather than counted, each with what was relied on instead: `.claude/commands/ductus/prune.md` is a generated mirror of a source read in full and the generator re-ran in this pass reporting all 16 command copies in sync; five runtime sources — `interpreter/mod.rs`, `main.rs`, `mcp/server.rs`, `parser/mod.rs`, `primitives/mod.rs` — were read only at their `prune-tasks` registration sites; `schema/primitives.rs` only at the seven prune types; `runtime/tests/mcp.rs` at its module contract and function inventory; `README.md` at the `/prune` row, whose anchor into `docs/slash-commands.md` was resolved against the real heading; `framework/commands/help.md` and `scripts/gen-help-tables.sh` at their prune entries; the two `framework/bootstrap/configure/` files at their allow-blocks plus the generator that writes them; and `runtime/CHANGELOG.md` was not opened at all.
 
-**`QUAL-CLAIM-001` was assessed against `prune-tasks` and does not fire.** The rule flags a code path that returns a clean or empty result while some part of its nominal subject went unexamined. Every unexaminable path here is an operational error instead: a missing feature directory returns `FeatureNotFound`, a missing `tasks.md` returns `TasksFileMissing`, and an unreadable file propagates the I/O error. If `run` returns `Ok` at all, it read and segmented its subject. The result is also self-describing where it matters — `nothing_to_prune`, `gate`, `applied`, per-section classification records, and `size_before` / `size_after` — so a no-op is distinguishable from a blocked reset and from a preview. This is the rule's documented compliant case: a total function whose subject is always fully examinable.
+**Five corrections, all committed ahead of this review so the digest covers them.** The largest is a criterion the shipped command source contradicts: AC11 claimed the markdown-only fallback "reaches identical bytes", unqualified, while `prune.md`'s own reset bullet records that the reset body is compiled into the primitive and pinned to `framework/templates/spec/tasks.md`, so a project that has customized its own tasks template diverges. That case is reachable — the **Shared Files** manifest ships that template to adopters at `specs/templates/tasks.md` — and the same `prune.md` section promises byte-for-byte parity two paragraphs above the bullet that denies it. The behaviour is deliberate and unchanged: the plan weighed reading the template at runtime and rejected it, and an adopter tree holds no `framework/` copy for the markdown-only host to read, so the claim was the defect. Corrected in AC11, in the Runtime-eligibility resolved question, and in `prune.md`.
 
-`FE-DEPS-005` governs frontend dependency network egress; 041's subject is a Rust runtime primitive and its command prose, with no frontend surface in scope.
+The other four are enumeration and shape drift. `data-model.md` depicted a `Segmentation` struct and a `LineRange` that have **zero** definitions in the tree, and a `Block` enum where the realized type is a private struct carrying a `kind` discriminant with a third variant the depiction had no room for — under an opening claim that "the types live in `runtime/src/schema/primitives.rs`", true of the seven serialized types and false of the two it had just drawn. It also showed the keep-pending result as `"status": null` where `skip_serializing_if` omits the key entirely, in a document that calls its serialized JSON the stable host contract. Both documents named `iter_phase_ranges` among the helpers the primitive reuses; it appears zero times there and `append_task.rs` is its only consumer. The plan's Affected Files listed an `mcp.rs` edit that never landed. And `plan.md` still spelled `gov:init`, the pre-049 namespace.
 
-**The stale count is corrected.** `spec.md` recorded `should-violations: 1` while this report recorded `0` — the report was updated when the finding was resolved, the spec frontmatter was not, so the two disagreed for the four weeks since. Both are now written from the same run.
+**Verified by probe rather than by reading**, on scratch features moved to `/tmp` afterwards rather than deleted: `read-tasks` returns zero tasks and `append-task` numbers from 1 against a template-state file whose guidance comment embeds three `## N.` example headings; `--reset` on an `in-progress` spec returns `blocked-needs-force` and writes nothing, `--force` flips it to `allowed`; reset restores the template's 31 lines; keep-pending took 335 to 247 bytes, dropped the spent section, kept the half-done one with its checked box and kept a checkbox-free section; a second run reports `nothing-to-prune` and does not write; the pruned output lints clean and leaves no sidecar; and all three documented error paths write nothing.
+
+**Checked before filing, and correctly not a finding:** `prune-tasks` is absent from `configure/antigravity.md` and `configure/opencode.md`. Reading the generator rather than the output shows `gen-configure-mcp.sh` writes those layouts a single `mcp(ductus/*)` wildcard, so no per-tool line exists there by design.
+
+Security, reuse, efficiency and simplicity found nothing to report. `validate_no_traversal` guards the feature name before any path is joined; every error path returns before a write; the write is the shared atomic tempfile-and-rename and the source file's own line ending is preserved, so pruning a CRLF checkout does not silently convert it. The primitive hand-rolls no grammar — it reuses `detect_tasks_structure`, `parse_atx_heading`, `split_numbered_heading`, `SkipScanner` and `checkbox::find_checkbox_line`, which is what keeps its task set identical to `read-tasks` and `mark-task`. The spec status is read only when `reset` is set, and the section records carry identity and counts but never a line of the file, which is the token-reduction contract AC11 exists for.
 
 ## MUST violations (blocking)
 
@@ -51,5 +57,9 @@ Re-run 2026-08-28 against the current rule set. 0 MUST, 0 SHOULD, 0 low-confiden
 *None.*
 
 ## Skipped passes
+
+*None.*
+
+## Unexamined governance
 
 *None.*

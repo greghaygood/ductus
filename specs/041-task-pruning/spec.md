@@ -2,11 +2,15 @@
 status: in-progress
 dependencies: [022-deterministic-runtime]
 review:
-  last-run: 2026-08-28T01:24:04Z
-  reviewed-against: a9be853143093fc9891a87048ba286fc187ddfcd
+  last-run: 2026-09-14T12:40:49Z
+  reviewed-against: 5538c5c99b769a1ac2c381166d1af4465c8ef648
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 8
+  scope: 22
+  reviewed-digest:
+    data-model.md: 6fd2f2ac88690e649f39d60fba2c936f844b6699d2eade755547cd966bed7393
   blocking: false
 next-criterion: 15
 analyze:
