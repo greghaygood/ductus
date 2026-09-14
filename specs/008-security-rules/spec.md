@@ -149,7 +149,7 @@ When `/ductus` installs the security rule files in a project that already has fe
 Ductus runs a one-time security audit when **both** conditions hold after the file manifest has been processed:
 
 - Either `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was newly **created** by the manifest pass (i.e., not already present, not just updated).
-- The project contains at least one feature spec directory under `specs/` matching the `NNN-*` pattern.
+- The project contains at least one feature spec directory under `specs/`, in either numbering form — the membership rule lives in `framework/constitution.md` §numbering and is not restated here, because a second copy is how the sequential and branch-scoped forms drift apart.
 
 When neither condition holds — greenfield adoption with no existing specs, or a routine re-run where the rule files already exist — the audit is silently skipped. There is no per-run audit; the trigger is "rule file newly installed in a project with existing specs."
 
@@ -158,7 +158,7 @@ When neither condition holds — greenfield adoption with no existing specs, or 
 For each newly created rule file:
 
 1. Load the rule file, applying the same integrity checks `/{project}:analyze` uses (well-formed headings, required fields, valid IDs, no duplicates). If the file fails to load, ductus reports the load failure and skips the audit for that file — same posture as `/{project}:analyze`.
-2. For each MUST/MUST NOT and SHOULD/SHOULD NOT rule whose Verification trigger fires against any artifact under `specs/NNN-*/` (`spec.md`, `plan.md`, scenario files), produce a finding.
+2. For each MUST/MUST NOT and SHOULD/SHOULD NOT rule whose Verification trigger fires against any artifact under a feature spec directory (`spec.md`, `plan.md`, scenario files), produce a finding.
 3. Append each finding to `specs/inbox.md` as a new item.
 
 ### Inbox item format
@@ -264,8 +264,8 @@ How `/{project}:analyze` behaves when the inputs are unusual:
 
 ### Brownfield Adoption
 
-- [x] AC22: On a ductus run where a security rule file is newly created AND `specs/NNN-*` directories exist, ductus audits the existing specs against the rule and writes one inbox item per finding to `specs/inbox.md`
-- [x] AC23: On a greenfield run (no existing `specs/NNN-*` directories), the audit is silently skipped
+- [x] AC22: On a ductus run where a security rule file is newly created AND the spec root holds at least one feature spec directory (either numbering form per §numbering), ductus audits the existing specs against the rule and writes one inbox item per finding to `specs/inbox.md`
+- [x] AC23: On a greenfield run (no existing feature spec directories in the spec root), the audit is silently skipped
 - [x] AC24: On a routine re-run (rule files already present), the audit is silently skipped
 - [x] AC25: Inbox items follow the format `- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}`
 - [x] AC26: Audit findings are deduplicated against existing inbox content (no duplicate items emitted on re-trigger)
