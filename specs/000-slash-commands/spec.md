@@ -78,28 +78,26 @@ Ten commands organized into two groups:
 
 Each command template must work for any project by replacing a project-specific placeholder:
 
-- `{project}` — the project name, used in command references (e.g., `/{project}:clarify`) and file paths (e.g., `{cli-config-dir}/commands/{project}/`)
-- `{cli-config-dir}` — the selected agent's config directory (`.claude` on Claude Code). Added by `012-multi-agent-govern` when the command set became multi-agent; `scripts/gen-claude-commands.sh` substitutes both. As delivered, `{project}` was the only one.
+- `{project}` — the project name, used in command references and in the installed command's path. **Both are layout-derived and neither is spelled here**: `framework/bootstrap/ductus.md` §Derived values carries the per-layout **Invocation** and **Command/skill path** rows, and they differ across all three layouts (`/{project}:clarify` is the `claude-style` form alone). As delivered, `.claude` and the colon form were the only ones, because Claude Code was the only agent.
+- `{cli-config-dir}` — the selected agent's config directory (`.claude` on Claude Code). Added by `012-multi-agent-govern` when the command set became multi-agent; `scripts/gen-claude-commands.sh` substitutes both. As delivered, `{project}` was the only placeholder.
 
 Commands reach session state through `.ductus/session.toml` (see §Session State).
 
 ### Session State
 
-Commands share state through a session file that tracks the current working feature:
-
-```toml
-feature = "{NNN-feature-name}"
-path = "specs/{NNN-feature-name}"
-set-at = "{ISO 8601 timestamp}"
-```
+Commands share state through a session file that tracks the current working feature.
 
 > **Superseded by `022-deterministic-runtime`.** As delivered the file was JSON at
 > `{cli-config-dir}/{project}-session.json`, with camelCase keys (`setAt`), so its path
 > baked in both the AI CLI's config directory and the adopter's project name. 022 moved it
 > to `.ductus/session.toml` — repo root, gitignored, host- and project-name-agnostic, TOML
 > with kebab-case keys, the same path for every adopter — and `write-session` is the
-> primitive that writes it. `framework/migrations/session-file-consolidate.md` migrates an
-> adopter's legacy file.
+> primitive that writes it. **The key set is stated once**, in 022's
+> `write-session-primitive` scenario, and is deliberately not restated here: a second copy
+> of a canonical shape is what [§drift-prevention](../../framework/constitution.md#drift-prevention)
+> forbids, and the three keys 000 delivered are already two short of it —
+> `009-scenario-targeting` added `scenario` and `scenario-path`.
+> `framework/migrations/session-file-consolidate.md` migrates an adopter's legacy file.
 
 ### Gate Enforcement
 
