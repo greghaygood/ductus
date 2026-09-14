@@ -1,6 +1,6 @@
 ---
 spec: 020-code-review
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-14T01:57:59Z
@@ -17,19 +17,19 @@ review:
   blocking: false
 next-criterion: 16
 analyze:
-  last-run: 2026-09-13T20:24:59Z
-  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
+  last-run: 2026-09-14T01:58:58Z
+  analyzed-against: e60f1a66dce339150ad77426a052dd612fcb65e6
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
   analyzed-digest:
-    data-model.md: 44c01454d9ccde029033c2011dabff8249dc55dc82ed9ded3179de0ef50c1fd5
-    plan.md: 1cea66de14b642943eb91e266c3a76357b9fd7a3d93e6e029ac1d51d54ef8bd2
-    review.md: 4508f0a62bbebc0908dde0db8ccaa90457b427f93b449e43692a2462e0e5a7b4
+    data-model.md: 005b900eab99d081cfe9b6c643998cdda2ccb452048c0292e9ffb3097a300766
+    plan.md: 1f4dee9b349d1aad3bc2a16e2fff4bd70996ef9e99f104861aef9f8e74825675
+    review.md: 815561429fae929e53c052384d21f63d12e97de325080eca38dff594211dd107
     scenarios/review-flag-parsing-is-specified.md: 9f1a3dd82bab2b9622808c31dd2bb00f0c6f403effeb8bb496bb4b329496e9c7
     scenarios/waiver-expiry.md: 6b7309dd2c803a6fd1ecf5a6a92f8895011d787b334452ce5fb7f73274c77068
-    spec.md: fb2bd65a6a511cbd083458de20f14ca661ed0b5766b3e4a2e9e37210db139efc
+    spec.md: 53a5a6b39716bed962ffb24888a54db47a946f15e818f906c77e9fe94246a3fe
     tasks.md: 9d5c2bda283c5501dc998abf081ec5171c60100fe4b0b2639dec41916cf533f3
   blocking: false
 ---
