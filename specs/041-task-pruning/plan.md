@@ -165,7 +165,7 @@ violation.
 | `framework/runtime-tools.txt` | Edit | Canonical manifest entry `prune-tasks` |
 | `framework/bootstrap/configure/claude.md` | Regenerate | MCP allow-block (via `gen-configure-mcp.sh`) |
 | `framework/bootstrap/configure/auggie.md` | Regenerate | MCP allow-block (via `gen-configure-mcp.sh`) |
-| `runtime/tests/mcp.rs` | Edit | Behavioral integration test (parity test auto-covers registration) |
+| `runtime/tests/mcp.rs` | No change | Registration is covered by the pre-existing `TOOL_NAMES` set-equality assertion, which needs no per-primitive edit; behavioral coverage landed as the 13 inline tests in `prune_tasks.rs` instead |
 | `runtime/CHANGELOG.md` | Edit | `### Added` entry (new tool; list grows N→N+1) |
 | `runtime/Cargo.toml` | Edit | Minor version bump (lockstep) |
 | `framework/commands/prune.md` | Create | Authoritative `/{project}:prune` command source (placeholders, step annotations) |
