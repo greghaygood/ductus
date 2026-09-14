@@ -2,18 +2,18 @@
 status: in-progress
 dependencies: [021-runtime-boundary, 027-bootstrap-migration-registry, 029-bootstrap-runtime-autowire, 042-consolidate-govern-per-project-files-under-govern-directory]
 review:
-  last-run: 2026-09-14T23:10:28Z
-  reviewed-against: d1d9fd8cd7626d57c0d8ff0b8e7bf1fee9373d4c
+  last-run: 2026-09-14T23:12:24Z
+  reviewed-against: 8d660cb34d04844ffd524685c2fbca256a576e77
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 23
-  scope: 25
+  examined: 24
+  scope: 27
   reviewed-digest:
     data-model.md: ae0c2b52b863b272d8ab2fbab9b131ec5f7adf55f394bb8d8986488b51bba3c6
     scenarios/pin-is-readable-when-acquisition-needs-it.md: 561c549b449523fc6723bd5adb2a1a4b9c24b8f7d665aec2e988efcc08b3d158
     scenarios/release-halves-publish-together.md: 0448ad2cb2df94e5d6b97ce4660345e26619af68d5f05da29d8b8dd8a011306f
-    scenarios/retired-namespace-tools-are-off-limits.md: 97cbaa4da027351049f38a7ecc7764cbfc43de5f5056090818602569c23dcf39
+    scenarios/retired-namespace-tools-are-off-limits.md: 0c5984d011f5d35b3685f05bc083e01d9aaa7bac4a31c0949e1d5bcd1f00627b
     scenarios/state-a-version-checks-the-pin.md: 40a4cbaf5dab4b5ee1127c4e808f70bbd08433415e952011ceb7c419a5e24e23
     scenarios/state-b-continues-in-session.md: b4d9b7da7ad0d9486268cff26ec375aa64d35a9639a5828a03cdde92da756ddd
   blocking: false
