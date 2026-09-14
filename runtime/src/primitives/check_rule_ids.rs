@@ -81,6 +81,7 @@ pub fn run(args: &CheckRuleIdsArgs, repo: &Path) -> Result<CheckRuleIdsResult> {
         citations,
         missing,
         deprecated,
+        examined: args.rule_files.len(),
     })
 }
 
@@ -176,6 +177,51 @@ mod tests {
             result.missing
         );
         assert!(result.deprecated.is_empty());
+    }
+
+    /// `missing` is only meaningful against a denominator. With no
+    /// `--rule-file`, `known` is empty and **every** citation falls through to
+    /// `missing` — and `/{project}:analyze` treats `missing` as blocking, so an
+    /// unguarded invocation yields blocking findings against a correct spec.
+    /// `examined` is what tells those two states apart: the same `missing`
+    /// list over `examined: 0` means *nothing was checked against*, over
+    /// `examined: 1` it means *the ID really is absent*.
+    #[test]
+    fn examined_distinguishes_a_real_miss_from_an_empty_rule_file_list() {
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_path = tmp.path().join("spec.md");
+        std::fs::write(&spec_path, "# Demo\n\nReferences BE-AUTHN-001.\n").unwrap();
+        let rule_path = tmp.path().join("rules.md");
+        std::fs::write(&rule_path, "# Rules\n\n### BE-AUTHN-001\n\n> Hashed.\n").unwrap();
+
+        // Given nothing to check against: the citation reports missing, and
+        // `examined: 0` is the field that says why.
+        let blind = run(
+            &CheckRuleIdsArgs {
+                path: spec_path.to_string_lossy().into(),
+                rule_files: vec![],
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(blind.missing, vec!["BE-AUTHN-001".to_string()]);
+        assert_eq!(blind.examined, 0, "no rule file was read");
+
+        // Given the file that defines it: nothing missing, denominator 1.
+        let seeing = run(
+            &CheckRuleIdsArgs {
+                path: spec_path.to_string_lossy().into(),
+                rule_files: vec![rule_path.to_string_lossy().into()],
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(seeing.missing.is_empty());
+        assert_eq!(seeing.examined, 1);
+
+        // The point: without `examined` these two runs are distinguishable
+        // only by what the caller happens to remember passing.
+        assert_ne!(blind.examined, seeing.examined);
     }
 
     #[test]

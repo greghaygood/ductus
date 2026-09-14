@@ -2,6 +2,54 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.4] — 2026-09-13
+
+### Fixed
+
+- **`check-rule-ids` reported no denominator, so a real miss and an empty
+  rule-file list were byte-identical.** `run` builds its `known` map by
+  iterating `args.rule_files`, so an empty list means nothing is known and
+  **every** cited ID falls through to `missing` — and `/{project}:analyze`
+  step 5 treats `missing` as blocking. An unguarded invocation therefore
+  yielded blocking findings against a correct spec and invited someone to
+  "fix" it by deleting a valid citation. `CheckRuleIdsResult` now carries
+  `examined`, the count of rule files read: `examined: 0` says *nothing was
+  checked against*, while the same `missing` list over `examined: 11` says
+  the IDs really are absent. That is `QUAL-CLAIM-001` applied to the
+  primitive that enforces rule citations, and it brings it into line with
+  every sibling — `resolve-constitutions`, `derive-dependencies`,
+  `check-corpus-links` and `check-orphaned-references` all already reported
+  a denominator. The trigger was a shell trap rather than carelessness:
+  under zsh an unquoted parameter does not word-split, so repeated flags
+  built as a string arrive as one argument or as none.
+
+- **`ships_to_adopter` failed to match a candidate written with a trailing
+  slash, so a reference to a directory this project ships into an adopter's
+  checkout was reported as local breakage.** The helper built its
+  directory-prefix test as `format!("{candidate}/")`, so a candidate already
+  ending in `/` became `specs/rules//` and matched no destination. The
+  exclusion itself was never missing — only its normalization. The candidate
+  is now trimmed inside the helper, which is where it belongs: the two call
+  sites reach it differently, and only one was affected.
+  `criterion-path-existence` passes an already-trimmed span and was never
+  reachable by the defect; `check-orphaned-references` passes the raw target
+  and was the live path, reporting `AGENTS.md → specs/rules/` on every run
+  in this repo. It now reports none.
+
+- **Two `[services]` aliases whose `repo` differed only by a trailing `/` or
+  `.git` were one service to the reference harvester and two to the
+  duplicate detector, so an ambiguous registry resolved to a confidently
+  wrong status with no signal.** `derive-references` keys its registry on a
+  normalized URL, so the alphabetically-later alias silently overwrote the
+  earlier one; `Services::duplicate_repos` grouped by the raw string and
+  reported no duplicate, and its test covered only the byte-identical case.
+  A body link written against one spelling therefore resolved its status
+  from whichever checkout won, while `030`'s data-model calls a duplicate
+  repo a registry-validation finding and `/{project}:link` promises a
+  warning at registration. Both halves now share one identity function,
+  `schema::services::normalize_repo`, which is the actual fix — the defect
+  was two notions of "the same repo", not a missing check.
+
 ## [0.49.3] — 2026-09-13
 
 ### Fixed

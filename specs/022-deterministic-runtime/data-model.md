@@ -478,9 +478,16 @@ Result:
     { "rule-id": "SEC-AUTH-001", "found": true, "deprecated": false }
   ],
   "missing": [],
-  "deprecated": []
+  "deprecated": [],
+  "examined": 1
 }
 ```
+
+`examined` is the count of rule files read — the denominator `missing` is
+asserted against. Without it, *these IDs do not exist* and *I was given nothing
+to check against* are the same result: `known` is built by iterating
+`rule-files`, so an empty list makes every citation `missing`, and
+`/{project}:analyze` treats `missing` as blocking.
 
 ### `run-generator` — invoke a bash generator in `--dry-run`
 

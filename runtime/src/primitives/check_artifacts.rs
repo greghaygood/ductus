@@ -1409,7 +1409,17 @@ pub(crate) fn adopter_destinations(repo: &Path) -> BTreeSet<String> {
 /// `true` when `candidate` is one of the adopter destinations, or is a
 /// directory containing one. The directory case is what lets a criterion name
 /// `specs/templates/` and match the six per-file template rows beneath it.
+///
+/// The candidate is trailing-slash-normalized before the directory test. A
+/// candidate already written with the slash — which is how a criterion or an
+/// `AGENTS.md` line usually spells a directory, and exactly the spelling this
+/// doc comment's own example uses — otherwise built the prefix
+/// `specs/templates//` and matched nothing, so a reference to a shipped
+/// directory escaped the exclusion and was reported as local breakage.
+/// `is_path_like` trims the same way one file over; this is the second half of
+/// that normalization.
 pub(crate) fn ships_to_adopter(destinations: &BTreeSet<String>, candidate: &str) -> bool {
+    let candidate = candidate.trim_end_matches('/');
     if destinations.contains(candidate) {
         return true;
     }
@@ -2886,6 +2896,41 @@ mod tests {
              | `framework/templates/spec/spec.md` | `specs/templates/spec.md` |\n\
              | `framework/rules/security-backend.md` | `specs/rules/security-backend.md` |\n",
         );
+    }
+
+    /// The helper normalizes its own candidate rather than trusting the
+    /// caller to. Both call sites reach it differently:
+    /// `criterion-path-existence` passes an already-trimmed span, so it was
+    /// never affected; `check-orphaned-references` passes the raw target, and
+    /// a directory written with its trailing slash — which is how prose
+    /// normally spells one — built the prefix `specs/rules//` and matched
+    /// nothing, so a reference to a shipped directory was reported as local
+    /// breakage on every run.
+    #[test]
+    fn ships_to_adopter_matches_a_directory_written_with_a_trailing_slash() {
+        let destinations: BTreeSet<String> = [
+            "specs/rules/security-backend.md".to_string(),
+            "specs/templates/spec.md".to_string(),
+            ".ductus/constitution.md".to_string(),
+        ]
+        .into_iter()
+        .collect();
+
+        // The regression: both spellings of a shipped directory must match.
+        assert!(ships_to_adopter(&destinations, "specs/rules"));
+        assert!(
+            ships_to_adopter(&destinations, "specs/rules/"),
+            "a trailing slash must not defeat the directory prefix test"
+        );
+        assert!(ships_to_adopter(&destinations, "specs/templates/"));
+
+        // Exact destinations still match, with or without stray slashes.
+        assert!(ships_to_adopter(&destinations, ".ductus/constitution.md"));
+
+        // And a directory this repo does not ship into still does not match,
+        // so the normalization widened nothing.
+        assert!(!ships_to_adopter(&destinations, "specs/scenarios/"));
+        assert!(!ships_to_adopter(&destinations, "runtime/src/"));
     }
 
     #[test]

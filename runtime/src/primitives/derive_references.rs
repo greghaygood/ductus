@@ -77,7 +77,7 @@ use crate::primitives::spec_links::{
 use crate::primitives::{Result, inline_code_spans, read_text, write_atomic};
 use crate::schema::paths;
 use crate::schema::primitives::{DeriveReferencesArgs, DeriveReferencesResult};
-use crate::schema::services::Services;
+use crate::schema::services::{self, Services};
 
 /// One harvested reference: the resolved service alias (`None` for an
 /// unregistered repo) and the referenced `NNN-slug`.
@@ -207,19 +207,11 @@ fn load_registry(repo: &Path) -> BTreeMap<String, RegisteredService> {
         // → `None`, the permissive tier.
         let specs_root = checkout.map(|dir| paths::Paths::load(&dir).specs_root);
         registry.insert(
-            normalize_repo(&entry.repo),
+            services::normalize_repo(&entry.repo),
             RegisteredService { alias, specs_root },
         );
     }
     registry
-}
-
-/// Canonical repo identity: trailing slashes and a trailing `.git` removed,
-/// so `https://host/o/r/`, `https://host/o/r.git`, and `https://host/o/r`
-/// are one service.
-fn normalize_repo(repo: &str) -> String {
-    let trimmed = repo.trim_end_matches('/');
-    trimmed.strip_suffix(".git").unwrap_or(trimmed).to_string()
 }
 
 /// Drop a trailing `/blob/<ref>`, `/tree/<ref>`, or `/-/blob|tree/<ref>`
@@ -306,7 +298,7 @@ fn harvest(content: &str, registry: &BTreeMap<String, RegisteredService>) -> Vec
             let Some((offset, root_seg, slug)) = find_spec_segment(url) else {
                 continue;
             };
-            let repo = normalize_repo(strip_branch_ref(&url[..offset]));
+            let repo = services::normalize_repo(strip_branch_ref(&url[..offset]));
             let service = match registry.get(&repo) {
                 Some(entry) => {
                     // Reachable checkout: only that service's real root
@@ -472,7 +464,7 @@ mod tests {
             .iter()
             .map(|(repo, alias, root)| {
                 (
-                    normalize_repo(repo),
+                    services::normalize_repo(repo),
                     RegisteredService {
                         alias: (*alias).to_string(),
                         specs_root: root.map(str::to_string),
@@ -488,9 +480,12 @@ mod tests {
 
     #[test]
     fn normalizes_trailing_slash_and_git_suffix() {
-        assert_eq!(normalize_repo("https://h/o/r/"), "https://h/o/r");
-        assert_eq!(normalize_repo("https://h/o/r.git"), "https://h/o/r");
-        assert_eq!(normalize_repo("https://h/o/r"), "https://h/o/r");
+        assert_eq!(services::normalize_repo("https://h/o/r/"), "https://h/o/r");
+        assert_eq!(
+            services::normalize_repo("https://h/o/r.git"),
+            "https://h/o/r"
+        );
+        assert_eq!(services::normalize_repo("https://h/o/r"), "https://h/o/r");
     }
 
     #[test]

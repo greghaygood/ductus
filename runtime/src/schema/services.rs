@@ -37,6 +37,21 @@ pub struct ServiceEntry {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Services(pub BTreeMap<String, ServiceEntry>);
 
+/// Canonical repo identity: trailing slashes and a trailing `.git` removed, so
+/// `https://host/o/r/`, `https://host/o/r.git`, and `https://host/o/r` are one
+/// service.
+///
+/// Lives here, beside the registry it identifies, because both the reference
+/// harvester and [`Services::duplicate_repos`] must agree on what "the same
+/// repo" means. They did not: the harvester normalized and the duplicate
+/// detector compared raw strings, so a registry that was ambiguous to one was
+/// clean to the other.
+#[must_use]
+pub fn normalize_repo(repo: &str) -> String {
+    let trimmed = repo.trim_end_matches('/');
+    trimmed.strip_suffix(".git").unwrap_or(trimmed).to_string()
+}
+
 /// Wrapper for extracting just the `[services]` table from the project config.
 /// Unknown top-level tables are accepted and ignored.
 #[derive(Debug, Default, Deserialize)]
@@ -64,28 +79,32 @@ impl Services {
         self.0.is_empty()
     }
 
-    /// Aliases that share a `repo`, grouped by repo. A duplicate repo makes
-    /// link→service matching ambiguous, so callers surface it as a finding.
-    /// Returns one `(repo, aliases)` group per repo used by two or more
-    /// aliases; output is sorted for determinism.
+    /// Aliases that share a `repo`, grouped by normalized repo. A duplicate
+    /// repo makes link→service matching ambiguous, so callers surface it as a
+    /// finding. Returns one `(repo, aliases)` group per repo used by two or
+    /// more aliases; output is sorted for determinism.
+    ///
+    /// Grouping is by [`normalize_repo`] — the same identity the reference
+    /// harvester keys its registry on — not by the raw string. Two aliases
+    /// whose `repo` values differ only by a trailing `/` or `.git` are **one**
+    /// service to the harvester, which silently keeps whichever sorts last, and
+    /// were **two** to this detector, which therefore reported no duplicate.
+    /// An ambiguous registry then resolved to a confidently wrong status with
+    /// no signal anywhere. One identity function is what keeps the two halves
+    /// from disagreeing.
     #[must_use]
     pub fn duplicate_repos(&self) -> Vec<(String, Vec<String>)> {
-        let mut by_repo: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+        let mut by_repo: BTreeMap<String, Vec<&str>> = BTreeMap::new();
         for (alias, entry) in &self.0 {
             by_repo
-                .entry(entry.repo.as_str())
+                .entry(normalize_repo(&entry.repo))
                 .or_default()
                 .push(alias.as_str());
         }
         by_repo
             .into_iter()
             .filter(|(_, aliases)| aliases.len() > 1)
-            .map(|(repo, aliases)| {
-                (
-                    repo.to_string(),
-                    aliases.into_iter().map(String::from).collect(),
-                )
-            })
+            .map(|(repo, aliases)| (repo, aliases.into_iter().map(String::from).collect()))
             .collect()
     }
 }
@@ -160,6 +179,51 @@ path = "../frontend"
         let (repo, aliases) = &dups[0];
         assert_eq!(repo, "https://github.com/acme/api");
         assert_eq!(aliases, &vec!["api".to_string(), "backend".to_string()]);
+    }
+
+    /// Two aliases whose `repo` differs only by a trailing `/` or `.git` are
+    /// one service to the reference harvester, which keys its registry on the
+    /// normalized URL. Before this grouping normalized too, they were two
+    /// entries here and the registry reported no duplicate at all — so an
+    /// ambiguous registry resolved to whichever alias sorted last, with
+    /// nothing anywhere saying the choice had been made.
+    #[test]
+    fn duplicate_repos_normalizes_trailing_slash_and_git_suffix() {
+        let toml = r#"
+[services.api]
+repo = "https://github.com/acme/api"
+path = "../api"
+
+[services.mirror]
+repo = "https://github.com/acme/api/"
+path = "../mirror"
+
+[services.zzz]
+repo = "https://github.com/acme/api.git"
+path = "../zzz"
+"#;
+        let services = Services::from_toml_str(toml).unwrap();
+        let dups = services.duplicate_repos();
+        assert_eq!(dups.len(), 1, "all three spellings are one repo");
+        let (repo, aliases) = &dups[0];
+        assert_eq!(
+            repo, "https://github.com/acme/api",
+            "grouped under the normalized identity"
+        );
+        assert_eq!(
+            aliases,
+            &vec!["api".to_string(), "mirror".to_string(), "zzz".to_string()]
+        );
+    }
+
+    /// The normalizer is the registry's identity function and is shared with
+    /// the reference harvester; both halves must answer the same way.
+    #[test]
+    fn normalize_repo_collapses_slash_and_git_spellings() {
+        assert_eq!(normalize_repo("https://h/o/r/"), "https://h/o/r");
+        assert_eq!(normalize_repo("https://h/o/r.git"), "https://h/o/r");
+        assert_eq!(normalize_repo("https://h/o/r"), "https://h/o/r");
+        assert_eq!(normalize_repo("https://h/o/r.git/"), "https://h/o/r");
     }
 
     #[test]

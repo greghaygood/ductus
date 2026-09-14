@@ -1530,6 +1530,25 @@ pub struct CheckRuleIdsResult {
     pub missing: Vec<String>,
     /// Cited rule IDs that exist but are deprecated.
     pub deprecated: Vec<String>,
+    /// How many rule files were read to build the known-ID set — the
+    /// denominator `missing` is asserted against.
+    ///
+    /// Without it, *these IDs do not exist* and *I was given nothing to check
+    /// against* are the same output: `known` is built by iterating the
+    /// `rule-files` argument, so an empty list makes **every** citation
+    /// `missing`, and `/{project}:analyze` treats `missing` as blocking. That
+    /// yields blocking findings against a correct spec and invites someone to
+    /// "fix" it by deleting a valid citation. The trigger is a shell trap
+    /// rather than carelessness — under zsh an unquoted parameter does not
+    /// word-split, so repeated flags built as a string arrive as one argument
+    /// or as none at all.
+    ///
+    /// A zero here is the honest form of that state and is `QUAL-CLAIM-001`
+    /// applied to the primitive that enforces rule citations. Every sibling
+    /// already reported a denominator — `resolve-constitutions`,
+    /// `derive-dependencies`, `check-corpus-links` and
+    /// `check-orphaned-references` all carry `examined`; this one did not.
+    pub examined: usize,
 }
 
 // -- run-generator -----------------------------------------------------------
@@ -4654,9 +4673,11 @@ mod tests {
             }],
             missing: vec![],
             deprecated: vec![],
+            examined: 1,
         };
         let value: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(value["citations"][0]["rule-id"], "SEC-AUTH-001");
+        assert_eq!(value["examined"], 1, "the denominator is serialized");
         assert_eq!(round_trip(&result), result);
     }
 
