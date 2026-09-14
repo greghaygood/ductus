@@ -94,7 +94,7 @@ Full set (written by `framework/bootstrap/configure/opencode.md`):
     "edit": "allow",
     "webfetch": "allow",
     "websearch": "allow",
-    "bash": { "<allow patterns>": "allow", "rm -rf *": "deny", "*": "ask" },
+    "bash": { "*": "ask", "<allow patterns>": "allow", "rm -rf *": "deny" },
     "ductus*": "allow"
   }
 }
@@ -106,7 +106,12 @@ Notes (verified):
   dedicated `mcp` permission key; MCP tools are matched by tool-name patterns
   (`ductus*` / `ductus_*` both accepted with no `ConfigInvalidError`).
 - OpenCode evaluates the **last** matching rule, so `ductus*` (and other narrow
-  allows) must be ordered after any broad `"*"` rule.
+  allows) must be ordered after any broad `"*"` rule. **Key order in the block
+  above is part of the contract, not presentation**: inside `bash` the broad
+  `"*": "ask"` comes first, the specific allows next, and the denies last, which
+  is the order `framework/bootstrap/configure/opencode.md` writes. Trailing the
+  broad rule instead would shadow every allow *and* the `rm -rf` deny, leaving a
+  block that asks for everything and denies nothing.
 - Exact `bash` allow/deny patterns are finalized at implement against the
   published schema; the shape above is the contract.
 
