@@ -1,34 +1,37 @@
 ---
 title: "008-security-rules — spec"
-status: in-progress
+status: done
 dependencies: [007-govern-workflow]
 tags: [security, format]
 review:
-  last-run: 2026-09-14T00:37:41Z
-  reviewed-against: b3f322adb078fd208860ff00ea4ec1044b99452f
+  last-run: 2026-09-14T00:39:36Z
+  reviewed-against: 5b975cdf437bca79c530c893805560b7d94a5b4f
   must-violations: 0
   should-violations: 0
   low-confidence: 0
   examined: 7
-  scope: 20
+  scope: 21
   reviewed-digest:
     data-model.md: c56519ec36023061bd87268dfae78612cc2ebb239ae4ac34b2b0abd0838a869d
   blocking: false
 next-criterion: 29
 analyze:
-  last-run: 2026-09-13T20:24:59Z
-  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
+  last-run: 2026-09-14T00:40:26Z
+  analyzed-against: 5b975cdf437bca79c530c893805560b7d94a5b4f
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 0
+  unexamined: 6
   analyzed-digest:
-    data-model.md: aebe69cc552e30ad8013322f5c7b1387dd24a191184457bbd56c734648af6a9e
-    plan.md: e66b5581be935d59ee6755fc77c57b7a20c6be82798be406d321a611416ef639
-    research.md: 6075b5a18e90c71de2635ed54f32994038a336b725f56e9bd12ee0e692f6c359
-    review.md: 387b2b0c0c640932a0add45bd668cf8908e1455b0402ab6288e1147e6ebd2918
-    spec.md: 65f696198e865ace5d90ca52e033dda81f795138bd0802664622d5d08c1a647c
+    data-model.md: c56519ec36023061bd87268dfae78612cc2ebb239ae4ac34b2b0abd0838a869d
+    plan.md: d6d291aaa41647b464b8509328165329e82b7b7bd654e8fcf20a1b48375f2010
+    research.md: 524bff6c356d9f03f964e01a9666d243b70cb3ac502d379b1072fcfe20f058f1
+    review.md: 53551374e207fe6fed36570c524e57d32a9a281ce8d14ed247cbf4eb9f3a1df3
+    spec.md: 3f343632f87e1ea2e62a63226d35d179da30a17173aef67ed257e23fac4db319
     tasks.md: 67d9369e329b12e4a20d2636bafff006fb7935cedba8a501a6a766f54610bcef
+  unexamined-by-reason:
+    not-a-live-claim: 4
+    ships-to-adopter: 2
   blocking: false
 ---
 
