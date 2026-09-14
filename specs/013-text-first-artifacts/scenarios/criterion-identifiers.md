@@ -110,7 +110,7 @@ The fix is to stop deriving the maximum from a set that can shrink:
 - Deleting the top criterion lowers the body maximum but not `next-criterion`, so a retired label is never reissued.
 - The audit check is one comparison: `next-criterion` must exceed every label present in the body. A hand-edited value that was lowered is a defect, detectable in the artifact itself.
 
-A spec that has never been labelled has no `next-criterion`; the field appears when the backfill or the first labelling pass runs, and the schema treats its absence as "no labels assigned yet" rather than as a defect. Defining it belongs here because this spec owns the frontmatter schema (§Frontmatter Schema).
+A spec that has never been labelled has no `next-criterion`; the field appears when the backfill or the first labelling pass runs, and the schema treats its absence as "no labels assigned yet" rather than as a defect. Defining it belongs here because this spec introduced the frontmatter schema (`spec.md` §Frontmatter Schema); the schema's canonical home is the constitution's §text-first-artifacts.
 
 The rule-ID precedent does not transfer, as the question noted, and the reason is instructive: a rule is never deleted — a deprecated rule stays in its file carrying its ID — so the rule file *is* the high-water record. Criteria legitimately disappear when scope changes, so the record has to be explicit.
 
