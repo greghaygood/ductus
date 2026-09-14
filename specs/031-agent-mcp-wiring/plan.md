@@ -9,8 +9,9 @@ discovery is a `layout`-derived value, so non-Claude agents inherit a wiring tar
 never read. The fix splits MCP registration into a **per-agent descriptor** (see
 [data-model.md](data-model.md)) with two mechanisms — `write-file` (Claude, today's
 behavior) and `surface-instruction` (Auggie now; Antigravity pending verification) — and
-rewrites the three places that consume the old layout value (§Derived values, State-B
-step 1 / §MCP wiring, the Pre-flight abort message). The README's user-facing description
+rewrites the three places that consume the old layout value in
+`framework/bootstrap/ductus.md` — §Derived values; State-B step 1 / §MCP wiring; the
+Pre-flight abort message. The README's user-facing description
 is corrected to match. The Antigravity target stays verification-gated against the live
 `agy` CLI; everything else (the registry split + the confirmed Auggie fix + docs) lands
 independently of that verification.
@@ -24,8 +25,8 @@ verification task.
 
 ### Split MCP discovery off the `layout` axis
 
-Remove the `MCP-wiring file` row from the §Derived values **layout** table
-(`framework/bootstrap/ductus.md:71`) and add a per-agent **MCP registration** table keyed
+Remove the `MCP-wiring file` row from `framework/bootstrap/ductus.md` §Derived values
+(the **layout** table, line ~71) and add a per-agent **MCP registration** table keyed
 by registry `key`, carrying `target` / `scope` / `mechanism` (schema in
 [data-model.md](data-model.md)). Rationale: the original abstraction conflated two
 independent traits — command/rules-file layout (which Auggie genuinely shares with Claude)
@@ -43,8 +44,9 @@ The "Adding a new agent" note is updated to say so.
 - **`surface-instruction`** (`user-global` / `home-level`): ductus writes **no project MCP
   file**; instead the Pre-flight abort surfaces a copy-pasteable command and asks the user
   to run it and restart. Chosen over silently writing `~/.augment/` or `~/.gemini/` per the
-  spec's posture decision (no mutation of state outside the repo; satisfies §Design-Principles
-  "no dependence on human diligence" since it reduces to one paste).
+  spec's posture decision (no mutation of state outside the repo; it satisfies
+  `AGENTS.md` §Design Principles' "no dependence on human diligence" filter, since it
+  reduces to one paste).
 
 The **permission write** (State-B step 2 — `mcp:ductus:*` / `mcp(ductus/*)` into the project
 settings file) is **unchanged** for every agent: it targets the project-level settings file
@@ -55,7 +57,7 @@ each agent reads, independent of where the server itself is registered.
 Replace the single "Write the per-layout MCP-wiring file additively" step with a branch on
 the agent's `mechanism`:
 
-- `write-file` → write `target` additively (the existing five-case merge logic in §MCP
+- `write-file` → write `target` additively (the five-case merge in `framework/bootstrap/ductus.md` §MCP
   wiring: missing file, has `mcpServers`, already has `ductus`, no `mcpServers` key, malformed).
   Add the file to the pending-restart set; the abort lists files written (today's behavior).
 - `surface-instruction` → write nothing to the project for MCP; the abort instead carries
@@ -63,7 +65,7 @@ the agent's `mechanism`:
   permission write still happens and is still disclosed. The pending-restart set still
   fires (the user must restart after registering).
 
-§MCP wiring is rewritten from "the wiring file is the per-layout path…" to a per-mechanism
+`framework/bootstrap/ductus.md` §MCP wiring is rewritten from "the wiring file is the per-layout path…" to a per-mechanism
 description, and the abort message template (`ductus.md:182-184`) gains the
 surface-instruction variant.
 
@@ -135,6 +137,10 @@ behavior fix.
   each agent stores MCP config. Rejected alternatives: forcing all agents into a project
   file (doesn't work — they don't read it); silently writing the user's home files
   (violates the disclose-every-write posture and risks clobbering hand-maintained config).
+  The split is by `scope`, not by agent, which is why it survived `032-opencode-agent`
+  adding a second auto-wiring agent: OpenCode keeps MCP config in a committed root
+  `opencode.json`, so it is `write-file` alongside Claude, and the paste is what the two
+  home-level agents need.
 - **Antigravity verification deferred to implement, not resolved at spec time.** Accepted —
   it can't be settled from the web (docs vs. reproduced issue #60 conflict); it needs the
   live `agy` CLI. Risk: if no machine with `agy` is available, the Antigravity branch can't

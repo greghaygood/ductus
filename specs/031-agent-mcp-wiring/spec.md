@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [012-multi-agent-govern, 028-antigravity-agent, 029-bootstrap-runtime-autowire]
 review:
   last-run: 2026-08-28T01:24:04Z
@@ -28,6 +28,8 @@ analyze:
 ---
 
 # 031 — Agent MCP Wiring
+
+> **Signpost (post-032):** [032-opencode-agent](../032-opencode-agent/spec.md) adds a third `layout` value, `opencode`, and a fourth row to the per-agent MCP registration descriptor this spec introduced — the committed root `opencode.json` `mcp` block, `project-committed`, `write-file`. So §Motivation's `(claude-style | antigravity)` enumeration describes the registry as 031 found it, and OpenCode is a **second `write-file` agent alongside Claude** wherever this spec contrasts Claude with "the others". It does not share Claude's server-entry shape: OpenCode uses an `mcp` map of typed local-server entries, not the `mcpServers` map, so the "unchanged across all agents" framing in [data-model.md](data-model.md) is scoped to the three agents that existed here. The split this spec made — MCP discovery is per-agent, never layout-derived — is what let 032 add its row without touching the layout branches.
 
 ductus wires the optional `ductus` runtime as an MCP server so pipeline commands take
 the deterministic path. The wiring is correct for Claude but **wrong for Auggie** (a
@@ -139,7 +141,17 @@ the instruction for the user to run.
 - [x] AC7: ductus's completion / State-B message surfaces the correct registration step: for
       Auggie, `auggie mcp add ductus --command ductus --args "mcp"`; for Antigravity, the
       config-file edit + `/mcp` reload — shown when `ductus` is present but not yet
-      registered.
+      registered. **The command form was superseded** by `048-govern-acquired-runtime`,
+      which moved the
+      runtime into a ductus-owned store and stopped consulting `PATH`: a bare `ductus`
+      resolves nothing for an adopter, so the surfaced instruction now names the **absolute
+      store path** — `auggie mcp add ductus --command ~/.ductus/bin/ductus --args "mcp"`, and
+      for Antigravity a `~/.gemini/config/mcp_config.json` block running that same path.
+      Absolute rather than the repo-relative pointer because both configs are per-machine and
+      serve every project. The `runtime-store-path` entry in `framework/migrations.toml`
+      repoints adopters still carrying the bare form. The criterion is left as delivered
+      rather than rewritten, because the surfacing behavior it describes is what this spec
+      shipped; only the command inside it moved.
 - [x] AC8: If files already written into existing adopter projects (`.mcp.json` for Auggie,
       and `.agents/mcp_config.json` for Antigravity should verification retarget it) need
       cleanup, the change is registered in `framework/migrations.toml` so `/ductus`
@@ -153,9 +165,23 @@ commands themselves) and **permissions** (`.agents/settings.json`). Blog sources
 Antigravity skills at home-level `~/.gemini/skills`, which would mean the Antigravity
 command surface may not be discovered at all — a higher-stakes failure than the MCP gap,
 since there is no markdown-prose fallback when the command itself never loads. **This spec
-does not fix that.** It requires its own verification pass against the live `agy` CLI
-before any change, and is tracked as a separate follow-up (see the skills/settings Open
-Question below). Listing it here records the linkage without expanding this spec's surface.
+does not fix that.** Listing it here records the linkage without expanding this spec's
+surface.
+
+**That concern is settled, and it was already settled when this spec was written.** The
+verification this section called for had been performed by `028-antigravity-agent` and
+recorded in its body on 2026-06-09, eight days before 031 was created: a live `agy` session
+loaded a workspace skill from `<repo>/.agents/skills/probe-ws/SKILL.md` and reported its
+exact path, while identical probes under `.claude/commands/` and `.claude/skills/` did not
+load — which also refuted the agent's own self-report that Antigravity reads `.claude/`.
+The **dir form** `<name>/SKILL.md` is what loads; a flat `.agents/skills/<name>.md` did not.
+Permissions resolve the same way: `.agents/settings.json` is the workspace permissions file
+(global form `~/.gemini/antigravity-cli/settings.json`), not `.claude/settings.local.json`.
+So the project-local `.agents/` assumption holds for skills and settings and fails **only**
+for MCP — the narrow gap this spec closed, confirmed by the live-`agy` test in
+[scenarios/antigravity-mcp-verification.md](scenarios/antigravity-mcp-verification.md).
+Nothing is owed here: there is no follow-up spec to write and none is tracked, because the
+question it would have asked has an answer.
 
 ## Open Questions
 
@@ -182,8 +208,13 @@ Question below). Listing it here records the linkage without expanding this spec
   forward-compatible, schema-stable mechanism (Auggie owns writing its own
   `~/.augment/settings.json`), and the flag form is the most paste-safe (no embedded JSON
   for a shell to mangle, unlike `auggie mcp add-json`). `add-json` may be mentioned as an
-  alternative; a manual edit of `~/.augment/settings.json` is a fallback only for users
-  without the binary on PATH.
+  alternative. **The `--command` value has since changed** (see AC7): `048-govern-acquired-runtime`
+  made the runtime ductus-owned and `PATH` is never consulted, so the shipped instruction
+  names the absolute store path — `auggie mcp add ductus --command ~/.ductus/bin/ductus
+  --args "mcp"`. The subcommand, the flag form and the rationale for both are unchanged;
+  only the path is. The manual-edit fallback survives as a fallback for a user whose
+  `auggie` binary is unavailable, no longer "for users without the binary on PATH" — that
+  framing described a resolution ladder the runtime no longer has.
 - **Antigravity registration mechanism.** Antigravity has **no scriptable `agy mcp add`
   subcommand** — MCP management is the interactive in-prompt `/mcp` overlay (status,
   reload, logs). So the instruction ductus surfaces for Antigravity is a **config-file
@@ -211,6 +242,10 @@ Question below). Listing it here records the linkage without expanding this spec
   gracefully) are independent surfaces with different failure modes; coupling them would
   block 031's confirmed Auggie fix on an unrelated investigation, and the constitution
   favors narrow single-concern specs. The shared live-`agy`-CLI verification session is a
-  convenience, not a reason to widen scope — whoever verifies 031's Antigravity MCP target
-  can check the skills/settings paths in the same sitting and feed the result into the new
-  spec. The Out of Scope section records the linkage.
+  convenience, not a reason to widen scope. The Out of Scope section records the linkage.
+  **No separate spec is owed**: the skills/settings half was already verified by
+  `028-antigravity-agent` before 031 was written — workspace `.agents/skills/<name>/SKILL.md`
+  loads, `.agents/settings.json` is the permissions file — so the decision to split the two
+  surfaces stands and the verification it deferred has an answer. See Out of Scope for the
+  evidence. The two surfaces did turn out to behave differently, which is the reason the
+  split was right: `.agents/` is read for skills and settings and ignored for MCP.
