@@ -51,8 +51,8 @@ Separate from the lightweight-track sweep, the constitution carries eight refere
 | Line | Section | Current text | Rewrite |
 | --- | --- | --- | --- |
 | 99 | §spec-lifecycle | `/elaborate` adds a scenario | `/amend` adds a scenario |
-| 108 | §three-cycles (Brownfield) | `/capture` (sketch spec) → … → `/elaborate` to add a scenario | `/specify` (sketch spec) → … → `/amend` to add a scenario |
-| 109 | §three-cycles (Reopen) | `/elaborate` adds a scenario | `/amend` adds a scenario |
+| 108 | §spec-lifecycle (The three cycles — Brownfield) | `/capture` (sketch spec) → … → `/elaborate` to add a scenario | `/specify` (sketch spec) → … → `/amend` to add a scenario |
+| 109 | §spec-lifecycle (The three cycles — Reopen) | `/elaborate` adds a scenario | `/amend` adds a scenario |
 | 260 | §scenario-promotion | `/specify` (for new behavior) or `/capture` (for another existing feature) | `/specify` (covers both) |
 | 335 | §brownfield-process intro | The `/capture` command initializes a skeleton spec | The `/specify` command initializes a skeleton spec; sparse acceptance criteria are valid for brownfield use |
 | 339 | §brownfield-process Capture phase | `/capture` drafts a skeleton spec | `/specify` drafts a skeleton spec |
@@ -146,7 +146,7 @@ The acceptance criteria are concrete enough that a `grep`-based pass against the
 | `runtime/tests/` | Create/Modify | Fixture tests for both primitives. |
 | `framework/runtime-tools.txt` | Modify | Add `gov-rt:create-scenario` and `gov-rt:append-task`. |
 | `framework/templates/spec/spec-and-plan.md` | Delete | Lightweight track template no longer used. |
-| `framework/constitution.md` | Modify | Delete §lightweight-track; prune `spec-and-plan.md` references; rewrite §brownfield-process step 1; sweep eight deleted-verb references (§spec-lifecycle, §three-cycles, §scenario-promotion, §brownfield-process intro/Capture/Inbox, §runtime-boundary). |
+| `framework/constitution.md` | Modify | Delete §lightweight-track; prune `spec-and-plan.md` references; rewrite §brownfield-process step 1; sweep eight deleted-verb references (§spec-lifecycle, its three-cycles subsection, §scenario-promotion, §brownfield-process intro/Capture/Inbox, §runtime-boundary). |
 | `framework/commands/specify.md` | Modify | Drop qualifying questions and `spec-and-plan.md` branch; always use `spec.md`. |
 | `framework/commands/amend.md` | Modify | Add classifier heuristic, scenario branch, both back-edges, `flip` override. |
 | `framework/commands/capture.md` | Delete | Consolidated into `/specify`. |
