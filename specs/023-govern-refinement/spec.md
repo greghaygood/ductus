@@ -2,11 +2,20 @@
 status: in-progress
 dependencies: [022-deterministic-runtime]
 review:
-  last-run: 2026-08-30T23:02:22Z
-  reviewed-against: 5b9be37caf1da07caf621f95485ea45849ff5ff1
+  last-run: 2026-09-14T21:26:57Z
+  reviewed-against: fc8205efbff00731d8ce4eb5713be9c16e2b3292
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 4
+  scope: 42
+  reviewed-digest:
+    scenarios/configure-dedup-permissions.md: 61f154523cf65426a4b56fdc38662e8d7f822bace8418ae30952322d7e627036
+    scenarios/configure-inert-write-path-entries.md: fb2b3383713428e9006dff42edbb89a6bab99995f612161eefee69412c757f9d
+    scenarios/configure-permission-pattern-safety.md: 6c6f71741c7fdfcd96b9f6017b649eb6396dd0edc6b90944372f3078d12b18f0
+    scenarios/configure-retires-formerly-canonical-entries.md: 0abbef1ab46fd11f9b428fb0436fb9f87da6dc10c8d3759ad8701b909d3b0311
+    scenarios/extend-existing-scenario-task.md: 61622769bcd38f91e2e6cf8aab86dab3f408df20beabdc747cbde2dbba7c36bf
+    scenarios/living-specs.md: 3c88dc74f397eefbe50213c92698c6a1093747158f651f6f7a8b215a2b556c69
   blocking: false
 next-criterion: 41
 analyze:
