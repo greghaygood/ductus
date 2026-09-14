@@ -41,7 +41,7 @@ which the procedure never calls either way.
 The justification is the one that already makes namespace-scoped detection
 correct. A retired-namespace server is a *different runtime at a different
 version*, and its primitives resolve paths against the directory layout of the
-release that shipped them — a pre-`.ductus/` binary resolves `.ductus/` and then
+release that shipped them — a pre-`.ductus/` binary resolves `.govern/` and then
 the legacy root, neither of which a converged project has.
 
 How that goes wrong differs by state, which is why the rule is stated once for

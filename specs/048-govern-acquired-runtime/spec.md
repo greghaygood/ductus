@@ -19,23 +19,26 @@ review:
   blocking: false
 next-criterion: 25
 analyze:
-  last-run: 2026-09-13T00:18:37Z
-  analyzed-against: caae5ad17950993ee8f8d9fcd220e87fe08e0aeb
+  last-run: 2026-09-14T23:11:17Z
+  analyzed-against: 9188d8654c0af69fa48f8247917c59795f257bac
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 0
+  unexamined: 7
   analyzed-digest:
-    data-model.md: d814fe5de4ee2c1b3bac6aa7d6099f5b451d507839d16a3baed0fdd89c2bd683
-    plan.md: ad0e019905a424d1c2d7f992b676f501605424455a513f66201017a7bb768413
-    review.md: 288685d7e91172bf629779102321e438746285a8006a2e2515f339d4f8ccf1f7
-    scenarios/pin-is-readable-when-acquisition-needs-it.md: dfd7147bf2cbc495c9a87ba2d3cf7deef183aaf0218e581090bba1c540ea941f
+    data-model.md: ae0c2b52b863b272d8ab2fbab9b131ec5f7adf55f394bb8d8986488b51bba3c6
+    plan.md: cbadd9ee50ddab1c9b7cf5caa0f3f1ac1b6433f192454e6fe74a749eb59596a2
+    review.md: 33e015bb0a42de32274bf6d9861dfc22f4fecd111ef28c7e5af8a89ce655a4a2
+    scenarios/pin-is-readable-when-acquisition-needs-it.md: 561c549b449523fc6723bd5adb2a1a4b9c24b8f7d665aec2e988efcc08b3d158
     scenarios/release-halves-publish-together.md: 0448ad2cb2df94e5d6b97ce4660345e26619af68d5f05da29d8b8dd8a011306f
-    scenarios/retired-namespace-tools-are-off-limits.md: 0c5984d011f5d35b3685f05bc083e01d9aaa7bac4a31c0949e1d5bcd1f00627b
-    scenarios/state-a-version-checks-the-pin.md: f03415186e323676c085053cb8469811a1028da483d805e00141d220a8c77197
+    scenarios/retired-namespace-tools-are-off-limits.md: 97cbaa4da027351049f38a7ecc7764cbfc43de5f5056090818602569c23dcf39
+    scenarios/state-a-version-checks-the-pin.md: 40a4cbaf5dab4b5ee1127c4e808f70bbd08433415e952011ceb7c419a5e24e23
     scenarios/state-b-continues-in-session.md: b4d9b7da7ad0d9486268cff26ec375aa64d35a9639a5828a03cdde92da756ddd
-    spec.md: 82ef558574c5be8ffdc7d90689a12964a4bd4c1dd32bbb87999c9d1292445bac
-    tasks.md: e64321786b23fe2786e8a50761bf195f337ca3eaec0b0e084800200eec65b351
+    spec.md: 3baf48c026f74eb0f171b9fcdee7d407eea377dd03418a2774db7b8567000091
+    tasks.md: 18351012539afba44c73fdd3ae5c8cbc6c543c44fbff4cf07c27ca0c879ddad6
+  unexamined-by-reason:
+    not-a-live-claim: 5
+    root-absent: 2
   blocking: false
 ---
 
