@@ -12,6 +12,17 @@ The `validate` command detects issues like unchecked checkboxes on completed ite
 
 ## Behavior
 
+> **Superseded by `017-derive-dont-ask`.** The mode below shipped on 2026-04-06 and
+> 017 *"remove[d] --fix mode entirely (and the flag from argument-hint)"* in its own
+> commit message. A `--fix` flag exists again today, on `/{project}:analyze`, but it is
+> a different flag: `framework/commands/analyze.md` §Scope Boundaries states the command
+> *"never mutates an artifact it audits"*, and the flag's only writes are guarded
+> `done → in-progress` reverts on two triggers — a `review:` block drifted to blocking,
+> and unresolved scenario open questions — each emitting a non-silent notice. No checkbox
+> is auto-corrected and no lint run follows a fix. The section below records what 000
+> delivered. The `--all` flag is the part that survived: it still scans every feature
+> directory under the configured spec root.
+
 - The `validate` command accepts an optional `--fix` argument (or equivalent signal in the command args).
 - In fix mode, after running all checks, validate automatically corrects fixable issues instead of just reporting them.
 - Fixable issues:

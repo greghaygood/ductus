@@ -4,11 +4,11 @@ title: "000-slash-commands — plan"
 
 # 000 — Slash Command Templates Plan
 
-> **Note:** this plan was written against the original layout. Command sources now live in `framework/commands/`; several command names were later renamed (`about → help`, `setup → configure`, `next` retired). See `spec.md` for the full rename history.
+> **Note:** this plan was written against the original layout. Command sources now live in `framework/commands/`; several command names were later renamed (`about → help`, `setup → configure`, `validate → analyze`, `next` retired). See `spec.md` for the full rename history.
 
 ## Overview
 
-Create ten generic slash command `.md` files in a `commands/` directory at the `ductus` root. Each command is derived from anvil's working implementation but generalized: anvil-specific references are replaced with `{project}` placeholders, and anvil-specific logic (Go code style, module patterns) is removed in favor of references to the constitution and AGENTS.md.
+Create ten generic slash command `.md` files in a `commands/` directory at the `ductus` root. Each command is derived from the working implementation in a prior adopter project — a Go backend service that had built its own slash commands — but generalized: that project's own references are replaced with `{project}` placeholders, and its language-specific logic (Go code style, module patterns) is removed in favor of references to the constitution and AGENTS.md.
 
 ## Technical Decisions
 
@@ -28,14 +28,14 @@ Every command uses literal `{project}` as the placeholder. This appears in:
 
 No other placeholders are needed. The bootstrap command (spec 003) handles find-and-replace during project scaffolding.
 
-### Deriving from anvil
+### Deriving from the source project
 
-Each command is based on the corresponding anvil command with these transformations:
+Each command is based on the corresponding command in that project with these transformations:
 
-- Replace `anvil` with `{project}` in all references
-- Remove anvil-specific file paths (`shared/`, `modules/`, `docker-compose.yml`)
+- Replace the project's own name with `{project}` in all references
+- Remove its project-specific file paths (`shared/`, `modules/`, `docker-compose.yml`)
 - Remove Go-specific conventions (Querier interface, pgx patterns)
-- Replace anvil-specific template paths (`specs/templates/spec-template.md`) with generic `specs/templates/spec.md`
+- Replace its project-specific template paths (`specs/templates/spec-template.md`) with generic `specs/templates/spec.md`
 - Keep constitution references (pipeline gates, readiness check, spec lifecycle)
 - Keep AGENTS.md references (conventions, boundaries) as generic pointers
 
@@ -78,7 +78,7 @@ Rejected. Each command needs enough instruction detail that a single file would 
 
 ### Considered: using a different placeholder syntax (e.g., `{{project}}`, `$PROJECT`)
 
-Rejected. `{project}` is simple, readable in markdown, and unlikely to conflict with other content. Curly braces are not used in the constitution or template content.
+Rejected. `{project}` is simple and readable in markdown. The decision rested on a second premise as well — that curly braces are not used in the constitution or template content — and that one no longer holds: the brace form became the corpus-wide placeholder convention, so the constitution now carries 57 of them across nine names and `framework/templates/spec/spec.md` six. The decision stands on that consistency rather than on the scarcity it was argued from.
 
 ## Open Questions Resolved
 

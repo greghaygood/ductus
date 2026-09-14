@@ -32,7 +32,7 @@ No primitive change required — both changes are in the rendering procedure; th
 ## Edge Cases
 
 - **Empty `dependencies` array** → cell shows `—`, matching the existing convention used by Data-model and similar columns.
-- **`dependencies` entry whose target spec doesn't exist** (drift) → cell shows the NNN prefix as-recorded; `validate` catches dangling refs.
+- **`dependencies` entry whose target spec doesn't exist** (drift) → cell shows the NNN prefix as-recorded; `/{project}:analyze` catches dangling refs.
 - **No session target set** → no row is bolded; the table renders normally with no marker. The "No session target" preamble line above the table is unchanged.
 - **Session target names a slug not in the dashboard inventory** (e.g., stale session file pointing at a deleted feature) → no row matches, so no row is bolded. The caller continues to surface the stale target through the preamble line as today; the table render is silent about it.
 

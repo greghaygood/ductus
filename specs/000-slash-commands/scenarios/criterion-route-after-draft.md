@@ -27,7 +27,13 @@ The direct edit is legitimate on a non-`done` spec (no back-edge is owed), so th
 
 ## Edge Cases
 
-- **The criterion duplicates an existing one** — a normalized-whitespace, case-insensitive comparison is the same dedup shape `append-question` applies to `## Open Questions
+- **The criterion duplicates an existing one** — a normalized-whitespace, case-insensitive comparison is the same dedup shape `append-question` applies to `## Open Questions`; a match reports the existing entry rather than appending a near-twin.
+- **The spec is `draft`** — `/{project}:clarify` already owns this and the route should not compete with it.
+- **The spec is `done`** — the route takes the `done → in-progress` back-edge; the second Resolved Question below settled that, and this bullet said "part of the open question" while the question was still open.
+- **A missing `## Acceptance Criteria` section** — created in template order, the way `append-question` creates a missing `## Open Questions` section, rather than refusing.
+- **The criterion describes behavior with no implementation yet** — that is the normal case on a reopened spec, and is exactly why it lands unchecked.
+
+## Open Questions
 
 *None — see Resolved Questions.*
 
