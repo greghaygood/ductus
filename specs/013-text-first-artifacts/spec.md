@@ -1,19 +1,19 @@
 ---
 title: "013-text-first-artifacts — spec"
-status: in-progress
+status: done
 dependencies: [000-slash-commands, 007-govern-workflow, 012-multi-agent-govern]
 tags: [format, migration, pipeline]
 review:
-  last-run: 2026-09-14T17:37:40Z
-  reviewed-against: c07f7df57cafa19572076874b9a2785d7b598d0c
+  last-run: 2026-09-14T17:38:50Z
+  reviewed-against: 7592ef99105fe1590bf69f18663256a810aaedb2
   must-violations: 0
   should-violations: 0
   low-confidence: 0
   examined: 4
-  scope: 37
+  scope: 40
   reviewed-digest:
     data-model.md: 468afe039e4b5a3dcf90022109af22bab18b63ed7508aca3cd00cab1a55029b3
-    scenarios/criterion-identifiers.md: c0f12a2865306361f4a1060c8f85a02c5195a49476bc1c733f2730ace4929658
+    scenarios/criterion-identifiers.md: 2a6b871e588d7abb6f4ba6bb5a38e81562e30b82c611d2e3f36ba72da86be931
     scenarios/past-tense-motivation-convention.md: 04b9583c6f2f4d56efa0cd7b544afd9811bd7925121ede083fbed9b6f2cdc1d4
   blocking: false
 next-criterion: 19
