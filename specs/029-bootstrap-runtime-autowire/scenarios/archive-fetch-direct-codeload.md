@@ -6,11 +6,11 @@ section: "Follow-on scenarios"
 
 ## Context
 
-029's State B wires ductus and the next session is expected to run the deterministic primitive path. When the next session instead walks the markdown reference path (a host model that does not take the deterministic path, or any State-C run), the §Archive fetch step issues `curl -fsSL https://github.com/stonean/ductus/archive/refs/heads/main.tar.gz`. That URL **302-redirects to `codeload.github.com`**. Surfaced 2026-06-11 during Antigravity testing: the archive `curl` prompted for permission even though the bootstrap permission seed pre-grants `curl` (`command(curl)` for antigravity, `Bash(curl *)` for Claude, the `^curl` regex matcher for Auggie). The grant matched the original host; the redirect landed the command on a new host (`codeload.github.com`) mid-flight, and the host re-prompted. The self-update `curl` against `raw.githubusercontent.com` (no redirect) was covered by the same seed and did **not** prompt — isolating the redirect as the cause.
+029's State B wires ductus and the next session is expected to run the deterministic primitive path. When the next session instead walks the markdown reference path (a host model that does not take the deterministic path, or any State-C run), the §Archive fetch and extract step in `framework/bootstrap/ductus.md` issues `curl -fsSL https://github.com/stonean/ductus/archive/refs/heads/main.tar.gz`. That URL **302-redirects to `codeload.github.com`**. Surfaced 2026-06-11 during Antigravity testing: the archive `curl` prompted for permission even though the bootstrap permission seed pre-grants `curl` (`command(curl)` for antigravity, `Bash(curl *)` for Claude, the `^curl` regex matcher for Auggie). The grant matched the original host; the redirect landed the command on a new host (`codeload.github.com`) mid-flight, and the host re-prompted. The self-update `curl` against `raw.githubusercontent.com` (no redirect) was covered by the same seed and did **not** prompt — isolating the redirect as the cause.
 
 ## Behavior
 
-The §Archive fetch step fetches the **direct `codeload.github.com` endpoint** — the redirect target — instead of the `github.com/.../archive/...` form:
+The §Archive fetch and extract step in `framework/bootstrap/ductus.md` fetches the **direct `codeload.github.com` endpoint** — the redirect target — instead of the `github.com/.../archive/...` form:
 
 ```text
 curl -fsSL https://codeload.github.com/stonean/ductus/tar.gz/refs/heads/main \
@@ -23,7 +23,7 @@ The direct URL returns the archive with no redirect (HTTP 200, zero redirects), 
 
 - **Deterministic (State A) path.** Unaffected — the runtime's `fetch-archive` primitive uses its own HTTP client (which follows redirects without a permission prompt) and is covered by `mcp(ductus/*)`. This scenario changes only the markdown-reference `curl`.
 - **codeload outage / URL-format change.** Codeload is GitHub's archive backend; the `github.com/.../archive/...` form is a thin redirect onto it, so the direct form is no less stable. A failure still trips the existing fetch-or-extract abort with its error message.
-- **sha256 / archive-url derived value.** The markdown path performs no sha256 verification of the archive (none today), so changing the URL has no checksum impact. The abstract `archive-url` walker-context value (§Instructions step 1) is unchanged in meaning.
+- **sha256 / archive-url derived value.** The markdown path performs no sha256 verification of the archive (none today), so changing the URL has no checksum impact. The abstract `archive-url` walker-context value (`framework/bootstrap/ductus.md` §Instructions step 1) is unchanged in meaning.
 
 ## Open Questions
 

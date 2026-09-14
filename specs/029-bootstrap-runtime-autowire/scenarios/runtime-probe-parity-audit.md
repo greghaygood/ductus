@@ -26,10 +26,10 @@ The cascade when it lands:
 
 ## Edge Cases
 
-- **Per-agent grammar differs.** The probe is spelled `Bash(command -v *)` for claude, `"^command -v "` for auggie, and `command(which)` for antigravity (the resolved antigravity form — *not* `command(command -v)`). The assertion compares each agent's probe literal against the same agent's seed and configure file in that agent's native form — it never cross-compares grammars.
+- **Per-agent grammar differs.** The probe is spelled `Bash(command -v *)` for claude, `"^command -v "` for auggie, `command(which)` for antigravity (the resolved antigravity form — *not* `command(command -v)`), and `"command -v *": "allow"` for opencode (the `bash` permission-map entry, added with the agent by `032-opencode-agent`). The assertion compares each agent's probe literal against the same agent's seed and configure file in that agent's native form — it never cross-compares grammars.
 - **Bidirectional on the probe.** Parity is checked both ways: the probe missing from the configure file (but seeded) and the probe missing from the seed (but in the configure file) are both findings. Symmetric absence (in neither) is not — deliberately removing the probe from both artifacts is a legitimate change, not drift.
 - **Probe-scoped, not seed-scoped.** The seed and configure sets legitimately diverge (bootstrap-only entries like `tar`/`mktemp` live only in the seed; pipeline entries live only in the configure file), so the family guards only the probe — the one permission 029 wired into both — rather than asserting the whole seed is mirrored.
-- **New agent rows.** The script hard-codes the three current agents and their probe literals (matching the concreteness of the sibling `installer-registry-parity.sh`); a fourth agent that wires the probe is one added `check_agent` line — the script header calls this out.
+- **New agent rows.** The script hard-codes the current agents and their probe literals (matching the concreteness of the sibling `installer-registry-parity.sh`); another agent that wires the probe is one added `check_agent` line — the script header calls this out. That is exactly how the fourth arrived: `032-opencode-agent` added opencode as one more `check_agent` line, so the registry and this family stayed in step without touching the comparison itself. Read the count off the `check_agent` calls rather than from this bullet — a number written here goes stale the next time an agent lands, and nothing checks it.
 
 ## Open Questions
 

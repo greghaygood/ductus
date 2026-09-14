@@ -33,7 +33,7 @@
 #   antigravity  command(which)
 #   opencode     "command -v *": "allow"  (the bash permission-map entry)
 #
-# Adding a fourth agent that wires the probe is one extra check_agent line below.
+# Adding another agent that wires the probe is one extra check_agent line below.
 # macOS bash 3.2: no associative arrays, no mapfile.
 
 set -uo pipefail

@@ -184,7 +184,7 @@ Resolve whether the ductus runtime is live in this session and, when it is not, 
 
 #### Detection mechanism
 
-- **Tool-inventory introspection (State A).** Inspect your own available-tool inventory for any `ductus`-namespaced MCP tool — `mcp__ductus__*` on Claude Code, `mcp:ductus:*` on Auggie and Antigravity — counting deferred or lazily-loaded tool names as present (a host that lists tool names before exposing their schemas still has the runtime registered). Any match ⇒ **State A**. This needs no shell and no permission; you always know your own tools.
+- **Tool-inventory introspection (State A).** Inspect your own available-tool inventory for any `ductus`-namespaced MCP tool — `mcp__ductus__*` on Claude Code, `mcp:ductus:*` on Auggie and Antigravity, a `ductus*`-prefixed `<server>_<tool>` name on OpenCode — counting deferred or lazily-loaded tool names as present (a host that lists tool names before exposing their schemas still has the runtime registered). Any match ⇒ **State A**. This needs no shell and no permission; you always know your own tools.
 - **Store probe (State B).** Only when introspection finds no `ductus` tool. This is a **filesystem check for the ductus-owned store**, not a `PATH` lookup: test whether `{store-path}` exists and executes. `PATH` is not consulted — an adopter's `ductus` on `PATH` is ignored entirely, not consulted, not warned about, not removed. The probe is pre-authorized by the **Permission Setup** seed. A probe that cannot run classifies the run as State B, which acquires; acquisition is idempotent, so a false negative costs a version comparison, not a redundant download.
 
 #### Namespace scope
@@ -220,8 +220,8 @@ A live-but-stale runtime fails in the direction hardest to attribute. It is miss
 
 State A is a **binding execution contract, not a preference.** Detecting the runtime and then walking the prose `curl`/`tar`/`python3` path anyway is the exact failure 029 exists to prevent — it spends the markdown path's tokens despite a cheaper path being live, and it is what makes the State-B wire-and-restart pointless. For the rest of this run:
 
-- **Every step that names a backticked primitive** — a bare name (`fetch-archive`, `extract-archive`, `apply-manifest`, `merge-managed-block`, `enforce-manifest`, `merge-permissions`, `run-generator`, …) that matches a `ductus` tool in your inventory — **MUST be performed by calling that MCP tool** (`mcp__ductus__<primitive>` on Claude, `mcp:ductus:<primitive>` on Auggie/antigravity; mapping per §Instructions).
-- **The shell commands shown under those steps** (`curl`, `tar -xzf`, `python3`, `awk`, byte-compares, hand-authored scaffold loops) are the **State-B/C fallback specification.** In State A they document the contract each tool fulfills; they are **not instructions to execute.** Do not run them. If you are about to run `curl`/`tar`/`python3` for a step that names a primitive, stop — that is the fallback path leaking into a State-A run; call the tool instead.
+- **Every step that names a backticked primitive** — a bare name (`fetch-archive`, `extract-archive`, `apply-manifest`, `merge-managed-block`, `enforce-manifest`, `merge-permissions`, `run-generator`, …) that matches a `ductus` tool in your inventory — **MUST be performed by calling that MCP tool** (`mcp__ductus__<primitive>` on Claude, `mcp:ductus:<primitive>` on Auggie/antigravity, a `ductus*`-prefixed name on OpenCode; mapping per §Instructions).
+- **The shell commands shown under those steps** (`curl`, `tar -xzf`, `python3`, `awk`, byte-compares, hand-authored scaffold loops) are the **State-B fallback specification.** In State A they document the contract each tool fulfills; they are **not instructions to execute.** Do not run them. If you are about to run `curl`/`tar`/`python3` for a step that names a primitive, stop — that is the fallback path leaking into a State-A run; call the tool instead.
 - **Steps with no backticked primitive run as shown in every state** — the per-language `.gitignore` `curl` against `github.com/github/gitignore`, `git config core.hooksPath`, `chmod`, the git repo / tracked-file checks, and the §Collect Project Inputs prompts have no tool equivalent.
 - **If a primitive call errors** — e.g., a too-old wired `ductus` surfaces a parse error per `spec 022` §Versioning enforcement — fall back to **that step's** shell specification for that one step and continue; do not abandon the deterministic path for the whole run.
 
@@ -1107,7 +1107,7 @@ When acquisition was attempted and **failed** (the run halts, so this line accom
 
 > Tip: acquisition failed, so this run halted before the deterministic path was available — there is no markdown-only mode to degrade into. Recover either by placing the pinned binary into the store by hand (the halt message above names the store path and the release URL) or by setting `[runtime] path` in `.ductus/config.toml` to a binary you supply, then re-run `/ductus`. Your `PATH` is not consulted. See [The runtime](https://github.com/stonean/ductus#the-runtime) in the ductus README.
 
-Omit the tip in **State A** (the runtime is already live) and **State B** (the run aborted in pre-flight before this output). State B's file disclosure rides the **Pre-flight abort** message, not this output.
+Omit the tip in **State A** (the runtime is already live) and in a successful **State B** (the runtime was acquired and wired, so there is nothing to tip about). State B's file disclosure rides the **Closing restart**, not this output.
 
 ### Pinned `ductus.md` advisory
 
