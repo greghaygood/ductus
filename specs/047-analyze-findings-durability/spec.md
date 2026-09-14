@@ -2,11 +2,16 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-07T16:31:05Z
-  reviewed-against: 72f8483eee9c38ab64100cdbd76468052f8575ed
+  last-run: 2026-09-14T01:14:10Z
+  reviewed-against: 1024110d4661812a811ceb51c5c51e09c75516ef
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 7
+  scope: 8
+  reviewed-digest:
+    scenarios/analyze-record-freshness.md: b79ba39909899e6f8662e8882e04b54e66c04cd17febae782af1443cdd05091d
+    scenarios/analyze-run-durability.md: 287dacba26b62b8f72ba377b8f07f92063cdd28a351ede9568035dd0fd811046
   blocking: false
 next-criterion: 16
 analyze:
