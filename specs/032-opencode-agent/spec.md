@@ -2,11 +2,15 @@
 status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 029-bootstrap-runtime-autowire, 031-agent-mcp-wiring]
 review:
-  last-run: 2026-06-20T16:55:57Z
-  reviewed-against: a65c021bbcdf3bdd96dc970b486d51b454ddac85
+  last-run: 2026-09-14T00:18:43Z
+  reviewed-against: a5ca20970476a50563d11f811fffee2a079696a5
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 9
+  scope: 11
+  reviewed-digest:
+    data-model.md: fd06e79cc0438429230c59e89544003f2f2553ab654d13310a760be0b3769d18
   blocking: false
 next-criterion: 12
 analyze:
