@@ -18,20 +18,20 @@ review:
   blocking: false
 next-criterion: 19
 analyze:
-  last-run: 2026-09-13T20:24:59Z
-  analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
+  last-run: 2026-09-14T17:39:06Z
+  analyzed-against: ce545313b9e128e36a8fa24828ff29afcc0c4804
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
   analyzed-digest:
-    data-model.md: e8af8a3a7c3a40f32e66aa888ec7e7ef6309d9bfabdf9953dcdc371f73144b69
+    data-model.md: 468afe039e4b5a3dcf90022109af22bab18b63ed7508aca3cd00cab1a55029b3
     plan.md: 777838e0f2abdd5896ba893da6350e3819e6d10c6ce37e3c851e5164af332836
-    review.md: 5a85801c44db8988da45f8171fc2e1aa0ad4b94e1b5e06fc7a6dfec721fa7f48
-    scenarios/criterion-identifiers.md: c0f12a2865306361f4a1060c8f85a02c5195a49476bc1c733f2730ace4929658
+    review.md: 48e8d0b23d4b59f91fc9ad41057047df917b98210aeb46d4c780d0ecc758062e
+    scenarios/criterion-identifiers.md: 2a6b871e588d7abb6f4ba6bb5a38e81562e30b82c611d2e3f36ba72da86be931
     scenarios/past-tense-motivation-convention.md: 04b9583c6f2f4d56efa0cd7b544afd9811bd7925121ede083fbed9b6f2cdc1d4
-    spec.md: d0620ddb696d67668d615ad735fe22863178cb4825520933378b9133a9746525
-    tasks.md: 5def5f5666ea746ae878ef486fba46ebd3df8c6946392c1491856b312e25f02e
+    spec.md: b6b0107695367c9da1a35f661b942437d8148c484154ab5aac8d3fabcfecded3
+    tasks.md: 561d69bebeb9657bc10a67451dbff669c4570d5aa51443e51a412402abef1717
   blocking: false
 ---
 
