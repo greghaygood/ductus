@@ -4,11 +4,15 @@ status: in-progress
 dependencies: [007-govern-workflow]
 tags: [security, format]
 review:
-  last-run: 2026-07-21T17:24:17Z
-  reviewed-against: ba807cc50336165b183c5d8f6182a4935c9e87c6
+  last-run: 2026-09-14T00:37:41Z
+  reviewed-against: b3f322adb078fd208860ff00ea4ec1044b99452f
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 7
+  scope: 20
+  reviewed-digest:
+    data-model.md: c56519ec36023061bd87268dfae78612cc2ebb239ae4ac34b2b0abd0838a869d
   blocking: false
 next-criterion: 29
 analyze:
