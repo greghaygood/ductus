@@ -2,11 +2,18 @@
 status: in-progress
 dependencies: [003-bootstrap-automation, 021-runtime-boundary, 022-deterministic-runtime, 028-antigravity-agent]
 review:
-  last-run: 2026-08-16T12:53:08Z
-  reviewed-against: c24f40e6b870ff46ef399f6ab6a85f8e0724d60c
+  last-run: 2026-09-14T02:24:07Z
+  reviewed-against: 6554ab025b820f8fa65de8fe18c20a73d4580b6d
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 15
+  scope: 17
+  reviewed-digest:
+    scenarios/archive-fetch-direct-codeload.md: 8d72afc1592a147d1326817d6a6c9f97f3ccad2621d99e6d9a918905187cd24f
+    scenarios/project-inputs-asked-once.md: 300da5f046c71060e85aed09ffeb1d1779f09fffa8816e0a4fc375b4dcfb9960
+    scenarios/runtime-probe-parity-audit.md: f03e440661b5aa0e0f0e373fe9be513e6500454009bcfe8e478a80da83fa78e6
+    scenarios/state-a-deterministic-path-forcing.md: dc0389b97152fba961f1b3b115279cb120b9ed3d78c7fc5a43834d45a0939577
   blocking: false
 next-criterion: 22
 analyze:

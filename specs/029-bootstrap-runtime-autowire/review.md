@@ -1,12 +1,14 @@
 ---
 spec: 029-bootstrap-runtime-autowire
-reviewed-at: 2026-08-16T12:53:08Z
-reviewed-against: c24f40e6b870ff46ef399f6ab6a85f8e0724d60c
-diff-base: 2cca7d6d729848a3cafc78b4f7498b5fbdce197b
+reviewed-at: 2026-09-14T02:24:07Z
+reviewed-against: 6554ab025b820f8fa65de8fe18c20a73d4580b6d
+diff-base: 0d251acc13bb7455c068a3d4e8ddf88224899939
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 15
+scope: 17
 skipped-passes: []
 ---
 
@@ -14,11 +16,21 @@ skipped-passes: []
 
 ## Summary
 
-No findings. Scope resolved to 48 files, of which exactly one is code — scripts/audit/sibling-coupling.sh. The other 47 are command sources, bootstrap prose, the constitution, migrations, workflow YAML, a lockfile, a golden fixture and spec artifacts; those are `/ductus:analyze`'s subject, not the five code passes'. This report states that count deliberately rather than asserting a clean bill over the whole spec: the code passes examined one file.
+0 MUST / 0 SHOULD / 0 low-confidence across all five dimensions, examined 15 of 17 in scope on diff base `0d251acc` (12 modified-since, plan affecting 8). Backfill re-review under the `examined`/digest campaign; the record it replaces predates `ductus-v0.49.0` and carried neither field.
 
-That file is exemplary against the rule set. It uses POSIX-only match() with RSTART/RLENGTH rather than the 3-argument GNU form, and it opens with an explicit precondition probe — `awk 'BEGIN { if (match("x", /x/)) exit 0; exit 1 }'` — that emits a finding and returns 1 when awk cannot evaluate match(), with an inline comment citing QUAL-CLAIM-001 and the incident it came from. This is the direct remediation of the defect AGENTS.md's first Design Principle records, and it was exercised rather than assumed: the family runs clean here under BSD awk (20200816), the exact environment where the original GNU-extension abort produced a silent pass. QUAL-STUB-001, QUAL-GROUND-001 and QUAL-CLAIM-001 are clean on it.
+Both bases were measured after the pass's own fix commits and both returned inline, so the base was chosen on the merits rather than on reading friction. The pre-reopen natural base resolved 549 modified-since / 551 in scope at 117,508 bytes; the reopen collapsed it to 12 / 17 at 4,911 bytes. `--since HEAD` gave 0 / 8 and was declined for excluding the nine files this pass edited.
 
-The broader observation that the repo runs no shellcheck over its shell surface is recorded against 013 and 026, whose scopes contain the bulk of those scripts; it is not re-filed here, where the single in-scope script is compliant on inspection.
+Two shipped models the spec still described as current had been reversed, and both were adopter-visible. **MCP wiring is per-agent, not layout-derived**: §MCP Wiring, AC6 and AC16 named a per-layout path out of `ductus.md` §Derived values, which deliberately carries no MCP row since 031 made discovery a per-agent property; 032 then added OpenCode as a second `write-file` agent, and Antigravity is `surface-instruction` — it gets no MCP file written at all, and its config is the home-level `~/.gemini/config/mcp_config.json`. The Signpost named one agent on each side of a split that holds two. **State B no longer aborts**: §Pre-flight Phase, §State B, AC11, AC15 and the Post-completion note described a single combined pre-flight abort before the archive fetch, which 048's scenario `state-b-continues-in-session` removed. AC11 asserted the opposite of shipped behaviour — no archive fetched, no scaffolding — while ticked. README was correct throughout and is what the corrections were checked against.
+
+Four durable contracts, all edited ahead of this review so the digest covers the final text. `state-a-deterministic-path-forcing.md` instructed a State-A run to call `substitute-templates` and `merge-claude-md`, both retired by 022 task 68 and absent from `framework/runtime-tools.txt`. `runtime-probe-parity-audit.md` said Family 15 hard-codes three agents where the script carries four. `project-inputs-asked-once.md` named State-B wiring as an abort cause and State C as live. Fourteen section references across the three named sections of `ductus.md` without naming the file on the reference's own line, so each resolved as a claim about the constitution; all four artifacts plus `plan.md` now report no unresolved references.
+
+`plan.md` left the Antigravity probe grammar recorded as an open implement-time decision. It was decided — `command(which)` ships in both the registry seed and `configure/antigravity.md`, and Family 15 guards the pairing.
+
+Not examined, and why. `framework/bootstrap/ductus.md` is 1,182 lines / 145KB and was read in the regions this pass turned on — the Agent Registry, Derived values, MCP registration, Permission Setup, runtime auto-wiring, runtime detection with States A and B, MCP wiring, the self-update stale path, the Pre-flight abort, the Closing restart, the runtime tip, the pinned advisory and the archive fetch — but not end to end, so it is named here rather than counted. `framework/bootstrap/govern.md` is a byte-identical `cp` mirror of it, confirmed with `cmp` and held by audit Family 21; a generated mirror is named, never folded into the numerator.
+
+Security: the scope carries no application code, so the security surface is the permission grammar. The canonical sets reason explicitly about it — `configure/claude.md` records why a wildcard must never precede a git subcommand and why a path-scoped write entry grants nothing, and both files keep deny-side wildcards deliberately broad. No finding. Reuse, efficiency and simplicity: the two audit families share `lib.sh` and answer different questions; no duplication or complexity worth a finding. Quality: assessed against all three `quality-cross.md` rules — no stub, no unowned external contract, and both families distinguish a skip from a clean result.
+
+One finding was captured rather than fixed, because its principal half lies in a durable contract under a spec the campaign has closed and standing operator decision (a) binds: 022's `framework-list-dedup.md` says it records an open question that its own Open Questions section does not carry, and two shipped configure files send adopters to that empty home. Recorded in `specs/inbox.md` with its measurement and three candidate shapes priced.
 
 ## MUST violations (blocking)
 
@@ -40,6 +52,14 @@ The broader observation that the repo runs no shellcheck over its shell surface 
 
 *None.*
 
+## Observations
+
+*None.*
+
 ## Skipped passes
+
+*None.*
+
+## Unexamined governance
 
 *None.*
