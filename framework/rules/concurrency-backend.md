@@ -2,7 +2,7 @@
 
 Enforceable concurrency-correctness rules for server-side shared state, locking, transactions, and distributed coordination. These rules apply to projects adopting `ductus` whose surface includes a backend.
 
-Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced by the validate command (errors); **SHOULD** / **SHOULD NOT** are flagged as warnings.
+Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced as errors; **SHOULD** / **SHOULD NOT** are flagged as warnings.
 
 Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assigned, an ID is never renumbered, even if the rule is moved within the file or deprecated. Categories: `RACE` (shared-state races), `LOCK` (locking and deadlock avoidance), `TXN` (transaction isolation), `COORD` (distributed coordination). See `specs/008-security-rules/data-model.md` for the full schema.
 
@@ -18,7 +18,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** A data race corrupts state non-deterministically and stays invisible until a production interleaving exposes it. It is a correctness hazard regardless of scale — two concurrent contexts are enough — which is why it is MUST.
 
-**Verification:** Any spec or plan that introduces state shared across threads, goroutines, async tasks, or request handlers MUST name how that state is synchronized. Validate flags plans that introduce concurrent access to shared mutable state without a stated synchronization mechanism.
+**Verification:** Any spec or plan that introduces state shared across threads, goroutines, async tasks, or request handlers MUST name how that state is synchronized. `/{project}:analyze` flags plans that introduce concurrent access to shared mutable state without a stated synchronization mechanism.
 
 **Source:** Go / Java memory model (happens-before).
 
@@ -28,7 +28,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Every guarded shared variable is a future race waiting for one missed lock. Removing the sharing removes the hazard class outright, rather than relying on perpetual discipline.
 
-**Verification:** Any spec or plan that introduces shared mutable state SHOULD justify why it is shared rather than confined or immutable. Validate flags plans that add shared mutable state where confinement or immutability would serve.
+**Verification:** Any spec or plan that introduces shared mutable state SHOULD justify why it is shared rather than confined or immutable. `/{project}:analyze` flags plans that add shared mutable state where confinement or immutability would serve.
 
 ## BE-LOCK — Locking and deadlock avoidance
 
@@ -38,7 +38,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Optimistic and pessimistic control have opposite failure modes (retry storms under contention vs. lock waits and reduced throughput). Choosing implicitly hides the trade-off and the operational behavior under load.
 
-**Verification:** Any spec or plan that introduces a contended resource SHOULD name and justify its optimistic-vs-pessimistic choice. Validate flags contention-bearing plans that commit to neither.
+**Verification:** Any spec or plan that introduces a contended resource SHOULD name and justify its optimistic-vs-pessimistic choice. `/{project}:analyze` flags contention-bearing plans that commit to neither.
 
 ### BE-LOCK-002
 
@@ -46,7 +46,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Inconsistent acquisition order deadlocks reliably once two code paths take the same locks in opposite orders; unbounded hold time serializes throughput and stacks waiters behind a slow critical section. Lock timeouts and hold bounds are operator-tunable values governed by `configuration-cross.md` `CFG-*`.
 
-**Verification:** Any spec or plan that acquires more than one lock SHOULD state the global acquisition order and the hold-time bound. Validate flags multi-lock plans with no stated ordering or timeout.
+**Verification:** Any spec or plan that acquires more than one lock SHOULD state the global acquisition order and the hold-time bound. `/{project}:analyze` flags multi-lock plans with no stated ordering or timeout.
 
 ## BE-TXN — Transaction isolation
 
@@ -56,7 +56,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** The default isolation level (READ COMMITTED in PostgreSQL, REPEATABLE READ in MySQL/InnoDB) silently determines which anomalies are possible. An implicit default is an unstated correctness assumption that breaks when the database or its configuration changes.
 
-**Verification:** Any spec or plan that introduces a multi-statement transaction SHOULD name the isolation level it requires and the anomalies that level prevents. Validate flags transactional plans that do not state an isolation level.
+**Verification:** Any spec or plan that introduces a multi-statement transaction SHOULD name the isolation level it requires and the anomalies that level prevents. `/{project}:analyze` flags transactional plans that do not state an isolation level.
 
 **Source:** ANSI SQL isolation levels.
 
@@ -66,7 +66,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Two transactions that read, then write, the same record without a guard silently discard one update — no error is raised, and the loss is scale-independent (two concurrent writers suffice). This is the canonical lost-update anomaly.
 
-**Verification:** Any spec or plan that introduces a concurrent update to shared persisted state MUST name its lost-update guard (version check, row lock, or atomic update). Validate flags read-modify-write plans that commit to none.
+**Verification:** Any spec or plan that introduces a concurrent update to shared persisted state MUST name its lost-update guard (version check, row lock, or atomic update). `/{project}:analyze` flags read-modify-write plans that commit to none.
 
 **Source:** Berenson et al., "A Critique of ANSI SQL Isolation Levels" (SIGMOD 1995) — lost update (P4).
 
@@ -78,7 +78,7 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Without fencing, a GC pause, VM freeze, or network partition lets two nodes each believe they hold the lock and both write — split-brain corruption. A monotonic fencing token enforced at the resource makes the resource reject the stale writer, which is why it is MUST.
 
-**Verification:** Any spec or plan that introduces a distributed lock or leader election MUST commit to a monotonic fencing token enforced at the protected resource. Validate flags distributed-lock plans that rely on lease expiry alone.
+**Verification:** Any spec or plan that introduces a distributed lock or leader election MUST commit to a monotonic fencing token enforced at the protected resource. `/{project}:analyze` flags distributed-lock plans that rely on lease expiry alone.
 
 **Source:** Kleppmann, "How to do distributed locking" (fencing tokens).
 
@@ -88,4 +88,4 @@ Projects without a backend can pin this file in `.ductus/config.toml` or set `[r
 
 **Rationale:** Retries and at-least-once brokers deliver duplicates by design; a non-idempotent handler double-applies them — a double charge, a double ship, a doubled balance — which is silent corruption regardless of scale. Stating the delivery semantics makes the duplicate-handling obligation explicit. Retry safety builds on `api-backend.md` `BE-IDEMP` rather than restating it; this rule owns the delivery-semantics and duplicate-handling obligation, while the retry *mechanics* — attempt bounds, backoff, and jitter — are `reliability-backend.md` `BE-RETRY-001`.
 
-**Verification:** Any spec or plan that consumes from a broker, exposes a retried operation, or relies on at-least-once delivery MUST commit to idempotency or deduplication and state the delivery semantics. Validate flags retried or queue-consuming plans with no idempotency or dedup commitment.
+**Verification:** Any spec or plan that consumes from a broker, exposes a retried operation, or relies on at-least-once delivery MUST commit to idempotency or deduplication and state the delivery semantics. `/{project}:analyze` flags retried or queue-consuming plans with no idempotency or dedup commitment.

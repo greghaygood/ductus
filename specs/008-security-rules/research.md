@@ -18,7 +18,7 @@ Primary source for actionable security rules. Each cheat sheet is maintained by 
 | Authentication | cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet | BE-AUTHN |
 | Session Management | cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet | BE-AUTHN, FE-STORAGE |
 | Authorization | cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet | BE-AUTHZ |
-| Password Storage | cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet | BE-DATA |
+| Password Storage | cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet | BE-AUTHN |
 | Cryptographic Storage | cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet | BE-DATA |
 | REST Security | cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet | BE-API |
 | SQL Injection Prevention | cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet | BE-INPUT |

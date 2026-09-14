@@ -9,11 +9,11 @@ title: "008-security-rules — data-model"
 A rule file is a markdown document with the following structure:
 
 ```markdown
-# {Surface} Security Rules
+# Security Rules — {Surface}
 
 {One-paragraph introduction stating the file's scope.}
 
-## {Category Name}
+## {ID prefix} — {Category Name}
 
 ### {Rule ID}
 
@@ -21,7 +21,7 @@ A rule file is a markdown document with the following structure:
 
 **Rationale:** {Threat the rule mitigates.}
 
-**Verification:** {Instruction to the validate agent on how to check the rule.}
+**Verification:** {Instruction to `/{project}:analyze` on how to check the rule.}
 
 ### {Rule ID}
 
@@ -29,7 +29,8 @@ A rule file is a markdown document with the following structure:
 ```
 
 - **Surface** is `Backend` or `Frontend`.
-- **Category Name** matches the spec's category list verbatim (`Authentication`, `Authorization`, `Input validation`, `Data protection`, `API security`, `Logging and audit`, `Dependency management`, `Error handling`, `Cross-site scripting (XSS)`, `Cross-site request forgery (CSRF)`, `Secure storage`, `Authentication UX`, `Content security`, `Sensitive data handling`).
+- **ID prefix** is the `{surface}-{category}` pair the section's rules share (`BE-AUTHN`, `FE-XSS`), so the heading carries the abbreviation a reader needs to cite a rule under it.
+- **Category Name** is the section's human-readable title in title case (`Authentication`, `Input Validation`, `Cross-Site Scripting Prevention`). It **names the same category** as the spec's `## Two Rule Files` list and the abbreviation table below, but is **not byte-identical** to either: the shipped headings title-case the words and several are longer than the spec's label (`Cross-Site Scripting Prevention` for `Cross-site scripting (XSS)`, `Secure Client-Side Storage` for `Secure storage`, `Content Security Policy` for `Content security`). The binding identity is the **abbreviation**, not the prose title — an earlier wording of this bullet claimed the titles matched the spec's list "verbatim", which was never true of 13 of the 15.
 - **Rule ID** appears as a level-3 heading and is the only level-3 heading content (no surrounding text). This makes rules grep-able by ID.
 
 ## Rule ID format
@@ -73,13 +74,13 @@ A rule file is a markdown document with the following structure:
 | Rule ID | yes | Level-3 heading (`### {ID}`) | Matches the format above. The heading contains nothing but the ID. |
 | Statement | yes | Block quote (`> …`) | One sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). |
 | Rationale | yes | Paragraph beginning `**Rationale:**` | Brief explanation of the threat or risk the rule mitigates. |
-| Verification | yes | Paragraph beginning `**Verification:**` | Instruction to the validate agent — see **Verification phrasing** below. |
+| Verification | yes | Paragraph beginning `**Verification:**` | Instruction to `/{project}:analyze` — see **Verification phrasing** below. |
 | Source | no | Paragraph beginning `**Source:**` | Citation to authoritative origin (e.g., OWASP cheat sheet name, RFC number, NIST publication, CIS Benchmark). Optional but recommended — aids `Learnable` (readers can trace the rule's grounding) and `Verified` (reviewers can audit the citation). |
 | Deprecated | no | Paragraph beginning `**DEPRECATED in {version}:**` | Present only on deprecated rules. Includes the removal target version. The rule remains in the file with this label until removed. |
 
 ## Verification phrasing
 
-The Verification field is read by the validate agent during validation runs. It must:
+The Verification field is read by `/{project}:analyze` during an analyze run. It must:
 
 1. Identify the project artifacts in scope (typically: feature specs, plans, `specs/system.md`).
 2. Describe the trigger that makes the rule applicable to a given artifact (e.g., "any spec that introduces credential storage", "any plan that handles file uploads"). A rule whose trigger does not fire for any artifact is silently inert (no finding emitted).
@@ -92,10 +93,10 @@ The Verification field is read by the validate agent during validation runs. It 
 
 ```text
 Verification: Any spec or plan that introduces credential storage MUST
-specify the hashing algorithm by name. Validate searches feature specs
-and plans for credential/password/auth keywords; for each match, flags
-the artifact if it does not name a memory-hard hash (Argon2id, scrypt,
-or bcrypt).
+specify the hashing algorithm by name. /{project}:analyze searches feature
+specs and plans for credential/password/auth keywords; for each match,
+flags the artifact if it does not name a memory-hard hash (Argon2id,
+scrypt, or bcrypt).
 ```
 
 **Documentation-commitment Verification (runtime/infra):**
@@ -103,13 +104,13 @@ or bcrypt).
 ```text
 Verification: specs/system.md or a deployment-related spec MUST describe
 how TLS is terminated (load balancer, application, or sidecar) and the
-expected protocol/cipher policy. Validate flags the absence of any TLS
-handling commitment in the project's specs.
+expected protocol/cipher policy. /{project}:analyze flags the absence of
+any TLS handling commitment in the project's specs.
 ```
 
 ## Severity classification
 
-The Statement's RFC 2119 keyword determines the validate severity:
+The Statement's RFC 2119 keyword determines the severity `/{project}:analyze` reports:
 
 | Keyword | Severity | Reporting |
 | --- | --- | --- |
@@ -120,13 +121,13 @@ Rules MUST use exactly one of the four keywords in the Statement. Mixed keywords
 
 ## ID stability invariants
 
-These invariants are enforced by validate (as edge cases in `spec.md`) and are also a discipline for rule authors:
+These invariants are enforced by `/{project}:analyze` (as edge cases in `spec.md`) and are also a discipline for rule authors:
 
 - Once an ID is assigned, the rule retains that ID for life. Editing the Statement or moving the rule within the file does not change its ID.
 - Deprecated rules retain their ID. They are removed only after the deprecation window has passed and references in adopting projects have been updated.
 - Sequence numbers are never reused after a rule is fully removed. New rules in a category get the next unused number.
-- Two rules in the same file MUST NOT share an ID. Validate refuses to load a file with duplicate IDs.
+- Two rules in the same file MUST NOT share an ID. `/{project}:analyze` refuses to load a file with duplicate IDs.
 
 ## Rule file integrity
 
-A rule file is considered well-formed if every rule heading, statement, rationale, and verification field is present and the ID format is satisfied. Missing fields, malformed IDs, or unparseable content cause validate to refuse to load the file (per the spec's edge-case decisions). The file is then treated as absent for matching purposes, but the parse failure itself is a hard error.
+A rule file is considered well-formed if every rule heading, statement, rationale, and verification field is present and the ID format is satisfied. Missing fields, malformed IDs, or unparseable content cause `/{project}:analyze` to refuse to load the file (per the spec's edge-case decisions). The file is then treated as absent for matching purposes, but the parse failure itself is a hard error.

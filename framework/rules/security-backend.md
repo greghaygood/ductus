@@ -2,7 +2,7 @@
 
 Enforceable security rules for server-side code, APIs, data persistence, and integration boundaries. These rules apply to all projects adopting `ductus`.
 
-Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced by the validate command (errors); **SHOULD** / **SHOULD NOT** are flagged as warnings.
+Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced as errors; **SHOULD** / **SHOULD NOT** are flagged as warnings.
 
 Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assigned, an ID is never renumbered, even if the rule is moved within the file or deprecated. Categories: `AUTHN` (authentication), `AUTHZ` (authorization), `INPUT` (input validation), `DATA` (data protection), `API` (API security), `LOG` (logging and audit), `DEPS` (dependency management), `ERR` (error handling). See `specs/008-security-rules/data-model.md` for the full schema.
 
@@ -14,7 +14,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Encryption is reversible — a database breach plus key access yields plaintext credentials. One-way hashing is irreversible by design. Memory-hard algorithms (Argon2id, scrypt, bcrypt) specifically resist GPU-accelerated cracking; PBKDF2 is iteration-hard rather than memory-hard but remains NIST SP 800-63B–approved and is the only FIPS 140–validated option in many regulated environments.
 
-**Verification:** Any spec or plan that introduces credential storage (search keywords: `password`, `credential`, `auth`, `login`) MUST name the hashing algorithm. Validate flags persistence paths that use `MD5`, `SHA-1`, `SHA-256`, `SHA-512`, plain `crypt`, "encrypted", or that omit the algorithm question entirely. Salting and cost/iteration parameters MUST be specified or referenced.
+**Verification:** Any spec or plan that introduces credential storage (search keywords: `password`, `credential`, `auth`, `login`) MUST name the hashing algorithm. `/{project}:analyze` flags persistence paths that use `MD5`, `SHA-1`, `SHA-256`, `SHA-512`, plain `crypt`, "encrypted", or that omit the algorithm question entirely. Salting and cost/iteration parameters MUST be specified or referenced.
 
 **Source:** OWASP Password Storage Cheat Sheet, NIST SP 800-63B
 
@@ -24,7 +24,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Storing raw tokens enables immediate credential theft on database compromise. Hashing tokens turns the database into a verification store rather than a credential vault. The entropy precondition matters because a fast hash like SHA-256 is only safe when the input is uncrackable by brute force — a 128-bit random token cannot be enumerated, but a 6-character recovery code can.
 
-**Verification:** Any spec or plan that introduces API tokens, personal access tokens, or service tokens MUST commit to (a) CSPRNG generation with ≥128 bits of entropy, (b) hashed storage, and (c) a one-time-display pattern at issuance. Validate flags token-issuance specs that describe storing the token itself in the database, that omit the entropy source, or that use SHA-256 on low-entropy values.
+**Verification:** Any spec or plan that introduces API tokens, personal access tokens, or service tokens MUST commit to (a) CSPRNG generation with ≥128 bits of entropy, (b) hashed storage, and (c) a one-time-display pattern at issuance. `/{project}:analyze` flags token-issuance specs that describe storing the token itself in the database, that omit the entropy source, or that use SHA-256 on low-entropy values.
 
 **Source:** OWASP Authentication Cheat Sheet
 
@@ -34,7 +34,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Predictable session IDs enable hijacking via guessing. Embedded data leaks information if the ID is logged, surfaced in errors, or transmitted insecurely.
 
-**Verification:** Any spec or plan that introduces sessions MUST commit to (a) a CSPRNG source for ID generation and (b) opaque, content-free IDs. Validate flags specs that propose deriving session IDs from user attributes, timestamps, or sequential counters, and flags specs silent on the ID generation source.
+**Verification:** Any spec or plan that introduces sessions MUST commit to (a) a CSPRNG source for ID generation and (b) opaque, content-free IDs. `/{project}:analyze` flags specs that propose deriving session IDs from user attributes, timestamps, or sequential counters, and flags specs silent on the ID generation source.
 
 **Source:** OWASP Session Management Cheat Sheet
 
@@ -44,7 +44,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Without regeneration, an attacker who fixes a known session ID before a victim authenticates inherits the post-login session — the canonical session-fixation attack. The same risk applies to any transition that changes what the session is authorized to do.
 
-**Verification:** Any spec or plan that introduces authentication, privilege change, or impersonation flows MUST commit to session ID regeneration at each transition. Validate flags auth flows that omit regeneration or that explicitly preserve the pre-auth session ID.
+**Verification:** Any spec or plan that introduces authentication, privilege change, or impersonation flows MUST commit to session ID regeneration at each transition. `/{project}:analyze` flags auth flows that omit regeneration or that explicitly preserve the pre-auth session ID.
 
 **Source:** OWASP Session Management Cheat Sheet
 
@@ -54,7 +54,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Idle timeout limits exposure from unattended sessions; absolute timeout bounds the lifetime of a hijacked session. Client-side enforcement is bypassable by direct API calls.
 
-**Verification:** Any spec or plan that introduces sessions MUST name both timeout values (idle, absolute) and confirm server-side enforcement. Validate flags session specs that omit either timeout or that rely on client-side expiration alone.
+**Verification:** Any spec or plan that introduces sessions MUST name both timeout values (idle, absolute) and confirm server-side enforcement. `/{project}:analyze` flags session specs that omit either timeout or that rely on client-side expiration alone.
 
 **Source:** OWASP Session Management Cheat Sheet
 
@@ -64,7 +64,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Differential responses enable user enumeration — attackers discover valid usernames by varying inputs and observing response differences. Timing differences are exploited the same way as message differences.
 
-**Verification:** Any spec or plan that describes login or password-reset endpoints MUST commit to a generic failure response and to constant-time handling that does not differ across failure modes. Validate flags auth-flow specs that propose different messages or status codes for "user not found" vs. "wrong password."
+**Verification:** Any spec or plan that describes login or password-reset endpoints MUST commit to a generic failure response and to constant-time handling that does not differ across failure modes. `/{project}:analyze` flags auth-flow specs that propose different messages or status codes for "user not found" vs. "wrong password."
 
 **Source:** OWASP Authentication Cheat Sheet
 
@@ -74,7 +74,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Per-IP throttling alone is trivially bypassed with distributed botnets. Account-scoped throttling protects the actual target. Layered scopes contain both targeted and credential-stuffing patterns.
 
-**Verification:** Any spec or plan covering login, password reset, or token-issuance endpoints MUST commit to a throttling mechanism, name its scope (account, plus optionally IP and device), and describe legitimate-recovery paths during lockout. Validate flags auth specs without a documented throttle, and flags specs whose only documented throttle scope is per-IP.
+**Verification:** Any spec or plan covering login, password reset, or token-issuance endpoints MUST commit to a throttling mechanism, name its scope (account, plus optionally IP and device), and describe legitimate-recovery paths during lockout. `/{project}:analyze` flags auth specs without a documented throttle, and flags specs whose only documented throttle scope is per-IP.
 
 **Source:** OWASP Authentication Cheat Sheet
 
@@ -84,7 +84,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Plaintext transmission exposes credentials to network observers. Serving login over HTTP — even with an HTTPS redirect — leaves a first-request window where credentials may be intercepted. Refer to `BE-DATA-001` for the required TLS protocol version.
 
-**Verification:** Any spec or plan covering authentication endpoints MUST commit to TLS-only access, including refusal of plain-HTTP requests at the edge. Validate flags auth-endpoint specs that allow HTTP fallback or that omit the transport question.
+**Verification:** Any spec or plan covering authentication endpoints MUST commit to TLS-only access, including refusal of plain-HTTP requests at the edge. `/{project}:analyze` flags auth-endpoint specs that allow HTTP fallback or that omit the transport question.
 
 **Source:** OWASP Authentication Cheat Sheet
 
@@ -94,7 +94,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Standard string equality short-circuits on the first differing byte, leaking the matching prefix length via response timing. Constant-time comparison closes timing side channels for token validation, signature verification, and HMAC checks.
 
-**Verification:** Any spec or plan that introduces secret/token/HMAC/signature comparison MUST commit to a constant-time primitive (e.g., `crypto.timingSafeEqual`, `hmac.compare_digest`, `subtle.ConstantTimeCompare`, `MessageDigest.isEqual`). Validate flags specs that compare secrets with `==`, `===`, `equals`, `strcmp`, or any short-circuiting comparison.
+**Verification:** Any spec or plan that introduces secret/token/HMAC/signature comparison MUST commit to a constant-time primitive (e.g., `crypto.timingSafeEqual`, `hmac.compare_digest`, `subtle.ConstantTimeCompare`, `MessageDigest.isEqual`). `/{project}:analyze` flags specs that compare secrets with `==`, `===`, `equals`, `strcmp`, or any short-circuiting comparison.
 
 **Source:** OWASP Authentication Cheat Sheet, NIST SP 800-63B
 
@@ -104,7 +104,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Single-factor authentication is no longer sufficient against credential stuffing, phishing, and database leaks. Privileged accounts are the highest-value targets — compromising one administrator typically compromises the system. WebAuthn and TOTP are phishing-resistant or phishing-resilient; SMS is vulnerable to SIM-swap attacks and is the weakest mainstream second factor.
 
-**Verification:** Any spec or plan that introduces administrative, role-management, billing, or security-operator capabilities MUST commit to MFA enforcement for those accounts and MUST name the supported factor types. Validate flags privileged-feature specs that omit MFA, that allow SMS as the sole factor for privileged accounts, or that describe enrollment paths permitting administrators to skip MFA.
+**Verification:** Any spec or plan that introduces administrative, role-management, billing, or security-operator capabilities MUST commit to MFA enforcement for those accounts and MUST name the supported factor types. `/{project}:analyze` flags privileged-feature specs that omit MFA, that allow SMS as the sole factor for privileged accounts, or that describe enrollment paths permitting administrators to skip MFA.
 
 **Source:** OWASP Authentication Cheat Sheet, NIST SP 800-63B
 
@@ -114,7 +114,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Older "complexity + rotation" policies push users toward predictable patterns (`Password1!` → `Password2!`) and degrade actual entropy. NIST 800-63B (revised 2017, reaffirmed in subsequent drafts) replaces them with length-over-complexity plus breached-password screening — the policy that demonstrably reduces credential compromise.
 
-**Verification:** Any spec or plan that introduces password creation, change, or reset flows MUST commit to (a) the minimum and maximum length bounds, (b) acceptance of the full printable-Unicode character set, (c) screening against a breached-password list (e.g., HaveIBeenPwned k-anonymity API, local corpus), and (d) absence of forced periodic rotation. Validate flags password-policy specs that mandate composition rules, that force calendar-based rotation, or that omit breached-password screening.
+**Verification:** Any spec or plan that introduces password creation, change, or reset flows MUST commit to (a) the minimum and maximum length bounds, (b) acceptance of the full printable-Unicode character set, (c) screening against a breached-password list (e.g., HaveIBeenPwned k-anonymity API, local corpus), and (d) absence of forced periodic rotation. `/{project}:analyze` flags password-policy specs that mandate composition rules, that force calendar-based rotation, or that omit breached-password screening.
 
 **Source:** NIST SP 800-63B §5.1.1, OWASP Authentication Cheat Sheet
 
@@ -124,7 +124,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** JWT misuse is one of the most consistently exploited modern auth vulnerabilities. The `alg: none` bypass, HS/RS algorithm confusion (verifying an RS256 token's signature using the RSA public key as an HMAC secret), and missing claim validation each enable full authentication bypass. Short access tokens with rotated refresh tokens limit the damage when a token leaks.
 
-**Verification:** Any spec or plan that introduces JWT issuance or verification MUST commit to all five requirements. Validate flags JWT specs that accept tokens without naming an algorithm allowlist, that omit `kid`-to-alg binding, that skip `iss`/`aud`/`exp`/`nbf` validation, or that propose long-lived access tokens without refresh-token rotation.
+**Verification:** Any spec or plan that introduces JWT issuance or verification MUST commit to all five requirements. `/{project}:analyze` flags JWT specs that accept tokens without naming an algorithm allowlist, that omit `kid`-to-alg binding, that skip `iss`/`aud`/`exp`/`nbf` validation, or that propose long-lived access tokens without refresh-token rotation.
 
 **Source:** OWASP JSON Web Token for Java Cheat Sheet, RFC 8725 (JWT Best Current Practices)
 
@@ -134,7 +134,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Missing `state` enables login CSRF that hijacks the OAuth callback. Missing PKCE leaves authorization codes interceptable on the user agent's network. Loose redirect-URI matching (substring, prefix) is exploited via attacker-registered subpaths. RFC 9700 (OAuth 2.0 Security Best Current Practice, 2025) makes PKCE the requirement for all clients, not just public ones.
 
-**Verification:** Any spec or plan that introduces an OAuth client, OIDC client, or third-party login integration MUST commit to all four requirements. Validate flags OAuth/OIDC specs that omit `state`, that limit PKCE to public clients, that omit ID-token `nonce` validation, or that describe redirect-URI matching using `startsWith`/`contains`/regex instead of exact equality.
+**Verification:** Any spec or plan that introduces an OAuth client, OIDC client, or third-party login integration MUST commit to all four requirements. `/{project}:analyze` flags OAuth/OIDC specs that omit `state`, that limit PKCE to public clients, that omit ID-token `nonce` validation, or that describe redirect-URI matching using `startsWith`/`contains`/regex instead of exact equality.
 
 **Source:** RFC 9700 (OAuth 2.0 Security Best Current Practice), OpenID Connect Core 1.0, OWASP Authentication Cheat Sheet
 
@@ -144,7 +144,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** These attributes are set server-side in the `Set-Cookie` response header — the server is the only place they can be enforced. `HttpOnly` denies JavaScript (and therefore XSS) access to the cookie; `Secure` keeps it off plaintext connections; `SameSite` blocks the cross-site request path CSRF relies on. A backend-only service that never loads the frontend rule set still issues these cookies, so the requirement lives here as well as in the client-facing `FE-STORAGE-002` / `FE-CSRF-002`.
 
-**Verification:** Any spec or plan that issues a session, authentication, or other privileged cookie MUST commit to `HttpOnly`, `Secure`, and `SameSite` on the `Set-Cookie` path, and MUST justify any `SameSite=None` or explicit `Domain`. Validate flags cookie-issuing specs that omit any of the three attributes, that set `SameSite=None` without `Secure` and a justification, or that set `Domain` without justification.
+**Verification:** Any spec or plan that issues a session, authentication, or other privileged cookie MUST commit to `HttpOnly`, `Secure`, and `SameSite` on the `Set-Cookie` path, and MUST justify any `SameSite=None` or explicit `Domain`. `/{project}:analyze` flags cookie-issuing specs that omit any of the three attributes, that set `SameSite=None` without `Secure` and a justification, or that set `Domain` without justification.
 
 **Source:** OWASP Session Management Cheat Sheet, OWASP HTTP Headers Cheat Sheet
 
@@ -156,7 +156,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Default-allow plus selective-deny is brittle — every new endpoint inherits open access unless a developer remembers to add a deny rule. Default-deny plus explicit allow is the only durable posture.
 
-**Verification:** Any spec or plan that introduces a protected endpoint, resource, or operation MUST describe the explicit allow check (middleware, decorator, gateway policy). Validate flags any commitment phrased as "everything except X is public" or "deny these specific paths."
+**Verification:** Any spec or plan that introduces a protected endpoint, resource, or operation MUST describe the explicit allow check (middleware, decorator, gateway policy). `/{project}:analyze` flags any commitment phrased as "everything except X is public" or "deny these specific paths."
 
 **Source:** OWASP Authorization Cheat Sheet
 
@@ -166,7 +166,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Client-side authorization can be inspected, bypassed, or spoofed by direct API calls. Trusting client-supplied identity claims (e.g., a `tenant_id` in a request body) without server-side revalidation enables horizontal privilege escalation across tenants.
 
-**Verification:** Any spec or plan describing role-based, attribute-based, or multi-tenant access control MUST describe how the server validates the claim against its own data — not just trusts the input. Validate flags specs that pass tenant/role IDs from the client into data queries without a documented revalidation step.
+**Verification:** Any spec or plan describing role-based, attribute-based, or multi-tenant access control MUST describe how the server validates the claim against its own data — not just trusts the input. `/{project}:analyze` flags specs that pass tenant/role IDs from the client into data queries without a documented revalidation step.
 
 **Source:** OWASP Authorization Cheat Sheet
 
@@ -176,7 +176,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Permissions can change between requests — role revocation, account suspension, privilege downgrade. Caching permissions creates a window where revoked access continues to be honored.
 
-**Verification:** Any spec or plan that introduces a permission-checked operation MUST commit to per-request authorization (middleware, framework guard, dependency-injected check). Validate flags specs that describe loading permissions at session start and not revalidating on subsequent requests.
+**Verification:** Any spec or plan that introduces a permission-checked operation MUST commit to per-request authorization (middleware, framework guard, dependency-injected check). `/{project}:analyze` flags specs that describe loading permissions at session start and not revalidating on subsequent requests.
 
 **Source:** OWASP Authorization Cheat Sheet
 
@@ -186,7 +186,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Without a ceiling rule, any user with role-management access can escalate themselves or others to higher privilege. The ceiling rule contains lateral and vertical privilege escalation in a single check.
 
-**Verification:** Any spec or plan that introduces role grants, permission assignments, or admin invitations MUST commit to a ceiling check at the grant operation. Validate flags admin-management specs that describe assigning roles without a documented permissions-superset check on the caller.
+**Verification:** Any spec or plan that introduces role grants, permission assignments, or admin invitations MUST commit to a ceiling check at the grant operation. `/{project}:analyze` flags admin-management specs that describe assigning roles without a documented permissions-superset check on the caller.
 
 **Source:** OWASP Authorization Cheat Sheet
 
@@ -196,7 +196,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** A user authorized to read their own records MUST NOT be able to read another user's records by changing an ID parameter. This is OWASP API1:2023 — Broken Object Level Authorization (BOLA), the most-exploited API vulnerability.
 
-**Verification:** Any spec or plan that introduces resource-by-id endpoints (`/users/:id`, `/orders/:id`, `/projects/:id/files/:fileId`) MUST commit to an ownership or resource-scoped authorization check, not just a coarse "is this user authenticated" check. Validate flags resource endpoints whose authorization commitment is only at the type level (e.g., "any authenticated user can call /orders/:id").
+**Verification:** Any spec or plan that introduces resource-by-id endpoints (`/users/:id`, `/orders/:id`, `/projects/:id/files/:fileId`) MUST commit to an ownership or resource-scoped authorization check, not just a coarse "is this user authenticated" check. `/{project}:analyze` flags resource endpoints whose authorization commitment is only at the type level (e.g., "any authenticated user can call /orders/:id").
 
 **Source:** OWASP Authorization Cheat Sheet, OWASP API Security Top 10 (API1:2023)
 
@@ -206,7 +206,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** A `403` confirms the resource exists, which is itself information leakage useful for reconnaissance and enumeration. A `404` reveals nothing about existence.
 
-**Verification:** Any spec or plan that introduces authorization on existence-sensitive resources (private documents, internal user records, draft content) SHOULD commit to `404` responses for unauthorized callers. Validate emits a warning when a spec explicitly proposes `403` for such resources without justification.
+**Verification:** Any spec or plan that introduces authorization on existence-sensitive resources (private documents, internal user records, draft content) SHOULD commit to `404` responses for unauthorized callers. `/{project}:analyze` emits a warning when a spec explicitly proposes `403` for such resources without justification.
 
 **Source:** OWASP Authorization Cheat Sheet
 
@@ -216,7 +216,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Frameworks that auto-bind request bodies to model fields (Rails `params`, Spring `@RequestBody`, Express body-spread) let users set fields they shouldn't — admin flags, internal IDs, ownership references, billing tier — when those fields aren't excluded. The allowlist is the only safe default; the denylist (strong parameters with field exclusion) inevitably misses new fields added later.
 
-**Verification:** Any spec or plan that describes accepting structured input (form bodies, JSON requests) and persisting or assigning it to a domain object MUST commit to an allowlist of acceptable fields per endpoint. Validate flags any commitment to "auto-bind", "spread the body", "accept all fields", or "use the request body directly" without a corresponding allowlist mechanism (DTO, schema-validated input type, explicit `pick`/`select` of fields).
+**Verification:** Any spec or plan that describes accepting structured input (form bodies, JSON requests) and persisting or assigning it to a domain object MUST commit to an allowlist of acceptable fields per endpoint. `/{project}:analyze` flags any commitment to "auto-bind", "spread the body", "accept all fields", or "use the request body directly" without a corresponding allowlist mechanism (DTO, schema-validated input type, explicit `pick`/`select` of fields).
 
 **Source:** OWASP API Security Top 10 (API3:2023 — Broken Object Property Level Authorization), OWASP Mass Assignment Cheat Sheet
 
@@ -226,7 +226,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** A long-lived stateless token that cannot be revoked is a permanent credential — the gap between "we know it's compromised" and "it stops working" is the attacker's free time. Documented, bounded revocation closes that gap.
 
-**Verification:** Any spec or plan that introduces tokens, sessions, or any long-lived credential MUST commit to a revocation mechanism and state the maximum time between revocation and effect. Validate flags credential specs that omit the revocation question, that rely on token expiry as the only revocation mechanism without naming the maximum lifetime, or that describe immediate logout UX without a server-side invalidation step.
+**Verification:** Any spec or plan that introduces tokens, sessions, or any long-lived credential MUST commit to a revocation mechanism and state the maximum time between revocation and effect. `/{project}:analyze` flags credential specs that omit the revocation question, that rely on token expiry as the only revocation mechanism without naming the maximum lifetime, or that describe immediate logout UX without a server-side invalidation step.
 
 **Source:** OWASP Session Management Cheat Sheet, RFC 8725
 
@@ -238,7 +238,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Boundary validation gives the rest of the system a strong invariant — once data is in, it conforms. Client-side validation is bypassable by direct API calls.
 
-**Verification:** Any spec or plan that accepts input from clients, third-party APIs, message queues, or file ingestion MUST name a server-side validation mechanism (JSON Schema, type system with runtime guards, dedicated validator library) and commit to running it at the boundary. Validate flags input-handling paths without a named server-side validation step.
+**Verification:** Any spec or plan that accepts input from clients, third-party APIs, message queues, or file ingestion MUST name a server-side validation mechanism (JSON Schema, type system with runtime guards, dedicated validator library) and commit to running it at the boundary. `/{project}:analyze` flags input-handling paths without a named server-side validation step.
 
 **Source:** OWASP Input Validation Cheat Sheet
 
@@ -248,7 +248,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Denylists are inherently incomplete — every blocked pattern requires a developer to remember it. Allowlists fail closed: anything not explicitly allowed is rejected.
 
-**Verification:** When a spec or plan describes validation for constrained inputs (enums, formats, file types, slugs, identifiers), it MUST express the rule as an allowlist (regex anchoring acceptable characters, explicit enum, MIME type allowlist). Validate flags rules expressed only as "reject if matches X" or "block these characters" without a corresponding allowlist.
+**Verification:** When a spec or plan describes validation for constrained inputs (enums, formats, file types, slugs, identifiers), it MUST express the rule as an allowlist (regex anchoring acceptable characters, explicit enum, MIME type allowlist). `/{project}:analyze` flags rules expressed only as "reject if matches X" or "block these characters" without a corresponding allowlist.
 
 **Source:** OWASP Input Validation Cheat Sheet
 
@@ -258,7 +258,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Injection remains one of the most exploited vulnerability classes. Parameterization (for SQL/NoSQL) and argument-vector invocation (for shells) make injection structurally impossible — the driver or kernel, not the application, handles escaping and tokenization. A single rule covers all interpreter boundaries because the failure mode is identical: user data being parsed as code.
 
-**Verification:** Any spec or plan that introduces database access, shell-out, or command execution MUST describe the safe-invocation mechanism (parameterized statements, prepared statements, ORM defaults, argument-vector exec). Validate flags any commitment to building queries via concatenation, `f-string`/`.format()`, template literals interpolating request fields, dynamic NoSQL operator construction from client input, or shell invocation with `shell=True`/string-concatenated command lines.
+**Verification:** Any spec or plan that introduces database access, shell-out, or command execution MUST describe the safe-invocation mechanism (parameterized statements, prepared statements, ORM defaults, argument-vector exec). `/{project}:analyze` flags any commitment to building queries via concatenation, `f-string`/`.format()`, template literals interpolating request fields, dynamic NoSQL operator construction from client input, or shell invocation with `shell=True`/string-concatenated command lines.
 
 **Source:** OWASP SQL Injection Prevention Cheat Sheet, OWASP Command Injection Prevention Cheat Sheet, OWASP NoSQL Injection Prevention Cheat Sheet
 
@@ -268,7 +268,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Path traversal (`../../../etc/passwd`) lets attackers read or write arbitrary files when user input flows into file paths without canonicalization-and-base-check.
 
-**Verification:** Any spec or plan that opens, reads, writes, or serves files based on user input (filename parameter, upload destination, template path) MUST commit to path canonicalization (e.g., `path.resolve` + `startsWith(baseDir)`, `os.path.realpath` + `commonpath`, language-equivalent) before opening. Validate flags file-handling specs that take user input without a documented canonicalization step.
+**Verification:** Any spec or plan that opens, reads, writes, or serves files based on user input (filename parameter, upload destination, template path) MUST commit to path canonicalization (e.g., `path.resolve` + `startsWith(baseDir)`, `os.path.realpath` + `commonpath`, language-equivalent) before opening. `/{project}:analyze` flags file-handling specs that take user input without a documented canonicalization step.
 
 **Source:** OWASP Input Validation Cheat Sheet
 
@@ -278,7 +278,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Client-supplied Content-Type and filename are trivially spoofed. Storing in the web root enables direct execution of uploaded content. User-controlled filenames enable path traversal and overwrite attacks against existing files.
 
-**Verification:** Any spec or plan that introduces file upload MUST commit to (a) content-based file-type validation, (b) storage outside the document root, and (c) server-generated filenames. Validate flags upload specs missing any of these three.
+**Verification:** Any spec or plan that introduces file upload MUST commit to (a) content-based file-type validation, (b) storage outside the document root, and (c) server-generated filenames. `/{project}:analyze` flags upload specs missing any of these three.
 
 **Source:** OWASP File Upload Cheat Sheet
 
@@ -288,7 +288,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Unbounded inputs enable denial-of-service through memory exhaustion, payload bombs, and ReDoS. Bounds turn DoS attempts into clean rejections.
 
-**Verification:** Any spec or plan that accepts variable-size input (file uploads, JSON bodies, list parameters, search queries, paginated endpoints) MUST commit to a maximum size or count and to the rejection response. Validate flags input descriptions without explicit limits, particularly for uploads, bulk endpoints, and search queries that accept user-supplied regex.
+**Verification:** Any spec or plan that accepts variable-size input (file uploads, JSON bodies, list parameters, search queries, paginated endpoints) MUST commit to a maximum size or count and to the rejection response. `/{project}:analyze` flags input descriptions without explicit limits, particularly for uploads, bulk endpoints, and search queries that accept user-supplied regex.
 
 **Source:** OWASP REST Security Cheat Sheet
 
@@ -298,7 +298,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Server-Side Request Forgery (SSRF) lets attackers make the server fetch arbitrary URLs, often as a stepping stone to cloud metadata services (`169.254.169.254` for AWS/GCP/Azure), internal admin panels, or arbitrary intranet probing. OWASP A10:2021 / API6:2023.
 
-**Verification:** Any spec or plan that includes server-side URL fetching, webhook callbacks, image proxies, RSS pulls, or any user-supplied URL retrieval MUST commit to (a) host or scheme allowlisting, AND (b) outbound network restrictions or DNS-resolution-time blocks for internal address ranges. Validate flags outbound-fetch features without both commitments. Cloud metadata-address denial MUST be named explicitly when the project deploys to a cloud provider.
+**Verification:** Any spec or plan that includes server-side URL fetching, webhook callbacks, image proxies, RSS pulls, or any user-supplied URL retrieval MUST commit to (a) host or scheme allowlisting, AND (b) outbound network restrictions or DNS-resolution-time blocks for internal address ranges. `/{project}:analyze` flags outbound-fetch features without both commitments. Cloud metadata-address denial MUST be named explicitly when the project deploys to a cloud provider.
 
 **Source:** OWASP SSRF Prevention Cheat Sheet, OWASP API Security Top 10 (API6:2023)
 
@@ -308,7 +308,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Pickle (Python), `ObjectInputStream` (Java), `unserialize` (PHP), `Marshal.load` (Ruby), and similar binary deserialization formats can execute attacker-controlled code as part of parsing — a direct path to remote code execution. JSON, MessagePack, Protobuf, and similar data-only formats do not have this property.
 
-**Verification:** Any spec or plan that ingests data from clients, queues, files, or third-party APIs MUST name the serialization format. Validate flags any commitment to Pickle, `ObjectInputStream`, PHP `unserialize`, or `Marshal.load` for untrusted input. JSON, MessagePack, and Protobuf are acceptable. YAML is acceptable only when the spec names a safe-loading mode explicitly (e.g., `yaml.safe_load` in Python, `SafeYAML` in Ruby).
+**Verification:** Any spec or plan that ingests data from clients, queues, files, or third-party APIs MUST name the serialization format. `/{project}:analyze` flags any commitment to Pickle, `ObjectInputStream`, PHP `unserialize`, or `Marshal.load` for untrusted input. JSON, MessagePack, and Protobuf are acceptable. YAML is acceptable only when the spec names a safe-loading mode explicitly (e.g., `yaml.safe_load` in Python, `SafeYAML` in Ruby).
 
 **Source:** OWASP Deserialization Cheat Sheet
 
@@ -318,7 +318,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Default XML parser configurations in many languages allow XXE — external entity expansion that can read local files (`file:///etc/passwd`), perform SSRF via entity URLs, or trigger denial-of-service via billion-laughs attacks. Disabling these features at parser construction is the only reliable mitigation.
 
-**Verification:** Any spec or plan that parses XML from untrusted sources (SOAP services, SAML responses, document uploads, RSS, configuration imports) MUST commit to a hardened parser configuration (`disallow-doctype-decl`, `external-general-entities=false`, `external-parameter-entities=false`, language-equivalent settings) at parser construction. Validate flags XML-parsing specs without an explicit hardening commitment, and flags reliance on default parser settings.
+**Verification:** Any spec or plan that parses XML from untrusted sources (SOAP services, SAML responses, document uploads, RSS, configuration imports) MUST commit to a hardened parser configuration (`disallow-doctype-decl`, `external-general-entities=false`, `external-parameter-entities=false`, language-equivalent settings) at parser construction. `/{project}:analyze` flags XML-parsing specs without an explicit hardening commitment, and flags reliance on default parser settings.
 
 **Source:** OWASP XML External Entity Prevention Cheat Sheet
 
@@ -328,7 +328,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Server-Side Template Injection (SSTI) in Jinja, Twig, ERB, Handlebars, Velocity, etc. enables arbitrary code execution or template-sandbox escape when user input becomes part of the template *text* (not template *data*). Treating user input as data — values bound to variables — is safe; treating it as template source is not.
 
-**Verification:** Any spec or plan that uses server-side template rendering MUST describe how user input flows into templates: only as bound variables, never as concatenated template text. Validate flags any commitment to building template strings dynamically from user input, or rendering templates whose source is partially user-controlled.
+**Verification:** Any spec or plan that uses server-side template rendering MUST describe how user input flows into templates: only as bound variables, never as concatenated template text. `/{project}:analyze` flags any commitment to building template strings dynamically from user input, or rendering templates whose source is partially user-controlled.
 
 **Source:** OWASP Server-Side Template Injection guidance, PortSwigger SSTI research
 
@@ -338,7 +338,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Log-injection (CRLF injection into log files) lets an attacker forge fake log entries — "user `admin` authenticated successfully" — to mislead investigators, smuggle malicious content past log-aggregation parsers, or pollute SIEM correlation. Structured logging makes the attack structurally impossible because the field is always quoted; sanitization is acceptable for plain-text loggers.
 
-**Verification:** Any spec or plan that introduces logging of user-controlled values (request paths, headers, body fragments, usernames) MUST commit to either structured-log emission or pre-emission sanitization of control characters. Validate flags logging specs that string-concatenate user-controlled values into a plain-text logger without a sanitization step.
+**Verification:** Any spec or plan that introduces logging of user-controlled values (request paths, headers, body fragments, usernames) MUST commit to either structured-log emission or pre-emission sanitization of control characters. `/{project}:analyze` flags logging specs that string-concatenate user-controlled values into a plain-text logger without a sanitization step.
 
 **Source:** OWASP Logging Cheat Sheet, CWE-117 (Improper Output Neutralization for Logs)
 
@@ -348,7 +348,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** CSV formula injection (a.k.a. "spreadsheet injection") lets an attacker stash a payload like `=cmd|'/c calc.exe'!A1` in a free-text field; when a finance or operations user opens the downloaded report in Excel/LibreOffice/Numbers, the formula executes with the user's local privileges. The escape is a single-character prefix that costs nothing and closes the entire class.
 
-**Verification:** Any spec or plan that introduces CSV, TSV, or Excel-format export of user-supplied content MUST commit to formula-escaping per cell. Validate flags export specs that describe writing user-supplied strings directly into spreadsheet output without naming an escape.
+**Verification:** Any spec or plan that introduces CSV, TSV, or Excel-format export of user-supplied content MUST commit to formula-escaping per cell. `/{project}:analyze` flags export specs that describe writing user-supplied strings directly into spreadsheet output without naming an escape.
 
 **Source:** OWASP CSV Injection guidance, CWE-1236
 
@@ -358,7 +358,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** HTTP request smuggling (CL.TE, TE.CL, TE.TE, H2.CL, H2.TE) exploits framing disagreements between two HTTP parsers in series to inject hidden requests that bypass front-end controls. The class affects nearly every reverse-proxy/app pair when defaults disagree, and the impact ranges from cache poisoning to full session hijacking.
 
-**Verification:** Any spec or plan covering deployment topology, edge configuration, or `system.md` MUST commit to one of the three structural mitigations. Validate flags topology specs that describe an HTTP/1.1 proxy-to-app boundary without naming a framing-reconciliation policy, and flags edge configurations that accept ambiguous framing instead of rejecting it.
+**Verification:** Any spec or plan covering deployment topology, edge configuration, or `system.md` MUST commit to one of the three structural mitigations. `/{project}:analyze` flags topology specs that describe an HTTP/1.1 proxy-to-app boundary without naming a framing-reconciliation policy, and flags edge configurations that accept ambiguous framing instead of rejecting it.
 
 **Source:** PortSwigger HTTP Request Smuggling research, OWASP Web Security Testing Guide
 
@@ -368,7 +368,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** GraphQL's flexibility is a double-edged sword: a single request can recursively expand into thousands of subqueries (`{user { friends { friends { friends { ... }}}}}`), enumerate the entire schema via introspection, or bypass per-endpoint rate limits by batching many operations into one HTTP call. Each of the five controls closes one of these escape hatches.
 
-**Verification:** Any spec or plan that introduces a GraphQL endpoint MUST commit to all five controls. Validate flags GraphQL specs that omit depth/complexity limits, that leave introspection enabled in production, that describe authorization only at the endpoint level, or that omit batching/per-field rate limits.
+**Verification:** Any spec or plan that introduces a GraphQL endpoint MUST commit to all five controls. `/{project}:analyze` flags GraphQL specs that omit depth/complexity limits, that leave introspection enabled in production, that describe authorization only at the endpoint level, or that omit batching/per-field rate limits.
 
 **Source:** OWASP GraphQL Cheat Sheet
 
@@ -378,7 +378,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** LDAP injection lets an attacker turn a username lookup into an authentication bypass (`*)(&(uid=*)` collapses an `(&(uid=...)(...))` filter into one that matches every entry). Parameterized LDAP APIs and RFC 4515/4514 escaping prevent the structural change.
 
-**Verification:** Any spec or plan that introduces LDAP queries (directory lookups, AD authentication, group membership checks) MUST commit to parameterized filter/DN construction or to escape-per-field. Validate flags LDAP specs that concatenate user input into filter strings without naming an escape function or parameterized API.
+**Verification:** Any spec or plan that introduces LDAP queries (directory lookups, AD authentication, group membership checks) MUST commit to parameterized filter/DN construction or to escape-per-field. `/{project}:analyze` flags LDAP specs that concatenate user input into filter strings without naming an escape function or parameterized API.
 
 **Source:** OWASP LDAP Injection Prevention Cheat Sheet, RFC 4514, RFC 4515
 
@@ -390,7 +390,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Unencrypted traffic on a network is trivially intercepted. TLS 1.0 and 1.1 are formally deprecated by IETF (RFC 8996); TLS 1.2 is the floor and TLS 1.3 is preferred. The loopback exception exists because service-mesh sidecars (Istio, Linkerd, Consul Connect) and similar local proxies terminate mTLS at the host boundary and hand off plaintext over loopback to the application — re-encrypting loopback adds cost without changing the threat model.
 
-**Verification:** Any spec or plan covering network communication, edge configuration, or `system.md` MUST commit to TLS 1.2+ across all host-crossing surfaces (HTTPS, gRPC, message brokers, database connections). Validate flags specs that allow plaintext protocols for host-to-host traffic, that name TLS 1.0/1.1, or that omit the TLS version question entirely. Plaintext loopback exceptions MUST be named explicitly with the sidecar/proxy that provides the encrypted host-boundary leg.
+**Verification:** Any spec or plan covering network communication, edge configuration, or `system.md` MUST commit to TLS 1.2+ across all host-crossing surfaces (HTTPS, gRPC, message brokers, database connections). `/{project}:analyze` flags specs that allow plaintext protocols for host-to-host traffic, that name TLS 1.0/1.1, or that omit the TLS version question entirely. Plaintext loopback exceptions MUST be named explicitly with the sidecar/proxy that provides the encrypted host-boundary leg.
 
 **Source:** OWASP Cryptographic Storage Cheat Sheet, RFC 8996, NIST SP 800-52r2
 
@@ -400,7 +400,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** The goal is that one credential or one breach yields only ciphertext, not both ciphertext and keys. Strict spatial separation (KMS over the network) is the strongest form, but transparent database encryption with filesystem-sealed keys is also acceptable because the database service account cannot read the keystore. The failure mode to prevent is keys living *inside the same data store* (a `keys` table next to the `users` table) or in the same backup stream as the encrypted data.
 
-**Verification:** Any spec or plan that persists sensitive data MUST name (a) the encryption mechanism (envelope encryption with KMS, transparent database encryption, application-level field encryption) and (b) the key custody — what principal can read the keys and how that principal is distinct from the principal that can read the ciphertext. Validate flags persistence specs that say only "encrypted" without naming the mechanism, and flags any commitment to storing keys as data rows within the same database as the data they encrypt.
+**Verification:** Any spec or plan that persists sensitive data MUST name (a) the encryption mechanism (envelope encryption with KMS, transparent database encryption, application-level field encryption) and (b) the key custody — what principal can read the keys and how that principal is distinct from the principal that can read the ciphertext. `/{project}:analyze` flags persistence specs that say only "encrypted" without naming the mechanism, and flags any commitment to storing keys as data rows within the same database as the data they encrypt.
 
 **Source:** OWASP Cryptographic Storage Cheat Sheet
 
@@ -410,7 +410,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Committed secrets propagate everywhere — git history, CI logs, image layers, developer laptops, error pages — and can never be fully scrubbed. Externalized secrets via a secret manager or runtime injection are the only reliable model.
 
-**Verification:** Any spec or plan that introduces secrets MUST describe how they are sourced at runtime (vault/secret manager, mounted file, runtime environment variable injected by the orchestrator). Validate flags any commitment to embedding secrets in `.env` files committed to git, `Dockerfile` `ENV` directives, default config files in the repo, or container image layers.
+**Verification:** Any spec or plan that introduces secrets MUST describe how they are sourced at runtime (vault/secret manager, mounted file, runtime environment variable injected by the orchestrator). `/{project}:analyze` flags any commitment to embedding secrets in `.env` files committed to git, `Dockerfile` `ENV` directives, default config files in the repo, or container image layers.
 
 **Source:** OWASP Secrets Management Cheat Sheet
 
@@ -420,7 +420,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Proven algorithms have undergone extensive analysis. Custom implementations contain vulnerabilities by default. Authenticated modes (AEAD) prevent tampering as well as preserving confidentiality. ECB reveals patterns in ciphertext (the canonical "ECB Penguin").
 
-**Verification:** Any spec or plan that introduces encryption MUST name the algorithm and mode. Validate flags custom or unnamed algorithms, and flags any commitment to ECB, unauthenticated CBC, or pre-AEAD constructions for new code. Legacy compatibility deviations MUST be explicitly justified in the spec.
+**Verification:** Any spec or plan that introduces encryption MUST name the algorithm and mode. `/{project}:analyze` flags custom or unnamed algorithms, and flags any commitment to ECB, unauthenticated CBC, or pre-AEAD constructions for new code. Legacy compatibility deviations MUST be explicitly justified in the spec.
 
 **Source:** OWASP Cryptographic Storage Cheat Sheet, NIST SP 800-38D
 
@@ -430,7 +430,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Keys leak. Without a documented rotation procedure, the only response to suspected compromise is "rebuild the system" — which never happens, so the compromised key stays in use. Documented rotation is a precondition for survivable key compromise.
 
-**Verification:** Any spec or plan that introduces encryption-at-rest, JWT signing, HMAC signatures, or any other long-lived keys MUST describe (a) rotation cadence, (b) versioning/dual-key reads during transition, (c) retirement of old keys. Validate flags key-using specs that omit the rotation question.
+**Verification:** Any spec or plan that introduces encryption-at-rest, JWT signing, HMAC signatures, or any other long-lived keys MUST describe (a) rotation cadence, (b) versioning/dual-key reads during transition, (c) retirement of old keys. `/{project}:analyze` flags key-using specs that omit the rotation question.
 
 **Source:** OWASP Cryptographic Storage Cheat Sheet
 
@@ -440,7 +440,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** PII you don't collect is PII you don't have to protect, leak, or be subpoenaed for. Minimization is the strongest privacy control. Purpose limitation, deletion, and retention bounds are baseline GDPR/CCPA requirements.
 
-**Verification:** Any spec or plan that collects PII (names, emails, addresses, phone numbers, government IDs, biometrics, geolocation) MUST describe (a) the minimum data set required, (b) the documented purpose for each field, (c) the deletion path, and (d) the retention period. Validate flags PII-collecting specs that omit any of these.
+**Verification:** Any spec or plan that collects PII (names, emails, addresses, phone numbers, government IDs, biometrics, geolocation) MUST describe (a) the minimum data set required, (b) the documented purpose for each field, (c) the deletion path, and (d) the retention period. `/{project}:analyze` flags PII-collecting specs that omit any of these.
 
 **Source:** OWASP Cryptographic Storage Cheat Sheet, GDPR Article 5
 
@@ -450,7 +450,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** A compromised application with full database privileges enables schema corruption, data exfiltration, and privilege escalation beyond the application's intended scope. Least-privilege accounts contain the blast radius of an SQL injection or application compromise to operations the application legitimately needs.
 
-**Verification:** Any spec or plan covering database access, deployment configuration, or `system.md` MUST commit to (a) separate application accounts per environment, (b) the minimum privilege set the application requires (typically `SELECT`/`INSERT`/`UPDATE`/`DELETE` on its own schema, no `CREATE`/`DROP`/`ALTER`), and (c) a separate account for migrations with elevated privileges that the application itself does not use. Validate flags database access specs that omit the privilege question or that name a `root`/`admin`/`postgres` account for application use.
+**Verification:** Any spec or plan covering database access, deployment configuration, or `system.md` MUST commit to (a) separate application accounts per environment, (b) the minimum privilege set the application requires (typically `SELECT`/`INSERT`/`UPDATE`/`DELETE` on its own schema, no `CREATE`/`DROP`/`ALTER`), and (c) a separate account for migrations with elevated privileges that the application itself does not use. `/{project}:analyze` flags database access specs that omit the privilege question or that name a `root`/`admin`/`postgres` account for application use.
 
 **Source:** CIS Database Benchmarks, OWASP SQL Injection Prevention Cheat Sheet
 
@@ -460,7 +460,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Container images are stored in registries, cached in build systems, and inspectable by anyone with registry pull access. Embedded secrets are trivially extracted via `docker history` or layer inspection. This rule complements `BE-DATA-003` for the container-specific case.
 
-**Verification:** Any spec or plan that describes containerization or container deployment MUST commit to runtime secret injection. Validate flags `Dockerfile` content (or equivalent build manifests) that includes `ENV SECRET=...`, `ARG SECRET=...` baked into layers, or `COPY` of secret files into the image.
+**Verification:** Any spec or plan that describes containerization or container deployment MUST commit to runtime secret injection. `/{project}:analyze` flags `Dockerfile` content (or equivalent build manifests) that includes `ENV SECRET=...`, `ARG SECRET=...` baked into layers, or `COPY` of secret files into the image.
 
 **Source:** OWASP Secrets Management Cheat Sheet, NIST SP 800-190 (Container Security)
 
@@ -470,7 +470,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Non-CSPRNG generators are deterministic from a small seed and produce predictable sequences — an attacker who observes a few outputs can predict the next ones, defeating any security primitive built on the value. CSPRNGs (`crypto.randomBytes`, `secrets` module, `SecureRandom`, `getrandom(2)`, `BCryptGenRandom`) draw from the OS entropy pool and are not predictable.
 
-**Verification:** Any spec or plan that generates a security-sensitive random value MUST name the CSPRNG primitive. Validate flags specs that propose `Math.random`, `random.randint`, `Random()`, `rand()`, or any non-CSPRNG source for tokens, IDs, IVs, salts, or keys.
+**Verification:** Any spec or plan that generates a security-sensitive random value MUST name the CSPRNG primitive. `/{project}:analyze` flags specs that propose `Math.random`, `random.randint`, `Random()`, `rand()`, or any non-CSPRNG source for tokens, IDs, IVs, salts, or keys.
 
 **Source:** OWASP Cryptographic Storage Cheat Sheet, NIST SP 800-90A
 
@@ -480,7 +480,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Backups are a popular target — they contain everything sensitive, are often retained for years, and are frequently stored on systems with weaker controls than production. Reusing the production key gives one compromise both live and historical access; never testing the restore means an "encrypted backup" that turns out to be unrecoverable is discovered only during an incident.
 
-**Verification:** Any spec or plan that introduces backups, snapshots, or long-term data retention MUST commit to (a) encryption with a backup-specific key, (b) key custody separate from both the backup storage and the production data plane, and (c) a documented restore-test cadence. Validate flags backup specs that omit any of these, and flags specs that propose using the production encryption key directly for backup encryption.
+**Verification:** Any spec or plan that introduces backups, snapshots, or long-term data retention MUST commit to (a) encryption with a backup-specific key, (b) key custody separate from both the backup storage and the production data plane, and (c) a documented restore-test cadence. `/{project}:analyze` flags backup specs that omit any of these, and flags specs that propose using the production encryption key directly for backup encryption.
 
 **Source:** NIST SP 800-209 (Storage Security), OWASP Cryptographic Storage Cheat Sheet
 
@@ -490,7 +490,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Disabling certificate validation turns TLS into unauthenticated encryption — any on-path attacker can present a self-signed certificate and transparently man-in-the-middle the connection, defeating the confidentiality and integrity `BE-DATA-001` requires. The failure is invisible at runtime (the connection still "works"), so it survives to production unless forbidden outright. This rule is the client-side complement to `BE-DATA-001` (TLS on host-crossing traffic) and `BE-AUTHN-008` (TLS for credentials).
 
-**Verification:** Any spec or plan that introduces outbound TLS connections MUST commit to full certificate and hostname validation. Validate flags any commitment to `verify=False`, `rejectUnauthorized: false`, `InsecureSkipVerify`, `-k`/`--insecure`, or a custom trust-all certificate handler on a production path.
+**Verification:** Any spec or plan that introduces outbound TLS connections MUST commit to full certificate and hostname validation. `/{project}:analyze` flags any commitment to `verify=False`, `rejectUnauthorized: false`, `InsecureSkipVerify`, `-k`/`--insecure`, or a custom trust-all certificate handler on a production path.
 
 **Source:** OWASP Transport Layer Security Cheat Sheet, OWASP Cryptographic Storage Cheat Sheet
 
@@ -502,7 +502,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 **Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache. CSP `frame-ancestors` is the modern clickjacking defense and supersedes `X-Frame-Options`; `X-Frame-Options: DENY` is set in addition for browsers that do not implement CSP Level 2 (see `FE-CSP-003`).
 
-**Verification:** Any spec or plan that introduces an HTTP response (especially HTML) MUST commit to setting these headers, ideally at the framework or reverse-proxy layer for uniform coverage. Validate flags response specs that omit any of the headers above, and specifically flags HTML-serving specs without a CSP commitment. The minimum required headers and their values:
+**Verification:** Any spec or plan that introduces an HTTP response (especially HTML) MUST commit to setting these headers, ideally at the framework or reverse-proxy layer for uniform coverage. `/{project}:analyze` flags response specs that omit any of the headers above, and specifically flags HTML-serving specs without a CSP commitment. The minimum required headers and their values:
 
 | Header | Value | Applies to |
 | --- | --- | --- |
@@ -524,7 +524,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Technology fingerprinting enables targeted attacks against known vulnerabilities in specific framework versions. Suppression denies attackers a reconnaissance shortcut.
 
-**Verification:** Any spec or plan covering edge configuration or web-server configuration MUST commit to suppressing or genericizing these headers. Validate flags response-handling specs that explicitly include these headers or that omit the suppression question.
+**Verification:** Any spec or plan covering edge configuration or web-server configuration MUST commit to suppressing or genericizing these headers. `/{project}:analyze` flags response-handling specs that explicitly include these headers or that omit the suppression question.
 
 **Source:** OWASP HTTP Headers Cheat Sheet
 
@@ -534,7 +534,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** A `*` CORS allow on a credentialed or user-data endpoint exposes the user's data to any origin that can convince a browser to make the request. The CORS spec forbids `*` plus credentials; applications still misconfigure servers around it.
 
-**Verification:** Any spec or plan that describes a browser-facing API MUST name the allowed origins explicitly. Validate flags any commitment to `*` origin combined with cookies or auth headers, flags `*` origin on user-scoped endpoints, and flags CORS commitments that omit the origin allowlist.
+**Verification:** Any spec or plan that describes a browser-facing API MUST name the allowed origins explicitly. `/{project}:analyze` flags any commitment to `*` origin combined with cookies or auth headers, flags `*` origin on user-scoped endpoints, and flags CORS commitments that omit the origin allowlist.
 
 **Source:** OWASP REST Security Cheat Sheet
 
@@ -544,7 +544,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Unbounded request rates enable credential stuffing, brute-force authentication, scraping, and resource-exhaustion DoS. Rate limiting is the universal first-line mitigation.
 
-**Verification:** Any spec or plan that introduces a public endpoint MUST commit to a rate-limit policy — what is throttled, the threshold, and the response on exceedance. Validate flags public endpoints without this commitment, especially authentication, password reset, and search endpoints.
+**Verification:** Any spec or plan that introduces a public endpoint MUST commit to a rate-limit policy — what is throttled, the threshold, and the response on exceedance. `/{project}:analyze` flags public endpoints without this commitment, especially authentication, password reset, and search endpoints.
 
 **Source:** OWASP REST Security Cheat Sheet
 
@@ -554,7 +554,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Unrestricted methods enable verb-tampering attacks that bypass authentication or authorization configured for specific verbs (e.g., `GET` is filtered but `POST` is not). The `Allow` header on a 405 is mandated by HTTP semantics — clients (and intermediaries) rely on it to negotiate the correct method.
 
-**Verification:** Any spec or plan that introduces HTTP endpoints MUST commit to method allowlisting and to emitting the `Allow` header on every 405 response. Validate flags endpoint specs that allow arbitrary methods, that omit the method-restriction question, or that describe 405 responses without the `Allow` header.
+**Verification:** Any spec or plan that introduces HTTP endpoints MUST commit to method allowlisting and to emitting the `Allow` header on every 405 response. `/{project}:analyze` flags endpoint specs that allow arbitrary methods, that omit the method-restriction question, or that describe 405 responses without the `Allow` header.
 
 **Source:** OWASP REST Security Cheat Sheet, RFC 9110 §15.5.6
 
@@ -564,7 +564,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Accepting unexpected content types enables injection attacks via format confusion (e.g., a JSON endpoint that also accepts XML may be vulnerable to XXE even when the JSON path is hardened).
 
-**Verification:** Any spec or plan that introduces request-accepting endpoints MUST commit to content-type validation. Validate flags endpoint specs that accept multiple unrelated formats without explicit per-format hardening.
+**Verification:** Any spec or plan that introduces request-accepting endpoints MUST commit to content-type validation. `/{project}:analyze` flags endpoint specs that accept multiple unrelated formats without explicit per-format hardening.
 
 **Source:** OWASP REST Security Cheat Sheet
 
@@ -574,7 +574,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Management interfaces provide privileged access to data, configuration, and runtime control. Public exposure makes them targets for credential stuffing, exploit attacks, and direct compromise of the underlying service.
 
-**Verification:** Any spec or plan covering deployment, networking, or `system.md` MUST commit to restricting management interface exposure. Validate flags deployment specs that bind management ports (e.g., RabbitMQ management UI on `15672`, Elasticsearch on `9200`, Redis on `6379`, database admin tools) to public interfaces or that omit the network-exposure question.
+**Verification:** Any spec or plan covering deployment, networking, or `system.md` MUST commit to restricting management interface exposure. `/{project}:analyze` flags deployment specs that bind management ports (e.g., RabbitMQ management UI on `15672`, Elasticsearch on `9200`, Redis on `6379`, database admin tools) to public interfaces or that omit the network-exposure question.
 
 **Source:** CIS Benchmarks, OWASP REST Security Cheat Sheet
 
@@ -584,7 +584,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Direct database access bypasses every application-level security control. Public exposure of database ports is a direct path to data theft. This rule pairs with `BE-DATA-007` (account privileges) — together they enforce both network and account-level least privilege.
 
-**Verification:** Any spec or plan covering deployment or `system.md` MUST commit to (a) database ports unreachable from public networks (private subnet, security group, firewall rule), and (b) TLS-encrypted application-to-database connections. Validate flags deployment specs that allow public database access or that describe database connections without naming TLS.
+**Verification:** Any spec or plan covering deployment or `system.md` MUST commit to (a) database ports unreachable from public networks (private subnet, security group, firewall rule), and (b) TLS-encrypted application-to-database connections. `/{project}:analyze` flags deployment specs that allow public database access or that describe database connections without naming TLS.
 
 **Source:** CIS Benchmarks, OWASP SQL Injection Prevention Cheat Sheet
 
@@ -594,7 +594,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Open redirects facilitate phishing (a legitimate-looking link on the application's domain that redirects to attacker.example), OAuth-flow manipulation, and credential-stealing landing pages. Allowlist validation contains the redirect to known-safe destinations.
 
-**Verification:** Any spec or plan that includes a redirect endpoint, OAuth callback, post-login next-URL, share link, or user-controlled destination URL MUST commit to validating the destination against an allowlist (host allowlist, path allowlist, signed URL parameter). Validate flags redirect features without this commitment.
+**Verification:** Any spec or plan that includes a redirect endpoint, OAuth callback, post-login next-URL, share link, or user-controlled destination URL MUST commit to validating the destination against an allowlist (host allowlist, path allowlist, signed URL parameter). `/{project}:analyze` flags redirect features without this commitment.
 
 **Source:** OWASP Unvalidated Redirects and Forwards Cheat Sheet
 
@@ -604,7 +604,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** A webhook endpoint that does not verify signatures is an unauthenticated state-changing API exposed to the internet — anyone who knows the URL can forge events. Replay-window enforcement prevents an attacker from re-sending a captured-but-valid request hours later. Documented signing on outbound webhooks lets receivers protect themselves symmetrically.
 
-**Verification:** Any spec or plan that introduces inbound or outbound webhooks MUST commit to all four verification properties (signature, body coverage, replay window, constant-time comparison) and MUST name the algorithm. Validate flags webhook specs that omit signature verification, that verify only headers without the body, that lack a timestamp/nonce, or that use ordinary string comparison.
+**Verification:** Any spec or plan that introduces inbound or outbound webhooks MUST commit to all four verification properties (signature, body coverage, replay window, constant-time comparison) and MUST name the algorithm. `/{project}:analyze` flags webhook specs that omit signature verification, that verify only headers without the body, that lack a timestamp/nonce, or that use ordinary string comparison.
 
 **Source:** Stripe / GitHub / Slack webhook signing patterns, OWASP REST Security Cheat Sheet
 
@@ -614,7 +614,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** CSRF is exploitable only when the browser attaches a credential without the calling site's involvement, so the defense must be enforced on the server — the client cannot be trusted to send it. `FE-CSRF-001` specifies the token generation and submission strategy; this rule is its server-side enforcement half, which a backend-only service must implement even when it ships no frontend rule file. The bearer-token exemption reflects that a token the attacker's page cannot read is not auto-attached and so cannot be forged cross-site.
 
-**Verification:** Any spec or plan that introduces cookie-authenticated (or otherwise ambient-credential) state-changing endpoints MUST name the server-side CSRF check and its rejection behavior. Validate flags state-changing endpoints that rely on an ambient credential without a documented server-side token or origin validation, and flags token checks that are not constant-time.
+**Verification:** Any spec or plan that introduces cookie-authenticated (or otherwise ambient-credential) state-changing endpoints MUST name the server-side CSRF check and its rejection behavior. `/{project}:analyze` flags state-changing endpoints that rely on an ambient credential without a documented server-side token or origin validation, and flags token checks that are not constant-time.
 
 **Source:** OWASP Cross-Site Request Forgery Prevention Cheat Sheet
 
@@ -626,7 +626,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Internal details in production responses are a reconnaissance gift — attackers learn the framework, language version, file layout, and sometimes credentials in connection strings.
 
-**Verification:** Any spec or plan that describes error handling MUST commit to environment-conditional error formatting — verbose in dev, sanitized in production. Validate flags error-handling specs that do not distinguish environments or that emit internal-detail responses in production paths.
+**Verification:** Any spec or plan that describes error handling MUST commit to environment-conditional error formatting — verbose in dev, sanitized in production. `/{project}:analyze` flags error-handling specs that do not distinguish environments or that emit internal-detail responses in production paths.
 
 **Source:** OWASP Error Handling Cheat Sheet
 
@@ -636,7 +636,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Stable error codes let clients react programmatically (retry, surface a localized message, branch on specific failures). Correlation IDs let support debug a user's report against the server's logs without exposing internals to the user. The envelope's contract-quality requirements — codes documented in the published schema, stable across versions, and never parsed from the human-readable message — are specified in `api-backend.md` §BE-ERRENV; this rule covers the security angle (structured shape, correlation ID).
 
-**Verification:** Any spec or plan that describes error responses MUST commit to the structured format with code + message + correlation ID. Validate flags error-response specs that emit only a string message or a raw exception name.
+**Verification:** Any spec or plan that describes error responses MUST commit to the structured format with code + message + correlation ID. `/{project}:analyze` flags error-response specs that emit only a string message or a raw exception name.
 
 **Source:** OWASP Error Handling Cheat Sheet, RFC 9457
 
@@ -646,7 +646,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Without a global handler, uncaught exceptions produce default framework responses that include stack traces, source paths, and environment details — a direct path to reconnaissance.
 
-**Verification:** Any spec or plan covering the request-handling pipeline or `system.md` MUST commit to a global exception handler that produces a structured response. Validate flags pipeline specs that omit this commitment.
+**Verification:** Any spec or plan covering the request-handling pipeline or `system.md` MUST commit to a global exception handler that produces a structured response. `/{project}:analyze` flags pipeline specs that omit this commitment.
 
 **Source:** OWASP Error Handling Cheat Sheet
 
@@ -658,7 +658,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Security logs are the primary source for detecting attacks, investigating incidents, and meeting compliance requirements. Coverage of these events is the baseline for any meaningful incident response.
 
-**Verification:** Any spec or plan that introduces authentication, authorization, validation, or privilege management MUST commit to logging the named events. Validate flags specs that omit the logging question for any of these surfaces.
+**Verification:** Any spec or plan that introduces authentication, authorization, validation, or privilege management MUST commit to logging the named events. `/{project}:analyze` flags specs that omit the logging question for any of these surfaces.
 
 **Source:** OWASP Logging Cheat Sheet
 
@@ -668,7 +668,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Logs propagate through aggregation systems, archival storage, on-call dashboards, and developer machines. Anything in a log is widely visible and difficult to redact retroactively. Sensitive data in logs is an exfiltration path waiting to happen.
 
-**Verification:** Any spec or plan that introduces logging MUST commit to redaction or exclusion of sensitive fields. Validate flags logging specs that include request/response bodies in raw form, or that mention "log everything" without redaction commitments.
+**Verification:** Any spec or plan that introduces logging MUST commit to redaction or exclusion of sensitive fields. `/{project}:analyze` flags logging specs that include request/response bodies in raw form, or that mention "log everything" without redaction commitments.
 
 **Source:** OWASP Logging Cheat Sheet
 
@@ -688,7 +688,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Authorization changes are the highest-impact security events — a single bad role grant can hand over the system. Audit trails enable incident response and compliance reporting (SOC 2, ISO 27001, HIPAA).
 
-**Verification:** Any spec or plan that introduces role management, permission grants, or admin invitations MUST commit to audit-log entries with the five required fields. Validate flags admin-management specs without this commitment.
+**Verification:** Any spec or plan that introduces role management, permission grants, or admin invitations MUST commit to audit-log entries with the five required fields. `/{project}:analyze` flags admin-management specs without this commitment.
 
 **Source:** OWASP Logging Cheat Sheet
 
@@ -698,7 +698,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Incident response across distributed systems requires merging logs from many hosts on a single timeline. Local-time timestamps without a zone offset force investigators to guess the host's TZ (often wrong during DST transitions); epoch values without unit suffixes are routinely misread as seconds vs. milliseconds. A single timezone (UTC) and a single format (RFC 3339) eliminate both classes of error.
 
-**Verification:** Any spec or plan that introduces logging MUST commit to UTC + RFC 3339 timestamp formatting. Validate flags logging specs that name local-time formats, epoch-only timestamps without unit clarity, or locale-dependent formats (e.g., `MM/DD/YYYY`).
+**Verification:** Any spec or plan that introduces logging MUST commit to UTC + RFC 3339 timestamp formatting. `/{project}:analyze` flags logging specs that name local-time formats, epoch-only timestamps without unit clarity, or locale-dependent formats (e.g., `MM/DD/YYYY`).
 
 **Source:** RFC 3339, OWASP Logging Cheat Sheet
 
@@ -708,7 +708,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Without a correlation ID, tracing a single user-visible failure through a distributed system requires guessing which of thousands of concurrent log lines belong together. Standard primitives are W3C `traceparent`, `X-Request-ID`, or an OpenTelemetry trace ID; the specific choice matters less than that every component on the request path emits it.
 
-**Verification:** Any spec or plan that introduces request handling, inter-service calls, queue producers/consumers, or background-job dispatch MUST commit to correlation-ID generation at the edge, propagation across hops, and inclusion in every log line. Validate flags request-handling specs that omit correlation-ID propagation, and flags error-response specs (per `BE-ERR-002`) that do not surface the correlation ID to the client.
+**Verification:** Any spec or plan that introduces request handling, inter-service calls, queue producers/consumers, or background-job dispatch MUST commit to correlation-ID generation at the edge, propagation across hops, and inclusion in every log line. `/{project}:analyze` flags request-handling specs that omit correlation-ID propagation, and flags error-response specs (per `BE-ERR-002`) that do not surface the correlation ID to the client.
 
 **Source:** W3C Trace Context, OWASP Logging Cheat Sheet, OpenTelemetry
 
@@ -720,7 +720,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Vulnerable dependencies are the most common path to compromise in modern web stacks. Continuous scanning catches CVEs as they're disclosed; a documented action policy ensures findings are addressed rather than ignored.
 
-**Verification:** Any spec or plan covering CI, deployment, or `system.md` MUST name the vulnerability scanner (Snyk, Dependabot, Trivy, `pip-audit`, `npm audit`, OWASP Dependency-Check, etc.) AND the policy on findings (fail the build, file an issue, alert on-call). Validate flags CI/dependency specs that omit either.
+**Verification:** Any spec or plan covering CI, deployment, or `system.md` MUST name the vulnerability scanner (Snyk, Dependabot, Trivy, `pip-audit`, `npm audit`, OWASP Dependency-Check, etc.) AND the policy on findings (fail the build, file an issue, alert on-call). `/{project}:analyze` flags CI/dependency specs that omit either.
 
 **Source:** OWASP Dependency-Check, OWASP Top 10 (A06:2021 — Vulnerable and Outdated Components)
 
@@ -730,7 +730,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Floating versions admit supply-chain attacks via a compromised release of a dependency, and make production debugging guesswork (the same `package.json` resolves to different versions on different days). Pinned versions plus an explicit upgrade process keep deployments deterministic and auditable.
 
-**Verification:** Any spec or plan covering build artifacts or deployment MUST commit to (a) pinned versions in lockfiles or pinned-version manifests for production builds, and (b) a documented upgrade process. Validate flags deployment specs that allow floating dependencies in production or that omit the lockfile question.
+**Verification:** Any spec or plan covering build artifacts or deployment MUST commit to (a) pinned versions in lockfiles or pinned-version manifests for production builds, and (b) a documented upgrade process. `/{project}:analyze` flags deployment specs that allow floating dependencies in production or that omit the lockfile question.
 
 **Source:** OWASP A06:2021, npm/pnpm/yarn lockfile documentation, supply-chain attack research
 
@@ -740,7 +740,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** SBOMs let security teams answer "are we affected by the new CVE in libfoo 2.3.1?" in seconds rather than days. They are increasingly compliance-mandated — US Executive Order 14028 requires SBOMs for federal software, and the EU Cyber Resilience Act extends the requirement to most commercial products. Generating during the build (e.g., via `syft`, `cyclonedx-cli`, native package-manager output) captures the actual resolved dependency graph, not an approximation.
 
-**Verification:** Any spec or plan covering build pipelines, release artifacts, or `system.md` MUST name the SBOM tool and format and commit to per-build generation and retention. Validate flags build/release specs that omit SBOM generation or that describe one-off SBOM exports separate from the build.
+**Verification:** Any spec or plan covering build pipelines, release artifacts, or `system.md` MUST name the SBOM tool and format and commit to per-build generation and retention. `/{project}:analyze` flags build/release specs that omit SBOM generation or that describe one-off SBOM exports separate from the build.
 
 **Source:** US Executive Order 14028, NIST SP 800-161r1, CycloneDX / SPDX specifications
 
@@ -750,7 +750,7 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Lockfiles pin a version but not the bytes that came from the registry — a registry compromise, account takeover, or malicious release can publish a poisoned version under the same tag. Signed attestations bind the artifact to the publisher's verified identity, raising the bar from "compromise the registry" to "compromise the publisher's signing key."
 
-**Verification:** Any spec or plan covering dependency management, build pipelines, or `system.md` MUST commit to a signature/provenance verification step in install. Validate flags dependency specs that pull from public registries without naming a verification mechanism.
+**Verification:** Any spec or plan covering dependency management, build pipelines, or `system.md` MUST commit to a signature/provenance verification step in install. `/{project}:analyze` flags dependency specs that pull from public registries without naming a verification mechanism.
 
 **Source:** SLSA framework, sigstore, npm package provenance documentation
 
@@ -760,6 +760,6 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Rationale:** Dependency confusion (Birsan, 2021) tricks the resolver into pulling a malicious public package that shadows a private one with the same name — observed against major tech companies and now a routine supply-chain attack class. Typosquatting (a package named one keystroke off from a popular one) targets developers' muscle memory at `npm install` time. Scoped resolvers and lockfile registry pinning close the confusion vector; review at addition time closes the typo vector.
 
-**Verification:** Any spec or plan covering dependency management or build configuration MUST commit to (a) private-namespace scoping when private packages exist, (b) registry-URL recording in lockfiles, and (c) a review step on new dependency additions. Validate flags dependency-management specs that omit any of these when the project uses private packages or has a high dependency-churn rate.
+**Verification:** Any spec or plan covering dependency management or build configuration MUST commit to (a) private-namespace scoping when private packages exist, (b) registry-URL recording in lockfiles, and (c) a review step on new dependency additions. `/{project}:analyze` flags dependency-management specs that omit any of these when the project uses private packages or has a high dependency-churn rate.
 
 **Source:** Alex Birsan, "Dependency Confusion" (2021); npm/pip/Maven repository documentation; OWASP Supply Chain Security guidance

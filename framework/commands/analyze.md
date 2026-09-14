@@ -291,6 +291,14 @@ Then emit a single stdout line naming what was selected:
 loading rule files: <comma-separated basenames>
 ```
 
+**When the walk selects no file at all, that line is not enough — emit an advisory finding as well:**
+
+```text
+No rule files found, skipping rule checks
+```
+
+An empty `loading rule files:` line renders identically whether the rule-file directory held nothing, does not exist, or could not be read, so on its own it makes *examined and found nothing* indistinguishable from *could not examine* — the failure §design-principles in `.ductus/constitution.md` names first and `QUAL-CLAIM-001` names in code. The finding is **advisory, never blocking**: a project with no rule files is a legitimate state, and the rest of the pass still runs. This check has been the contract since 008 (as `No security rule files found, skipping security checks`, generalized to every rule surface by 016); it was dropped from the command source by 022's parseable-procedure rewrite without a decision to drop it, and is restored here.
+
 Rule files reach the directory from two origins: those shipped by `ductus` (introduced via their own feature spec) and those a project authors for itself (no introducing spec — see §rules Lifecycle in `.ductus/constitution.md`). `/{project}:analyze` treats both identically. The suffix governs which stacks see a file at `/{project}:review` time, but `/{project}:analyze` loads them all unconditionally.
 
 For each loaded rule file:

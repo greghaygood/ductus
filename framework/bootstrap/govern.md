@@ -813,18 +813,18 @@ These files are scaffolded **once per `/ductus` invocation**, regardless of how 
 
 ## Security Audit (brownfield)
 
-Run a one-time security audit when the project newly receives a security rule file alongside existing feature specs. This is the brownfield-adoption hook described in `specs/008-security-rules/spec.md` — it routes findings through `specs/inbox.md` so the adopter can triage them via `/{project}:groom` at their own pace, rather than having every legacy spec immediately fail validate.
+Run a one-time security audit when the project newly receives a security rule file alongside existing feature specs. This is the brownfield-adoption hook described in `specs/008-security-rules/spec.md` — it routes findings through `specs/inbox.md` so the adopter can triage them via `/{project}:groom` at their own pace, rather than having every legacy spec immediately fail `/{project}:analyze`.
 
 ### Trigger
 
 Run the audit only when **both** conditions hold after the **Shared Files** manifest pass has completed:
 
 1. At least one of `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was **newly created** by the manifest pass (the destination file did not exist before this run). A file that was merely updated or unchanged does not trigger the audit.
-2. The project contains at least one feature spec directory under `specs/` matching the `NNN-*` pattern (zero-padded, three-digit prefix followed by a hyphen and a slug).
+2. The project contains at least one feature spec directory under `specs/`, in either of the two forms `.ductus/constitution.md` §numbering defines — sequential (`000-skeleton`) or branch-scoped (`1234.1-retry-budget`). Do **not** re-derive the digit convention here: §numbering states that the membership rule is defined in exactly one place and that a surface reading the spec corpus calls it rather than restating it, because a second copy is how the two forms drift apart. An earlier wording of this step said "zero-padded, three-digit prefix", which excluded every branch-scoped directory and, past 999, sequential ones too.
 
 If either condition fails, skip this section silently — no output, no finding, no inbox entry. This covers the two routine cases:
 
-- **Greenfield adoption** — no `specs/NNN-*/` directories exist, so the audit has nothing to scan against.
+- **Greenfield adoption** — no feature spec directories exist under `specs/`, so the audit has nothing to scan against.
 - **Routine re-run** — the rule files were created on a prior run; the manifest pass reports them as "updated" or "unchanged" rather than "created".
 
 ### Loading rule files
@@ -835,13 +835,13 @@ For each rule file that passed the trigger:
 2. Apply the same integrity checks `/{project}:analyze` uses for the security-rule check section: well-formed level-3 headings of the form `### {ID}`, the three required body fields (Statement, Rationale, Verification), an ID matching `{FE|BE}-{CATEGORY}-{NNN}` — the ID is the heading, so it is checked as the heading rather than as a fourth field — and no duplicate IDs within the file. `Source` is **not** checked: the constitution's §rules names four required fields (ID, Statement, Rationale, Verification) and `Source` is not among them, and it is absent from 4 of 11 shipped rule files' rules (`concurrency-backend` 4/8, `configuration-cross` 7/11, `observability-backend` 5/7, `reliability-backend` 5/8), so requiring it would make those files unloadable. It is universal only on the two security files this section reads, which is what made the overstatement invisible.
 3. If a file fails any integrity check, report `Security audit: {path} failed to load — {reason}; skipping audit for this file.` and continue with the other rule file (if applicable). Do not abort the surrounding `ductus` run.
 
-This mirrors validate's posture — partial or guessed-at parsing produces unreliable findings, so an unloadable file is treated as absent for audit purposes.
+This mirrors `/{project}:analyze`'s posture — partial or guessed-at parsing produces unreliable findings, so an unloadable file is treated as absent for audit purposes.
 
 ### Per-rule check
 
 For each rule that loaded successfully:
 
-1. Identify the artifacts in scope: `specs/NNN-*/spec.md`, `specs/NNN-*/plan.md`, and any `specs/NNN-*/scenarios/*.md`.
+1. Identify the artifacts in scope: `spec.md`, `plan.md`, and any `scenarios/*.md` under each feature spec directory in the spec root (both forms, per the trigger above).
 2. Read the rule's **Verification** field. The field describes the trigger — what makes the rule applicable to a given artifact — and the commitment the artifact must include when triggered.
 3. For each artifact whose content fires the rule's trigger but does not include the required commitment, produce one finding.
 

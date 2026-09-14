@@ -96,7 +96,7 @@ At least one concrete, testable criterion is required before `/{project}:clarify
      Replace this comment block with a list of rule references when applicable:
 
 - `BE-AUTHN-001` — memory-hard password hashing
-- `FE-XSS-002` — output encoding strategy
+- `FE-XSS-001` — output encoding strategy
 - `BE-INPUT-001` — server-side input validation
 
      Delete this section entirely if no rules apply to the area this spec covers.

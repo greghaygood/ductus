@@ -6,17 +6,17 @@ title: "008-security-rules — plan"
 
 ## Overview
 
-Operationalize the constitution's "Secure" principle by shipping two rule files (`security-backend.md`, `security-frontend.md`), wiring them into ductus's distribution manifest, extending validate to enforce them, and updating the constitution to point at them. The work is entirely prompt-and-data — markdown rule files, an extended validate prompt, and a constitution edit. No application code.
+Operationalize the constitution's "Secure" principle by shipping two rule files (`security-backend.md`, `security-frontend.md`), wiring them into ductus's distribution manifest, extending `/{project}:analyze` to enforce them, and updating the constitution to point at them. The work is entirely prompt-and-data — markdown rule files, an extended validate prompt, and a constitution edit. No application code.
 
 ## Technical Decisions
 
 ### Rule files live at `framework/rules/`
 
-Per spec, sources are `framework/rules/security-backend.md` and `framework/rules/security-frontend.md`. This anchors the framework's `framework/rules/` location promised in `CLAUDE.md` ("domain rule sets adopted projects can reference (security-backend, security-frontend, …)") — currently a documented-but-empty area until 008 lands.
+Per spec, sources are `framework/rules/security-backend.md` and `framework/rules/security-frontend.md`. This anchors the framework's `framework/rules/` location promised in `AGENTS.md` §Project Structure ("domain rule sets adopted projects can reference (security-backend, security-frontend, …)") — a documented-but-empty area until 008 landed.
 
-### Project destination is `specs/`
+### Project destination is the spec root's `rules/` directory
 
-Per spec, ductus writes both files to `specs/security-{backend,frontend}.md` in adopted projects. Sits alongside `system.md`, `errors.md`, `events.md` — the other cross-cutting global specs. Keeps the project root clean and groups all "applies project-wide" docs together.
+ductus writes both files to `specs/rules/security-backend.md` and `specs/rules/security-frontend.md` in adopted projects, alongside the other rule files. They sit under the same spec root as `system.md`, `errors.md`, and `events.md` — the cross-cutting global specs — which keeps the project root clean and groups all "applies project-wide" docs together. This plan was written against the original flat layout (`specs/security-{backend,frontend}.md`); the `rules/` subdirectory arrived in ductus 0.6.0 and adopters are converged by the `rule-files-relocate` migration.
 
 ### Rule entry format is heading-anchored markdown
 
@@ -29,10 +29,10 @@ Each rule is a level-3 heading whose text is the Rule ID, followed by a statemen
 
 **Rationale:** Plaintext or fast-hashed credentials enable mass account compromise after a database breach.
 
-**Verification:** Any spec or plan that introduces credential storage MUST specify the hashing algorithm by name. Validate searches for credential/password/auth keywords and flags persistence paths that do not name a memory-hard hash.
+**Verification:** Any spec or plan that introduces credential storage MUST specify the hashing algorithm by name. `/{project}:analyze` searches for credential/password/auth keywords and flags persistence paths that do not name a memory-hard hash.
 ```
 
-This format is grep-friendly (`grep '^### BE-' framework/rules/security-backend.md` returns the rule index), human-readable, and parseable by validate's prompt without a custom format. Categories are level-2 headings; the Rule ID heading sits under its category.
+This format is grep-friendly (`grep '^### BE-' framework/rules/security-backend.md` returns the rule index), human-readable, and parseable by the analyze prompt without a custom format. Categories are level-2 headings; the Rule ID heading sits under its category.
 
 Alternative considered: YAML frontmatter per rule. Rejected — adds complexity, fights markdown's natural reading flow, and the heading-anchor approach already gives each rule a stable URL fragment.
 
@@ -40,7 +40,7 @@ Alternative considered: YAML frontmatter per rule. Rejected — adds complexity,
 
 Backend has 8 categories, frontend has 7. v1 ships ~35 backend + ~21 frontend = ~56 rules total. Each rule is a real, threat-grounded MUST or MUST NOT (occasionally SHOULD) — not a stub. The registry is designed for extension; subsequent specs or PRs add rules incrementally without changing the format.
 
-Coverage targets were selected by walking OWASP Top 10 (2021), OWASP API Security Top 10 (2023), and the CWE Top 25, then mapping each item to the appropriate category. Items that are commonly cited and frequently exploited get explicit rules in v1; items that are emerging or use-case-specific (WebSockets, Service Workers, software supply chain, container hardening, API inventory) are deferred for incremental additions.
+Coverage targets were selected by walking OWASP Top 10 (2021), OWASP API Security Top 10 (2023), and the CWE Top 25, then mapping each item to the appropriate category. Items that are commonly cited and frequently exploited get explicit rules in v1; items that are emerging or use-case-specific (WebSockets, Service Workers, container hardening, API inventory) are deferred for incremental additions. Software supply chain was on that deferred list at plan time and has since been covered — `BE-DEPS` carries lockfile pinning and a dependency-confusion rule, and `FE-DEPS` carries the frontend half.
 
 Concrete v1 coverage targets (representative, may shift slightly during writing):
 
@@ -80,41 +80,41 @@ The following rules were added during plan refinement after a gap audit against 
 
 Trade-off: comprehensive coverage would require 80+ rules with careful threat modeling — still too much for v1. The starter set targets the most-likely-to-bite-you items per OWASP/CWE, with the format inviting subsequent additions for emerging or domain-specific concerns (WebSockets, Service Workers, supply-chain attestation, etc.).
 
-### Validate uses each rule's `Verification` field as a mini-prompt
+### `/{project}:analyze` uses each rule's `Verification` field as a mini-prompt
 
-Validate is a markdown-reading agent prompt; it does not run static analysis. For each MUST/MUST NOT rule, the rule's **Verification** field tells validate *how* to check the rule against the project's specs/plans/`system.md`. Verification fields are written as instructions to an agent, not as code patterns:
+`/{project}:analyze` is a markdown-reading agent prompt; it does not run static analysis. For each MUST/MUST NOT rule, the rule's **Verification** field tells it *how* to check the rule against the project's specs/plans/`system.md`. Verification fields are written as instructions to an agent, not as code patterns:
 
-> Verification: Any spec or plan that introduces credential storage MUST specify the hashing algorithm by name. Validate searches for credential/password/auth keywords and flags persistence paths that do not name a memory-hard hash.
+> Verification: Any spec or plan that introduces credential storage MUST specify the hashing algorithm by name. `/{project}:analyze` searches for credential/password/auth keywords and flags persistence paths that do not name a memory-hard hash.
 
-This delegates the per-rule logic to the rule itself — adding a new rule does not require modifying validate. Validate's job is to:
+This delegates the per-rule logic to the rule itself — adding a new rule does not require modifying the command. Its job is to:
 
 1. Load both rule files (handling edge cases per spec).
 2. For each MUST/MUST NOT rule, execute its Verification instruction against the project's specs/plans/system.md.
 3. Emit findings with the rule ID.
 
-The trade-off: validate's accuracy depends on the rule author's Verification phrasing. Vague Verifications produce vague findings. Rule format guidance in `Rule Format` and Verification examples in this plan set the standard.
+The trade-off: the check's accuracy depends on the rule author's Verification phrasing. Vague Verifications produce vague findings. Rule format guidance in `Rule Format` and Verification examples in this plan set the standard.
 
-### Edge case behaviors are encoded as a dedicated check section in validate
+### Edge case behaviors are encoded as a dedicated check section in `/{project}:analyze`
 
-`framework/commands/analyze.md` gains a new check section, **Security rules**, slotted after **Cross-spec references (advisory)** and before **Markdown lint (advisory)**. The section codifies all 7 edge cases from the spec — block on malformed/unknown/duplicate; warn on missing files / deprecated references; silent on contextually-inert rules.
+`framework/commands/analyze.md` gains a new check section codifying all 7 edge cases from the spec. It shipped as **Security rules**, slotted between the cross-spec-reference and markdown-lint checks; spec 016 later generalized it to **Rules (blocking and advisory)**, which is the heading it carries today, and 022 moved the markdown lint to a numbered Instructions step — block on malformed/unknown/duplicate; warn on missing files / deprecated references; silent on contextually-inert rules.
 
-Each edge case maps directly to a checkbox in validate's check list, so violations show up grouped under the standard hard-fail/blocking/advisory headers in validate's report.
+Each edge case maps directly to a checkbox in the command's check list, so violations show up grouped under the standard hard-fail/blocking/advisory headers in its report.
 
-### Brownfield audit lives in ductus, not validate
+### Brownfield audit lives in ductus, not `/{project}:analyze`
 
 When `/ductus` lands rule files in a project with existing `specs/NNN-*/` directories, it runs a one-time audit and writes findings to `specs/inbox.md`. The adopter then walks the inbox via `/{project}:groom`. This reuses 011's brownfield infrastructure rather than introducing baseline files or suppression mechanisms.
 
 `framework/bootstrap/ductus.md` gains a new top-level section, **Security audit (brownfield)**, slotted after **Shared Files** (where the manifest deposits the rule files) and before **Per-Agent Scaffolding**. The section's logic:
 
 1. Detect the trigger: at least one of `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was newly created (not updated) by the manifest pass, AND at least one `specs/NNN-*` directory exists.
-2. Load the newly created rule file(s) using the same integrity checks validate uses. If a file fails to load, report and skip the audit for that file.
+2. Load the newly created rule file(s) using the same integrity checks `/{project}:analyze` uses. If a file fails to load, report and skip the audit for that file.
 3. Iterate the rules; for each rule whose Verification trigger fires against an existing project artifact, produce a finding.
 4. Append findings to `specs/inbox.md`, deduplicating against existing lines that begin with the same `{Rule ID}: {artifact path}` prefix.
 5. Report the audit summary line (`{N} security audit items added to specs/inbox.md.`) in the post-scaffolding output, omitted when N is zero.
 
-Audit logic mirrors validate's per-rule check logic. Both call into the same Verification-evaluation pattern; the difference is the *output sink* (inbox vs. validate's findings report). For implementation, the validate prompt and the ductus audit section can share a written description of the per-rule check (referenced rather than duplicated) — the rule-evaluation procedure lives in one place, both consumers reference it.
+Audit logic mirrors the command's per-rule check logic. Both call into the same Verification-evaluation pattern; the difference is the *output sink* (inbox vs. the analyze findings report). For implementation, the analyze prompt and the ductus audit section can share a written description of the per-rule check (referenced rather than duplicated) — the rule-evaluation procedure lives in one place, both consumers reference it.
 
-Trade-off: ductus gains complexity from this audit step, but the alternative (adopters running validate post-adoption and manually piping output to log) is high-friction and fragile. Auto-audit on first install matches the brownfield ergonomic that 011 already established.
+Trade-off: ductus gains complexity from this audit step, but the alternative (adopters running `/{project}:analyze` post-adoption and manually piping output to log) is high-friction and fragile. Auto-audit on first install matches the brownfield ergonomic that 011 already established.
 
 ### Constitution gets a one-line append
 
@@ -130,7 +130,7 @@ Minimal — does not duplicate rule content into the constitution; the rule file
 
 ### Data model formalizes rule entry schema
 
-Like 005's registry, the rule entry is structured data even though it lives in markdown. `data-model.md` documents the required fields, ID format, category enum, and Verification phrasing conventions. This is the contract validate relies on; future rule writers consult it to keep the rule files internally consistent.
+Like the workflow registry that spec `043-command-consolidation` now owns (introduced by the since-consolidated 005), the rule entry is structured data even though it lives in markdown. `data-model.md` documents the required fields, ID format, category enum, and Verification phrasing conventions. This is the contract validate relies on; future rule writers consult it to keep the rule files internally consistent.
 
 ## Affected Files
 
@@ -138,7 +138,7 @@ Like 005's registry, the rule entry is structured data even though it lives in m
 | --- | --- | --- |
 | `framework/rules/security-backend.md` | Create | Starter set of backend security rules |
 | `framework/rules/security-frontend.md` | Create | Starter set of frontend security rules |
-| `framework/bootstrap/ductus.md` | Modify | Add 2 rows to **Governance-owned shared files (strategy: update)** mapping `framework/rules/security-{backend,frontend}.md` → `specs/security-{backend,frontend}.md`. Add a new **Security audit (brownfield)** section after **Shared Files** and before **Per-Agent Scaffolding**, plus an audit-summary line in **Post-Scaffolding Output**. |
+| `framework/bootstrap/ductus.md` | Modify | Add 2 rows to the **`ductus`-owned shared files (strategy: update)** manifest table mapping `framework/rules/security-{backend,frontend}.md` → `specs/rules/security-{backend,frontend}.md`. Add a new **Security audit (brownfield)** section after **Shared Files** and before **Per-Agent Scaffolding**, plus an audit-summary line in **Post-Scaffolding Output**. |
 | `framework/commands/analyze.md` | Modify | Add **Security rules** check section codifying the 7 edge cases and the contextual matching rule |
 | `framework/constitution.md` | Modify | Append the rule-files reference to the "Secure" principle |
 | `specs/008-security-rules/data-model.md` | Create | Schema for rule entries (fields, ID format, category enum, Verification phrasing convention) |
@@ -147,11 +147,11 @@ Like 005's registry, the rule entry is structured data even though it lives in m
 
 ### Starter set vs. comprehensive coverage
 
-V1 ships ~45 rules across 15 categories. Less common attack surfaces (GraphQL-specific, gRPC-specific, mobile-app-specific) are not covered. Acceptable because the rule format is designed for trivial extension — adding a rule is one heading, three paragraphs, one new ID number.
+V1 targeted ~45 rules across 15 categories, leaving less common attack surfaces (GraphQL-specific, gRPC-specific, mobile-app-specific) uncovered. Acceptable because the rule format is designed for trivial extension — adding a rule is one heading, three paragraphs, one new ID number, and that is exactly how the gap closed: the shipped files now carry 73 backend and 32 frontend rules, including a GraphQL rule under `BE-INPUT`. Mobile-app-specific surfaces remain uncovered.
 
 ### Verification-by-prompt vs. Verification-by-pattern
 
-Validate's "addresses the rule" check is qualitative — it depends on the rule author writing a clear Verification field and the validate agent interpreting specs reasonably. A future enhancement could add structured Verification metadata (e.g., `keywords: [password, credential]`, `must_specify: hashing_algorithm`) but v1 keeps Verifications as natural-language prompts. Trade-off: easier to write, harder to verify mechanically.
+The "addresses the rule" check is qualitative — it depends on the rule author writing a clear Verification field and `/{project}:analyze` interpreting specs reasonably. A future enhancement could add structured Verification metadata (e.g., `keywords: [password, credential]`, `must_specify: hashing_algorithm`) but v1 keeps Verifications as natural-language prompts. Trade-off: easier to write, harder to verify mechanically.
 
 ### Block on malformed/duplicate/unknown vs. warn-and-skip
 

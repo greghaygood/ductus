@@ -4,7 +4,7 @@ Enforceable rules for the shape, stability, and documentation of HTTP and RPC AP
 
 These rules cover **contract quality**, not security. For HTTP-surface security concerns (security headers, CORS, rate limits, method allowlisting, content-type validation, webhook signing, network exposure) see `security-backend.md` §BE-API.
 
-Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced by the validate command (errors); **SHOULD** / **SHOULD NOT** are flagged as warnings.
+Rules use RFC 2119 language: **MUST** / **MUST NOT** are enforced as errors; **SHOULD** / **SHOULD NOT** are flagged as warnings.
 
 Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assigned, an ID is never renumbered, even if the rule is moved within the file or deprecated. Categories: `SCHEMA` (schema publication and source-of-truth), `APIVER` (versioning and deprecation), `ERRENV` (error response envelope), `STATUS` (HTTP status code discipline), `PAGE` (pagination), `IDEMP` (idempotency), `COMPAT` (backwards compatibility). See `specs/008-security-rules/data-model.md` for the full schema.
 
@@ -18,7 +18,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** A machine-readable schema is the single source of truth that client SDKs, mock servers, contract tests, and human documentation all derive from. Without it, every consumer reverse-engineers the API independently and integration breaks accumulate silently. Serving it from the API origin makes discovery automatic.
 
-**Verification:** Any spec or plan that introduces a public HTTP/RPC endpoint MUST name the schema artifact path AND the URL it is served from. Validate flags endpoint specs that omit the schema commitment, and flags the absence of a schema file at the named path.
+**Verification:** Any spec or plan that introduces a public HTTP/RPC endpoint MUST name the schema artifact path AND the URL it is served from. `/{project}:analyze` flags endpoint specs that omit the schema commitment, and flags the absence of a schema file at the named path.
 
 **Source:** OpenAPI Specification, gRPC IDL conventions, GraphQL Spec §3, JSON Schema
 
@@ -28,7 +28,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Parallel schemas drift the moment a parameter is renamed, an optional field is made required, or a status code is added — and the drift is silent because the schema never executes. Code-derived schemas fail loudly at build time when implementation and contract diverge, and they make the schema as trustworthy as the code itself.
 
-**Verification:** Any spec or plan that introduces or modifies an API endpoint MUST commit to a code-derived schema generation step in the build. Validate flags plans that propose hand-maintained schema files, and flags affected-files snippets where the schema and the endpoint annotations are edited independently of each other.
+**Verification:** Any spec or plan that introduces or modifies an API endpoint MUST commit to a code-derived schema generation step in the build. `/{project}:analyze` flags plans that propose hand-maintained schema files, and flags affected-files snippets where the schema and the endpoint annotations are edited independently of each other.
 
 **Source:** OpenAPI Initiative best practices, "API-first" design literature
 
@@ -38,7 +38,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Without an enforcing check, generated schemas drift the moment a developer skips the regeneration step. A CI gate makes the regeneration step impossible to skip and turns schema drift into a build failure instead of a production discovery.
 
-**Verification:** Any spec or plan covering API endpoints OR CI/build configuration MUST commit to a `schema regenerate && diff --exit-code` step in the CI pipeline. Validate flags CI specs that omit the schema-diff check, and flags API specs that omit the CI-gate commitment.
+**Verification:** Any spec or plan covering API endpoints OR CI/build configuration MUST commit to a `schema regenerate && diff --exit-code` step in the CI pipeline. `/{project}:analyze` flags CI specs that omit the schema-diff check, and flags API specs that omit the CI-gate commitment.
 
 **Source:** OpenAPI Initiative governance guides
 
@@ -50,7 +50,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Without a declared strategy, breaking changes have no migration path — every consumer breaks simultaneously when an endpoint changes. A declared strategy lets old and new versions coexist while consumers migrate at their own pace.
 
-**Verification:** Any spec or plan that introduces a public API MUST name the versioning strategy and reference its declaration in `specs/system.md`. Validate flags public-API specs that omit the strategy commitment, and flags inconsistencies where some endpoints version one way and others a different way.
+**Verification:** Any spec or plan that introduces a public API MUST name the versioning strategy and reference its declaration in `specs/system.md`. `/{project}:analyze` flags public-API specs that omit the strategy commitment, and flags inconsistencies where some endpoints version one way and others a different way.
 
 **Source:** Microsoft REST API Guidelines, Google Cloud API Design Guide
 
@@ -60,7 +60,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Consumers cannot plan migrations they do not know about. Emitting the headers on every response from a deprecated endpoint guarantees visibility in client logs, monitoring dashboards, and integration tests. The schema annotation makes generated client SDKs surface the deprecation at compile time.
 
-**Verification:** Any spec or plan that removes or deprecates an endpoint MUST commit to (a) `Deprecation` + `Sunset` headers with concrete dates, and (b) the schema-level deprecation annotation. Validate flags deprecation specs that omit either commitment.
+**Verification:** Any spec or plan that removes or deprecates an endpoint MUST commit to (a) `Deprecation` + `Sunset` headers with concrete dates, and (b) the schema-level deprecation annotation. `/{project}:analyze` flags deprecation specs that omit either commitment.
 
 **Source:** RFC 8594, RFC 9745, OpenAPI Specification
 
@@ -72,7 +72,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Without a uniform shape, every consumer writes per-endpoint error parsing — and gets it wrong for endpoints added later. A single shape lets clients write one error handler that works everywhere, and lets the API evolve error categories without breaking consumers. The security properties of the same envelope — no internal detail in production, a correlation ID surfaced to the client — are governed by `security-backend.md` §BE-ERR (`BE-ERR-001`, `BE-ERR-002`); this rule and `BE-ERRENV-002` ductus its contract shape and code stability.
 
-**Verification:** Any spec or plan that introduces an HTTP API endpoint MUST commit to the project's error envelope shape and reference its definition in `specs/system.md`. Validate flags endpoint specs that describe ad-hoc error formats (per-endpoint shapes, mixed error types, naked strings) without naming the project envelope.
+**Verification:** Any spec or plan that introduces an HTTP API endpoint MUST commit to the project's error envelope shape and reference its definition in `specs/system.md`. `/{project}:analyze` flags endpoint specs that describe ad-hoc error formats (per-endpoint shapes, mixed error types, naked strings) without naming the project envelope.
 
 **Source:** RFC 9457 (Problem Details for HTTP APIs, obsoletes RFC 7807), Google Cloud API Design Guide §error-model
 
@@ -82,7 +82,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** HTTP status codes are coarse — `400` covers thousands of failure modes. Stable error codes let clients write conditional logic ("retry on `RATE_LIMITED`, surface to user on `VALIDATION_FAILED`") that survives message rewording and localization. Deriving codes from messages couples the two and breaks clients when copy is edited.
 
-**Verification:** Any spec or plan that introduces an HTTP API endpoint MUST commit to documented error codes for each named failure mode, with the code values declared in the schema. Validate flags endpoint specs that describe errors only by HTTP status or only by message text without a stable code.
+**Verification:** Any spec or plan that introduces an HTTP API endpoint MUST commit to documented error codes for each named failure mode, with the code values declared in the schema. `/{project}:analyze` flags endpoint specs that describe errors only by HTTP status or only by message text without a stable code.
 
 **Source:** Stripe API error documentation, Google Cloud API Design Guide
 
@@ -94,7 +94,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** HTTP intermediaries — load balancers, caches, retry middleware, monitoring, on-call alerting — all act on status codes. An endpoint that returns `200` with an `error` field bypasses every layer of the HTTP-aware stack and forces every consumer (and operator) to parse the body to know what happened. Correct status codes let off-the-shelf infrastructure do its job.
 
-**Verification:** Any spec or plan that introduces an endpoint MUST name the success status code AND each failure status code mapped to its failure mode. Validate flags endpoint specs that describe errors via `200 OK` with an `error` field, that conflate `401` and `403`, or that omit the status-code mapping.
+**Verification:** Any spec or plan that introduces an endpoint MUST name the success status code AND each failure status code mapped to its failure mode. `/{project}:analyze` flags endpoint specs that describe errors via `200 OK` with an `error` field, that conflate `401` and `403`, or that omit the status-code mapping.
 
 **Source:** RFC 9110 §15, Microsoft REST API Guidelines
 
@@ -106,7 +106,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Unpaginated list endpoints are a DoS vector (large responses, slow queries) and an OOM-on-client risk. Offset pagination loses items when new rows arrive between page reads, and shows duplicates when rows are deleted; cursor pagination is stable under concurrent writes. Defaulting to cursors forces the safe choice without per-endpoint debate.
 
-**Verification:** Any spec or plan that introduces a list endpoint MUST commit to a pagination strategy, a default page size, and a maximum page size — all as named constants per `CFG-CONST-003`. Validate flags list-endpoint specs that omit pagination or that propose offset pagination on collections that accept concurrent inserts.
+**Verification:** Any spec or plan that introduces a list endpoint MUST commit to a pagination strategy, a default page size, and a maximum page size — all as named constants per `CFG-CONST-003`. `/{project}:analyze` flags list-endpoint specs that omit pagination or that propose offset pagination on collections that accept concurrent inserts.
 
 **Source:** Stripe API pagination, GraphQL Cursor Connections Specification
 
@@ -116,7 +116,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Inferring "more pages exist when `len(items) == page_size`" is wrong at the exact boundary where the total happens to equal the page size — the client requests an empty page on the next call. A dedicated `has_more` (or non-null `next_cursor`) makes the boundary unambiguous and saves one round trip.
 
-**Verification:** Any spec or plan that introduces a paginated endpoint MUST name the response envelope including the page-continuation field. Validate flags paginated-endpoint specs that infer continuation from item count or that omit a continuation field.
+**Verification:** Any spec or plan that introduces a paginated endpoint MUST name the response envelope including the page-continuation field. `/{project}:analyze` flags paginated-endpoint specs that infer continuation from item count or that omit a continuation field.
 
 **Source:** Stripe API pagination, GraphQL Cursor Connections Specification
 
@@ -128,7 +128,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Networks fail mid-request. Without idempotency, a client that did not receive a response cannot safely retry — every retry risks a duplicate side effect (double-charge, double-send, duplicate order). The Stripe-pioneered `Idempotency-Key` pattern makes safe retry possible and is now the industry-standard contract for side-effecting endpoints.
 
-**Verification:** Any spec or plan that introduces a side-effecting `POST` endpoint MUST commit to `Idempotency-Key` support, the persistence window, and the divergent-body behavior. Validate flags side-effecting-POST specs that omit idempotency support, and flags persistence windows that are shorter than the documented client retry policy.
+**Verification:** Any spec or plan that introduces a side-effecting `POST` endpoint MUST commit to `Idempotency-Key` support, the persistence window, and the divergent-body behavior. `/{project}:analyze` flags side-effecting-POST specs that omit idempotency support, and flags persistence windows that are shorter than the documented client retry policy.
 
 **Source:** Stripe API idempotency documentation, IETF draft-ietf-httpapi-idempotency-key-header
 
@@ -138,7 +138,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Idempotency on `PUT`/`DELETE` is a contract of the HTTP method per RFC 9110 §9.2.2. Intermediate proxies, retry middleware, and clients all assume it. Per-call side effects break the contract and produce confusing duplicate-notification incidents.
 
-**Verification:** Any spec or plan that introduces a `PUT` or `DELETE` endpoint MUST commit to operation idempotency including side-effect deduplication for retries. Validate flags `PUT`/`DELETE` specs that describe per-call counter increments, notification sends, or audit-row inserts without dedup.
+**Verification:** Any spec or plan that introduces a `PUT` or `DELETE` endpoint MUST commit to operation idempotency including side-effect deduplication for retries. `/{project}:analyze` flags `PUT`/`DELETE` specs that describe per-call counter increments, notification sends, or audit-row inserts without dedup.
 
 **Source:** RFC 9110 §9.2.2
 
@@ -150,6 +150,6 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Rationale:** Every consumer of the API has code that depends on the current shape. Removing or renaming fields breaks clients silently — the client deserializes a response and gets `null` where it expected a value, or the server rejects a request that worked yesterday. Additive evolution within a major version is the only contract that lets clients upgrade lazily.
 
-**Verification:** Any spec or plan that modifies an existing API endpoint MUST classify the change as additive (compatible) or breaking (requires major version). Validate runs schema-diff against the committed schema and flags subtractive or narrowing changes within a major version; flags plans that propose breaking changes without a major-version commitment.
+**Verification:** Any spec or plan that modifies an existing API endpoint MUST classify the change as additive (compatible) or breaking (requires major version). `/{project}:analyze` runs schema-diff against the committed schema and flags subtractive or narrowing changes within a major version; flags plans that propose breaking changes without a major-version commitment.
 
 **Source:** Semantic Versioning for APIs, Google Cloud API Design Guide §compatibility

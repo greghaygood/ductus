@@ -362,7 +362,7 @@ Every rule has four required fields:
 - **ID** — a permanent identifier (e.g., `BE-AUTHN-001`) cited from feature specs.
 - **Statement** — one sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). MUST/MUST NOT rules are blocking; SHOULD/SHOULD NOT are advisory.
 - **Rationale** — the threat or risk the rule mitigates.
-- **Verification** — instruction to the validate agent on how to check compliance against feature artifacts.
+- **Verification** — instruction to `/{project}:analyze` on how to check compliance against feature artifacts.
 
 The full schema, ID-stability invariants, the ID grammar (including the `[A-Z][A-Z0-9]*` category-abbreviation format), and Verification phrasing rules are canonically declared in `specs/008-security-rules/data-model.md` — and, for configuration rules, in `specs/017-derive-dont-ask/data-model.md`. The specific category abbreviations a given rule file uses are declared in that file's own header (e.g., `api-backend.md` declares `SCHEMA`/`APIVER`/…). New rule files follow the same schema.
 
