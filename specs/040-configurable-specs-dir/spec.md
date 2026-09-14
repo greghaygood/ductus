@@ -2,11 +2,16 @@
 status: in-progress
 dependencies: [002-project-scaffolding, 003-bootstrap-automation, 017-derive-dont-ask, 022-deterministic-runtime]
 review:
-  last-run: 2026-08-19T15:25:17Z
-  reviewed-against: 830e42a0d06396e62f2346c694d5ebd0c075742d
+  last-run: 2026-09-14T17:23:24Z
+  reviewed-against: 58124bbf3864074c30307e7b8af90462ee07e598
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 5
+  scope: 28
+  reviewed-digest:
+    scenarios/command-prose-resolves-spec-root.md: 17fd7e541aacd73221e37ace61d947f5f1ddd379b852d965b474b7fd6e895e16
+    scenarios/spec-root-rule-stated-once.md: 45cb8e48e512ff64c4a123e2b9f6553321917282db46f7f5626909adfc5e147f
   blocking: false
 next-criterion: 14
 analyze:
