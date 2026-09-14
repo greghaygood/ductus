@@ -70,8 +70,8 @@ Phase 1 is independently safe and lands first so later work is written against a
 ### 7. Rewrite MCP registration and the detection states
 
 - [x] Update the MCP shapes in `ductus.md`: `project-committed` targets name the repo-relative pointer, `user-global` / `home-level` targets name the absolute store path
-- [x] Collapse the three detection states to two per the data model, deleting former State C and its §Post-Scaffolding tip
-- [x] Update the pre-flight binary probe from a `PATH` lookup to a store check, and its §Permission Setup seed entry with it
+- [x] Collapse the three detection states to two per the data model, deleting former State C and its tip in `framework/bootstrap/ductus.md` §Post-Scaffolding Output
+- [x] Update the pre-flight binary probe from a `PATH` lookup to a store check, and its `framework/bootstrap/ductus.md` §Permission Setup seed entry with it
 - [x] Verify the additive-merge rules are unchanged — other servers, other top-level keys, and a malformed config are all handled as before
 
 - **Done when**: each agent registers the correct path for its config scope, no committed config contains a machine-specific absolute path, and an adopter with no runtime reaches the deterministic path in one `/ductus` run plus one restart.

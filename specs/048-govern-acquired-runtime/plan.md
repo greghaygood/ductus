@@ -26,7 +26,7 @@ The bootstrap already contains the precedent: `ductus.md:484` fetches the framew
 
 One SemVer line. `runtime/Cargo.toml`, the newest `runtime/CHANGELOG.md` heading, the `ductus-v{version}` tag, and this file all carry the same number, bumped in the release commit.
 
-`/ductus` reads it from the extracted archive at `{staging-dir}/version` — the same download that carried `framework/`, so the pin cannot disagree with the framework revision it describes. Grounding: `framework/bootstrap/ductus.md:484` fetches `codeload.github.com/stonean/ductus/tar.gz/refs/heads/main`, whose top-level directory is `ductus-main/`, so the file resolves at `ductus-main/version` after extraction.
+As planned, `/ductus` read it from the extracted archive — the same download that carried `framework/`, so the pin could not disagree with the framework revision it describes. Grounding at the time: `framework/bootstrap/ductus.md:484` fetches `codeload.github.com/stonean/ductus/tar.gz/refs/heads/main`, whose top-level directory is `ductus-main/`, so the file resolved at `ductus-main/version` after extraction. **That decision did not survive implementation.** Acquisition runs in the Pre-flight Phase, which precedes the archive fetch, so the file was never on disk when the step read it. Task 16 (`pin-is-readable-when-acquisition-needs-it`) moved the read to a direct fetch of `raw.githubusercontent.com/stonean/ductus/main/version` into `{tempdir}`, and retired `{staging-dir}` from the procedure.
 
 A self-audit family asserts the four artifacts agree (spec AC15). That check is what makes the single-number invariant real rather than a convention someone remembers.
 
@@ -38,7 +38,7 @@ One code path, self-adapting, and no platform detection to keep in sync with the
 
 ### The version probe executes the binary
 
-`{store}/ductus --version` prints `ductus {version}` (verified: the installed binary emits `gvrn 0.27.2`). `/ductus` parses it and compares against the pin.
+`{store}/ductus --version` prints `ductus {version}` (verified when this was planned, against a pre-rename binary that emitted `gvrn 0.27.2`). `/ductus` parses it and compares against the pin.
 
 A recorded marker file was rejected in the spec: this feature *sanctions* hand-placing a binary into the store, so a marker would be stale or absent in exactly the supported cases. Executing the binary also fails usefully — a store entry that will not run reports no version, reads as "no usable runtime", and re-acquires.
 
@@ -49,9 +49,11 @@ A recorded marker file was rejected in the spec: this feature *sanctions* hand-p
 | State | Condition | Behavior |
 | --- | --- | --- |
 | **A** | a `ductus`-namespaced MCP tool is in the session inventory | unchanged — deterministic path, no pre-flight work |
-| **B** | no such tool | acquire (or resolve the `[runtime]` supplied binary), wire the MCP config, add tool permissions, join the pending-restart set |
+| **B** | no such tool | acquire (or resolve the `[runtime]` supplied binary), wire the MCP config, add tool permissions, join the deferred-restart set |
 
-Former State C's tip in §Post-Scaffolding Output is deleted, not repurposed: with the runtime required there is no degraded-but-working outcome left to advertise.
+As planned this set was inspected in the Pre-flight abort and State B stopped there. Task 13 (`state-b-continues-in-session`) moved State B's restart to the **Closing restart** at the end of the run, so State B acquires, wires, and then continues through the CLI rather than stopping.
+
+Former State C's tip in `framework/bootstrap/ductus.md` §Post-Scaffolding Output loses its audience rather than its section: with the runtime required there is no degraded-but-working outcome left to advertise, so the tip is reserved for the one degraded outcome that remains — acquisition was attempted and failed, and the run halted. It is omitted in State A and in a successful State B. As planned this read *deleted, not repurposed*, which is the reverse of what shipped.
 
 ### The amendment and the sweep land together
 
@@ -67,7 +69,7 @@ The `version` file, the publish gate, and the Windows `.tar.gz` asset touch only
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `version` | Create | The repo-root SemVer pin, read from the fetched archive |
+| `version` | Create | The repo-root SemVer pin, fetched directly in pre-flight (task 16 moved the read off the archive) |
 | `.github/workflows/runtime-release.yml` | Modify | Publish gate on the complete asset set; Windows asset as `.tar.gz` |
 | `.github/workflows/framework-checks.yml` | Rename | Was `markdown-only-pipeline.yml`, whose job asserted the retired opt-in invariant |
 | `.github/workflows/runtime-acquisition.yml` | Create | Replacement: end-to-end acquisition on each runner platform |

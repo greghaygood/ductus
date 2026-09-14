@@ -15,7 +15,7 @@ A repo-root file named `version`, containing exactly one line: a SemVer string w
 | Path | `version` (repo root) |
 | Format | one SemVer line, `MAJOR.MINOR.PATCH` |
 | Written by | the release commit, by hand, alongside `runtime/Cargo.toml` and `runtime/CHANGELOG.md` |
-| Read by | `/ductus`, from the extracted archive at `{staging-dir}/ductus-main/version` |
+| Read by | `/ductus`, fetched from `raw.githubusercontent.com/stonean/ductus/main/version` into the pre-flight temp directory and read there |
 | Meaning | the runtime version this framework revision requires |
 
 **The agreement invariant.** These four must carry the same value, and a self-audit family asserts it:
@@ -78,8 +78,10 @@ Replaces [029](../029-bootstrap-runtime-autowire/spec.md)'s three-state model. `
 
 | State | Condition | Behavior |
 | --- | --- | --- |
-| **A** | a `ductus`-namespaced MCP tool is in the session's inventory | Runtime live. Deterministic path; no pre-flight acquisition work; contributes nothing to the pending-restart set. |
-| **B** | no `ductus`-namespaced tool | Resolve the binary (acquire, or use `[runtime]`), materialize the pointer, wire the MCP config, add tool permissions, join the pending-restart set, and surface in the single combined pre-flight abort. |
+| **A** | a `ductus`-namespaced MCP tool is in the session's inventory | Runtime live. Deterministic path; no pre-flight acquisition work; contributes nothing to either restart set. |
+| **B** | no `ductus`-namespaced tool | Resolve the binary (acquire, or use `[runtime]`), materialize the pointer, wire the MCP config, add tool permissions, join the deferred-restart set, then **continue the run through the CLI** at the pointer path and surface in the single **Closing restart** at the end. |
+
+State B originally aborted in pre-flight. The scenario `state-b-continues-in-session` moved that single restart to the end of the run, so the phase now sorts restart-requiring writes into two sets: a **pending-restart set** that aborts immediately (a stale installed `ductus.md`) and a **deferred-restart set** that does not (State B's acquisition and wiring), carried to the **Closing restart**. Only the first stops the run.
 
 ## Acquisition command set
 

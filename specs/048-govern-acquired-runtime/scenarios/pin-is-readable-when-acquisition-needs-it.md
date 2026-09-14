@@ -13,10 +13,10 @@ first-time adopter is State B by definition, and State B's first act is
 deliberate halt, because "guessing a version or falling through to 'latest'
 silently installs a runtime the framework was never tested against."
 
-That file only exists after **Archive fetch and extract**, which runs
-hundreds of lines later. §Pre-flight Phase states it outright: it runs "before
-Pre-run Migrations and the full archive fetch", and both its checks "run on a
-small fetch or no fetch". The self-update check's small fetch pulled exactly
+That file only exists after **Archive fetch and extract**, which runs hundreds
+of lines later. `framework/bootstrap/ductus.md` §Pre-flight Phase states it
+outright: it runs "before Pre-run Migrations and the full archive fetch", and
+both its checks "run on a small fetch or no fetch". The self-update check's small fetch pulled exactly
 one file, `ductus.md`. So acquisition reached for a pin that nothing had put on
 disk, and the procedure said to stop.
 
@@ -46,8 +46,8 @@ before anything writes to it.
   the whole run, reused by the later archive fetch exactly as before.
 - **Runtime acquisition step 1 fetches the pin** from
   `raw.githubusercontent.com/stonean/ductus/main/version` into
-  `{tempdir}/version` and reads it there. `{pin}` in §Derived values names that
-  path.
+  `{tempdir}/version` and reads it there.
+  `framework/bootstrap/ductus.md` §Derived values names that path.
 - **The halt survives, with an accurate message.** A failed fetch, or an absent
   or unparseable file, still stops the run rather than guessing a version. Only
   the reason it could fail has changed.
@@ -57,9 +57,10 @@ archive's multi-hundred-KB cost, not a `curl`; a one-line file does not
 approach it.
 
 `{staging-dir}` is retired from the procedure in the same change. It appeared
-only in these acquisition steps, was never defined in §Derived values, and
-named the directory the rest of the document calls `{tempdir}` — an undefined
-placeholder in the one procedure a first-run adopter executes.
+only in these acquisition steps, was never defined in
+`framework/bootstrap/ductus.md` §Derived values, and named the directory
+the rest of the document calls `{tempdir}` — an undefined placeholder in the
+one procedure a first-run adopter executes.
 
 ## Edge Cases
 

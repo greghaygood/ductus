@@ -6,12 +6,13 @@ section: "Acquisition"
 
 ## Context
 
-A **live but stale** runtime was never detected. §ductus runtime detection
-resolves State A on tool-inventory introspection alone — "any `ductus`-namespaced
-MCP tool ⇒ State A" — and State A then declared the runtime live, contributed
-nothing to the pending-restart set, and emitted no message. §Runtime acquisition,
-which is the only place `{pin}` is compared against anything, runs **only in
-State B**. So a project whose runtime was registered but old passed detection
+A **live but stale** runtime was never detected.
+`framework/bootstrap/ductus.md` §ductus runtime detection resolves State A on
+tool-inventory introspection alone — "any `ductus`-namespaced MCP tool ⇒ State
+A" — and State A then declared the runtime live, contributed nothing to the
+pending-restart set, and emitted no message.
+`framework/bootstrap/ductus.md` §Runtime acquisition, which is the only place
+`{pin}` is compared against anything, runs **only in State B**. So a project whose runtime was registered but old passed detection
 silently, every run, forever.
 
 Found 2026-08-19 while updating a real adopter project. The store held
@@ -41,8 +42,9 @@ State A version-checks the live runtime against `{pin}` before trusting it.
 
 Probe the resolved binary — the `[runtime] path` when the project configures
 one, else `{store-path}` — and read its reported version. This is the same probe
-§Runtime acquisition step 2 already performs, and the §Permission Setup seed
-already authorizes it, so the check costs a version comparison and no new grant.
+`framework/bootstrap/ductus.md` §Runtime acquisition step 2 already performs,
+and `framework/bootstrap/ductus.md` §Permission Setup already authorizes it, so
+the check costs a version comparison and nothing new.
 
 Three outcomes:
 
@@ -53,9 +55,9 @@ Three outcomes:
   deliberately which binary it wants, and a development build running ahead of
   the last release is the expected case.
 - **Anything else** — the runtime is live but stale. Acquire `{pin}` per
-  §Runtime acquisition Branch 2, then run the rest of the session through
-  `{pointer-path} <primitive>` rather than the MCP tools, and carry the
-  acquisition to the **Closing restart**.
+  `framework/bootstrap/ductus.md` §Runtime acquisition Branch 2, then run the
+  rest of the session through `{pointer-path} <primitive>` rather than the MCP
+  tools, and carry the acquisition to the **Closing restart**.
 
 That last clause is the non-obvious one. Re-acquiring does **not** refresh the
 running MCP server: it was spawned once at session start and holds the old
@@ -80,8 +82,9 @@ same reason.
   wants to run ahead has `[runtime] path`, which is exactly the warn-and-continue
   branch above.
 - **The probe itself fails** — the binary will not execute, or reports nothing.
-  §Runtime acquisition step 2 already settles this: treat it as *no usable
-  runtime* rather than *version unknown*, and acquire. A false negative costs a
+  `framework/bootstrap/ductus.md` §Runtime acquisition step 2 already settles
+  this: treat it as *no usable runtime* rather than *version unknown*, and
+  acquire. A false negative costs a
   version comparison; a false positive costs the failure this scenario exists to
   end.
 - **State A with no store and no `[runtime] path`.** Possible when an adopter's
