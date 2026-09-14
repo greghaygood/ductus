@@ -2,15 +2,15 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-13T17:58:00Z
-  reviewed-against: 4703223d8ca930c77118645c61ca7e7730799f97
+  last-run: 2026-09-14T01:58:21Z
+  reviewed-against: fc70afc6db98029dc8ebd35e666be17eed7c1a70
   must-violations: 0
   should-violations: 0
   low-confidence: 0
   examined: 6
-  scope: 6
+  scope: 8
   reviewed-digest:
-    scenarios/a-canonical-source-is-pointed-at-not-copied.md: 98f635cb1fa72345d7413ba49e7a57fe046a265db1b790db79d9aca867c234a9
+    scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
     scenarios/a-partial-read-is-not-a-read.md: 21a78c9fe7d1b8d76f6f6f35097fce17e1ca1fe1ae3723bcb7ec007b7c9aeb56
     scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb

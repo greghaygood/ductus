@@ -4,7 +4,7 @@ status: draft
 
 # 020 — `/ductus:review` Data Model
 
-Data structures introduced by [020 — `/ductus:review`](spec.md). Authoritative shapes; the spec body and embedded `framework/commands/review.md` artifact reference these.
+Data structures introduced by [020 — `/ductus:review`](spec.md). Authoritative shapes; the spec body and `framework/commands/review.md` reference these. (The spec's embedded copy of that command source was replaced by a pointer on 2026-09-13 — the live source is the authority for command behavior, per §drift-prevention's canonical-sources rule.)
 
 ## Spec frontmatter `review:` block
 
@@ -29,6 +29,9 @@ review:
 | `should-violations` | integer ≥ 0 | yes | Advisory severity count. |
 | `low-confidence` | integer ≥ 0 | yes | Quality-pass findings below 80 confidence. Excluded from `must-violations`. |
 | `blocking` | boolean | yes | MUST equal `must-violations > 0`. Read by `/ductus:implement`, `/ductus:analyze`, CI template. |
+| `examined` | integer ≥ 0 | no | How many in-scope files the five passes actually **read**. Recorded as absent rather than zero when unstated — an unstated claim and a stated zero are different. Added by 022; see AC15. |
+| `scope` | integer ≥ 0 | no | The denominator `examined` is asserted against, derived by `write-review` rather than supplied. Added by 022. |
+| `reviewed-digest` | map of path → digest | no | Per-path digest of the spec's **durable contracts** (`scenarios/*.md` and `data-model.md`) as the run read them. What freshness is computed from; absent on records predating it, which report freshness as undeterminable rather than current. Added by 022. |
 | `waivers` | list of waiver records | no | Omitted entirely when empty. Schema below is open per §text-first-artifacts. |
 
 ### Validation severity
@@ -82,6 +85,9 @@ diff-base: <sha of the parent of the in-progress transition commit>
 must-violations: 0
 should-violations: 3
 low-confidence: 2
+captured-issues: 0
+examined: 8
+scope: 11
 skipped-passes: []
 ---
 ```
@@ -95,6 +101,9 @@ skipped-passes: []
 | `must-violations` | integer ≥ 0 | yes | Post-waiver count, matches spec frontmatter. |
 | `should-violations` | integer ≥ 0 | yes | Matches spec frontmatter. |
 | `low-confidence` | integer ≥ 0 | yes | Matches spec frontmatter. |
+| `captured-issues` | integer ≥ 0 | yes | Findings this run appended to the inbox. |
+| `examined` | integer ≥ 0 | no | Mirrors the `review:` block's field — how many in-scope files the passes read. |
+| `scope` | integer ≥ 0 | no | Mirrors the `review:` block's denominator. |
 | `skipped-passes` | list of strings | yes | Empty when no flag restricts dimensions. Permitted values: `security`, `reuse`, `quality`, `efficiency`, `simplicity`. |
 
 ### Body sections (in order)

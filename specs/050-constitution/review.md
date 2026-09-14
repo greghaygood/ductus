@@ -1,14 +1,14 @@
 ---
 spec: 050-constitution
-reviewed-at: 2026-09-13T17:58:00Z
-reviewed-against: 4703223d8ca930c77118645c61ca7e7730799f97
-diff-base: ad086a0d9358c5f50c7640fc9c1cdbedb462c665
+reviewed-at: 2026-09-14T01:58:21Z
+reviewed-against: fc70afc6db98029dc8ebd35e666be17eed7c1a70
+diff-base: ed2092a85afb3c1da6fa5b393f6afbc7f85e2e15
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
 examined: 6
-scope: 6
+scope: 8
 skipped-passes: []
 ---
 
@@ -16,21 +16,17 @@ skipped-passes: []
 
 ## Summary
 
-Five passes over 6 of 6 in-scope files — nothing unread. **Re-recorded.** The previous record (`4ef49b83`, examined 8/8) carried a Summary asserting that the `AGENTS.md` mirror's duplicated back-edge clause had been removed. The edit was in the working tree and never staged, so at that sha the clause was still present: the claim was true of the tree and false of the commit it was recorded against. `4703223d` lands the trim and this record is written against it. Kept as a re-record rather than an amendment because a review record is evidence about a commit, and a Summary describing uncommitted work is the same failure one layer up from the one this backfill campaign exists to clear — AGENTS.md §Workflow's *edit, review, commit together records the HEAD from before the edits landed*.
+Re-run 2026-09-13. 0 MUST, 0 SHOULD, 0 low-confidence; not blocking. No waivers.
 
-**Scope.** Base `ad086a0d`, the parent of the reopen commit: 6 files — `AGENTS.md` and `specs/050-constitution/spec.md` modified since, plus 050's four plan-affected artifacts. The scenario file left scope on this pass because it was unchanged since the base and is not plan-affected; it was read in full and reviewed in the prior record, whose `reviewed-digest` still covers it. Every in-scope path exists; none is absent.
+**Why this pass happened, and it was not 050's own work.** `020-code-review` discharged its embedded-snapshot item by replacing a 561-line frozen copy of `framework/commands/review.md` with a pointer. `scenarios/a-canonical-source-is-pointed-at-not-copied.md` is the durable contract that records that instance as the motivating case for the pointer-not-copy rule — and it recorded it in the **present tense**: "its §Embedded artifacts section **is** a frozen copy", "**70% of the spec is** a copy of another file", "the snapshot **sits** inside a code fence". All three went false the moment the section was removed.
 
-**What this pass added to 050.** `a-canonical-source-is-pointed-at-not-copied`, stating under §drift-prevention's *Canonical sources* that referencing means a pointer and that a reproduction is never one. The existing MUST — "reference the canonical source rather than restate it" — is satisfied on its face by a verbatim copy, which is the gap: 020's §Embedded artifacts runs lines 242–802 of an 802-line spec against a live source now at 894 lines, and **nothing could report it**, because the snapshot sits in a code fence that no link check, anchor resolver or audit family reads.
+Corrected by tense, with the discharge and its date recorded, and the account otherwise intact — the rule outlives its instance, and this scenario is the record of why the rule exists. Deleting the narrative would have destroyed exactly the decision record [§drift-prevention](../../framework/constitution.md#drift-prevention) preserves; leaving it in the present tense would have left a false claim inside the one scenario that governs canonical-copy drift, which is self-refuting. This is the tense rule the frozen-archaeology sweep established: a sentence describing what *is* gets fixed, one describing what *was* keeps its account.
 
-**Criteria re-verified against the tree, enumerations included.** All nineteen hold. Four were checked because this change could have falsified them. **AC3** (a mirror states nothing normative of its own) is the one that failed on the first attempt and is now satisfied: grepping the rule's phrasing finds one normative statement in the constitution and one pointer in `AGENTS.md`. **AC5** (adopter-neutral wording): the new text cites the constitution, git history and generic tooling categories — "link check, anchor resolver, structural audit" — and no path that exists only in this repository, which is what the reword test requires. **AC10** (anchors undisplaced): the rule is a paragraph inside an existing subsection, so no `<!-- §anchor -->` moved; `resolve-anchor` returns 28 references on the spec and 8 on the scenario, `unresolved: []` on both. **AC12** (the pin does not move): `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` untouched, Family 20 clean — the constitution reaches adopters by the Shared Files manifest row, not by a tag.
+**Scope.** The natural base collapsed from 147 modified-since / 149 in scope to **4 / 8** once the correction commit recorded a fresh `in-progress` transition; `--since HEAD` gave 0 / 5 and was declined for excluding this pass's own edits. Examined **6 of 8** — `specs/045-decision-state-drift-detection/spec.md` and `specs/050-constitution/plan.md` were not read, and nothing in this change reaches either.
 
-**050's own §Trade-offs read as live claims.** All five hold, and this change conforms to two rather than contradicting them: "promoted rules lose their war stories" — the constitution carries the adopter-neutral rule while the `AGENTS.md` mirror keeps the 020 incident; "bullets are less citable than sections" — the rule landed inside §drift-prevention rather than as a new section, per the clarify walk's resolution.
+**AC1–AC19 checked against the tree; all hold.** None asserts anything about 020's snapshot, so the correction falsifies no criterion here. AC12 in particular still holds and was re-verified rather than assumed: it requires that this spec leave the repo-root `version` pin, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` untouched. All three moved today for `ductus-v0.49.4` — but under `022`'s runtime fixes, not under this spec, and this pass touched one scenario file. Family 20 is clean.
 
-**Rule set.** 11 files loaded. Every one verifies against code, or against a spec or plan introducing shared state, an outbound call, a config value, a metric, API surface or UI. This change introduces none — it is governance prose in a document — so no Verification trigger fires. The passes ran and were empty rather than skipped, and the reuse pass is the one with a real surface here: it is what caught the duplicated clause both times.
-
-**The observation from the prior record stands and is not re-captured.** The adopter-project-name inbox item enumerates 000, 001, 002, 017, 022 and 036 — exactly the `anvil` spread, correct for that name — while a second name, `svc-zmc-api`, was never measured and lives in 045 and 046. It was appended to the inbox by the prior `write-review` call; re-appending here would duplicate it, which the idempotence guard exists to prevent.
-
-**Verification at this HEAD.** The constitution reaches two parity goldens (`implement-basic`, `target-basic`), so the full runtime suite was run rather than assumed: 20 binaries invoked, 20 reported, 0 failures, no re-bless needed. clippy `-D warnings` and `cargo fmt --check` clean; six `lint-*.sh` green; the 37-family self-audit green, and previously proven to fail on a perturbed subject before its silent zero-byte pass was trusted; markdownlint over 513 files. `derive-dependencies` reports no drift — the scenario's link to 020 induces no edge, confirmed by running it rather than assuming scenarios are exempt.
+**A note on what this pass is evidence for.** The change here is one paragraph of tense in one scenario. The five passes were run against a scope of eight files of which six were read, and the finding count is a real zero rather than an unexamined one — but the honest reading of this record is that it re-verified a narrow correction and this spec's criteria, not that it re-derived 050's whole subject. The promotion work 050 owns is unchanged since its 2026-09-13 review, and the second promotion round remains an open inbox item and its own unit.
 
 ## MUST violations (blocking)
 
