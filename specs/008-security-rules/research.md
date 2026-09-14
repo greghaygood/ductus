@@ -38,7 +38,7 @@ Primary source for actionable security rules. Each cheat sheet is maintained by 
 | OWASP Top 10 (2021) | Threat categorization and priority ordering |
 | OWASP API Security Top 10 (2023) | API-specific threat categorization |
 | RFC 2119 | Requirement level keywords (MUST, SHOULD, etc.) |
-| RFC 7807 | Problem Details for HTTP APIs (error response format) |
+| RFC 9457 | Problem Details for HTTP APIs (error response format; obsoletes RFC 7807, which this table named until 2026-09-13 — `BE-ERR-002` already cites 9457) |
 | NIST SP 800-63B | Digital Identity Guidelines — password and authenticator requirements |
 | CIS Benchmarks | Infrastructure hardening (database, message broker, container) |
 
