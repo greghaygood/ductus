@@ -1,12 +1,14 @@
 ---
 spec: 031-agent-mcp-wiring
-reviewed-at: 2026-08-28T01:24:04Z
-reviewed-against: a9be853143093fc9891a87048ba286fc187ddfcd
-diff-base: ae650c8bfbcf2e22535a571af9eaffd94f9d2067
+reviewed-at: 2026-09-14T01:07:04Z
+reviewed-against: f98ed3ed82b4a430473e3d3484bd8146b2d88ffb
+diff-base: dd8ce2a3d8c4b5df6ba16a6e3791fe75d9062e73
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
+examined: 8
+scope: 10
 skipped-passes: []
 ---
 
@@ -14,15 +16,20 @@ skipped-passes: []
 
 ## Summary
 
-Re-run 2026-08-28 against the current rule set. 0 MUST, 0 SHOULD outstanding, 1 waived; not blocking.
+Re-run 2026-09-13 as the examined/scope backfill pass. The prior record (2026-08-28) predated `ductus-v0.49.0` and carried no `examined` and no `reviewed-digest`, so its `0/0/0` was indistinguishable from a run whose five passes never fired. 0 MUST, 0 SHOULD, 0 low-confidence; not blocking.
 
-**Why this re-run happened.** The original review ran 2026-06-18, and **32 rule IDs now in force did not exist then** — the whole of `quality-cross.md`, `performance-backend.md`, `concurrency-backend.md`, `observability-backend.md`, and `reliability-backend.md` landed 2026-06-28, and `QUAL-CLAIM-001` on 2026-08-02. A verdict recorded before a rule exists is not evidence about that rule, so the counts were re-derived rather than trusted.
+**Scope, and what was actually read.** The natural diff base collapsed from 813 modified-since / 814 in scope to **3 / 10** once this pass's correction commit recorded a fresh `in-progress` transition. `--since HEAD` gave 0 / 8 and was declined: it excludes by construction the three files this pass edited. Examined **8 of 10**. The two that were not read end to end are named here rather than folded into the numerator:
 
-**The new rules were assessed, not assumed inapplicable.** 031's subject is text-first by construction — the plan's affected set is `framework/bootstrap/ductus.md`, `README.md`, `framework/migrations.toml`, command bodies, and spec artifacts, with no code. The backend families (`BE-QUERY-*`, `BE-CACHE-*`, `BE-POOL-*`, `BE-ASYNC-*`, `BE-RACE-*`, `BE-LOCK-*`, `BE-TXN-*`, `BE-COORD-*`, `BE-TRACE-*`, `BE-RETRY-*`, `BE-DRAIN-*`, `BE-BULK-*`) have no subject in scope. `FE-DEPS-005` governs frontend dependency egress; likewise none.
+- `framework/bootstrap/ductus.md` (1182 lines) was read in full through line 385 — §Instructions, §Agent Registry, §Derived values, §MCP registration, §Adding a new agent, §Permission Setup, §Pre-flight Phase, §ductus runtime detection with States A and B, §Runtime acquisition, §Pointer materialization — plus §MCP wiring, and targeted reads at the self-update comparison, the Antigravity skill scaffolding, the self-install path and the closing-restart notice. That range carries the whole of this spec's subject. Lines 386–1182 (archive fetch, migrations, per-agent scaffolding, placeholder substitution) were not read end to end, so the file is not counted as examined.
+- `framework/commands/{target,status,analyze,implement,audit,specify,plan,ask}.md` is a brace literal that resolves to no file on disk, and one of the eight names it spells, `ask.md`, was renamed to `amend.md` in `7dd6698f` on 2026-06-22 — five days after this spec was created. It stays in scope because the plan lists it. Task 8's requirement was verified another way: the phrase it replaced is absent repo-wide, and the host-generic statement now lives once in the constitution §runtime-host-integration plus `framework/bootstrap/ductus.md` line 22, rather than in eight command preambles.
 
-`QUAL-CLAIM-001` was the one worth checking closely, because 031's own scenario is a *verification* scenario and the rule governs claims that outrun what was examined. `antigravity-mcp-verification` is a model of compliance rather than a violation: it ran a positive control (the home-level config, which spawned the probe and produced 19 log references) to prove the method could detect a spawn at all before concluding from the negative result that project-local `.agents/mcp_config.json` is ignored, and it recorded the quota-exhaustion confound (`RESOURCE_EXHAUSTED 429`) along with why it does not affect the outcome — the sentinel spawns at MCP-init, before the model call. That is exactly the distinction between "examined and found nothing" and "could not examine" that the rule asks for.
+**Rule coverage.** All 11 rule files were loaded and all 105 IDs enumerated. None has a subject in this scope, which is markdown plus one TOML registry with no code: the backend and frontend families have nothing to bind to, and `QUAL-STUB-001` / `QUAL-GROUND-001` / `QUAL-CLAIM-001` govern code paths. `QUAL-CLAIM-001` was checked rather than assumed inapplicable, against this spec's own verification scenario: `antigravity-mcp-verification` ran a positive control that spawned before concluding from a negative result, and recorded the quota-exhaustion confound together with why it cannot affect the outcome. That is the rule's own distinction, met.
 
-**The stale count is corrected, and its cause removed.** `spec.md` recorded `should-violations: 1` while this report recorded `0`. The finding below was moved to Waived by hand on 2026-08-02 with its rationale, but no entry was ever added to `review.waivers` in the spec frontmatter — so the waiver had no structural existence, the count never dropped, and the two files disagreed. The waiver is now recorded in `spec.md`, `process-waivers` applies it, and this report renders it from that record rather than from prose. It will survive the next regeneration.
+**The SIMPLICITY waiver expired, and the expiry is correct rather than incidental.** It excused a finding that `scope` was descriptive metadata derivable from `target`, on the grounds that only `mechanism` drove State-B branching. That is no longer true: §MCP wiring now splits on `scope` directly — a `project-committed` target names the repo-relative pointer, a `user-global` or `home-level` target names the absolute store path — so `scope` carries behavior and the simplicity finding does not fire. `process-waivers` ran unrestricted with no dimension skipped and reported it expired, 0 applied and 0 retained. The waiver is gone because what it excused is gone.
+
+**Five corrections landed in this pass**, all factual, none a rename. The surfaced Auggie registration command was stale in three places (AC7, the Auggie-registration Resolved Question, and `data-model.md`), all quoting `--command ductus` — a bare command that `048-govern-acquired-runtime` stopped resolving when it moved the runtime into the ductus-owned store; `framework/migrations/runtime-store-path.md` exists to repoint adopters off exactly that form. §Out of Scope deferred an Antigravity skills/settings verification, claimed it was tracked, and pointed at an "Open Question below" that is a Resolved Question — nothing tracked it, and `028-antigravity-agent` had already performed that verification on 2026-06-09, eight days before this spec was created. `data-model.md`'s "Server entry shape (unchanged across all agents)" went false when `032-opencode-agent` added an agent using an `mcp` map of typed local-server entries. 032 also added a fourth row to the per-agent descriptor introduced here while signposting only 028, so this spec now carries the matching Signpost (post-032). Seven dead `§` references in `plan.md` and `data-model.md` were qualified; `tasks.md` keeps four deliberately, since §tasks-phase makes it ephemeral and prunable and its entries are spent.
+
+**One finding in scope that is not this spec's to fix.** `specs/029-bootstrap-runtime-autowire/spec.md` §MCP Wiring, AC6 and AC16 still state the superseded layout-derived model as current ("`.mcp.json` for `claude-style`, `{config_dir}/mcp_config.json` for `antigravity`"), and its Signpost (post-031) — which this spec's task 4 correctly placed — sits about 60 lines above them and says only `write-file` agents are Claude, which 032 made false. 029 is the third unit on the backfill campaign's Remaining list, so it is already queued; editing it here would reopen it, stale its review, and duplicate the work its own pass does.
 
 ## MUST violations (blocking)
 
@@ -38,14 +45,7 @@ Re-run 2026-08-28 against the current rule set. 0 MUST, 0 SHOULD outstanding, 1 
 
 ## Waived findings
 
-### WAIVED: SIMPLICITY — `scope` field is descriptive metadata, not behaviorally load-bearing
-
-- **File**: `framework/bootstrap/ductus.md`
-- **Rule**: AGENTS.md §Design Principles / simplicity pass — avoid fields that are not load-bearing.
-- **Finding**: The per-agent descriptor carries `scope` (`project-committed` / `user-global` / `home-level`) alongside `mechanism` (`write-file` / `surface-instruction`). Only `mechanism` drives State-B branching, and the exact location is already given by `target`. `scope` is therefore derivable — `user-global` (Auggie) and `home-level` (Antigravity) both map to `surface-instruction` and differ only in which home location `target` already names.
-- **Auto-fixable**: no
-- **Suggested fix**: Optionally drop `scope` from the descriptor and let `target` carry the location. Waived — see the rationale under Waived findings.
-- **Waived**: `scope` documents a real conceptual distinction readers care about — committed-in-repo vs user-config-dir vs home-global — and the three-line table costs nothing; removing it would trade reader clarity for a metric. Keeping it was the finding's own recommendation.
+*None.*
 
 ## Captured issues
 
@@ -56,5 +56,9 @@ Re-run 2026-08-28 against the current rule set. 0 MUST, 0 SHOULD outstanding, 1 
 *None.*
 
 ## Skipped passes
+
+*None.*
+
+## Unexamined governance
 
 *None.*
