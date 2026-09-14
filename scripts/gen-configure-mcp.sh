@@ -4,11 +4,11 @@
 # canonical tool list in framework/runtime-tools.txt.
 #
 # Establishes the invariant: every tool listed in runtime-tools.txt has
-# a permission entry in both agents' configure sources. Adding or
-# removing a tool in runtime-tools.txt flows through to both files on
+# a permission entry in all four agents' configure sources. Adding or
+# removing a tool in runtime-tools.txt flows through to every file on
 # the next commit via the pre-commit hook.
 #
-# Marker pair (both files):
+# Marker pair (all four files):
 #   <!-- generated:mcp-allow:start -->
 #   <!-- generated:mcp-allow:end -->
 #
@@ -26,7 +26,7 @@
 #                  →  OpenCode: a single `"ductus*": "allow"` glob (covers
 #                                  every tool; not per-tool enumerated)
 #
-# Exits non-zero if either marker is missing in either source file.
+# Exits non-zero if either marker is missing in any source file.
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
