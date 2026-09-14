@@ -2,13 +2,13 @@
 status: done
 dependencies: [021-runtime-boundary, 027-bootstrap-migration-registry, 029-bootstrap-runtime-autowire, 042-consolidate-govern-per-project-files-under-govern-directory]
 review:
-  last-run: 2026-09-14T23:12:24Z
-  reviewed-against: 8d660cb34d04844ffd524685c2fbca256a576e77
+  last-run: 2026-09-14T23:15:23Z
+  reviewed-against: d0bfe956d9db520556693a780e7eb8dba652d606
   must-violations: 0
   should-violations: 0
   low-confidence: 0
   examined: 24
-  scope: 27
+  scope: 28
   reviewed-digest:
     data-model.md: ae0c2b52b863b272d8ab2fbab9b131ec5f7adf55f394bb8d8986488b51bba3c6
     scenarios/pin-is-readable-when-acquisition-needs-it.md: 561c549b449523fc6723bd5adb2a1a4b9c24b8f7d665aec2e988efcc08b3d158
