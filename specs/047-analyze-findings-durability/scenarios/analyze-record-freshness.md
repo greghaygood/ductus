@@ -26,15 +26,16 @@ This is not a refinement of the sha-diff design; it replaces it, because that de
 
 A digest of what was read cannot make that mistake. It also removes the reason the two surfaces ever needed different reference points: a commit sha cannot describe a working tree, so the gate had to read commits and the notice had to read the tree, and they could return different answers from the same implementation. One digest answers the same way wherever it is asked.
 
-**`/{project}:review` reports the state.** Every run renders one `analyze` row in its stdout summary, in all three states:
+**`/{project}:review` reports the state.** Every run renders one `analyze` row in its stdout summary, in all four states:
 
 ```text
   analyze     ✗ never analyzed — run /{project}:analyze before done
   analyze     ✗ last run 2026-09-06 against 683a1e0 — this review supersedes it
   analyze     ✓ last run 2026-09-06 against 683a1e0 — current
+  analyze     ? freshness undeterminable — the record carries no analyzed-digest
 ```
 
-The third state is why this is a computed line and not a fixed reminder. A `/{project}:review` that changed nothing leaves a genuinely current record, and reporting it stale would be the false alarm that teaches operators to skip the row.
+The fourth is the digest-less record this scenario's own Edge Cases describe: it is neither current nor stale, and rendering it as either would be the conflation the record exists to prevent. The `current` state is why this is a computed line and not a fixed reminder. A `/{project}:review` that changed nothing leaves a genuinely current record, and reporting it stale would be the false alarm that teaches operators to skip the row.
 
 **One reference point, so the row and the gate cannot disagree.** Both compute the current subject-set digest and compare it to the recorded one. There is no committed-tree horizon left for either to be blind to, and therefore nothing for a passing verdict to be silent about — which retires the `QUAL-CLAIM-001` finding this scenario's first implementation earned rather than dispositioning it.
 

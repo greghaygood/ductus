@@ -53,8 +53,8 @@ The append precedes the render step so an interrupted run still records what it
 found. This also keeps the step above the `audit:ignore-promotion` render step,
 which matters mechanically: the render step is host-responsibility prose, and
 inserting a primitive-dispatching step *after* it would put a backticked
-primitive name inside a step the parser treats as host-only — the trap AGENTS.md
-§Gotchas records for `audit:ignore-promotion`.
+primitive name inside a step the parser treats as host-only — the trap
+`AGENTS.md` §Gotchas records for `audit:ignore-promotion`.
 
 ### Step numbering
 
@@ -67,6 +67,6 @@ move with it; the implementation greps for step references before renumbering.
 | File | Action | Purpose |
 | --- | --- | --- |
 | `framework/commands/analyze.md` | Modify | Capture step before render; markdown-only reference section |
-| `framework/constitution.md` | Modify | §Automatic issue capture — analyze as a surfacing gate, scope widened |
+| `framework/constitution.md` | Modify | `framework/constitution.md` §brownfield-inbox (its *Automatic issue capture* subsection) — analyze as a surfacing gate, scope widened |
 | `.claude/commands/ductus/analyze.md` | Modify | Regenerated mirror |
 | `specs/047-analyze-findings-durability/tasks.md` | Modify | Task tracking |
