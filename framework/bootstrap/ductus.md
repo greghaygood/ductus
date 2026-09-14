@@ -932,7 +932,7 @@ When the agent's registry `layout` is `antigravity`, the two subsections above (
 
 When the agent's registry `layout` is `opencode`, the two subsections above (**Slash commands**, **Slash command cleanup**) are replaced by the equivalents below. `{config_dir}` resolves to `.opencode`; OpenCode discovers markdown commands under `{config_dir}/command/` (singular), namespaced by subdirectory.
 
-**Commands (strategy: update).** For each row in the slash-command manifest above — the sixteen `framework/commands/*.md` rows plus the `framework/bootstrap/configure/{key}.md` configure row — copy the source **verbatim** (frontmatter + body, no skill transform) to `{config_dir}/command/{project}/{name}.md` (instead of `{config_dir}/commands/{project}/{name}.md`). Substitute `{project}` and `{cli-config-dir}` (→ `.opencode`) in the body exactly as in the `claude-style` copy, and carry the `description` frontmatter as-is. `{name}` is the command's base name (the configure row's `{name}` is `configure`). The commands are invoked `/{project}/{name}` — OpenCode namespaces by subdirectory (verified: `command/ductus/specify.md` registers as command key `gov/specify`).
+**Commands (strategy: update).** For each row in the slash-command manifest above — the sixteen `framework/commands/*.md` rows plus the `framework/bootstrap/configure/{key}.md` configure row — copy the source **verbatim** (frontmatter + body, no skill transform) to `{config_dir}/command/{project}/{name}.md` (instead of `{config_dir}/commands/{project}/{name}.md`). Substitute `{project}` and `{cli-config-dir}` (→ `.opencode`) in the body exactly as in the `claude-style` copy, and carry the `description` frontmatter as-is. `{name}` is the command's base name (the configure row's `{name}` is `configure`). The commands are invoked `/{project}/{name}` — OpenCode namespaces by subdirectory (verified: `command/ductus/specify.md` registers as command key `ductus/specify`).
 
 **Command cleanup (replaces Slash command cleanup).** List the `.md` files under `{config_dir}/command/{project}/`. Delete any whose base name is not produced by the manifest above and is not listed in `.ductus/config.toml` `pinned.files`; report removals and pinned-keeps as for the `claude-style` cleanup. Files outside the `{project}/` subdirectory are adopter/agent territory and are never touched.
 
@@ -1111,7 +1111,7 @@ Omit the tip in **State A** (the runtime is already live) and **State B** (the r
 
 ### Pinned `ductus.md` advisory
 
-If the **Pre-flight Phase** recorded any selected agent as `pinned-divergent` (the installed `ductus` file (`{config_dir}/commands/ductus.md`, or `{config_dir}/skills/ductus/SKILL.md` for `antigravity`) is listed in `.ductus/config.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
+If the **Pre-flight Phase** recorded any selected agent as `pinned-divergent` (the installed `ductus` file — the §Derived values **`ductus` install path** row: `{config_dir}/commands/ductus.md` for `claude-style`, `{config_dir}/command/ductus.md` for `opencode`, `{config_dir}/skills/ductus/SKILL.md` for `antigravity` — is listed in `.ductus/config.toml` `pinned.files` and differs from upstream), append one advisory line per divergent agent after the file summary and before next steps:
 
 > {agent}: ductus.md pinned, upstream has changed.
 
@@ -1119,7 +1119,7 @@ The advisory is omitted when no agent is `pinned-divergent` — adopters whose p
 
 ### Security audit summary
 
-If the **Security Audit (brownfield)** section ran and appended one or more new findings to `specs/inbox.md`, append this single line to the file summary:
+If the **Security Audit (brownfield)** section ran and appended one or more new findings to `specs/inbox.md`, append this single line to the file summary — rendering the command in **the adopted agent's own invocation form**, per the §Derived values **Invocation** row, exactly as the next-steps list below does. The colon form here is the `claude-style` default; printing it to an Antigravity or OpenCode adopter names a command that does not exist on their agent:
 
 > {N} security audit items added to `specs/inbox.md`. Run `/{project}:groom` to triage.
 

@@ -73,8 +73,8 @@ are verified (see provenance):
 | --- | --- |
 | Config dir | `.opencode/` (project); global is `~/.config/opencode/` (the install dir `~/.opencode/` is **not** the config dir) |
 | Config file | `./opencode.json`, `./opencode.jsonc`, or `.opencode/opencode.json`; global `~/.config/opencode/opencode.json`. Deep-merged, **project overrides global**. `$schema: https://opencode.ai/config.json`. Unknown top-level keys are rejected with `ConfigInvalidError` |
-| Invocable unit | markdown **command** at `.opencode/command/{project}/<name>.md`: `description` frontmatter, body becomes the command prompt/`template`, `$ARGUMENTS` is the argument token. Commands namespace by subdirectory — verified: `command/ductus/specify.md` registers as key `gov/specify` |
-| Invocation | `/{project}/<name>` (e.g. `/gov/specify`) — path-style namespace via the `{project}/` subdirectory, the OpenCode analog of Claude's colon `/{project}:<name>` |
+| Invocable unit | markdown **command** at `.opencode/command/{project}/<name>.md`: `description` frontmatter, body becomes the command prompt/`template`, `$ARGUMENTS` is the argument token. Commands namespace by subdirectory — verified: `command/ductus/specify.md` registers as key `ductus/specify` |
+| Invocation | `/{project}/<name>` (e.g. `/ductus/specify`) — path-style namespace via the `{project}/` subdirectory, the OpenCode analog of Claude's colon `/{project}:<name>` |
 | Native rules file | `AGENTS.md` (already shipped), read via OpenCode's `instructions` resolution — no `CLAUDE.md`, no new context file |
 | MCP wiring | `mcp` block in the **project-committed** `opencode.json`: `{ "type": "local", "command": ["ductus", "mcp"], "enabled": true }`. Project config is read and merged (probe: `✓ ductus connected`). A scriptable `opencode mcp add` subcommand also exists |
 | Permissions | `permission` block in the **same** `opencode.json`: actions `allow` / `ask` / `deny`; per-tool string or `{ pattern: action }` (last match wins); keys include `read, edit, bash, task, webfetch, …` |
@@ -226,9 +226,9 @@ step. Pinning via `.ductus/config.toml` and the manifest strategies apply unchan
   `command.hello = { description, template: "Hello $ARGUMENTS" }` — markdown
   commands under `.opencode/command/<name>.md`, body becomes the prompt,
   `$ARGUMENTS` is the argument token. OpenCode **namespaces by subdirectory**: a
-  `command/ductus/specify.md` registers as command key `gov/specify`, so `ductus`
+  `command/ductus/specify.md` registers as command key `ductus/specify`, so `ductus`
   scaffolds to `.opencode/command/{project}/<name>.md` invoked `/{project}/<name>`
-  (e.g. `/gov/specify`) — the OpenCode analog of Claude's colon `/{project}:<name>`,
+  (e.g. `/ductus/specify`) — the OpenCode analog of Claude's colon `/{project}:<name>`,
   not Antigravity's flat-prefix workaround. The `opencode` layout's slash-command
   cleanup glob is the `{project}/` subdirectory under `command/`. `ductus`'s gated
   pipeline ports directly (approval gates stay in-body).

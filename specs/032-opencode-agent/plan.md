@@ -57,7 +57,7 @@ prompts, substitute `{project}` and `{cli-config-dir}` → `.opencode`, preserve
 `$ARGUMENTS`). This is the `claude-style` copy with two differences: the
 destination dir is `command/` (singular) under a `{project}/` subdirectory, and
 invocation is `/{project}/<name>` (path namespace, verified: `command/ductus/specify.md`
-→ key `gov/specify`). The configure row maps to
+→ key `ductus/specify`). The configure row maps to
 `.opencode/command/{project}/configure.md` as for the others. **No skill
 transform** — unlike `antigravity`, OpenCode reads markdown command files
 directly, so the body is the procedure as-is. Slash-command cleanup prunes
