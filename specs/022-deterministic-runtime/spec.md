@@ -109,16 +109,16 @@ review:
   blocking: false
 next-criterion: 32
 analyze:
-  last-run: 2026-09-13T23:27:12Z
-  analyzed-against: 77708c7e17dd1dfe29b8ac07bcf31535066aac51
+  last-run: 2026-09-14T01:43:33Z
+  analyzed-against: 4b2e69e5c2e8223ce4c25bc3777a4468e4d760be
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 2
   analyzed-digest:
-    data-model.md: f9e7371f1b3dfd386c0b71baa920ac851ed76deb15d77dce74e01dac2490b21b
+    data-model.md: 997ebee457606ce2219274c302dec3c75c67041977447cea205d7107be0cc981
     plan.md: 1c040e61e27620ff92bbb285dff892a21b1482fdffc333f5e5bd3bf63e2c6972
-    review.md: 6266c8bf0ce35de16310fcfb7da4c916dcbabebee451af284b29217d0f448722
+    review.md: 71844c9be85d9121ae709878e4582c516dbb2c4624972f04bc58dfa3706f3af7
     scenarios/a-done-spec-has-no-transition-to-gate.md: bad3db76667fc6620b34a2a6dfa39fb6e461523984128314df82f05717a74493
     scenarios/a-review-states-what-it-read.md: a9d8ffdd823dfec6ea56f7c57d84e375e39adfbaf83dc61e9a16099d1828bf1b
     scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -214,7 +214,7 @@ analyze:
     scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
     scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
     scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-    spec.md: fdd950867085c48d26cb67704d956dca6484c6f7236c2663870017426f1e8c9e
+    spec.md: 609a2884d368002f9476a0312cb5ddf4188dcf9363955d27b26a96b3b16ce661
     tasks.md: b98499825c6acdbb956f95a0656bc36d73b946824a805e58d1954f5053a28b6f
   unexamined-by-reason:
     not-a-live-claim: 2
