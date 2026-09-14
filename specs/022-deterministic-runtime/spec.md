@@ -2,15 +2,15 @@
 status: done
 dependencies: [021-runtime-boundary]
 review:
-  last-run: 2026-09-13T23:26:01Z
-  reviewed-against: 9f44314643967194b72ae6f7da66c789a00b2f06
+  last-run: 2026-09-14T01:42:53Z
+  reviewed-against: 0e4be7590037cb4cd5e5cad4f59814ecf0bcd80e
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 10
-  scope: 41
+  examined: 12
+  scope: 87
   reviewed-digest:
-    data-model.md: f9e7371f1b3dfd386c0b71baa920ac851ed76deb15d77dce74e01dac2490b21b
+    data-model.md: 997ebee457606ce2219274c302dec3c75c67041977447cea205d7107be0cc981
     scenarios/a-done-spec-has-no-transition-to-gate.md: bad3db76667fc6620b34a2a6dfa39fb6e461523984128314df82f05717a74493
     scenarios/a-review-states-what-it-read.md: a9d8ffdd823dfec6ea56f7c57d84e375e39adfbaf83dc61e9a16099d1828bf1b
     scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
