@@ -216,15 +216,24 @@ pub(crate) fn scan_line(line: &str, specs_root: &str, depth: usize, out: &mut BT
 /// the line — proven by probe, in the pass that introduced it. So the form
 /// comes from the shared grammar and the charset stays local, which is
 /// what the predicate this replaced was quietly providing.
+///
+/// **The charset also decides where the candidate ends**, which is the
+/// second thing the old predicate was doing silently. It scanned forward
+/// while the bytes were `[a-z0-9-]` and stopped, so `](../002-b)` yielded
+/// `002-b`; terminating on `/` alone instead left the `)` attached and
+/// dropped the edge — a directory-only link to a sibling spec harvested
+/// nothing. Both regressions came from the same move and neither was
+/// visible in this corpus, which happens to hold no such link. Scanning to
+/// the first byte outside the feature-name charset restores the old
+/// boundary exactly while leaving the *form* rule widened, and it closes
+/// the splice by construction: a `]`, a comma or a space ends the
+/// candidate rather than entering it.
 fn leading_slug(s: &str) -> Option<&str> {
-    let seg = s.split('/').next()?;
-    if !super::is_feature_slug(seg) {
-        return None;
-    }
-    // Both forms reduce to `-`/`.`-delimited lowercase-alphanumeric
-    // segments, so one charset test covers them without re-deriving either
-    // shape.
-    seg.split('.').all(super::is_slug_grammar).then_some(seg)
+    let end = s
+        .find(|c: char| !(c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '.'))
+        .unwrap_or(s.len());
+    let seg = &s[..end];
+    super::is_feature_slug(seg).then_some(seg)
 }
 
 /// Replace the frontmatter's `dependencies:` entry — the key line *and* any
@@ -462,13 +471,35 @@ mod tests {
         // directories already on disk. Delegating the form alone rendered
         // `dependencies: [001-x], status: done, [y]` — a second key spliced
         // onto the line. Proven by probe before this guard existed.
+        //
+        // The candidate ends at the `]`, so the crafted target contributes an
+        // ordinary (if spurious) slug and nothing else — which is exactly what
+        // the predecessor predicate did. What must never survive is a value
+        // carrying a character that means something in the rendered list.
         let root = "specs";
         let content = spec(
             "dependencies: []",
             "[x](../001-evil], status: done, [y/spec.md) and [z](../001-ok-slug/spec.md).",
         );
         let deps: Vec<String> = harvest(&content, root).into_iter().collect();
-        assert_eq!(deps, vec!["001-ok-slug"]);
+        assert_eq!(deps, vec!["001-evil", "001-ok-slug"]);
+        assert!(
+            deps.iter().all(|d| !d.contains([']', '[', ',', ':', ' '])),
+            "a harvested slug must be safe in a YAML flow sequence: {deps:?}"
+        );
+    }
+
+    #[test]
+    fn a_directory_only_link_still_harvests() {
+        // `](../002-b)` names a sibling spec without naming a file in it. The
+        // predecessor predicate scanned while the bytes were `[a-z0-9-]` and
+        // stopped, so the `)` ended the candidate; terminating on `/` alone
+        // left it attached and silently dropped the edge. This corpus holds no
+        // such link, so nothing here would have noticed.
+        let root = "specs";
+        let content = spec("dependencies: []", "See [b](../002-b) for the contract.");
+        let deps: Vec<String> = harvest(&content, root).into_iter().collect();
+        assert_eq!(deps, vec!["002-b"]);
     }
 
     #[test]
