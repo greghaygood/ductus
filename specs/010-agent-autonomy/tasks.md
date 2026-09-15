@@ -121,7 +121,7 @@ Update the manifest, recommendation step, and all prose in `framework/bootstrap/
 - [x] Update the section heading from "Skill recommendation" to "Workflow recommendation" and update prose throughout (warning messages, summary lines, discovery note for Auggie)
 - [x] Update the slash-command-cleanup edge-case note to reference the new directory name (no explicit edge-case note found in ductus.md; cleanup walks top-level files only, so subdirectory immunity is implicit and documented in the recommendation step itself)
 - [x] Update the schema reference from `specs/005-skills-and-plugins/data-model.md` to `specs/005-workflows/data-model.md`
-- [x] Add a one-line migration note: adopters who already ran `/ductus:ductus` should manually delete the old `skills/` directory after re-running ductus
+- [x] Add a one-line migration note: adopters who already ran `/ductus` should manually delete the old `skills/` directory after re-running ductus
 - [x] File passes `npx markdownlint-cli2`
 
 **Done when:** ductus.md has no references to "skills" as 005's concept; all paths use `workflows`; markdownlint passes.

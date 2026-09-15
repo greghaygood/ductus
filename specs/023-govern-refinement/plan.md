@@ -10,7 +10,7 @@ Within phase B, the four scope-of-change items from the spec land in this order:
 
 ## Technical Decisions
 
-### Phase sequencing — invariant first, `ductus` primitives second, `ductus` consolidation third
+### Phase sequencing — invariant first, runtime primitives second, command consolidation third
 
 Phase A has six tasks in this order:
 
@@ -23,7 +23,7 @@ Phase A has six tasks in this order:
 
 Only after Phase A completes does Phase B begin — the `framework/commands/amend.md` rewrite calls primitives that exist in `ductus` and are already allowed by the configure files.
 
-Rationale: deferring the primitive landing to mid-023 would force the `amend.md` rewrite to ship in lockstep with `ductus` primitives in the same PR, blurring the per-spec scope and making rollback noisy. Two clean releases (`ductus` first, `ductus` second) keep each landing independently revertible. The generator-before-primitive ordering inside Phase A means the `runtime-tools.txt` → configure invariant holds at every commit on `main` — no transient window where the canonical allow set lags the published tool list.
+Rationale: deferring the primitive landing to mid-023 would force the `amend.md` rewrite to ship in lockstep with `ductus` primitives in the same PR, blurring the per-spec scope and making rollback noisy. Two clean releases (the runtime binary first, the framework second) keep each landing independently revertible. The generator-before-primitive ordering inside Phase A means the `runtime-tools.txt` → configure invariant holds at every commit on `main` — no transient window where the canonical allow set lags the published tool list.
 
 ### MCP allow-list generator — `scripts/gen-configure-mcp.sh`
 
@@ -115,7 +115,7 @@ Prose-only step added to `framework/bootstrap/ductus.md`. Runs after archive fet
 
 The check is idempotent — finds nothing on second run. No new primitive needed; the existing shell-out for `find` plus host-level `Edit`-equivalent file operations cover it. The completion message gains one line: "Migrated N `spec-and-plan.md` files to `spec.md`" (or omitted if N=0).
 
-The changelog entry accompanying the ductus / ductus release pair documents the rename for adopters who upgrade without re-running `/ductus`.
+The changelog entry accompanying the paired runtime and framework release documents the rename for adopters who upgrade without re-running `/ductus`.
 
 ### Validation strategy
 
@@ -179,7 +179,7 @@ The acceptance criteria are concrete enough that a `grep`-based pass against the
 
 ### Considered and rejected
 
-- **Ship `ductus` and `ductus` changes in one combined release.** Rejected — couples two scopes that benefit from independent revert. The dependency points one way (`ductus` needs the new `ductus` primitives) so the staged release model adds no extra risk and isolates rollback.
+- **Ship the runtime and framework changes in one combined release.** Rejected — couples two scopes that benefit from independent revert. The dependency points one way (the framework needs the new runtime primitives) so the staged release model adds no extra risk and isolates rollback.
 - **Extend `lint-tool-coverage.sh` to grep for `spec-and-plan.md` as a sanity check.** Rejected for this spec — out of scope, and the validation pass's one-shot grep covers the same need without expanding the lint surface. If the literal string sneaks back in a future change, that's a job for an `/audit` command (deferred per the inbox). **Settled 2026-09-14, and not the way this expected.** `/{project}:audit` shipped with spec 026, and `scripts/audit/introducing-drift.sh` is exactly the sanity check described — its `RENAMED_TOKENS` catalog carries `/capture`, `/elaborate`, `/validate` and `/ductus:validate` from this spec. `spec-and-plan.md` is deliberately **not** in it, and the reason is stronger than the out-of-scope one above: it is a retired *filename* the project still reads under the old name, so a token catalog would fire on every load-bearing occurrence — the pre-commit hooks' `(spec|spec-and-plan)\.md` alternation, `scripts/lint-frontmatter.sh`, `is_spec_path`, and the `spec-and-plan-sunset` migration entry that records the rename. Sweeping it by token is the wrong instrument; the read-side fallback this spec ripped is what AC10 verifies instead.
 - **Embed the MCP allow-list inline in `configure/claude.md` and `configure/auggie.md` (no generator).** Rejected — two-file copy with manual sync is exactly the drift pattern `gen-*.sh` scripts exist to prevent. The generator is ~50 lines and pays itself back the first time the runtime tool list changes.
 - **Detect runtime presence in `/configure` and gate the MCP entries on it.** Rejected (also recorded as a Resolved Question on the spec) — adds complexity for no benefit; allow entries for unregistered tools are no-ops.

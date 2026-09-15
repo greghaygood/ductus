@@ -244,7 +244,7 @@ That is 14, not 13 — `gate-confirm` is in the primitive library list in the sp
 
 ### No data persistence outside session file + markdown
 
-State management is the spec's already-resolved decision: in-memory within a run, markdown + `.ductus/session.toml` (repo root, gitignored, TOML; consolidated in 0.10.0 from the pre-0.10.0 host- and project-name-specific `{cli-config-dir}/{project}-session.json` JSON) are the durable journal. The plan reaffirms with concrete implementation: the interpreter holds parsed AST + walker position + pending payload in `interpreter::State`, a plain `struct` with no `Drop`-time side effects. Process death loses this state without consequence; the user re-invokes the slash command and the runtime re-derives position from the markdown.
+State management is the spec's already-resolved decision: in-memory within a run, markdown + the session file (gitignored, TOML; consolidated in 0.10.0 onto the repo-root `.govern.session.toml` from the pre-0.10.0 host- and project-name-specific `{cli-config-dir}/{project}-session.json` JSON, and at `.ductus/session.toml` since 042 and 049) are the durable journal. The plan reaffirms with concrete implementation: the interpreter holds parsed AST + walker position + pending payload in `interpreter::State`, a plain `struct` with no `Drop`-time side effects. Process death loses this state without consequence; the user re-invokes the slash command and the runtime re-derives position from the markdown.
 
 ### Error semantics and exit codes
 
