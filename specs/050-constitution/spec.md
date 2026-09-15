@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-15T18:22:57Z
