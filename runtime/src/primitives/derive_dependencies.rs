@@ -202,9 +202,29 @@ pub(crate) fn scan_line(line: &str, specs_root: &str, depth: usize, out: &mut BT
 /// downstream validation against the enumerated corpus, which is what
 /// distinguishes it from the audit script that carried the same grammar
 /// and could drop it outright.
+///
+/// **The charset check is separate from the form check, and both are
+/// required.** [`super::parse_feature_dir`] deliberately does *not* hold a
+/// sequential directory's trailing slug to the slug grammar — it exists to
+/// recognize directories that already exist on disk, where an adopter's
+/// spec root may legitimately hold a name that predates the grammar's
+/// enforcement. This call site is the opposite trust context: its input is
+/// a link target copied out of a document body, and its output is written
+/// verbatim into a YAML flow sequence. Delegating the form alone let
+/// `](../001-x], status: done, [y/spec.md)` render as
+/// `dependencies: [001-x], status: done, [y]`, splicing a second key onto
+/// the line — proven by probe, in the pass that introduced it. So the form
+/// comes from the shared grammar and the charset stays local, which is
+/// what the predicate this replaced was quietly providing.
 fn leading_slug(s: &str) -> Option<&str> {
     let seg = s.split('/').next()?;
-    super::is_feature_slug(seg).then_some(seg)
+    if !super::is_feature_slug(seg) {
+        return None;
+    }
+    // Both forms reduce to `-`/`.`-delimited lowercase-alphanumeric
+    // segments, so one charset test covers them without re-deriving either
+    // shape.
+    seg.split('.').all(super::is_slug_grammar).then_some(seg)
 }
 
 /// Replace the frontmatter's `dependencies:` entry — the key line *and* any
@@ -431,6 +451,24 @@ mod tests {
             "See [docs](../docs/guide.md), [bare](../notes/a.md), and [nodigits](../abc-def/spec.md).",
         );
         assert!(harvest(&content, root).is_empty());
+    }
+
+    #[test]
+    fn a_crafted_link_target_cannot_splice_the_frontmatter_line() {
+        // `harvest`'s output is written verbatim into a YAML flow sequence,
+        // and its input is a link target copied out of a document body. The
+        // shared grammar recognizes the *form* but deliberately leaves a
+        // sequential slug's charset open, because it exists to match
+        // directories already on disk. Delegating the form alone rendered
+        // `dependencies: [001-x], status: done, [y]` — a second key spliced
+        // onto the line. Proven by probe before this guard existed.
+        let root = "specs";
+        let content = spec(
+            "dependencies: []",
+            "[x](../001-evil], status: done, [y/spec.md) and [z](../001-ok-slug/spec.md).",
+        );
+        let deps: Vec<String> = harvest(&content, root).into_iter().collect();
+        assert_eq!(deps, vec!["001-ok-slug"]);
     }
 
     #[test]

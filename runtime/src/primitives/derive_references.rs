@@ -285,8 +285,14 @@ fn find_spec_segment(url: &str) -> Option<(usize, String, String)> {
 /// exactly-three-digits rule `derive_dependencies` carried, with the same
 /// consequence: a cross-service reference to a branch-scoped or four-digit
 /// spec was silently not harvested.
+///
+/// The charset test is kept local for the reason `leading_slug` documents
+/// at length: the shared grammar deliberately leaves a sequential
+/// directory's trailing slug unconstrained, because it recognizes
+/// directories that exist on disk — while this value is parsed out of a
+/// link target and rendered verbatim as `spec: {slug}` into frontmatter.
 fn is_spec_slug(slug: &str) -> bool {
-    super::is_feature_slug(slug)
+    super::is_feature_slug(slug) && slug.split('.').all(super::is_slug_grammar)
 }
 
 /// Harvest the sorted, deduplicated cross-service references from a body.
