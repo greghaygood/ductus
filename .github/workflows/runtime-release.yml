@@ -44,6 +44,44 @@ jobs:
       - name: Run /audit
         run: bash scripts/audit/run-all.sh
 
+  # A release gate distinct from the framework self-audit above, and it exists
+  # because that one is not a substitute. `run-all.sh` audits this repository's
+  # own artifacts for drift; it says nothing about the dependency tree the
+  # published binary links. ductus-v0.49.5 shipped linking rustls 0.23.41 under
+  # RUSTSEC-2026-0285 with every release job green, because no job in this
+  # workflow looked: `cargo audit` ran only on push, where its failure blocks
+  # nothing that has already been tagged.
+  #
+  # Gating `publish` matters more than gating `build`. The crates.io publish is
+  # the irreversible half (see scripts/lint-release-ordering.sh), so a known
+  # vulnerability must stop the release *before* the half that cannot be undone.
+  #
+  # An advisory that must be accepted rather than fixed goes in runtime/audit.toml
+  # with a justification comment naming the RUSTSEC id and the revisit condition
+  # — never by dropping this job.
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned — keep in sync with runtime/rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: clippy, rustfmt
+
+      # Prebuilt binary — a cargo install would recompile cargo-audit on every
+      # cold cache and dominate the job's wall-clock.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: cargo audit
+        run: cargo audit
+
   build:
     name: build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
@@ -222,7 +260,7 @@ jobs:
   # would publish the half nobody uses and skip the half everybody does.
   acquire:
     name: Acquire ${{ matrix.target }}
-    needs: [audit, build]
+    needs: [audit, cargo-audit, build]
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -383,7 +421,7 @@ jobs:
     # version already uploaded". That is safe — it is not a partial write —
     # but the failure is indistinguishable from a real one without reading the
     # log.
-    needs: [audit, build, acquire, sbom]
+    needs: [audit, cargo-audit, build, acquire, sbom]
     runs-on: ubuntu-latest
     defaults:
       run:
