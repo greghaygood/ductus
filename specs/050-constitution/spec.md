@@ -2,13 +2,13 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-15T14:31:16Z
-  reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
+  last-run: 2026-09-15T16:06:25Z
+  reviewed-against: f352f6b8ba78759b69d506ed0cb0649ffcf6275a
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 15
-  scope: 15
+  examined: 11
+  scope: 11
   reviewed-digest:
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
@@ -18,6 +18,7 @@ review:
     scenarios/completion-claims-carry-no-caveats.md: 2b2e43f4cea73ba9c81dc21848b5c668e1db5bf6a5e3becd7467ce025c4179c4
     scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
+    scenarios/knowledge-routes-by-population-not-by-kind.md: 0e934ea65cbaf2bf31acc4f45c461bfb868be45deb5aa9fa6601c59b8c003c5c
   blocking: false
 next-criterion: 21
 analyze:
