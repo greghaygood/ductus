@@ -2,15 +2,15 @@
 status: in-progress
 dependencies: [021-runtime-boundary]
 review:
-  last-run: 2026-09-15T16:29:08Z
-  reviewed-against: 23a5fd80c997e2863cafc3caca96155f7f200eef
+  last-run: 2026-09-15T19:51:35Z
+  reviewed-against: e7ac89523d7ec0ddcae0d27c1fefd6d2790a89e8
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 1
-  scope: 48
+  examined: 5
+  scope: 52
   reviewed-digest:
-    data-model.md: c397e90295145b1b852300e7f3604e69ea168214009c69d77a5f632c9afd6040
+    data-model.md: ef61b8352c10415d27a1ebec73b441eecbc47392a13991b650d324e856760d09
     scenarios/a-done-spec-has-no-transition-to-gate.md: bad3db76667fc6620b34a2a6dfa39fb6e461523984128314df82f05717a74493
     scenarios/a-review-states-what-it-read.md: a9d8ffdd823dfec6ea56f7c57d84e375e39adfbaf83dc61e9a16099d1828bf1b
     scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -98,6 +98,7 @@ review:
     scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
     scenarios/the-cross-spec-impact-gate.md: 636a894e1d481799d2a89ab6df5638030676b1d8bb784e8531e3bf339d4fce87
     scenarios/the-inbox-row.md: 58d356dddec37f5a770fc51e85668351999b9f701aa6d43631a0aecf411d1edd
+    scenarios/the-promotion-coverage-line.md: 4591f9d0d691e763c1c2c63afdecf57cb495ed0060658495867490abec9273f8
     scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
     scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
     scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
@@ -105,7 +106,7 @@ review:
     scenarios/write-analysis-and-the-second-gate.md: 22fff1f9ef829b003fc932fd33056aa3f15cedc4f38b4d84e3f99325a4171814
     scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
     scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
-    scenarios/write-session-primitive.md: 2e0c418401da86dfc2029c8c77e1e028394666a2685563b52c93268b418aca0a
+    scenarios/write-session-primitive.md: 88b1f94a05bf09e168b9fcc30a82cecf6886ee750dcb44d333545dbff44fc1de
     scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
     scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
     scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
