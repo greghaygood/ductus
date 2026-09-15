@@ -23,18 +23,19 @@ review:
   blocking: false
 next-criterion: 22
 analyze:
-  last-run: 2026-09-15T18:03:09Z
-  analyzed-against: 46792ed3b79cc3ca84b9860e3ff54e359e09f69e
+  last-run: 2026-09-15T18:23:29Z
+  analyzed-against: c9def7576182febe15c2c5b3505f1cb56cd14d07
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 1
   captured-issues: 0
   analyzed-digest:
-    plan.md: 3315451af8b092fe74c9bc4579d7a1f8ac8525af6516349554ca8e9691ebaebd
-    review.md: 1f477f6d7ea93753d6eb0aca23e677caf70374c8f33974a6eb1827144f08181c
+    plan.md: d6d9d1db72f72faaf9cbda3f0c44fe1e8aad272102b14f29c16d1e3d5097a920
+    review.md: a084bb83b7951af060d688f084e1245216a1c55362334389cfd7779837afd0cd
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
+    scenarios/a-measurement-states-its-method-and-units.md: 4c250a480c11e9788058f1012b647daa14aba2036d4a3baa9d0c1ba3c5965b2a
     scenarios/a-partial-read-is-not-a-read.md: 8d6851e20f8a2e9f083434a37cbf39ab3bca533ec819a8a258197e4afb797b07
     scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
     scenarios/a-retired-filename-leaves-a-decision-record.md: f84a3177744eb03a859d82a4017495c24bcf24466448b7c49ad1a253147ab581
@@ -42,8 +43,8 @@ analyze:
     scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
     scenarios/knowledge-routes-by-population-not-by-kind.md: 0e934ea65cbaf2bf31acc4f45c461bfb868be45deb5aa9fa6601c59b8c003c5c
-    spec.md: 161761f32c1b1db89d9436489ea9455ebacebd3490b091abb8a38eb669eac1b2
-    tasks.md: 30cc2be41ade19a7115d6fe8ea303f8026d71438dceb378e195676a399822ff4
+    spec.md: 1b8fa77e080330f530eedb71dab9a9d7061b80cb5507d2c90779b9dd22412e68
+    tasks.md: 78da51b471e40d2a0f31193ed827a873bb0a812bb6d378535173b3d962613763
   unexamined-by-reason:
     ships-to-adopter: 1
   blocking: false
