@@ -31,10 +31,13 @@
 //!   a pruned spent task to persist (constitution §tasks-phase — `tasks.md`
 //!   is ephemeral; see [`pruning_evidence`] for the documented heuristic).
 //! - **review-state-drift** (blocking) — reference §"Review state drift
-//!   (blocking)": a `done` spec with
-//!   `review.last-run` unset, or `review.blocking: true`, drifted. The
-//!   grandfather rule applies: a `done` spec with no `review:` block at
-//!   all predates `/ductus:review` and is exempt.
+//!   (blocking)": a `done` spec with `review.last-run` unset, with
+//!   `review.blocking: true`, or with a non-zero `review.should-violations`,
+//!   drifted. The third condition arrived with 045's task 15: §implement-phase
+//!   forbids reaching `done` over an outstanding SHOULD, and the count is what
+//!   states whether one is outstanding. The grandfather rule applies: a `done`
+//!   spec with no `review:` block at all predates `/ductus:review` and is
+//!   exempt.
 //! - **artifact-unreadable at `done`** (blocking, across families) — an
 //!   artifact a family was meant to scan but could not read is a skipped
 //!   target below `done` and a **blocking finding at it**. The general rule

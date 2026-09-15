@@ -186,21 +186,25 @@ pub(crate) fn scan_line(line: &str, specs_root: &str, depth: usize, out: &mut BT
     }
 }
 
-/// The `NNN-slug` prefix of `s`: exactly three ASCII digits, a hyphen, then
-/// one or more of `[a-z0-9-]`. `None` when the shape does not match.
+/// The feature-directory segment at the head of `s`, in **either** form
+/// spec 051 defines. `None` when the first segment is not a feature
+/// directory.
+///
+/// Delegates to [`super::parse_feature_dir`] rather than re-deriving the
+/// grammar. It used to test *exactly* three ASCII digits and a hyphen,
+/// which disagreed with the shared rule in both directions at once: a link
+/// to a branch-scoped spec (`1234.1-slug`) or to a four-digit one
+/// (`1000-slug`) harvested **no** edge, silently, so the dependency never
+/// appeared in the frontmatter and nothing reported its absence.
+///
+/// The guard is load-bearing and so is widened rather than removed:
+/// `harvest` writes this set straight into `dependencies:` with no
+/// downstream validation against the enumerated corpus, which is what
+/// distinguishes it from the audit script that carried the same grammar
+/// and could drop it outright.
 fn leading_slug(s: &str) -> Option<&str> {
-    let bytes = s.as_bytes();
-    if bytes.len() < 5 || !bytes[..3].iter().all(u8::is_ascii_digit) || bytes[3] != b'-' {
-        return None;
-    }
-    let mut end = 4;
-    while end < bytes.len()
-        && (bytes[end].is_ascii_lowercase() || bytes[end].is_ascii_digit() || bytes[end] == b'-')
-    {
-        end += 1;
-    }
-    // `NNN-` with nothing after it is not a slug.
-    (end > 4).then(|| &s[..end])
+    let seg = s.split('/').next()?;
+    super::is_feature_slug(seg).then_some(seg)
 }
 
 /// Replace the frontmatter's `dependencies:` entry — the key line *and* any
@@ -398,6 +402,35 @@ mod tests {
         );
         let deps: Vec<String> = harvest(&content, root).into_iter().collect();
         assert_eq!(deps, vec!["001-a", "002-b"]);
+    }
+
+    #[test]
+    fn harvests_branch_scoped_and_four_digit_siblings() {
+        // Both forms `parse_feature_dir` accepts must produce an edge. The
+        // predicate here used to demand *exactly* three digits, so a link to
+        // either derived no dependency at all — silently, since an absent
+        // edge looks the same as a spec that cites nobody.
+        let root = "specs";
+        let content = spec(
+            "dependencies: []",
+            "See [staged](../1234.1-staged/spec.md) and [big](../1000-thousandth/spec.md).",
+        );
+        let deps: Vec<String> = harvest(&content, root).into_iter().collect();
+        assert_eq!(deps, vec!["1000-thousandth", "1234.1-staged"]);
+    }
+
+    #[test]
+    fn a_non_feature_directory_still_yields_no_edge() {
+        // Widening the grammar must not turn every relative link into a
+        // dependency: `harvest` writes this set straight into the
+        // frontmatter with no downstream validation, so the guard is the
+        // only thing standing between a doc link and a false edge.
+        let root = "specs";
+        let content = spec(
+            "dependencies: []",
+            "See [docs](../docs/guide.md), [bare](../notes/a.md), and [nodigits](../abc-def/spec.md).",
+        );
+        assert!(harvest(&content, root).is_empty());
     }
 
     #[test]

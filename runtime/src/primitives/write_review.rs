@@ -235,10 +235,21 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
 /// with no commit yet) yields zero rather than an error: the findings this run
 /// computed still have to land, and a zero scope beside a zero `examined` is
 /// the coherent empty-scope state rather than a false claim.
+///
+/// **`empty-scope` does not short-circuit this.** It used to, so a caller that
+/// passed the flag recorded `scope: 0` without deriving anything — and the
+/// realistic way to pass it wrongly is not carelessness but an over-cap
+/// `compute-review-scope` call, which returns a hard error with no result and
+/// reads as *nothing in scope*. The resulting record (`0/0/0`, `scope: 0`,
+/// `examined` absent, `blocking: false`) is self-consistent and invisible to
+/// every gate: Family 31 cannot see it because both of its `examined` arms
+/// guard on `total > 0`, Family 19 cannot because the digest is valid, and
+/// `check-review-gate` cannot because the review is non-blocking. Deriving the
+/// denominator unconditionally closes it with no new check: a genuinely empty
+/// scope still resolves to 0, while a false one now carries the real `scope: N`
+/// beside a zero `examined`, which is exactly the shape Family 31 already
+/// reports as `examined-nothing`.
 fn resolve_scope_size(args: &WriteReviewArgs, repo: &Path) -> u32 {
-    if args.empty_scope {
-        return 0;
-    }
     let scope_args = crate::schema::primitives::ComputeReviewScopeArgs {
         feature: args.feature.clone(),
         since: Some(args.diff_base.clone()),
@@ -1279,6 +1290,32 @@ mod tests {
         // field added later — and an empty scope is exactly when an operator
         // needs telling that the second gate is still owed.
         assert_eq!(result.analyze_freshness, RecordFreshness::NeverRun);
+    }
+
+    #[test]
+    fn empty_scope_does_not_suppress_the_derived_denominator() {
+        // The flag renders the empty-scope Summary; it must not also decide
+        // the denominator. It used to short-circuit `resolve_scope_size`, so
+        // a caller that reached this branch by misreading an over-cap
+        // `compute-review-scope` error as "nothing in scope" recorded
+        // `scope: 0` beside a zero `examined` — a record byte-identical to an
+        // honest empty review, and invisible to Family 31 (both `examined`
+        // arms guard on `total > 0`), to Family 19 (the digest is valid) and
+        // to `check-review-gate` (it is non-blocking).
+        //
+        // Deriving unconditionally is what makes the two distinguishable.
+        // This spec has no recorded `in-progress` transition, so the derived
+        // window is empty and the honest answer really is 0 — the assertion
+        // that matters is that the number came from a derivation rather than
+        // from the flag, which the next test pins from the other side.
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.empty_scope = true;
+        let result = run(&args, tmp.path()).unwrap();
+        assert_eq!(result.exit_code, 0);
+        let report = review_md(&tmp, "001-x");
+        // The rendering half of the flag is untouched and still correct.
+        assert!(report.contains("Review scope is empty"));
     }
 
     #[test]

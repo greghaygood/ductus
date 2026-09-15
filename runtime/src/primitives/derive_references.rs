@@ -277,16 +277,16 @@ fn find_spec_segment(url: &str) -> Option<(usize, String, String)> {
     None
 }
 
-/// `NNN-slug`: exactly three ASCII digits, a hyphen, then one or more of
-/// `[a-z0-9-]`.
+/// Whether `slug` names a feature directory in either form spec 051
+/// defines.
+///
+/// Delegates to [`super::parse_feature_dir`] rather than carrying a second
+/// copy of the grammar. This was an independent re-derivation of the same
+/// exactly-three-digits rule `derive_dependencies` carried, with the same
+/// consequence: a cross-service reference to a branch-scoped or four-digit
+/// spec was silently not harvested.
 fn is_spec_slug(slug: &str) -> bool {
-    let bytes = slug.as_bytes();
-    bytes.len() > 4
-        && bytes[..3].iter().all(u8::is_ascii_digit)
-        && bytes[3] == b'-'
-        && bytes[4..]
-            .iter()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'-')
+    super::is_feature_slug(slug)
 }
 
 /// Harvest the sorted, deduplicated cross-service references from a body.
