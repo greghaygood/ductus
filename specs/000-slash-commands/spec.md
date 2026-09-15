@@ -1,19 +1,19 @@
 ---
 title: "000-slash-commands — spec"
-status: in-progress
+status: done
 dependencies: []
 tags: [commands, pipeline, templates]
 review:
-  last-run: 2026-09-14T22:40:43Z
-  reviewed-against: 2265d2ed59aacf5a5fc68e4e144ea17628f87434
+  last-run: 2026-09-15T13:01:59Z
+  reviewed-against: 880e59a0906dbdbb273784d28079446d6f01d856
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 9
-  scope: 19
+  examined: 8
+  scope: 36
   reviewed-digest:
     scenarios/clarify-one-at-a-time.md: 74531377a3ba6862619c2a4aaf861084da5b53d69ac09a39f28740176f5c078d
-    scenarios/command-autocomplete-summary.md: 48af7d83e799466a0a7530e6bad4ea3a9e4666f484caa1fd07d378b358df2c63
+    scenarios/command-autocomplete-summary.md: de4ef40b8d2a8587be508d333d502198cae4c312639b282ce363d8bb7253fa66
     scenarios/criterion-route-after-draft.md: b08bf71669de7980442f8246be334fac4440d43c1920eca95c770878f5c45386
     scenarios/dashboard-dependencies-column.md: e471757b1a1f7167129935144362f08c47c5da2dea585405a85f9ce2bcbc8f67
     scenarios/implement-skips-planned-prompt.md: adeb014c4192e84543d733fcf27f12907c2cada0d4950af9782a6168a6fac1c3
@@ -25,17 +25,18 @@ review:
   blocking: false
 next-criterion: 16
 analyze:
-  last-run: 2026-09-14T22:41:17Z
-  analyzed-against: d3b1488c970508153fc9eca58e3c01ab42ed04fa
+  last-run: 2026-09-15T13:02:28Z
+  analyzed-against: 880e59a0906dbdbb273784d28079446d6f01d856
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 1
+  captured-issues: 0
   analyzed-digest:
     plan.md: 5f265eda92ac46ff3df6310531c3d731021a504c82a9478f2add4aa442431157
-    review.md: 02b64bfefd55fb4916f7fed3497d34423e4cd8897bc3a6fbc08118345349a55f
+    review.md: e1c4fb28a109db62194839225aed24df92d3c6cfbae16a18d86c0b76635abe7d
     scenarios/clarify-one-at-a-time.md: 74531377a3ba6862619c2a4aaf861084da5b53d69ac09a39f28740176f5c078d
-    scenarios/command-autocomplete-summary.md: 48af7d83e799466a0a7530e6bad4ea3a9e4666f484caa1fd07d378b358df2c63
+    scenarios/command-autocomplete-summary.md: de4ef40b8d2a8587be508d333d502198cae4c312639b282ce363d8bb7253fa66
     scenarios/criterion-route-after-draft.md: b08bf71669de7980442f8246be334fac4440d43c1920eca95c770878f5c45386
     scenarios/dashboard-dependencies-column.md: e471757b1a1f7167129935144362f08c47c5da2dea585405a85f9ce2bcbc8f67
     scenarios/implement-skips-planned-prompt.md: adeb014c4192e84543d733fcf27f12907c2cada0d4950af9782a6168a6fac1c3
@@ -44,7 +45,7 @@ analyze:
     scenarios/target-clear-flag.md: b7dd0b1df765a600403715a0012afacc9c13749122cd15d7d56ad2b69252eb52
     scenarios/validate-fix-mode.md: ce87d6a7473de97a20fb7cf4120a8a6e8bce588db355e7f1f39cd3baf40f447f
     scenarios/validation-gates.md: 07dc0f7d1d5c494503cca763dbfcfd75e497395621cf43d0b20b73b0048ef934
-    spec.md: 4630ba7bb6ea1eba8f1a89fcac04746b1998f89299b5bb63b3ad603e219c28b3
+    spec.md: d75c8816deec79b1dbbd6da0469d090a5a444409b4ceb3ecffd9e4ed945fff4d
     tasks.md: 12dc83f2b8b99cfdeaf8978b0b9ff9a4d7f49126b596e05d15150fa7f7a40cf2
   unexamined-by-reason:
     ships-to-adopter: 1

@@ -1,14 +1,14 @@
 ---
 spec: 000-slash-commands
-reviewed-at: 2026-09-14T22:40:43Z
-reviewed-against: 2265d2ed59aacf5a5fc68e4e144ea17628f87434
-diff-base: aadc1d30f0b214b31e2326e06ef21c66bf0cdc2d
+reviewed-at: 2026-09-15T13:01:59Z
+reviewed-against: 880e59a0906dbdbb273784d28079446d6f01d856
+diff-base: c1b00ea8661acd9a55392c39947b1569773edfcd
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 9
-scope: 19
+examined: 8
+scope: 36
 skipped-passes: []
 ---
 
@@ -16,15 +16,17 @@ skipped-passes: []
 
 ## Summary
 
-All five passes ran over the nine live in-scope files, each read in full: `spec.md`, `plan.md`, six `scenarios/*.md`, and `specs/README.md`. **examined 9 of scope 19.** The other ten are the plan's Affected Files — `commands/{about,analyze,clarify,implement,next,plan,setup,specify,status,target}.md` — and **none of them exists**: 000's directory was reorganized to `framework/commands/`, `about` became `help`, `setup` became `configure`, and `next` was retired. They stay in scope because the plan lists them and are named here as absent rather than folded into the numerator. Read outside the scope, for the criterion walk: `tasks.md`, `review.md`, and the four unedited scenarios (`clarify-one-at-a-time`, `implement-skips-planned-prompt`, `scenario-without-task-visibility`, `target-argument-parsing`) — all four verified against the tree and correct as written.
+Reviewed the `/ductus:init` retirement (cc870e18) and the ductus-v0.49.7 release (880e59a0) against 000's window. Rule files: all 11 loaded via `discover-rule-files`. Five passes run — security, reuse, quality, efficiency, simplicity — 0 MUST, 0 SHOULD, 0 low-confidence.
 
-Recorded 0 MUST, 0 SHOULD, 0 low-confidence, nothing waived, no pass skipped. **Two findings were raised and fixed inside the pass, and both were defects in this pass's own step-4 edits** — reported because they bear on whether this review's subject can be trusted. *Reuse*: the §Session State repair replaced the retired JSON block with a TOML one, which is a copy of a canonical source replaced by another copy, and already two keys short of it (`009-scenario-targeting` added `scenario` and `scenario-path`); it now points at 022's `write-session-primitive`. *Quality*: §Parameterization generalized `.claude/` to `{cli-config-dir}/` and left `commands/` — the `claude-style` branch of a three-way layout-derived value — asserted as a universal, the 028/032 defect; both it and the Invocation form now point at `framework/bootstrap/ductus.md` §Derived values, confirmed by hand at line 57 because a *qualified* anchor is reported resolved without being checked. Security, efficiency and simplicity produced nothing: the scope is documentation, with no code, credentials, queries or loops in it.
+Scope and what was NOT read. `examined: 8` of `scope: 36`, `diff-base c1b00ea8` (the parent of the reopen commit, so the pass's own edits are inside the window). **Read end to end**: `AGENTS.md`, `framework/constitution.md`, `runtime/tests/mechanical_sweep_parity.rs`, `scripts/gen-claude-commands.sh`, `scripts/audit/manifest-parity.sh`, `specs/000-slash-commands/spec.md`, `specs/000-slash-commands/scenarios/command-autocomplete-summary.md`, `version`.
 
-**`criterion-path-existence` has never checked a single path claim in this spec.** `check-artifacts` reports `clean: true` with exactly one skip (`specs/templates/`, reason `ships-to-adopter`) — an exclusion by construction, not a worklist — and that one entry is the *only* path-like span among the **22** backticked spans in the 15 criteria. All 22 were walked by hand; the rest fail `is_path_like` on braces, a missing interior slash, or whitespace. This is a third shape distinct from both 051's empty array and 023's 24 skips.
+**Sixteen in-scope paths do not exist and could not be read**, and none was folded into the numerator. Eleven are the pre-reorganization layout this spec's plan still lists — `commands/{about,analyze,clarify,implement,next,plan,setup,specify,status,target}.md` and `.claude/commands/ductus/init.md`, the last deleted by this very change. Five are `specs/004-tech-stack-selection/{spec,plan,tasks,review}.md` and its one scenario, removed by this change when 004 was consolidated into 003. They stay in scope because `compute-review-scope` reads the plan's Affected Files; the successor files were not substituted for them.
 
-**Step (5), both bases measured and recorded.** Pre-reopen natural base `043a0345` resolved **157 modified-since / 167 in scope at 106,952 bytes** — over the MCP cap, so it ran through the CLI and `jq`; that is **+2.8KB** against the 104,124 the campaign item recorded earlier the same day, `043a0345` being a base that widens with every commit to `main`. Pre-reopen `--since HEAD` gave 0 / 10. The step-4 commit collapsed the natural base to **9 / 19 at 1,481 bytes** on `aadc1d30`, a 72x reduction, and post-reopen `--since HEAD` gave 0 / 10 and was declined for excluding the nine files this pass edited. Both post-reopen legs returned inline.
+**Read only in part, named rather than counted**: `runtime/src/interpreter/payload.rs` and `runtime/src/primitives/mod.rs` (the template-resolution doc comments this release corrected, plus `load_template` / `template_candidates` in full, to confirm the corrected comments describe what the code does — they do: the first candidate is `{specs-root}/templates/{file}`, which `/ductus` ships via the Shared Files manifest rows and creates); `runtime/src/primitives/derive_boundary.rs` (the one test comment); `runtime/CHANGELOG.md` (the 0.49.7 entry written here, plus the 0.49.6 head); `runtime/Cargo.lock` (the single changed version line); `runtime/Cargo.toml`; and the five sibling `spec.md` files edited by the retirement (003, 020, 026, 040, 043), each read at its edited region rather than whole.
 
-Fourteen corrections landed. The two largest are content the corpus lost with nothing noticing: `ccdd3ac6` — 000's own *reaches done* commit, the one the prior review was recorded against — truncated `criterion-route-after-draft.md` mid-sentence at an unterminated backtick, dropping four Edge Cases and swallowing the `## Open Questions` heading into a code span, so that file has had no Open Questions heading since 2026-08-17 and the pre-`done` gate was satisfied by the damage rather than despite it; and `validate-fix-mode.md` still requires a checkbox-correcting `--fix` that spec **017 removed entirely** in its own commit message, while today's `--fix` is a different flag whose only writes are guarded `done → in-progress` reverts. That is the fourth 017 reversal the campaign has found with no signpost.
+Reuse pass, one candidate considered and deliberately not filed. `commit_all` in the new fixture overlaps `init_git_repo` / `commit_staged` in `runtime/tests/parity.rs`. Not recorded as a finding: Rust integration tests compile as separate crates, so sharing needs a `tests/common/` module, and the two have different contracts — parity.rs freezes its signature because the commit OID lands in a golden payload, while this one only needs stability for a legible failure message. Fifteen lines against a shared module for two call sites with different determinism requirements.
+
+Quality pass, verified rather than assumed. The generator's `--help` range moved with the deleted header line (`2,16p` → `2,15p`) and was confirmed by running `--help` and reading the rendered block. `--check` exits 0 and `scripts/audit/check-zero.sh` drives exactly that invocation. The prune loop removed `init.md` on the first write-mode run, which is the behaviour the rewritten AGENTS.md entry asserts. The relaxed corpus guard returns before the closing coverage line only on the empty-set path, and the new fixture-backed test was proven failable by probe — an inverted expectation gives `left: {} right: {alpha.md}` — after a first probe attempt that proved nothing because cargo exited 101 from the repo root without running.
 
 ## MUST violations (blocking)
 

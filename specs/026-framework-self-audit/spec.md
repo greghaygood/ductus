@@ -1,14 +1,14 @@
 ---
-status: in-progress
+status: done
 dependencies: [017-derive-dont-ask, 022-deterministic-runtime, 023-govern-refinement, 024-rule-loader, 025-rule-opt-out]
 review:
-  last-run: 2026-09-15T00:04:22Z
-  reviewed-against: 9c25716daa5a26f42ec034edb7e514fdd55a51e3
+  last-run: 2026-09-15T13:02:08Z
+  reviewed-against: 880e59a0906dbdbb273784d28079446d6f01d856
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 19
-  scope: 22
+  examined: 8
+  scope: 39
   reviewed-digest:
     scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
     scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
@@ -29,21 +29,22 @@ review:
     scenarios/family-34-step-reference-integrity.md: 4d24ed6a08c54ae98f135ad108d3b8a7b85f782f5af7edf26c67d92aa509f067
     scenarios/family-35-manifest-destination-links.md: 8e94dce4172e2b326612da806327af31777d99b8c6ce89642c9d10a98dc148b3
     scenarios/family-36-self-url-resolution.md: f5f69dd3e566a0e07ef2825d5843ec76cf18203355c7c7ddff8737673dfadb09
-    scenarios/host-namespace-parity.md: 5bb568d2bb74b7c4467e123e41423c1f591441ebd3cfababac26025bca213fcc
+    scenarios/host-namespace-parity.md: 05714fe6b728391f699ed7328e1aea252a48259ae489fa9c06e0d0609dc1d376
     scenarios/link-check-consolidation.md: f838133a535aa090e09d7f82903facc4dff8cc822c1dec5c22f9b4d1e17a5049
     scenarios/readme-command-parity.md: 3788aa1103dba1860af8cb9950a6425ed33e4a24498f825fcd980e0c9bb7f8bc
   blocking: false
 next-criterion: 26
 analyze:
-  last-run: 2026-09-15T00:05:16Z
-  analyzed-against: 50cc8db107d325eb554ae42be955018b06227fa7
+  last-run: 2026-09-15T13:02:28Z
+  analyzed-against: 880e59a0906dbdbb273784d28079446d6f01d856
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 7
+  unexamined: 14
+  captured-issues: 0
   analyzed-digest:
     plan.md: 9c4dc8504682605f915315025b7fa65a6dc7418bdd53dcf969871e1e35b045b3
-    review.md: 0334570e3acf2a3a50afd80bd00bfcb6c7f96ed5bf5f94bf32292d20e0794dac
+    review.md: 5182705c347b4051a0921997678eb9dd8fb13a993cf1e07f63fee2b66dcaf07c
     scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
     scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
     scenarios/family-10-migration-coverage.md: 8684e643e4ea938cbeeed6d1342aef27efc84a7bf7559b111b6a12cacacfa02b
@@ -63,13 +64,13 @@ analyze:
     scenarios/family-34-step-reference-integrity.md: 4d24ed6a08c54ae98f135ad108d3b8a7b85f782f5af7edf26c67d92aa509f067
     scenarios/family-35-manifest-destination-links.md: 8e94dce4172e2b326612da806327af31777d99b8c6ce89642c9d10a98dc148b3
     scenarios/family-36-self-url-resolution.md: f5f69dd3e566a0e07ef2825d5843ec76cf18203355c7c7ddff8737673dfadb09
-    scenarios/host-namespace-parity.md: 5bb568d2bb74b7c4467e123e41423c1f591441ebd3cfababac26025bca213fcc
+    scenarios/host-namespace-parity.md: 05714fe6b728391f699ed7328e1aea252a48259ae489fa9c06e0d0609dc1d376
     scenarios/link-check-consolidation.md: f838133a535aa090e09d7f82903facc4dff8cc822c1dec5c22f9b4d1e17a5049
     scenarios/readme-command-parity.md: 3788aa1103dba1860af8cb9950a6425ed33e4a24498f825fcd980e0c9bb7f8bc
-    spec.md: 6bf42a9ca9ebafbbfbadcb4ad491c52433290cbfb82ad4804db4f5544b0ee07e
+    spec.md: 94f9784352eae1525c8d15760e984652f111cb0ed7436e6dc0c2716cbb121790
     tasks.md: 7414cfe3b1d8400cbffd6fa7fd4c8295fd81d66bc325414d72c6574eca990c36
   unexamined-by-reason:
-    not-a-live-claim: 7
+    not-a-live-claim: 14
   blocking: false
 ---
 

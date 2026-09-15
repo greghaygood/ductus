@@ -1,6 +1,6 @@
 ---
 title: "003-bootstrap-automation — spec"
-status: in-progress
+status: done
 dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
 tags: [bootstrap, commands]
 review:
@@ -16,20 +16,21 @@ review:
   blocking: false
 next-criterion: 18
 analyze:
-  last-run: 2026-09-13T14:13:46Z
-  analyzed-against: 64b76b50a2265e93333bb2d99f51a3fde999d9a0
+  last-run: 2026-09-15T13:00:34Z
+  analyzed-against: 880e59a0906dbdbb273784d28079446d6f01d856
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
-  unexamined: 3
+  unexamined: 4
+  captured-issues: 0
   analyzed-digest:
-    plan.md: ad3823f7c251c85b9e3ec543aa6248e57ee94333446218a0be7385e442961068
+    plan.md: d2076722f5167c8e4e8a536b7e7c4144fd00a71ac777132eea4d155b0958507e
     review.md: 8024ebfa7c6da4572661afc0bed44e753743f03d85a53c76efec7329801be19c
     scenarios/curl-sh-installer.md: 63eaebf34fe95db7e26a926ca06f6e73d57936901b75269601465a8ef108d069
-    spec.md: e354bb82cc4c701c39c04f90ea3d1ff0257f910560544cdb78f98a9bc826c7ea
+    spec.md: 7c52f6bb61c3152080c52b5380b650ed807378b4142ae211f6a731f0b2ea2e93
     tasks.md: c9aaed460b369819359179cb63e43bf4909c7f9e68c75749d4548e0ae8bba562
   unexamined-by-reason:
-    not-a-live-claim: 2
+    not-a-live-claim: 3
     ships-to-adopter: 1
   blocking: false
 ---
