@@ -12,12 +12,18 @@ review:
   reviewed-digest: {}
   blocking: false
 analyze:
-  last-run: null
-  analyzed-against: null
+  last-run: 2026-09-15T13:53:30Z
+  analyzed-against: 4de6a84c36dfee663112e51fcb59852b2aedb229
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  captured-issues: 0
+  analyzed-digest:
+    plan.md: 3fd1e0a1b0f12b59399d16223f32746c0da68d4e7582d84a0bd5fbed69e0cb66
+    review.md: 65888222e14768b3919b8dd9f4bf9baefcec2706d1c2f26c75190091e460ffb1
+    spec.md: 47283169ea82d7a21d37c292927e788ed0b1ab756d098baf029efd17b5fc0425
+    tasks.md: 0436e27c7e9c2bb2476e36d4cd4c1983ab7fef4e9e10c75a3fd55fa43c35ff90
   blocking: false
 next-criterion: 12
 ---
@@ -144,17 +150,17 @@ Rationale does not move as one class. (`specs/inbox.md` puts it at 17–25% of t
 
 ## Acceptance Criteria
 
-- [ ] AC1: `framework/bootstrap/ductus.md` contains no step that requires the framework archive, and every step it does contain resolves within it — including both executable forward-dependencies named in §The boundary.
-- [ ] AC2: The archive half ships under `framework/bootstrap/`, is reachable from the extracted tree by the path the installed half names, and appears in no manifest that writes into an adopter's agent directory.
-- [ ] AC3: `install.sh` places only the installed half, for every one of its four agent arms, and its frontmatter-delimiter payload check still passes against it.
-- [ ] AC4: The `ductus` self-install step writes only the installed half, at each layout's install path, and the Post-Write Integrity Check's body assertion holds against it for every layout.
-- [ ] AC5: The self-update check byte-compares the installed half alone; no staleness check is defined for the archive half, and its freshness is stated to come from the archive fetch.
-- [ ] AC6: `framework/bootstrap/govern.md` is byte-identical to the post-split `framework/bootstrap/ductus.md`, so audit Family 21 passes unchanged; no `govern`-named archive half is created.
-- [ ] AC7: `adopter_destinations` in `check_artifacts.rs` still derives the same non-empty destination set from `framework/bootstrap/ductus.md` after the split as before it, verified by probe in both directions, and no `runtime/` source file changes.
-- [ ] AC8: Every consumer listed in §What the split does not reach still resolves its subject from `framework/bootstrap/ductus.md` after the split, each verified by running the family rather than by reading the assignment; any consumer whose subject does move is re-pointed and still reports a finding on an absent subject rather than treating an empty extraction as agreement.
-- [ ] AC9: `scripts/audit/run-all.sh` reports no findings, and the three generators plus `derive-dependencies` and `derive-references` report no drift.
-- [ ] AC10: The whole local gate passes: `npx markdownlint-cli2`, the six `lint-*.sh` scripts, `scripts/tests/*.sh`, `shellcheck -S warning` over the tracked shell set, and under `runtime/` `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, and `cargo test --release --locked`.
-- [ ] AC11: The reduction to the installed half is stated in the plan from a measurement taken **after** the split, against the 146,953-byte pre-split file, rather than from this spec's estimate.
+- [x] AC1: `framework/bootstrap/ductus.md` contains no step that requires the framework archive, and every step it does contain resolves within it — including both executable forward-dependencies named in §The boundary.
+- [x] AC2: The archive half ships under `framework/bootstrap/`, is reachable from the extracted tree by the path the installed half names, and appears in no manifest that writes into an adopter's agent directory.
+- [x] AC3: `install.sh` places only the installed half, for every one of its four agent arms, and its frontmatter-delimiter payload check still passes against it.
+- [x] AC4: The `ductus` self-install step writes only the installed half, at each layout's install path, and the Post-Write Integrity Check's body assertion holds against it for every layout.
+- [x] AC5: The self-update check byte-compares the installed half alone; no staleness check is defined for the archive half, and its freshness is stated to come from the archive fetch.
+- [x] AC6: `framework/bootstrap/govern.md` is byte-identical to the post-split `framework/bootstrap/ductus.md`, so audit Family 21 passes unchanged; no `govern`-named archive half is created.
+- [x] AC7: `adopter_destinations` in `check_artifacts.rs` still derives the same non-empty destination set from `framework/bootstrap/ductus.md` after the split as before it, verified by probe in both directions, and no `runtime/` source file changes.
+- [x] AC8: Every consumer listed in §What the split does not reach still resolves its subject from `framework/bootstrap/ductus.md` after the split, each verified by running the family rather than by reading the assignment; any consumer whose subject does move is re-pointed and still reports a finding on an absent subject rather than treating an empty extraction as agreement.
+- [x] AC9: `scripts/audit/run-all.sh` reports no findings, and the three generators plus `derive-dependencies` and `derive-references` report no drift.
+- [x] AC10: The whole local gate passes: `npx markdownlint-cli2`, the six `lint-*.sh` scripts, `scripts/tests/*.sh`, `shellcheck -S warning` over the tracked shell set, and under `runtime/` `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, and `cargo test --release --locked`.
+- [x] AC11: The reduction to the installed half is stated in the plan from a measurement taken **after** the split, against the 146,953-byte pre-split file, rather than from this spec's estimate.
 
 ## Open Questions
 

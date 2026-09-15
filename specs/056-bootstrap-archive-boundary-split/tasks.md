@@ -59,8 +59,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Close out
 
-- [ ] Verify each acceptance criterion against the tree by hand, including the ones `check-artifacts` reports as `skipped`.
-- [ ] Re-run `check-artifacts` **after** the status flip and walk the `skipped` array entry by entry, expecting this pass's own annotations to add entries.
-- [ ] Retire the inbox item this spec discharges, matching it by a distinctive substring of its own text rather than by line number.
+- [x] Verify each acceptance criterion against the tree by hand, including the ones `check-artifacts` reports as `skipped`.
+- [x] Re-run `check-artifacts` **after** the status flip and walk the `skipped` array entry by entry, expecting this pass's own annotations to add entries.
+- [x] Retire the inbox item this spec discharges, matching it by a distinctive substring of its own text rather than by line number.
 
 - **Done when**: every criterion is verified against the tree, the `skipped` array has been walked entry by entry, and the inbox item is removed.
