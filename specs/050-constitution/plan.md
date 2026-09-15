@@ -172,6 +172,20 @@ This is a second deliberate round, not a standing requirement — AC1 rejects th
 latter and is unchanged. Promotion itself is *not* done by this task; this is the
 worklist, exactly as the first round's classification preceded its promotions.
 
+**Promoted 2026-09-15 by task 23.** All 25 rows in the promote table have their
+canonical text as bullets in `framework/constitution.md`, each under the existing
+section whose subject it shares, and each entry's `AGENTS.md` line is now a
+pointer. The anchor set is byte-identical before and after, so AC10 holds; the
+constitution went 767 → 792 lines and 163 → 188 top-level bullets, and `AGENTS.md`
+went 231,882 → 198,966 bytes at an unchanged 181 lines and 120 rule-bearing
+entries, with the constitution-citing side moving 48 → 73. The bolded lead phrase
+of every rewritten entry is byte-identical, so both rounds' table keys still
+resolve 1:1 — verified rather than assumed, all 98 keys and the second round's 26.
+The one rule-file row is registered as `QUAL-DELEG-001` through `036`'s back-edge
+under AC22, which is the fourth destination the three-tier classification cannot
+express; this spec declares that obligation in `cross-spec-impact:` so it gates
+`done` until `036` links back rather than resting on prose.
+
 #### Second round — promote
 
 | Entry | Reason |
