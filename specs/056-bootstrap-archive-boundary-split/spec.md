@@ -12,8 +12,8 @@ review:
   reviewed-digest: {}
   blocking: false
 analyze:
-  last-run: 2026-09-15T13:54:49Z
-  analyzed-against: ff301e1bc897afbcf7be1140e36574e2e7a4c099
+  last-run: 2026-09-15T13:56:54Z
+  analyzed-against: b4a94e113013cde1134a28e1bf82eaef2930bdd5
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
@@ -22,7 +22,7 @@ analyze:
   analyzed-digest:
     plan.md: 3fd1e0a1b0f12b59399d16223f32746c0da68d4e7582d84a0bd5fbed69e0cb66
     review.md: 65888222e14768b3919b8dd9f4bf9baefcec2706d1c2f26c75190091e460ffb1
-    spec.md: 1e3a04fe40d5b23bce4c9a9388037b366dbe85f3c04d8522f1fc6bfc4554c0ee
+    spec.md: ef9c3a87c4688019f98bee5fb779db3a5a286eeda5aa507a0ff4b20d097c7694
     tasks.md: 65241ca0537450603e76b41e6976294870a888928f5627feeb4cd1a23a22fefd
   blocking: false
 next-criterion: 12
