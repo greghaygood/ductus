@@ -18,7 +18,7 @@ This is `QUAL-CLAIM-001` in the machinery that ships it — *a fully-implemented
 
 **`read-spec` surfaces it as `scenario-files-unreadable`**, a sibling to `scenario-open-questions`, omitted from the payload when empty so the ordinary case is byte-unchanged and no golden re-blesses. Empty therefore *means* something: every scenario was read.
 
-**`check-artifacts` records each as a skipped target**, family `scenario-open-questions`, reason `artifact-unreadable` — an existing member of the closed reason set, not a new one. It is not a finding: the file is an unknown, not a defect. One unreadable file may be recorded by more than one family, which is what `family` on the skipped record distinguishes.
+**`check-artifacts` records each as a skipped target**, family `scenario-open-questions`, reason `artifact-unreadable` — an existing member of the closed reason set, not a new one. **Below `done` it is a skip rather than a finding**: the file is an unknown, not a defect. **At `done` it is a blocking finding**, across families. That is the single exception to the never-escalate-an-unknown rule, and it earns the exception because the subject there is the spec's own artifact, in its own directory, that its own analysis could not read — `scenario-open-questions` is precisely the gate an unparseable scenario carrying unresolved questions would otherwise slip past, so a skip at `done` would satisfy the gate *by* the damage. One unreadable file may be recorded by more than one family, which is what `family` on the record distinguishes.
 
 **Nothing gains a block.** `check-review-gate` still returns no block when the question list is empty, whatever the unread set holds. A gate that failed closed on its own inability to read is a gate people route around, and the fail-open posture is the same one the staleness check already takes.
 
@@ -30,7 +30,7 @@ This is `QUAL-CLAIM-001` in the machinery that ships it — *a fully-implemented
 - No `scenarios/` directory: nothing to read, nothing unread, no records.
 - A readable scenario with no `## Open Questions` section: examined and clean — it is *not* reported as unreadable, which is the distinction this scenario exists to preserve.
 - A scenario that is unreadable *and* carries questions is a contradiction in terms — it yields no questions, so it appears only in the unread set.
-- The same unreadable file recorded by both `link-adjacent-drift` and `scenario-open-questions`: two records, distinguished by `family`, not a duplicate to dedupe.
+- The same unreadable file recorded by both `link-adjacent-drift` and `scenario-open-questions`: two records — skipped targets below `done`, blocking findings at it — distinguished by `family`, never a duplicate to dedupe.
 - Invalid UTF-8 is the reachable form of unreadable in tests; a permissions failure or a dangling symlink takes the same branch.
 
 ## Open Questions

@@ -48,7 +48,7 @@ This mirrors the `ask-consolidation` scenario's precedent of landing more than o
 - **`merge-permissions` — missing `allow` or `deny` array.** `permissions` exists but one array absent: seed with the canonical set for that array; the other array's existing contents are untouched apart from dedup.
 - **`merge-permissions` — non-array `allow` / `deny`.** Field exists but is not an array (null, object, string): refuse with a `schema-error` envelope; do not silently coerce.
 - **`merge-permissions` — duplicate across canonical/non-canonical.** A user-added entry that string-equals a canonical entry is a duplicate. First occurrence wins regardless of which set the survivor came from; the canonical-presence pass does not re-append a canonical entry when an equal user-added entry is already present.
-- **Auggie permission format.** Auggie's permission entries use a different shape (objects with `toolName` / `permission` fields, per spec 023 §6's host-specific note). Whether `merge-permissions` serves both host shapes via a format argument or whether a separate Auggie-format primitive is introduced is a plan-phase decision recorded as an open question on this scenario.
+- **Auggie permission format.** Auggie's permission entries use a different shape (objects with `toolName` / `permission` fields, per spec 023 §6's host-specific note). Whether `merge-permissions` serves both host shapes via a format argument or whether a separate Auggie-format primitive is introduced is deferred with a trigger, recorded under this scenario's **Resolved Questions**.
 - **`merge-managed-block` — duplicate appears multiple times outside the marker.** All adopter-area duplicates of a canonical line are removed, not just the first. The canonical block remains the single source of that entry.
 - **`merge-managed-block` — duplicate line appears in two separate managed blocks.** Out of scope. The primitive supports one managed block per file per marker; the cross-boundary scan only considers the single block's contents against everything outside it.
 - **`merge-managed-block` — adopter line with trailing whitespace differing from canonical.** Treated as distinct (exact string-equality on trimmed line content; trailing whitespace inside the trim doesn't apply, but a difference in pattern body — even one space — is preserved).
@@ -60,4 +60,22 @@ This mirrors the `ask-consolidation` scenario's precedent of landing more than o
 
 ## Resolved Questions
 
-*None yet.*
+- **Does `merge-permissions` grow a format argument, or does each host shape get its own primitive?**
+  Deferred, with a condition — not left open. `merge-permissions` serves the Claude shape
+  (`permissions.allow` / `permissions.deny` as string arrays) and only that shape. Auggie's
+  `toolPermissions[]` of `{toolName, shellInputRegex, permission}` objects and Antigravity's
+  `{allow, deny, ask}` triple are both structurally distinct and both currently walk the prose
+  path in `framework/bootstrap/configure/{auggie,antigravity}.md`, which is complete and
+  correct — so nothing is blocked today and there is no evidence yet for which shape the
+  primitive should take. **The trigger to revisit:** a third host arriving with a fourth
+  permission shape, or a defect traced to a host walking the prose path, whichever comes first.
+  Two shapes served by prose is a convention; three would be a parser nobody owns.
+
+  Recorded here rather than under Open Questions because
+  [§spec-requirements](../../../framework/constitution.md#spec-requirements) is explicit that an
+  open question is an *undecided blocker*, while a decision deferred pending a condition is
+  resolved *with* that condition. This scenario's Edge Cases previously asserted the question was
+  "recorded as an open question on this scenario" while `## Open Questions` read *None*, and both
+  shipped `configure` notes sent readers to that empty home — a deferred decision claiming a
+  durable record that did not exist, which is the state
+  [§design-principles](../../../framework/constitution.md#design-principles) forbids.

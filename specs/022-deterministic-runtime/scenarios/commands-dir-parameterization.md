@@ -14,7 +14,7 @@ The runtime resolves command files at two callsites that both hardcode `.claude/
 Both paths bake in two assumptions that hold in this repo but break for adopters:
 
 1. **The host's config dir is `.claude/`.** True for Claude Code, false for Auggie (`.augment/`) and any future host. The constitution already establishes `{cli-config-dir}` as a template variable for exactly this reason (the configure-permission flow uses it), but the runtime's lookup table doesn't honor that variable.
-2. **The project's slash-command namespace is `gov/`.** True for this repo (the framework's own dogfooded slash commands live under `/ductus:*`), false for any adopter (`/anvil:*` lives under `.claude/commands/anvil/`, `/bark:*` under `.claude/commands/bark/`, etc.). The constitution establishes `{project}` as the namespace variable.
+2. **The project's slash-command namespace is `gov/`.** True for this repo (the framework's own dogfooded slash commands live under `/ductus:*`), false for any adopter (`/acme:*` lives under `.claude/commands/acme/`, `/globex:*` under `.claude/commands/globex/`, etc.). The constitution establishes `{project}` as the namespace variable.
 
 In this repo the bug is invisible because `framework/commands/<name>.md` (the first candidate) always wins the search — the source files are sitting right there. In an adopter project that has only run `/ductus` (so they have `.claude/commands/<project>/*.md` but no `framework/commands/` tree), the runtime never finds the command file and `ductus exec` errors out.
 
@@ -40,7 +40,7 @@ project = "gov"
 
 **Option 2 — environment variables.** `GVRN_CLI_CONFIG_DIR` and `GVRN_PROJECT`, honored by both callsites. Adopters set them in their shell profile or CI env. Lightest-touch implementation but invisible at the repo level — onboarding a new contributor requires knowing to set them, which violates "everything the runtime needs is in the repo."
 
-**Option 3 — CLI flag (`ductus --cli-config-dir=.augment --project=anvil exec ...`).** Maximally explicit but forces every caller (including `/ductus:*` slash command bodies) to pass both flags on every invocation. Heaviest ergonomic cost; rejected.
+**Option 3 — CLI flag (`ductus --cli-config-dir=.augment --project=acme exec ...`).** Maximally explicit but forces every caller (including `/ductus:*` slash command bodies) to pass both flags on every invocation. Heaviest ergonomic cost; rejected.
 
 ### Implementation shape (assuming Option 1)
 
@@ -48,7 +48,7 @@ project = "gov"
 2. Load `.ductus/config.toml` once at process start (the loader already reads pins from the same file). Surface the `Host` struct through whatever context object both callsites have access to — likely a new field on `Walker` or a parallel argument threaded into `run_exec` and `locate_command_file`.
 3. Replace the hardcoded path strings in both callsites with `repo.join(format!("{}/commands/{}/{}.md", host.cli_config_dir, host.project, command_name))`. The interior segment becomes `{cli_config_dir}/commands/{project}/`.
 4. `/ductus`'s bootstrap (`framework/bootstrap/ductus.md`) writes the `[host]` block into the adopter's `.ductus/config.toml` during the install. The block is idempotent — re-runs update existing values rather than appending duplicate sections. Existing `.ductus/config.toml` files in adopter projects (created before this scenario lands) gain the block on their next `/ductus` run.
-5. Fixtures under `runtime/tests/fixtures/` that exercise `ductus exec` and anchor resolution gain a `.ductus/config.toml` with explicit `[host]` values so the parity tests cover both Claude (`.claude`/`gov`) and Auggie (`.augment`/`anvil`) shapes. The Auggie fixture is the regression test for this scenario.
+5. Fixtures under `runtime/tests/fixtures/` that exercise `ductus exec` and anchor resolution gain a `.ductus/config.toml` with explicit `[host]` values so the parity tests cover both Claude (`.claude`/`gov`) and Auggie (`.augment`/`acme`) shapes. The Auggie fixture is the regression test for this scenario.
 
 ### Markdown-only path
 

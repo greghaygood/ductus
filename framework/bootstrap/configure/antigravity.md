@@ -15,7 +15,7 @@ Configure `{cli-config-dir}/settings.json` with the Antigravity tool permissions
 
 ## Instructions
 
-> Antigravity's `{ "permissions": { "allow": [], "deny": [], "ask": [] } }` shape is structurally distinct from Claude's `permissions.allow/deny` and Auggie's `toolPermissions[]`, and is **not yet** served by the `merge-permissions` runtime primitive (whether the primitive grows a third format is a plan-phase decision tracked on spec 022). Until that lands, walk the prose below: read the file, install the canonical set additively, remove exact-match duplicates, write atomically.
+> Antigravity's `{ "permissions": { "allow": [], "deny": [], "ask": [] } }` shape is structurally distinct from Claude's `permissions.allow/deny` and Auggie's `toolPermissions[]`, and is **not yet** served by the `merge-permissions` runtime primitive (whether the primitive grows a third format is deferred with a trigger, recorded under **Resolved Questions** on `specs/022-deterministic-runtime/scenarios/framework-list-dedup.md`). Until that lands, walk the prose below: read the file, install the canonical set additively, remove exact-match duplicates, write atomically.
 
 1. Read `{cli-config-dir}/settings.json` (create it if missing, with `{ "permissions": { "allow": [], "deny": [], "ask": [] } }`).
 2. Ensure `permissions.allow`, `permissions.deny`, and `permissions.ask` contain all of the canonical entries below. Add any that are missing; remove exact-match duplicates so each `action(target)` string appears at most once per array. Do not reorder or rewrite non-duplicate entries beyond the canonical set. Preserve any other top-level keys and unspecified keys under `permissions` byte-for-byte.

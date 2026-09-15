@@ -10,7 +10,7 @@ The `check-stuck` primitive at [`runtime/src/primitives/check_stuck.rs`](../../.
 
 Without the second condition, once 3+ commits land on `tasks.md` — even when each flips a different subtask checkbox — `stuck: true` fires on every subsequent `/{project}:implement` run for the remainder of the feature. The warning becomes background noise; agents and operators learn to dismiss it; the warning's signal-to-noise ratio collapses to zero.
 
-Reported 2026-05-17 from the user's anvil/017-pagination implement session as a second occurrence (the bug had been spotted earlier without being filed). Out of spec 026's scope; preserved via the inbox and routed here.
+Reported 2026-05-17 from an adopter repo's own spec 017 implement session as a second occurrence (the bug had been spotted earlier without being filed). Out of spec 026's scope; preserved via the inbox and routed here.
 
 ## Behavior
 

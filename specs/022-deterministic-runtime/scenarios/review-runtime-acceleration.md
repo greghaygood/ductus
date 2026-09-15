@@ -6,11 +6,11 @@ section: "Follow-on scenarios"
 
 ## Context
 
-Spec 022 §Follow-on scenarios (under §Slash command rewiring) enumerates three deferred command rewrites, in order: `/ductus:clarify`, `/ductus:review`, `/ductus:groom`. This scenario realizes the second — `/ductus:review` — and introduces the `performReview` extension point named in §LLM extension points ("Deferred to scenarios on this spec").
+Spec 022's `spec.md` §Follow-on scenarios (under §Slash command rewiring) enumerates three deferred command rewrites, in order: `/ductus:clarify`, `/ductus:review`, `/ductus:groom`. This scenario realizes the second — `/ductus:review` — and introduces the `performReview` extension point named in §LLM extension points ("Deferred to scenarios on this spec").
 
 022 originally judged review's runtime value "small (predominantly LLM work)". That framing undercounts the deterministic bookkeeping `framework/commands/review.md` carries: at 604 lines it is the largest command file, walks entirely in prose, and invokes zero primitives. The five review passes are genuinely LLM work — but everything around them is mechanical: rule-file discovery, `.ductus/config.toml` parsing, waiver arithmetic, scope/diff-base computation, and report scaffolding. That is exactly the "LLM-walked mechanical work" this spec exists to eliminate. On the MCP path the agent loads all 604 lines and re-executes that bookkeeping by hand every invocation; on the exec path the runtime should own it. This scenario captures that pushback and specifies the primitives.
 
-It also folds in two prose-convention refinements surfaced while reviewing the command set for token cost (both governed by §Per-rewrite checklist and enforced by the existing parseability check), plus a runtime content-ingestion convention surfaced while authoring this scenario (single-payload params).
+It also folds in two prose-convention refinements surfaced while reviewing the command set for token cost (both governed by `spec.md` §Per-rewrite checklist and enforced by the existing parseability check), plus a runtime content-ingestion convention surfaced while authoring this scenario (single-payload params).
 
 ## Behavior
 
@@ -64,7 +64,7 @@ Every new primitive ships a `#[cfg(test)]` module in the norm of the existing on
 - **`[rules] surfaces` degenerate value** — `discover-rule-files` fails fast with the existing `CFG-ENV-003`-style operational error (message text unchanged from `review.md`); a list mixing valid and invalid members fails on the invalid member.
 - **`surfaces = []` vs unset** — the empty list is valid and means cross-only; `discover-rule-files` must not conflate it with the unset (derive-from-stack) case.
 - **Waiver code-movement** — because the anchor is the (rule, file) pair, `process-waivers` does not expire a waiver when the offending code moves within the file. Malformed and duplicate waivers are surfaced, never auto-pruned — they are operator state.
-- **Boilerplate-dedup drift** — a command referencing a not-yet-migrated constitution section is caught at PR time by `/ductus:analyze`'s `resolve-anchor` check (an unresolved §name), so the dedup cannot silently break the markdown-only path.
+- **Boilerplate-dedup drift** — a command referencing a not-yet-migrated constitution section is caught at PR time by `/ductus:analyze`'s `resolve-anchor` check (an unresolved `§` reference), so the dedup cannot silently break the markdown-only path.
 - **Namespacing** — the new primitives use the current `ductus` convention, superseding the `gov-rt:` strings in the older `ask-consolidation` scenario.
 - **`--all` review** — `discover-rule-files`, `compute-review-scope`, and `write-review` operate on one feature at a time; the `--all` loop stays in the command, invoking the primitives per targeted feature. No primitive iterates the feature set.
 - **Dimension-restricting flags** (`--security` / `--simplicity` / `--quality`) — `performReview` is not invoked for a skipped pass; `write-review` records the skipped dimensions in `skipped-passes` and omits them from the counts.
@@ -81,4 +81,4 @@ Every new primitive ships a `#[cfg(test)]` module in the norm of the existing on
 
 - **Why primitives for review when 022 judged the value "small"?** Because "small" conflated the semantic passes (genuinely LLM) with the surrounding bookkeeping (mechanical). The passes stay LLM via `performReview`; the bookkeeping moves to `discover-rule-files` / `process-waivers` / `compute-review-scope` / `write-review`. Net: the agent-visible review procedure drops from ~604 prose lines to the extension-point steps plus brief scaffolding.
 - **`performReview` granularity — one call per pass, per file, or multi-turn?** One single-shot call per pass (five total). It matches the initial-release single-shot pattern and avoids the multi-turn ABI, which is `/ductus:clarify`'s job to introduce first. Cross-pass dedup (highest-severity-wins) is deterministic and lands in `write-review`, not in the extension point.
-- **Why fold #3/#4 into this scenario rather than a separate one?** Both are command-prose-convention refinements governed by §Per-rewrite checklist, and the review rewrite is the concrete occasion to apply them across the command set. A standalone prose-only scenario would be near-empty; the review rewrite already touches every convention they name.
+- **Why fold #3/#4 into this scenario rather than a separate one?** Both are command-prose-convention refinements governed by `spec.md` §Per-rewrite checklist, and the review rewrite is the concrete occasion to apply them across the command set. A standalone prose-only scenario would be near-empty; the review rewrite already touches every convention they name.

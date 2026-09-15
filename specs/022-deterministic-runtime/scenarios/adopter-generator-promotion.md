@@ -6,7 +6,7 @@ section: "Bash script relationships"
 
 ## Context
 
-§Bash script relationships states the rule this scenario overturns:
+`spec.md` §Bash script relationships states the rule this scenario overturns:
 
 > **`gen-*.sh`** (called by the pre-commit hook) — stay bash. The runtime never replaces them: pre-commit has no LLM in the loop, so they fail the eligibility rule from §runtime-boundary principle 3.
 

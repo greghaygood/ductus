@@ -41,7 +41,7 @@ Reasons (the human-readable `reason` field on each disabled-rule-files entry) ar
 
 The status command collapses to a single path that always invokes `dashboard` once and renders the preamble + table + counts + callouts from the returned payload. The prior "short-circuit when target is non-`done`" branch is removed — a glance at the full pipeline with the target row marked is more useful than a target-only view, and the preamble line preserves the immediate "what next" signal. Step 5 (table render), step 6's callout formatting, and step 7 (non-done spec prompt) stay in the prose — they are presentation, not data acquisition.
 
-The §Instructions preamble's shell-utility ban gains a positive target: when `dashboard` is available via MCP, that IS the deterministic path; when the host's MCP schema is loaded lazily (Claude Code's deferred-tool reminder), the existing `ToolSearch` instruction applies — fetch the schema and call the tool, do not bail to shell.
+The `framework/commands/status.md` §Instructions preamble's shell-utility ban gains a positive target: when `dashboard` is available via MCP, that IS the deterministic path; when the host's MCP schema is loaded lazily (Claude Code's deferred-tool reminder), the existing `ToolSearch` instruction applies — fetch the schema and call the tool, do not bail to shell.
 
 The primitive is read-only and pure with respect to filesystem state (no atomic-write concerns, no rollback). Standard partial-failure semantics apply: malformed frontmatter on any single spec is an operational error, halts the call, emits structured `error`.
 

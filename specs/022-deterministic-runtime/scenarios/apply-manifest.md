@@ -6,7 +6,7 @@ section: "Follow-on scenarios"
 
 ## Context
 
-After the `ductus-bootstrap` scenario landed, `/ductus` successfully uses `fetch-archive` and `extract-archive` through the runtime. But the substitute + write phase still requires the host to generate a bash walker script (~200 lines, observed in the wild as `ductus-walk.sh` during an anvil bootstrap) because `substitute-templates` has one strategy — overwrite every file at the destination — and the bootstrap actually needs three:
+After the `ductus-bootstrap` scenario landed, `/ductus` successfully uses `fetch-archive` and `extract-archive` through the runtime. But the substitute + write phase still requires the host to generate a bash walker script (~200 lines, observed in the wild as `ductus-walk.sh` during an adopter bootstrap) because `substitute-templates` has one strategy — overwrite every file at the destination — and the bootstrap actually needs three:
 
 1. **update** (overwrite if different, honor pinned-file list) — the bulk of framework files: constitution, rules, templates, hooks.
 2. **create** (write only if destination doesn't already exist) — adopter-seedable files: system.md, errors.md, events.md, scripts.

@@ -15,7 +15,7 @@ real instances surfaced during the adopter bootstrap 048 AC10 called for: a
 generators two migrations had relocated out from under it.
 
 That scenario settles *what* the rule is and *where* it is surfaced — the
-durable home is `/{project}:analyze` §Project-level consistency, with the
+durable home is `framework/commands/analyze.md` §Project-level consistency, with the
 bootstrap's migration batch as a second call site. This scenario is the runtime
 half: the primitive both call sites invoke, so one rule has one implementation
 rather than two that can disagree (the Family 19 / `mechanical_sweep` pairing is
