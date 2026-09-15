@@ -2,11 +2,14 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: null
-  reviewed-against: null
+  last-run: 2026-09-15T13:51:08Z
+  reviewed-against: 3d84712f0b5e75afb690c7f81c455be87b076bc6
   must-violations: 0
   should-violations: 0
   low-confidence: 0
+  examined: 6
+  scope: 7
+  reviewed-digest: {}
   blocking: false
 analyze:
   last-run: null
