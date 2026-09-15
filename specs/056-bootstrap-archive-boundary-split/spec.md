@@ -35,7 +35,7 @@ Split `framework/bootstrap/ductus.md` so the file an adopter curls, installs int
 - It was **loaded into the agent's context at every `/ductus` invocation**, whole, before the run knew which of its sections it would need.
 - It was **byte-compared against upstream on every run** by the self-update check, and rewritten whenever it differed.
 
-The file's own §Pre-flight Phase existed to keep the restart-requiring checks cheap: it states that neither check "pays the cost of the multi-hundred-KB archive; both run on a small fetch or no fetch". That property held for the *fetches* the phase performs and had eroded for the *file* that performs them.
+The file's own `§Pre-flight Phase` existed to keep the restart-requiring checks cheap: it states that neither check "pays the cost of the multi-hundred-KB archive; both run on a small fetch or no fetch". That property held for the *fetches* the phase performs and had eroded for the *file* that performs them.
 
 The **cause was structural rather than editorial**. Composition was measured at 90.2% prose, 7.0% tables, 2.8% fenced blocks, so the reductions a cleanup pass reaches — dead shell fallback, inline permission blobs, retired-release tokens — recover low single digits. Size was not what a dead-code pass would have bought.
 
@@ -45,58 +45,58 @@ The **cause was structural rather than editorial**. Composition was measured at 
 
 The boundary is **derived, not chosen**: the installed half is exactly what the run needs before an archive exists, and the archive half is exactly what cannot run until one does.
 
-The authority for that order is §Instructions — the numbered walker — and **not** the order sections appear in the file. §Instructions **step 1** assembles the walker context, and that context already carries both the project inputs and `manifest-entries`, "the per-strategy list described in **Shared Files** and **Per-Agent Scaffolding**". Step 2 fetches the archive and step 3 extracts it. So three sections that *read* as though they came after the boundary are in fact step-1 inputs:
+The authority for that order is `§Instructions` — the numbered walker — and **not** the order sections appear in the file. `§Instructions` **step 1** assembles the walker context, and that context already carries both the project inputs and `manifest-entries`, "the per-strategy list described in **Shared Files** and **Per-Agent Scaffolding**". Step 2 fetches the archive and step 3 extracts it. So three sections that *read* as though they came after the boundary are in fact step-1 inputs:
 
-- §Collect Project Inputs
-- §Shared Files
-- §Per-Agent Scaffolding
+- `§Collect Project Inputs`
+- `§Shared Files`
+- `§Per-Agent Scaffolding`
 
-Reading the file top-to-bottom puts these after §Pre-flight abort and suggests they move. They do not. This is the single most important fact about the split, and it is the one a section-order reading gets wrong.
+Reading the file top-to-bottom puts these after `§Pre-flight abort` and suggests they move. They do not. This is the single most important fact about the split, and it is the one a section-order reading gets wrong.
 
 ### What stays, and why
 
 | Region | Why it stays |
 | --- | --- |
-| Frontmatter through §Pre-flight Phase | Runs before any archive exists — the whole point of the phase |
-| §Collect Project Inputs | §Instructions step 1 resolves the inputs before the step-2 fetch |
-| §Shared Files, §Per-Agent Scaffolding | §Instructions step 1 builds `manifest-entries` from these tables |
-| §Project Configuration | §Pre-flight Checks, §ductus runtime detection, §Instructions step 1 and §Collect Project Inputs each read a key from it |
-| §File Fetching | It is the fetch-and-extract specification; the markdown-only path cannot fetch the archive from inside the archive |
-| §Placeholder Substitution | The substitution map is step-1 context, and the self-install keep-literals rule is read on the stale-write path |
-| §Post-Write Integrity Check | Executable forward-dependency from §Stale → defer to pre-flight abort, step 2 |
-| §Re-Run Behavior | §Agent Selection points at it for the agent-removal boundary, before any fetch |
+| Frontmatter through `§Pre-flight Phase` | Runs before any archive exists — the whole point of the phase |
+| `§Collect Project Inputs` | `§Instructions` step 1 resolves the inputs before the step-2 fetch |
+| `§Shared Files`, `§Per-Agent Scaffolding` | `§Instructions` step 1 builds `manifest-entries` from these tables |
+| `§Project Configuration` | `§Pre-flight Checks`, `§ductus runtime detection`, `§Instructions` step 1 and `§Collect Project Inputs` each read a key from it |
+| `§File Fetching` | It is the fetch-and-extract specification; the markdown-only path cannot fetch the archive from inside the archive |
+| `§Placeholder Substitution` | The substitution map is step-1 context, and the self-install keep-literals rule is read on the stale-write path |
+| `§Post-Write Integrity Check` | Executable forward-dependency from `§Stale → defer to pre-flight abort`, step 2 |
+| `§Re-Run Behavior` | `§Agent Selection` points at it for the agent-removal boundary, before any fetch |
 
-The keep-every-placeholder-literal rule is the other executable forward-dependency (cited from the same stale-write path, step 1). It already lives inside §`ductus` self-installation, which is inside §Per-Agent Scaffolding, so it stays without being moved.
+The keep-every-placeholder-literal rule is the other executable forward-dependency (cited from the same stale-write path, step 1). It already lives inside §`ductus` self-installation, which is inside `§Per-Agent Scaffolding`, so it stays without being moved.
 
 ### Measured
 
-Measured 2026-09-15 over `framework/bootstrap/ductus.md` at 146,953 bytes / 1186 lines, read in full. Every level-2 section past §Pre-flight abort was classified by the rule above — *does a step that runs before extraction read it?* — with a coverage assertion that every post-boundary section lands in exactly one column:
+Measured 2026-09-15 over `framework/bootstrap/ductus.md` at 146,953 bytes / 1186 lines, read in full. Every level-2 section past `§Pre-flight abort` was classified by the rule above — *does a step that runs before extraction read it?* — with a coverage assertion that every post-boundary section lands in exactly one column:
 
 | Installed half | Bytes | Archive half | Bytes |
 | --- | --- | --- | --- |
-| Frontmatter → §Pre-flight Phase | 61,288 | §Pre-run Migrations | 6,067 |
-| §Collect Project Inputs | 5,396 | §Frontmatter Migration | 4,769 |
-| §Project Configuration | 12,627 | §Security Audit (brownfield) | 5,332 |
-| §File Fetching | 5,165 | §Hook Installation | 8,061 |
-| §Shared Files | 9,126 | §What This Command Does NOT Do | 489 |
-| §Per-Agent Scaffolding | 10,878 | §Edge Cases | 4,446 |
-| §Placeholder Substitution | 2,078 | §Post-Scaffolding Output | 8,087 |
-| §Post-Write Integrity Check | 1,097 | §Idempotency | 484 |
-| §Re-Run Behavior | 682 | §Directory Creation | 881 |
+| Frontmatter → `§Pre-flight Phase` | 61,288 | `§Pre-run Migrations` | 6,067 |
+| `§Collect Project Inputs` | 5,396 | `§Frontmatter Migration` | 4,769 |
+| `§Project Configuration` | 12,627 | `§Security Audit (brownfield)` | 5,332 |
+| `§File Fetching` | 5,165 | `§Hook Installation` | 8,061 |
+| `§Shared Files` | 9,126 | `§What This Command Does NOT Do` | 489 |
+| `§Per-Agent Scaffolding` | 10,878 | `§Edge Cases` | 4,446 |
+| `§Placeholder Substitution` | 2,078 | `§Post-Scaffolding Output` | 8,087 |
+| `§Post-Write Integrity Check` | 1,097 | `§Idempotency` | 484 |
+| `§Re-Run Behavior` | 682 | `§Directory Creation` | 881 |
 | **Total** | **108,337** (73.7%) | **Total** | **38,616** (26.3%) |
 
 So what an adopter curls, installs, loads into context, and byte-compares drops by **26.3% — 38,616 bytes per invocation**.
 
-Exactly **two** executable forward-dependencies cross the original boundary, both on the pre-flight stale-write path, and both resolve inside the installed half under this assignment. Every other forward reference is **narrative** — an ordering note, a deferred-output pointer, a "described in §X" — measured at 38 occurrences across 13 distinct targets, of which §Closing restart alone accounts for 11. None is a step the installed half executes.
+Exactly **two** executable forward-dependencies cross the original boundary, both on the pre-flight stale-write path, and both resolve inside the installed half under this assignment. Every other forward reference is **narrative** — an ordering note, a deferred-output pointer, a "described in `§X`" — measured at 38 occurrences across 13 distinct targets, of which `§Closing restart` alone accounts for 11. None is a step the installed half executes.
 
 ### Why the cut is 26%, not the ~40% this was scoped at
 
 `specs/inbox.md` estimated ~40%. Walking the boundary section by section against what each step actually reads gives 26.3%. The whole difference is two sections that read as post-boundary and are not:
 
-- **§Project Configuration (12,627 B)** — §Pre-flight Checks reads `[paths] specs-root` from it, §ductus runtime detection reads `[runtime] path`, §Instructions step 1 reads `[pinned] files`, and §Collect Project Inputs cites it for the active-file write policy. All four run before extraction. Splitting the schema across two files would put a canonical record in two places, which [§drift-prevention](../../framework/constitution.md#drift-prevention) forbids outright.
-- **§File Fetching (5,165 B)** — it *is* the fetch-and-extract specification. On the markdown-only path the host cannot fetch the archive using instructions that live inside the archive.
+- **`§Project Configuration` (12,627 B)** — `§Pre-flight Checks` reads `[paths] specs-root` from it, `§ductus runtime detection` reads `[runtime] path`, `§Instructions` step 1 reads `[pinned] files`, and `§Collect Project Inputs` cites it for the active-file write policy. All four run before extraction. Splitting the schema across two files would put a canonical record in two places, which [§drift-prevention](../../framework/constitution.md#drift-prevention) forbids outright.
+- **`§File Fetching` (5,165 B)** — it *is* the fetch-and-extract specification. On the markdown-only path the host cannot fetch the archive using instructions that live inside the archive.
 
-A first derivation here cut at §Collect Project Inputs on section order alone, produced 61,288 / 85,665, and concluded the recorded figures had been **transposed**. They had not. The recorded figures encoded the step-1 constraint that reading had not yet found, and re-deriving a coarse manifest-inclusive cut at the item's own measurement commit `5a519cbb` reproduces them within ~3KB per side. Two lessons, and the second is the durable one: a measurement that disagrees with a recorded one is a reason to **look for the constraint the record encodes** before concluding the record is wrong; and an estimate taken from a coarse cut is not wrong so much as **unwalked** — the rigorous boundary is smaller, and only a section-by-section pass finds that.
+A first derivation here cut at `§Collect Project Inputs` on section order alone, produced 61,288 / 85,665, and concluded the recorded figures had been **transposed**. They had not. The recorded figures encoded the step-1 constraint that reading had not yet found, and re-deriving a coarse manifest-inclusive cut at the item's own measurement commit `5a519cbb` reproduces them within ~3KB per side. Two lessons, and the second is the durable one: a measurement that disagrees with a recorded one is a reason to **look for the constraint the record encodes** before concluding the record is wrong; and an estimate taken from a coarse cut is not wrong so much as **unwalked** — the rigorous boundary is smaller, and only a section-by-section pass finds that.
 
 ### What the split does not reach
 
@@ -104,14 +104,14 @@ No audit family's extraction target moves, and no `runtime/` source changes. Eac
 
 | Consumer | Subject | Half |
 | --- | --- | --- |
-| `check_artifacts.rs` `adopter_destinations` | §Shared Files tables | installed |
-| `check_step_references.rs` `BOOTSTRAP_FILES` | §Instructions numbered steps | installed |
-| Family 16 `installer-command-parity.sh` | §Per-Agent Scaffolding slash-command table | installed |
-| Family 23 `sweep-target-manifest-parity.sh` | §Shared Files manifest | installed |
+| `check_artifacts.rs` `adopter_destinations` | `§Shared Files` tables | installed |
+| `check_step_references.rs` `BOOTSTRAP_FILES` | `§Instructions` numbered steps | installed |
+| Family 16 `installer-command-parity.sh` | `§Per-Agent Scaffolding` slash-command table | installed |
+| Family 23 `sweep-target-manifest-parity.sh` | `§Shared Files` manifest | installed |
 | Family 35 `manifest-destination-links.sh` | both manifest tables | installed |
-| Family 36 `self-url-resolution.sh` | the `archive/` URL in §File Fetching | installed |
-| `installer-registry-parity.sh` | §Agent Registry | installed |
-| `host-namespace-parity.sh` | §Derived values | installed |
+| Family 36 `self-url-resolution.sh` | the `archive/` URL in `§File Fetching` | installed |
+| `installer-registry-parity.sh` | `§Agent Registry` | installed |
+| `host-namespace-parity.sh` | `§Derived values` | installed |
 | `runtime-probe-parity.sh` | the store probe | installed |
 | Family 21 `transitional-bootstrap-parity.sh` | `ductus.md` ↔ `govern.md` byte-identity | installed |
 
@@ -121,11 +121,11 @@ No audit family's extraction target moves, and no `runtime/` source changes. Eac
 
 ### What the adopter installs
 
-`install.sh` and the `ductus` self-install step place the **installed half** only. The archive half is never installed into an agent, never curled by `install.sh`, and never byte-compared — it is read from the extracted archive the run fetches at §Instructions step 2.
+`install.sh` and the `ductus` self-install step place the **installed half** only. The archive half is never installed into an agent, never curled by `install.sh`, and never byte-compared — it is read from the extracted archive the run fetches at `§Instructions` step 2.
 
 ### What the run reads, and when
 
-The installed half runs through §Pre-flight abort exactly as before. Past the archive fetch the run resolves the archive half from the extracted tree and continues through it. A run that aborts in pre-flight never resolves it — the same set of sections §Pre-flight abort already skips.
+The installed half runs through `§Pre-flight abort` exactly as before. Past the archive fetch the run resolves the archive half from the extracted tree and continues through it. A run that aborts in pre-flight never resolves it — the same set of sections `§Pre-flight abort` already skips.
 
 ### Staleness
 
@@ -162,12 +162,12 @@ Rationale is 17–25% of the file and does not move as one class:
 
 ## Resolved Questions
 
-- **What is the archive half named, and how does the installed half address it?** Resolved: `framework/bootstrap/ductus-procedure.md`, addressed as `{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md` — the framework root §Archive fetch and extract already computes and calls "the local mirror of the `ductus` repo for the rest of the run". No new resolution mechanism is introduced: the installed half keeps §File Fetching, so it holds the step that produces that root before it needs the path.
+- **What is the archive half named, and how does the installed half address it?** Resolved: `framework/bootstrap/ductus-procedure.md`, addressed as `{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md` — the framework root `§Archive fetch and extract` already computes and calls "the local mirror of the `ductus` repo for the rest of the run". No new resolution mechanism is introduced: the installed half keeps `§File Fetching`, so it holds the step that produces that root before it needs the path.
 
-- **Exactly which sections land in the archive half?** Resolved by walking every level-2 section past §Pre-flight abort against the rule *does a step that runs before extraction read it?*, with a coverage assertion that each lands in exactly one column. The result is the table in §Measured: nine sections stay, nine move, 26.3% moves. Two answers were counter-intuitive and are recorded there with their reasons — §Project Configuration and §File Fetching both stay. §Edge Cases moves whole rather than being split: its entries are a reader's index, no step dispatches from it, and duplicating it would create the second copy of a single record that [§drift-prevention](../../framework/constitution.md#drift-prevention) forbids.
+- **Exactly which sections land in the archive half?** Resolved by walking every level-2 section past `§Pre-flight abort` against the rule *does a step that runs before extraction read it?*, with a coverage assertion that each lands in exactly one column. The result is the table in §Measured: nine sections stay, nine move, 26.3% moves. Two answers were counter-intuitive and are recorded there with their reasons — `§Project Configuration` and `§File Fetching` both stay. `§Edge Cases` moves whole rather than being split: its entries are a reader's index, no step dispatches from it, and duplicating it would create the second copy of a single record that [§drift-prevention](../../framework/constitution.md#drift-prevention) forbids.
 
-- **Does the archive half carry frontmatter and an `## Instructions` section of its own?** Resolved: **no**, and it is allowlisted as reference prose instead. Proven by probe in both directions — a `framework/bootstrap/*.md` file without `## Instructions` returns exit 2 from `ductus parse --check` (*"legacy prose — no parseable Instructions section"*), and `scripts/lint-procedure-parseability.sh` globs `framework/bootstrap/*.md`, so a new file there is in scope automatically. Giving it a synthetic `## Instructions` would satisfy the lint while obliging `check_step_references.rs`'s `BOOTSTRAP_FILES` to gain it, turning a `framework/` change into a `runtime/` change with a version bump and a release tag. The archive half genuinely **is** reference prose: `ductus exec ductus` walks §Instructions, which stays installed, so nothing dispatches from it. Operator decision, 2026-09-15. `runtime/legacy-prose-commands.txt` gains the entry and its header — which today asserts every entry is a `framework/commands/*.md` file — is corrected in the same change.
+- **Does the archive half carry frontmatter and an `## Instructions` section of its own?** Resolved: **no**, and it is allowlisted as reference prose instead. Proven by probe in both directions — a `framework/bootstrap/*.md` file without `## Instructions` returns exit 2 from `ductus parse --check` (*"legacy prose — no parseable Instructions section"*), and `scripts/lint-procedure-parseability.sh` globs `framework/bootstrap/*.md`, so a new file there is in scope automatically. Giving it a synthetic `## Instructions` would satisfy the lint while obliging `check_step_references.rs`'s `BOOTSTRAP_FILES` to gain it, turning a `framework/` change into a `runtime/` change with a version bump and a release tag. The archive half genuinely **is** reference prose: `ductus exec ductus` walks `§Instructions`, which stays installed, so nothing dispatches from it. Operator decision, 2026-09-15. `runtime/legacy-prose-commands.txt` gains the entry and its header — which today asserts every entry is a `framework/commands/*.md` file — is corrected in the same change.
 
 - **Does `runtime/tests/parity.rs` stage this file, and does any golden carry bytes from it?** Resolved: **no**, on both counts. The only fixture-local bootstrap procedure in the tree is `runtime/tests/fixtures/ductus-basic/framework/bootstrap/install.md`, for a command named `install`; `read_parity_spec` resolves by command name and never reaches `framework/bootstrap/ductus.md`. So no golden carries this file's bytes and no re-bless is implied — unlike `framework/commands/*.md`, where `implement-basic.jsonl` does.
 
-- **Does this declare `cross-spec-impact` on the spec that owns the audit families?** Resolved: **no**, because no family's subject moves. Every extraction target — both manifest tables, §Agent Registry, §Derived values, the store probe, the `archive/` URL, and §Instructions' numbered steps — lands in the installed half, so no `scripts/audit/*.sh` and no `runtime/src/**` file changes and no criterion of that spec is falsified. Recorded as a resolved question rather than left silent because the answer turns on the section assignment above: had §File Fetching moved, Family 36 would have lost its subject, and had §Shared Files moved, `adopter_destinations` would have started failing toward an empty set without erroring.
+- **Does this declare `cross-spec-impact` on the spec that owns the audit families?** Resolved: **no**, because no family's subject moves. Every extraction target — both manifest tables, `§Agent Registry`, `§Derived values`, the store probe, the `archive/` URL, and `§Instructions`' numbered steps — lands in the installed half, so no `scripts/audit/*.sh` and no `runtime/src/**` file changes and no criterion of that spec is falsified. Recorded as a resolved question rather than left silent because the answer turns on the section assignment above: had `§File Fetching` moved, Family 36 would have lost its subject, and had `§Shared Files` moved, `adopter_destinations` would have started failing toward an empty set without erroring.
