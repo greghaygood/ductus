@@ -43,17 +43,17 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Run the whole local gate, after committing
 
-- [ ] Commit tasks 1–4 as one change (`git show --stat` **and** `git status --short`), then run `bash scripts/audit/run-all.sh` — Families 19 and 20 read committed history, so a pre-commit run is not evidence for them.
-- [ ] Prove `run-all.sh` fails before trusting its silence: write a wrong value into the repo-root `version`, confirm Family 20 exits 1, restore with `git checkout -- version`.
-- [ ] Run `npx markdownlint-cli2`; the six `lint-*.sh` scripts; `scripts/tests/*.sh`; `shellcheck -S warning` over the tracked shell set minus `runtime/tests/fixtures/`; the three generators plus `derive-dependencies` and `derive-references` reporting no drift.
-- [ ] Under `runtime/`, with an absolute `cd` on each invocation: `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, `cargo test --release --locked`. Redirect rather than pipe, read `$?` on the line that ran the command, and count `^test result:` lines against the binary count.
+- [x] Commit tasks 1–4 as one change (`git show --stat` **and** `git status --short`), then run `bash scripts/audit/run-all.sh` — Families 19 and 20 read committed history, so a pre-commit run is not evidence for them.
+- [x] Prove `run-all.sh` fails before trusting its silence: write a wrong value into the repo-root `version`, confirm Family 20 exits 1, restore with `git checkout -- version`.
+- [x] Run `npx markdownlint-cli2`; the six `lint-*.sh` scripts; `scripts/tests/*.sh`; `shellcheck -S warning` over the tracked shell set minus `runtime/tests/fixtures/`; the three generators plus `derive-dependencies` and `derive-references` reporting no drift.
+- [x] Under `runtime/`, with an absolute `cd` on each invocation: `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, `cargo test --release --locked`. Redirect rather than pipe, read `$?` on the line that ran the command, and count `^test result:` lines against the binary count.
 
 - **Done when**: every gate command has been run with its exit status read directly, `run-all.sh` has been demonstrated to fail on a seeded defect, and all pass.
 
 ## 7. Record the post-split measurement
 
-- [ ] Measure `framework/bootstrap/ductus.md` after the split and write the figure into `plan.md` §Post-split measurement, against the 146,953-byte pre-split file.
-- [ ] State the delta between the achieved reduction and the 38,616 B the spec predicted, and account for any difference (the pointer section adds bytes back).
+- [x] Measure `framework/bootstrap/ductus.md` after the split and write the figure into `plan.md` §Post-split measurement, against the 146,953-byte pre-split file.
+- [x] State the delta between the achieved reduction and the 38,616 B the spec predicted, and account for any difference (the pointer section adds bytes back).
 
 - **Done when**: `plan.md` §Post-split measurement carries a figure taken after the split, with the prediction delta accounted for.
 
