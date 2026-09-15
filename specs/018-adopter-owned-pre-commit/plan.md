@@ -14,7 +14,7 @@ The existing `framework/bootstrap/hooks/pre-commit` already contains exactly the
 
 ### Outer stub is a fresh file
 
-The new `framework/bootstrap/hooks/pre-commit` is written from scratch as the adopter-owned outer stub. Content per spec §Design > Outer file. This file replaces the renamed one at the same source path; from git's perspective, it's a delete+add (because content differs significantly from the renamed file). Acceptable — the file is fundamentally a different artifact under the new model, and adopter projects don't have history on it anyway.
+The new `framework/bootstrap/hooks/pre-commit` is written from scratch as the adopter-owned outer stub. Content per `spec.md` §Design > Outer file. This file replaces the renamed one at the same source path; from git's perspective, it's a delete+add (because content differs significantly from the renamed file). Acceptable — the file is fundamentally a different artifact under the new model, and adopter projects don't have history on it anyway.
 
 ### ductus.md §Hook Installation rewrite
 
@@ -22,13 +22,13 @@ Three substantive edits to the section, each motivated by the spec:
 
 1. **Detection ladder collapses from 7 items to 4.** Items 2–5 (third-party hook systems) merge into a single "any third-party hook system detected" branch with the same skip-and-warn behavior. The old item 6 (sentinel-detected ductus-installed file) is removed entirely — under the new model, `.githooks/pre-commit` is never ductus-managed, so detecting it as such is meaningless. The old items 1 and 7 collapse to the new items 1 and 4 (already-wired vs. fresh-install).
 
-2. **Migration subsection added.** New subsection between §Hook Installation's detection ladder and §Manual integration snippet. Specifies the line-2 sentinel check on `.githooks/pre-commit`, the conditional `git mv` (tracked vs. untracked file), the post-rename manifest behavior, and the post-scaffolding summary line. Edge cases from spec §Edge Cases (pre-existing inner, `git mv` failure) get explicit handling steps.
+2. **Migration subsection added.** New subsection in `framework/bootstrap/ductus.md`, between §Hook Installation's detection ladder and §Manual integration snippet. Specifies the line-2 sentinel check on `.githooks/pre-commit`, the conditional `git mv` (tracked vs. untracked file), the post-rename manifest behavior, and the post-scaffolding summary line. Edge cases from `spec.md` §Edge Cases (pre-existing inner, `git mv` failure) get explicit handling steps.
 
-3. **Inline `core.hooksPath` + `chmod +x`.** The actions previously delegated to `framework/bootstrap/hooks/install.sh` move into the §Hook Installation section's fresh-install path: `git config core.hooksPath .githooks` and `chmod +x .githooks/pre-commit .githooks/ductus-pre-commit`. Both are idempotent on re-runs.
+3. **Inline `core.hooksPath` + `chmod +x`.** The actions previously delegated to `framework/bootstrap/hooks/install.sh` move into `framework/bootstrap/ductus.md`'s §Hook Installation section's fresh-install path: `git config core.hooksPath .githooks` and `chmod +x .githooks/pre-commit .githooks/ductus-pre-commit`. Both are idempotent on re-runs.
 
 ### Manual integration snippet path change
 
-The snippet (printed when the detection ladder hits a third-party hook system or non-`.githooks` `core.hooksPath`) changes from `./.githooks/pre-commit` to `./.githooks/ductus-pre-commit`. Two callsites: the prose snippet in §Hook Installation > Manual integration snippet, and the post-scaffolding output's per-condition skip message. Both update.
+The snippet (printed when the detection ladder hits a third-party hook system or non-`.githooks` `core.hooksPath`) changes from `./.githooks/pre-commit` to `./.githooks/ductus-pre-commit`. Two callsites: the prose snippet in `framework/bootstrap/ductus.md` §Hook Installation > Manual integration snippet, and the post-scaffolding output's per-condition skip message. Both update.
 
 ### Spec 017 signpost
 

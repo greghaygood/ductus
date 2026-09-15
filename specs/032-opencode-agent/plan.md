@@ -38,19 +38,19 @@ registry row:
 | `settings_template` | `{ "$schema": "https://opencode.ai/config.json", "permission": { "bash": { "curl *": "allow", "ls *": "allow", "tar *": "allow", "mktemp *": "allow", "git status *": "allow", "git config *": "allow", "git rev-parse *": "allow", "git diff *": "allow", "git ls-files *": "allow", "chmod *": "allow", "awk *": "allow", "command -v *": "allow" } } }` (bootstrap-only seed, written into the **root `opencode.json`**) |
 | `rules_file_note` | `OpenCode reads AGENTS.md natively — no second rules file.` |
 
-§Derived values gains an `opencode` column: command path
+`framework/bootstrap/ductus.md` §Derived values gains an `opencode` column: command path
 `.opencode/command/{project}/<name>.md`; invocation `/{project}/<name>`; `ductus`
 install path `.opencode/command/ductus.md`; settings file **root `opencode.json`**;
 permission shape OpenCode's `permission` action map; native rule-loading dir — (none;
 rules read from shared `specs/rules/` as in `claude-style`); native rules file
 `AGENTS.md`; slash-command cleanup glob the `{project}/` subdirectory under
 `command/`. §"Adding a new agent" is updated to record `opencode` as the third
-layout. Detection/§Agent Selection are unchanged — they key on `config_dir`
+layout. Detection/§Agent Selection in `framework/bootstrap/ductus.md` are unchanged — they key on `config_dir`
 (`.opencode/`) like every other agent.
 
 ### 2. Command scaffolding — verbatim namespaced markdown (claude-style-like)
 
-For `layout: opencode`, §Per-Agent Scaffolding copies each
+For `layout: opencode`, `framework/bootstrap/ductus.md` §Per-Agent Scaffolding copies each
 `framework/commands/<name>.md` to `.opencode/command/{project}/<name>.md`
 verbatim (carry frontmatter `description`, keep the body and approval-gate
 prompts, substitute `{project}` and `{cli-config-dir}` → `.opencode`, preserve
@@ -92,7 +92,7 @@ Claude's `.mcp.json` shape (`mcpServers` map, `{command, args}`); it gains an
 `opencode` sub-case writing the **`mcp` key** with OpenCode's server shape
 (`{type, command:[…], enabled}`) into root `opencode.json`, additively (same
 five cases: missing file, has-key-no-ductus, already-present no-op, no-key, invalid
-JSON → skip). The State-B auto-wire permission grant (§ductus runtime auto-wiring)
+JSON → skip). The State-B auto-wire permission grant (`framework/bootstrap/ductus.md` §ductus runtime auto-wiring)
 adds `"ductus*": "allow"` to `opencode.json` `permission` for OpenCode (alongside
 Claude's `mcp__ductus__*`, Antigravity's `mcp(ductus/*)`, Auggie's `mcp:ductus:*`). Per
 the existing rule, this State-B write is host-side — there is no runtime primitive
@@ -154,14 +154,14 @@ Because OpenCode's `ductus` installer is a verbatim markdown file (not a
 transformed skill), the bootstrap branches OpenCode needs are simpler than
 Antigravity's:
 
-- **§Per-Agent Scaffolding dispatch note** — add the `opencode` branch alongside
+- **`framework/bootstrap/ductus.md` §Per-Agent Scaffolding dispatch note** — add the `opencode` branch alongside
   the `antigravity` note (commands → `.opencode/command/{project}/`, no skill
   transform, cleanup scoped to the `{project}/` subdir).
 - **ductus self-installation / Self-Update Check / Post-Write Integrity Check** —
   claude-style-like: install path `.opencode/command/ductus.md`, direct byte
   compare against upstream `ductus.md`, `# ductus`-first-line integrity check. No
   frontmatter strip (unlike antigravity).
-- **§Permission Setup** — seed root `opencode.json` `permission` from the
+- **`framework/bootstrap/ductus.md` §Permission Setup** — seed root `opencode.json` `permission` from the
   `settings_template`; the settings file == the MCP-wiring file for OpenCode.
 - **CLAUDE.md shared-file step** — already `claude-style`-only; OpenCode is
   excluded automatically and ships **no CLAUDE.md** (reads AGENTS.md, already

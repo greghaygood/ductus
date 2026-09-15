@@ -26,7 +26,7 @@ that table exists.
 
 The table lives in this plan rather than in `AGENTS.md`, per the clarify walk's
 fourth resolution: a per-entry marker in `AGENTS.md` would add authored state to
-every future entry, which §Design Principles rejects as a design that depends on
+every future entry, which §design-principles rejects as a design that depends on
 author diligence.
 
 Scope is the four rule-bearing sections — `Workflow`, `Gotchas`, `Boundaries`,
@@ -213,7 +213,7 @@ clause rather than as a principle in its own right.
 
 | File | Action | Purpose |
 | --- | --- | --- |
-| `framework/constitution.md` | Modify | Receives every promoted rule as a bullet under the section owning its subject, plus the criterion-verification rule, the mechanical-edit test in §spec-lifecycle, and a §canonical-sources row naming this spec |
+| `framework/constitution.md` | Modify | Receives every promoted rule as a bullet under the section owning its subject, plus the criterion-verification rule, the mechanical-edit test in §spec-lifecycle, and a §drift-prevention canonical-sources row naming this spec |
 | `AGENTS.md` | Modify | Each promoted entry rewritten to a pointer; project-only entries untouched |
 | `specs/050-constitution/plan.md` | Modify | Carries the classification table — the audit trail AC1 requires |
 | `specs/inbox.md` | Modify | The held `045` chore is resolved against the new mechanical-edit test and removed |

@@ -28,7 +28,7 @@ surfaces = ["backend"]   # list; members ∈ {"backend", "frontend"}; full-stack
 
 ### Installer (`framework/bootstrap/ductus.md`)
 
-- **Input resolution.** Add `[rules] surfaces` to §Collect Project Inputs as a resolved input: read from `.ductus/config.toml` `[rules] surfaces`; if absent, prompt ("Which rule surfaces does this project need? backend / frontend / both"); persist the answer into `.ductus/config.toml` `[rules]`, preserving every other section (same pattern as `[project] name/description/languages`). On a routine re-run the value is present, so no prompt fires.
+- **Input resolution.** Add `[rules] surfaces` to `framework/bootstrap/ductus.md` §Collect Project Inputs as a resolved input: read from `.ductus/config.toml` `[rules] surfaces`; if absent, prompt ("Which rule surfaces does this project need? backend / frontend / both"); persist the answer into `.ductus/config.toml` `[rules]`, preserving every other section (same pattern as `[project] name/description/languages`). On a routine re-run the value is present, so no prompt fires.
 - **Manifest filter.** The host already builds `manifest-entries`. Filter the rule-file entries (`framework/rules/*.md` → adopter `specs/rules/*.md`) to those whose suffix matches a configured surface, **plus every `*-cross.md` unconditionally**, before calling `apply-manifest`. Entries for unconfigured surfaces are simply omitted from the manifest — never added to any prune/enforce set, so an already-installed file for a now-unconfigured surface is **left in place** (rule files are not in `enforce-directories`; only slash-command dirs are pruned).
 - **Contradiction notice.** When `surfaces` excludes a surface that `[project] languages` clearly implies (e.g., `surfaces=["backend"]` but a frontend language is listed), emit one advisory line; the explicit setting still wins. No prompt.
 
@@ -37,7 +37,7 @@ surfaces = ["backend"]   # list; members ∈ {"backend", "frontend"}; full-stack
 §Behavior step 5 currently: discover by suffix → filter by detected stack → apply disabled-files filter. Insert a surface source ahead of the stack filter:
 
 - Read `.ductus/config.toml` `[rules] surfaces`. **If set**, keep rule files whose surface is in `surfaces`, plus every `*-cross.md` and every unrecognized-suffix file; this *replaces* the detected-stack filter. **If unset**, run the detected-stack filter exactly as today.
-- The §Inputs section documents `[rules] surfaces` alongside `[review] tech-stack-verified` and `[[review.disabled-rule-files]]`.
+- The `framework/commands/review.md` §Inputs section documents `[rules] surfaces` alongside `[review] tech-stack-verified` and `[[review.disabled-rule-files]]`.
 - The 025 disabled-files filter runs after, unchanged. A file already excluded by surface needs no opt-out entry.
 
 ### `/ductus:analyze` and citation resolution

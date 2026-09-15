@@ -91,7 +91,7 @@ preservation of everything outside the block without a second mechanism.
 
 ### Validation happens at configuration time, and adds no command
 
-`/ductus` §Project Configuration validates each entry when it reads the config:
+`framework/bootstrap/ductus.md` §Project Configuration validates each entry when it reads the config:
 alias is a bare TOML key, `repo` is URL-shaped, `path` is non-empty. A `path` that
 does not resolve is a **warning**, never a rejection — `framework/commands/link.md:65`
 settles that shape for `[services]` and the spec adopts it.

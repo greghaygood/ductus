@@ -11,7 +11,7 @@ Auggie share a `claude-style` profile (commands under
 `settings.local.json`); Antigravity gets an `antigravity` profile (dir-form
 skills under `.agents/skills/`, `AGENTS.md`, `.agents/mcp_config.json`,
 `.agents/settings.json`). `framework/bootstrap/ductus.md`'s derived values and
-§Per-Agent Scaffolding branch on the profile; everything else (the unified
+`framework/bootstrap/ductus.md` §Per-Agent Scaffolding branch on the profile; everything else (the unified
 procedure, manifests, session state) is unchanged. The work is almost entirely
 in the markdown bootstrap + one generator + one new configure source; no
 mandatory runtime (Rust) change ships in this spec (see Technical Decision 6).
@@ -46,7 +46,7 @@ Antigravity registry row:
 
 ### 2. Skill transform (per-agent scaffolding for `antigravity`)
 
-For `layout: antigravity`, §Per-Agent Scaffolding does not copy command files
+For `layout: antigravity`, `framework/bootstrap/ductus.md` §Per-Agent Scaffolding does not copy command files
 verbatim. Each `framework/commands/<name>.md` becomes
 `.agents/skills/{project}-<name>/SKILL.md`:
 
@@ -125,7 +125,7 @@ merge so the markdown-only path is faithful.
 ### 8. The `antigravity` layout touches the whole bootstrap, not just scaffolding
 
 Discovered mid-implement (Task 2): the layout branch is not confined to
-§Per-Agent Scaffolding. Because the Antigravity `ductus` installer is a
+`framework/bootstrap/ductus.md` §Per-Agent Scaffolding. Because the Antigravity `ductus` installer is a
 *transformed* skill (`.agents/skills/ductus/SKILL.md`, frontmatter `name:
 ductus` plus the body) rather than a verbatim copy of `ductus.md`, several other
 bootstrap

@@ -81,7 +81,7 @@ The interpreter `panic`s if it reads a malformed JSON line on stdin — that is 
 
 ### MCP surface: one tool per primitive, no orchestration tools
 
-`runtime mcp` starts an `rmcp` server exposing one tool per primitive in §The primitive library, with tool names following the `gov-rt:<verb>-<noun>` convention from the resolved-questions section. Tool input schemas are derived from each primitive's args struct via `schemars`. No orchestration tools (`run-procedure`, `walk-tasks`, etc.) are exposed via MCP — orchestration is the subprocess interpreter's job, not the MCP server's. This keeps the MCP surface flat and stable.
+`runtime mcp` starts an `rmcp` server exposing one tool per primitive in `spec.md` §The primitive library, with tool names following the `gov-rt:<verb>-<noun>` convention from the resolved-questions section. Tool input schemas are derived from each primitive's args struct via `schemars`. No orchestration tools (`run-procedure`, `walk-tasks`, etc.) are exposed via MCP — orchestration is the subprocess interpreter's job, not the MCP server's. This keeps the MCP surface flat and stable.
 
 ### Atomic writes: tempfile in same directory, then `std::fs::rename`
 

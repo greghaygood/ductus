@@ -130,7 +130,7 @@ The stale comment gets corrected rather than deleted.
 
 ### Two migration entries, not one
 
-The spec's §Sequencing with 048 leaves this open ("they must compose — or 048's is authored
+The spec's `spec.md` §Sequencing with 048 leaves this open ("they must compose — or 048's is authored
 already knowing the new names, and there is only one"). Because 049 lands first, 048's entry
 does not exist yet, so it is authored afterward against final names and the two are disjoint:
 049's rewrites the MCP server **key**, the permission entries, the per-project directory, and
