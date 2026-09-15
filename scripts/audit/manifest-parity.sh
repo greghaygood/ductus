@@ -51,8 +51,40 @@ extract_auggie_mcp() {
     | sort -u
 }
 
-claude_mcp="$(extract_claude_mcp "framework/bootstrap/configure/claude.md")"
-auggie_mcp="$(extract_auggie_mcp "framework/bootstrap/configure/auggie.md")"
+claude_file="framework/bootstrap/configure/claude.md"
+auggie_file="framework/bootstrap/configure/auggie.md"
+
+for f in "$claude_file" "$auggie_file"; do
+  if [ ! -f "$f" ]; then
+    emit "$f" "configure source is missing — the permission sets cannot be compared" \
+      "restore the file; a comparison that could not run must not exit like one that agreed"
+    exit "$drift"
+  fi
+done
+
+claude_mcp="$(extract_claude_mcp "$claude_file")"
+auggie_mcp="$(extract_auggie_mcp "$auggie_file")"
+
+# Fail closed on an empty extraction, the rule every family from 17 onward
+# follows and ./README.md states as the contract: two empty sets compare
+# equal, so a prefix spelling this script hardcodes independently of
+# gen-configure-mcp.sh can stop matching on BOTH sides at once and the
+# family reports agreement it never established. check-zero does not cover
+# it — it compares the generator against the files, so a format change that
+# moves together passes there and empties both greps here.
+claude_count="$(printf '%s' "$claude_mcp" | grep -c . || true)"
+auggie_count="$(printf '%s' "$auggie_mcp" | grep -c . || true)"
+for pair in "$claude_file:$claude_count" "$auggie_file:$auggie_count"; do
+  if [ "${pair##*:}" -eq 0 ]; then
+    emit "${pair%:*}" "no mcp__ductus__ / mcp:ductus: entries extracted — the comparison had nothing to compare" \
+      "re-run scripts/gen-configure-mcp.sh, or update this family extraction if the generated entry shape changed"
+  fi
+done
+[ "$drift" -eq 0 ] || exit "$drift"
+
+# The examined counts, so a clean exit says what it compared rather than
+# asserting agreement in the abstract.
+echo "manifest-parity: compared $claude_count MCP entr(ies) in $claude_file against $auggie_count in $auggie_file" >&2
 
 only_claude="$(comm -23 <(printf '%s' "$claude_mcp") <(printf '%s' "$auggie_mcp"))"
 only_auggie="$(comm -13 <(printf '%s' "$claude_mcp") <(printf '%s' "$auggie_mcp"))"
