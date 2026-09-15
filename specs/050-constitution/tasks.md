@@ -204,6 +204,6 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Name the failure it prevents: without method and units a later reader cannot separate a **decayed** figure from one taken by a **different method**, and the reflex to trust the newer figure is wrong precisely when the older measurement was better informed
 - [x] Give the disposition on a disagreement — re-derive at the recorded figure's own commit first, then diff the field across its own history, because a value can have been correct and then overwritten with a worse one
 - [x] Reduce only the `AGENTS.md` entry that states the rule *generally* to a pointer; leave the six situational corollaries in place, since each sits inside a gotcha whose subject is something else and carries no restatement of the canonical text
-- [ ] Do **not** discharge this by adding another `AGENTS.md` entry, and do **not** fold it into the second promotion round's count in `plan.md` §Classification — it is a new rule, not a promotion
+- [x] Do **not** discharge this by adding another `AGENTS.md` entry, and do **not** fold it into the second promotion round's count in `plan.md` §Classification — it is a new rule, not a promotion
 
 - **Done when**: `framework/constitution.md` §grounding states the rule as a bullet under **Rules**, the `AGENTS.md` entry that stated it generally points at that bullet rather than restating it, and the six situational corollaries are left where they are.

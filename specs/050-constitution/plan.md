@@ -146,7 +146,12 @@ Gotchas 34, Design Principles 3) — **discharged to 0 by the second round below
 classifies exactly those 44.** Verified rather than asserted: the 98 keys both rounds
 carry resolve to 98 distinct entries, and 98 ∪ 47 citing = 119, the whole rule-bearing
 set. All 54 first-round entries still resolve to a live entry,
-and 47 in-scope entries cite a `framework/constitution.md#` anchor. Count the citing
+and 47 in-scope entries cite a `framework/constitution.md#` anchor. **Task 22 moved that
+to 48 in-scope citing entries (and the whole-file line count from 51 to 52)** by reducing the
+*recorded measurement can encode a constraint* entry to a pointer; rule-bearing is unchanged at
+119 because no entry was added, and *unclassified* stays 0 because that entry was already
+table-keyed, so the union did not move. Same method both times: top-level bullets tallied per
+level-two heading, in-scope sections only. Count the citing
 side as **rule-bearing bullets in the four in-scope sections** — a bare
 `grep -c` over the file answers 51, because it counts anchor-bearing *lines*
 including two outside those sections, and 51 is right about lines while 44 needs 47.
@@ -158,6 +163,11 @@ between a growing backlog and a silent one pushes toward silence.
 The 44 entries the coverage check above reported as unclassified, judged by the
 same reword test and recorded the same way (AC1). **26 to promote, 1 routes to a
 rule file rather than here, 1 already promoted in substance, 16 project-only.**
+**Amended 2026-09-15 by task 22: 25 to promote, 2 already promoted in substance.**
+The *recorded measurement can encode a constraint* row moved between those two
+tables when AC21 stated its disposition in the constitution directly — see the
+note under **already promoted in substance** below. The totals still sum to 44
+and the coverage check is unaffected, because the entry was table-keyed either way.
 This is a second deliberate round, not a standing requirement — AC1 rejects the
 latter and is unchanged. Promotion itself is *not* done by this task; this is the
 worklist, exactly as the first round's classification preceded its promotions.
@@ -187,7 +197,6 @@ worklist, exactly as the first round's classification preceded its promotions.
 | `unexamined` cannot be measured while the spec is `in-progress`, and the gate's own ordering is what hides that | The family is `done`-only and the gate ordering is the shipped one, so the trap is identical in any adopter repo |
 | A spec's own completion commit can destroy content, and a `## Heading` absorbed into an unterminated code span is invisible to every check this project has — including the gate that reads it | **R** — drops the Family-25 scoping note; the blindness is in the shared markdown reader every adopter uses |
 | `set-status` takes `--from` and `--to`, not `--status` — and the refusal is the useful half | **R** — the two-sided form's rationale (a transition computed from a stale read fails loudly) is the general half |
-| A recorded measurement can encode a constraint you have not found yet — when a fresh derivation disagrees with a recorded one, hunt the constraint before concluding the record is wrong | §grounding discipline for the case where the older measurement is the better-informed one |
 | `write-review` derives `scope` itself, so a count you measured earlier and typed into the Summary can contradict the record it is written into — and nothing compares the two | One call writes both, so nothing can compare them; true wherever the primitive runs |
 | Removing an embedded copy is a corpus sweep, not a deletion — grep for what pointed at it, including the artifacts that *describe* it | The pointer-not-copy rule already ships; this is what *replacing* one costs, classified by tense |
 | A `data-model.md` that claims "authoritative shapes" drifts from the runtime silently — check it against a record the runtime actually wrote, not against the code | **R** — check a schema table against an artifact the writer actually wrote, not against the code |
@@ -204,6 +213,7 @@ worklist, exactly as the first round's classification preceded its promotions.
 | Entry | Reason |
 | --- | --- |
 | A feature directory is not necessarily `NNN-slug` — ask `parse_feature_dir`, never the first three bytes | §numbering already states that the membership rule is defined in exactly one place and is called rather than restated; what remains here is the Rust function name |
+| A recorded measurement can encode a constraint you have not found yet — when a fresh derivation disagrees with a recorded one, hunt the constraint before concluding the record is wrong | **Discharged 2026-09-15 by task 22, not by a promotion pass.** AC21 added *a recorded measurement states its method and its units* to §grounding, which states this entry's disposition outright — re-derive at the recorded figure's own commit, then diff the field across its own history — and its diagnosis, that the reflex to trust the newer figure is wrong precisely where the older one was better informed. The `AGENTS.md` entry now points at that bullet, so promoting it again would write a second copy |
 
 #### Second round — project-only
 
