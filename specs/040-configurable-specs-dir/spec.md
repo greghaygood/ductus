@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [002-project-scaffolding, 003-bootstrap-automation, 017-derive-dont-ask, 022-deterministic-runtime]
 review:
   last-run: 2026-09-14T17:23:24Z
@@ -65,7 +65,7 @@ specs-root = "specs"     # default; an adopter may set e.g. "governance"
 ## Configuration behavior
 
 - **Chosen at initial configuration.** During [003-bootstrap-automation](../003-bootstrap-automation/spec.md) (`/ductus`), the operator may set the spec-root name; the prompt defaults to `specs` and persists the answer to `.ductus/config.toml`. The prompt lives only in the configuration command — no other command asks for it.
-- **Scaffolded under the configured name.** [002-project-scaffolding](../002-project-scaffolding/spec.md) (`/ductus:init`) creates the spec-root directory (and its `inbox.md`, `rules/`, shared docs) under the configured name, or `specs` when unset.
+- **Scaffolded under the configured name.** `/ductus` creates the spec-root directory (and its `inbox.md`, `rules/`, shared docs) under the configured name, or `specs` when unset. **Corrected 2026-09-15:** this named `/ductus:init`, attributed to [002-project-scaffolding](../002-project-scaffolding/spec.md); that command was retired, and `/ductus` — which prompts for the root, ships the `inbox.md` and `rules/` manifest rows, and resolves every `specs/…` destination under the configured name — is now the only path.
 
 ### Validation and notices
 
@@ -87,7 +87,7 @@ specs-root = "specs"     # default; an adopter may set e.g. "governance"
 - [x] AC3: A malformed value (empty, or containing any character outside `[A-Za-z0-9_-]` — path separators, `.`/`..`, or other punctuation) is rejected with a clear message at configuration time rather than silently accepted.
 - [x] AC4: When the chosen directory already exists on disk and is not a ductus spec root (no `inbox.md`, no numbered `NNN-*` subdirs), configuration emits a one-line notice naming the directory and proceeds on operator confirmation; the choice is honored after the warning.
 - [x] AC5: When the configured `specs-root` is absent on disk but a different ductus-shaped directory exists, ductus emits a one-line half-finished-rename notice instead of silently scaffolding a new empty tree.
-- [x] AC6: `/ductus:init` scaffolds the spec-root directory — including `inbox.md`, `rules/`, and shared docs — under the configured name, or under `specs` when the setting is unset.
+- [x] AC6: `/ductus:init` scaffolds the spec-root directory — including `inbox.md`, `rules/`, and shared docs — under the configured name, or under `specs` when the setting is unset. **Superseded 2026-09-15: `/ductus:init` was retired.** The requirement it states is unchanged and still holds, discharged by `/ductus` alone — verified against `framework/bootstrap/ductus.md`, which prompts for the root, carries the `inbox.md` and `rules/` manifest rows, and resolves every `specs/…` destination under the configured name. Annotated rather than swept because the criterion named a *command* that stopped existing, not a file that was renamed.
 - [x] AC7: No pipeline command reads or writes a hardcoded `specs/` path; each resolves the spec root from the setting, and a project configured with a non-`specs` name shows no stray `specs/` directory after running the pipeline.
 - [x] AC8: The session file's `path` field uses the configured spec root (e.g., `governance/040-...` when the setting is `governance`), and self-corrects on the next `/ductus:target` / `/ductus:specify` write after a manual rename.
 - [x] AC9: Rule files, the inbox, and shared docs (`system.md`, `events.md`, `errors.md`) resolve under the configured spec root.

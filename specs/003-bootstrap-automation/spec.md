@@ -1,6 +1,6 @@
 ---
 title: "003-bootstrap-automation — spec"
-status: done
+status: in-progress
 dependencies: [000-slash-commands, 001-system-spec-templates, 002-project-scaffolding]
 tags: [bootstrap, commands]
 review:
@@ -38,7 +38,7 @@ analyze:
 
 `ductus` slash commands that dogfood the same pipeline commands adopting projects use (`/ductus:about`, `/ductus:target`, `/ductus:status`, `/ductus:setup`, `/ductus:specify`, `/ductus:clarify`, `/ductus:plan`, `/ductus:implement`, `/ductus:analyze`, `/ductus:next`), plus a `ductus`-specific `/ductus:init` that scaffolds new projects from templates.
 
-> **Note:** the command set evolved after this spec shipped. `/ductus:about` is now `/ductus:help`, `/ductus:setup` is now `/ductus:configure` (renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and `/ductus:next` was retired — pipeline next-step suggestions are surfaced by `/ductus:status` and `/ductus:target` instead. The brownfield commands (`/ductus:specify`, `/ductus:log`, `/ductus:groom`) and the elaborate command (`/ductus:amend`) were added by later specs and are scaffolded alongside the original set.
+> **Note:** the command set evolved after this spec shipped. `/ductus:about` is now `/ductus:help`, `/ductus:setup` is now `/ductus:configure` (renamed by [012-multi-agent-govern](../012-multi-agent-govern/spec.md)), and `/ductus:next` was retired — pipeline next-step suggestions are surfaced by `/ductus:status` and `/ductus:target` instead. The brownfield commands (`/ductus:specify`, `/ductus:log`, `/ductus:groom`) and the elaborate command (`/ductus:amend`) were added by later specs and are scaffolded alongside the original set. `/ductus:init` was **retired on 2026-09-15** — the ten dogfooded pipeline commands this spec delivered are unaffected, but the init half below (§`/ductus:init`, AC5–AC17, and the Resolved Questions that decided its shape) records what shipped rather than live behaviour.
 >
 > **Note:** path references below (`commands/`) reflect the original layout. The repository was later reorganized so command sources live in `framework/commands/`; the generator script `scripts/gen-claude-commands.sh` produces `.claude/commands/ductus/` from those sources. Adopting projects' destination paths did not change.
 
@@ -68,6 +68,12 @@ Copy all ten command templates from `commands/` into `.claude/commands/ductus/`,
 These commands enforce the same pipeline gates, dependency checks (via AGENTS.md boundaries), and conventions that adopting projects follow.
 
 ### /ductus:init
+
+> **Retired 2026-09-15.** `/ductus:init` no longer exists: `.claude/commands/ductus/init.md` was deleted and `scripts/gen-claude-commands.sh` no longer spares it from the prune loop. It was retired rather than repaired because an orphan no sweep reaches drifts on every rename with nothing able to report it, and `/ductus` already covers the greenfield case that was its last remaining role (`framework/bootstrap/ductus.md` prompts for the spec root, ships the `inbox.md` and `rules/` manifest rows, and resolves every `specs/…` destination under the configured name). The subsections below record what the command did; they are not live behaviour. The audit family that existed to compare its file list against `/ductus` is `026-framework-self-audit` AC4.
+>
+> **`004-tech-stack-selection` was consolidated here and its directory removed in the same change**, because every criterion it carried described this command's input collection and nothing it delivered outlived the command. What it delivered, recorded here because consolidation migrates no content and git history is otherwise the only copy: it replaced the single **Primary language(s)** question in §Inputs with a tech-stack questionnaire — project type (backend / frontend / fullstack), then per-section framework, language, database, messaging, test runner and CSS/UI, each with 2–4 example choices plus *Other* and *Skip* — populated the `AGENTS.md` **Tech Stack** table from the selections with a layer→role mapping, and derived the `.gitignore` language patterns from them instead of from a separate prompt. Its one scenario, `framework-implies-language`, held that a framework which unambiguously determines its language (Rails → Ruby, Django → Python, Gin → Go) suppresses the language *question* but still writes the language *row*.
+>
+> **The capability is not replaced, and that is a decision rather than an oversight.** `/ductus` collects **Primary language(s)** — the exact question 004 removed — and carries none of the questionnaire; its §Post-Scaffolding Output tells the operator to fill in `AGENTS.md` by hand. So the local greenfield path reverts to pre-004 behaviour. It is out of scope for the retirement because init was **never shipped to adopters** — it had no **Shared Files** manifest row, so no adopter ever had the questionnaire and none loses it; the loss falls only on the maintainer scaffolding a brand-new project locally, which is the role the retirement decision weighed and accepted. Rule-file selection is unaffected: `discover-rule-files` reads `[rules] surfaces`, which `/ductus` collects explicitly, not the Tech Stack table. What does still read that table is `/{project}:review`'s tech-stack alignment check — and it read a hand-filled table for every `/ductus`-adopted project already, so nothing about that changes either.
 
 ### Inputs
 
@@ -115,7 +121,9 @@ Before scaffolding, verify the target directory does not already exist. If it do
 
 ### /ductus:init
 
-- [x] AC5: Command exists at `.claude/commands/ductus/init.md`
+> **Retired 2026-09-15.** AC5–AC17 are left ticked as the account of what shipped — each was true for the life of the command — but none states live behaviour, because the command no longer exists. AC1–AC4 above are unaffected: the ten dogfooded pipeline commands this spec also delivered still ship. This is partial retirement, so the spec stays and describes what remains, per [§spec-lifecycle](../../framework/constitution.md#spec-lifecycle).
+
+- [x] AC5: Command exists at `.claude/commands/ductus/init.md` — **superseded 2026-09-15: the command was retired and the file deleted.** Annotated rather than swept because the claim stopped holding, which is not a rename
 - [x] AC6: Command accepts project name, path, description, and primary language(s) as arguments or prompts for them
 - [x] AC7: Verifies the target directory does not exist before proceeding
 - [x] AC8: Creates a complete project directory with all `ductus` files
@@ -135,7 +143,7 @@ Before scaffolding, verify the target directory does not already exist. If it do
 - **Initial commit** — leave to the user. They may want to review generated files, fill in AGENTS.md, or make adjustments before committing.
 - **Minimal flag** — not now. Templates are empty prompts that cost nothing to include. If a project doesn't use events, they delete `events.md`. See [specs/README.md](../README.md#future-considerations) for deferred rationale.
 - **Existing directory** — verify it doesn't exist and stop if it does. Running in an existing directory risks overwriting files. The manual bootstrap steps in the README cover adding `ductus` to existing projects.
-- **Command location** — `.claude/commands/ductus/init.md`, invoked as `/ductus:init`. Consistent with the slash command pattern from spec 000.
+- **Command location** — `.claude/commands/ductus/init.md`, invoked as `/ductus:init`. Consistent with the slash command pattern from spec 000. **Reversed 2026-09-15:** the command was retired and the file deleted. The decision is kept rather than swept because it is the reference that records where init lived, which is the one survival [§drift-prevention](../../framework/constitution.md#drift-prevention) preserves for a retired name.
 - **Language-specific gitignore** — init asks for primary language(s) and fetches patterns from github.com/github/gitignore to append to the minimal .gitignore template.
 
 ## References

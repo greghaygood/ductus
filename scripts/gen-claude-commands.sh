@@ -4,9 +4,8 @@
 #
 # Substitutes {project} -> ductus and {cli-config-dir} -> .claude.
 # The configure command is sourced from framework/bootstrap/configure/claude.md.
-# init.md is ductus-specific and hand-maintained — never touched.
 # Files in .claude/commands/ductus/ that do not correspond to a current source
-# (and are not init.md) are removed so renames flow through cleanly.
+# are removed so renames flow through cleanly.
 #
 # Flags:
 #   --check    Compare generated content against the current destination;
@@ -21,7 +20,7 @@ for arg in "$@"; do
   case "$arg" in
     --check) check_mode=1 ;;
     -h|--help)
-      sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -58,17 +57,12 @@ if [ "$check_mode" -eq 1 ]; then
   done
   substitute < "$CONFIGURE_SRC" > "$tmpdir/configure.md"
   expected+=("configure.md")
-  expected+=("init.md")
 
   drift=0
   # Compare every expected file against DEST.
   for name in "${expected[@]}"; do
     src_path="$tmpdir/$name"
     dest_path="$DEST/$name"
-    if [ "$name" = "init.md" ]; then
-      # Hand-maintained — never compared.
-      continue
-    fi
     if [ ! -f "$dest_path" ]; then
       echo "missing in DEST: $name"
       drift=1
@@ -109,9 +103,6 @@ done
 substitute < "$CONFIGURE_SRC" > "$DEST/configure.md"
 expected+=("configure.md")
 
-# init.md is hand-maintained — preserve it.
-expected+=("init.md")
-
 # Prune any .md files in DEST that are no longer in the expected set.
 for existing in "$DEST"/*.md; do
   name="$(basename "$existing")"
@@ -126,4 +117,3 @@ for existing in "$DEST"/*.md; do
 done
 
 echo "Regenerated $(ls "$DEST"/*.md | wc -l | tr -d ' ') files in $DEST/"
-echo "(init.md is hand-maintained and was not touched)"

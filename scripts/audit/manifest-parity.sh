@@ -10,12 +10,13 @@
 #
 # Out of v1 scope (deferred to follow-on scenarios):
 #
-#   * Installer file list (ductus.md ↔ init.md). init.md is hand-
-#     maintained at .claude/commands/ductus/init.md only — there's no
-#     framework/commands/init.md source to diff against. The two
-#     installer paths describe scaffolding in different prose shapes;
-#     comparing them needs structured manifests rather than regex
-#     extraction. See 026 plan §Known limitations.
+#   * Installer file list — retired, not deferred. This sub-check compared
+#     the file lists of two installer paths. The second was a hand-
+#     maintained, ductus-specific init command with no framework/commands/
+#     source; it was retired on 2026-09-15, so /ductus is now the only path
+#     that scaffolds a project and there is no second manifest to diff
+#     against. The sub-check has no subject rather than a hard extraction
+#     problem. See 026 AC4.
 #
 #   * Non-MCP permission parity (Bash↔launch-process, Edit↔str-replace-editor,
 #     Write↔save-file, view↔Read, grep-search↔Grep, etc.). The Claude

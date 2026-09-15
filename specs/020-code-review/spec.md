@@ -1,6 +1,6 @@
 ---
 spec: 020-code-review
-status: done
+status: in-progress
 dependencies: []
 review:
   last-run: 2026-09-14T01:57:59Z
@@ -154,10 +154,14 @@ tools — a discipline dependency the framework should remove.
   fields — and gate them in their own CI.
 - **Stack detection source** — `/ductus:review` continues to read `AGENTS.md`
   `Tech Stack` to choose between `security-backend.md` and
-  `security-frontend.md`. Spec 004 (`done`) writes to that exact section
-  during `/ductus:init`, so `AGENTS.md` `Tech Stack` *is* the canonical sink
+  `security-frontend.md`. `AGENTS.md` `Tech Stack` *is* the canonical sink
   for tech-stack metadata — there is no separate surface to point at. No
-  change to the draft.
+  change to the draft. **Premise corrected 2026-09-15:** this rested on
+  spec 004 writing that section during `/ductus:init`. That command was
+  retired and `004-tech-stack-selection` was retired with it, since every
+  criterion it carried described init's questionnaire. The conclusion is
+  unaffected — the section is still what `/ductus:review` reads, and it is
+  still the only tech-stack surface.
 - **Quality-pass confidence threshold** — fixed at 80; not exposed via
   `.ductus/config.toml`. The threshold is an opinion about LLM calibration, not
   about project domain — adopters have no meaningful information to tune it,

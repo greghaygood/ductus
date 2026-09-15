@@ -651,7 +651,7 @@ Templates and validate evolve together. A diff that touches one without the othe
 
 ### Manifest discipline
 
-When multiple commands distribute or reference the same set of files (e.g., `/ductus` and `/{project}:init` both scaffold a project; `/{project}:configure` and the bootstrap install both apply permission sets), the file list lives in one place:
+When multiple commands distribute or reference the same set of files (e.g., `/{project}:configure` and the bootstrap install both apply permission sets), the file list lives in one place:
 
 - Either as a shared section the commands include by reference, or
 - As a registry both commands read.
