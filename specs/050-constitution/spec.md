@@ -2,17 +2,17 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-14T01:58:21Z
-  reviewed-against: fc70afc6db98029dc8ebd35e666be17eed7c1a70
+  last-run: 2026-09-15T14:31:16Z
+  reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 6
-  scope: 8
+  examined: 15
+  scope: 15
   reviewed-digest:
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
-    scenarios/a-partial-read-is-not-a-read.md: 21a78c9fe7d1b8d76f6f6f35097fce17e1ca1fe1ae3723bcb7ec007b7c9aeb56
+    scenarios/a-partial-read-is-not-a-read.md: 8d6851e20f8a2e9f083434a37cbf39ab3bca533ec819a8a258197e4afb797b07
     scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
     scenarios/a-retired-filename-leaves-a-decision-record.md: f84a3177744eb03a859d82a4017495c24bcf24466448b7c49ad1a253147ab581
     scenarios/completion-claims-carry-no-caveats.md: 2b2e43f4cea73ba9c81dc21848b5c668e1db5bf6a5e3becd7467ce025c4179c4

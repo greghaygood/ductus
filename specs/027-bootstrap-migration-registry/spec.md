@@ -2,15 +2,15 @@
 status: in-progress
 dependencies: [026-framework-self-audit]
 review:
-  last-run: 2026-09-13T12:31:12Z
-  reviewed-against: 2e93663a90b6344a5cf63d4f9bc15b1424d40479
+  last-run: 2026-09-15T14:30:56Z
+  reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 9
-  scope: 23
+  examined: 21
+  scope: 24
   reviewed-digest:
-    scenarios/migration-chain-reference-integrity.md: 36477abab8b1c268a4a72de4bb4d53b02715ad287469fbe470207aee0c29f9c8
+    scenarios/migration-chain-reference-integrity.md: b187024e6ed8fee90fe31be0f2bbcd4786782f8e4395a89c09142f20218f914d
     scenarios/migrations-apply-once-per-repo.md: 29829288f42c8641dcbad3c58d4431904122d5c429f6ec6e1b7951c205fbeaed
   blocking: false
 next-criterion: 31

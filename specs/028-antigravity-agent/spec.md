@@ -2,15 +2,15 @@
 status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime]
 review:
-  last-run: 2026-09-13T22:50:07Z
-  reviewed-against: 5a62a107e8c93fc2db4c45729ef5a166efdf5c1f
+  last-run: 2026-09-15T14:31:04Z
+  reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 8
-  scope: 10
+  examined: 17
+  scope: 17
   reviewed-digest:
-    data-model.md: 74063eb6eab32ba89cafaf631db72cf0c37216d3f8a876620b90607e1613c8ce
+    data-model.md: 3183763fc3bb6d5f227ae47b26fe84edbbe2ee89a4f20590f0d65f7a3402c834
   blocking: false
 next-criterion: 12
 analyze:
