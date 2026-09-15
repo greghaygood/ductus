@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-15T13:51:08Z
@@ -12,8 +12,8 @@ review:
   reviewed-digest: {}
   blocking: false
 analyze:
-  last-run: 2026-09-15T13:53:30Z
-  analyzed-against: 4de6a84c36dfee663112e51fcb59852b2aedb229
+  last-run: 2026-09-15T13:54:49Z
+  analyzed-against: ff301e1bc897afbcf7be1140e36574e2e7a4c099
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
@@ -22,8 +22,8 @@ analyze:
   analyzed-digest:
     plan.md: 3fd1e0a1b0f12b59399d16223f32746c0da68d4e7582d84a0bd5fbed69e0cb66
     review.md: 65888222e14768b3919b8dd9f4bf9baefcec2706d1c2f26c75190091e460ffb1
-    spec.md: 47283169ea82d7a21d37c292927e788ed0b1ab756d098baf029efd17b5fc0425
-    tasks.md: 0436e27c7e9c2bb2476e36d4cd4c1983ab7fef4e9e10c75a3fd55fa43c35ff90
+    spec.md: 1e3a04fe40d5b23bce4c9a9388037b366dbe85f3c04d8522f1fc6bfc4554c0ee
+    tasks.md: 65241ca0537450603e76b41e6976294870a888928f5627feeb4cd1a23a22fefd
   blocking: false
 next-criterion: 12
 ---
