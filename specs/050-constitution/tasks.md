@@ -196,3 +196,14 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Note that promotion is not performed by this task — the classification is the worklist, as it was in the first round
 
 - **Done when**: every entry the coverage check reported is classified with its reason, the unclassified count is discharged to zero, and `plan.md` records that this is a second deliberate round rather than the standing requirement AC1 rejects. The promotions themselves are the next task and are deliberately not started here.
+
+## 22. A recorded measurement states its method and its units
+
+- [x] Implement the behavior described in `scenarios/a-measurement-states-its-method-and-units.md`
+- [x] State the rule in `framework/constitution.md` §grounding's **Rules** list, immediately after *Cite what you consulted* — it extends that rule, so a bullet rather than a section, which is §Resolved Questions' default and keeps AC10's anchor set unchanged
+- [x] Name the failure it prevents: without method and units a later reader cannot separate a **decayed** figure from one taken by a **different method**, and the reflex to trust the newer figure is wrong precisely when the older measurement was better informed
+- [x] Give the disposition on a disagreement — re-derive at the recorded figure's own commit first, then diff the field across its own history, because a value can have been correct and then overwritten with a worse one
+- [x] Reduce only the `AGENTS.md` entry that states the rule *generally* to a pointer; leave the six situational corollaries in place, since each sits inside a gotcha whose subject is something else and carries no restatement of the canonical text
+- [ ] Do **not** discharge this by adding another `AGENTS.md` entry, and do **not** fold it into the second promotion round's count in `plan.md` §Classification — it is a new rule, not a promotion
+
+- **Done when**: `framework/constitution.md` §grounding states the rule as a bullet under **Rules**, the `AGENTS.md` entry that stated it generally points at that bullet rather than restating it, and the six situational corollaries are left where they are.
