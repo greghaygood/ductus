@@ -63,12 +63,24 @@ if [ "${#non_done_specs[@]}" -lt 2 ]; then
   exit 0
 fi
 
-# Helper: extract inline markdown links to sibling spec dirs from a body.
-# Returns the set of referenced spec slugs (e.g., "024-rule-loader").
+# Helper: extract the first path segment of every inline `../SEGMENT/...`
+# markdown link in a body. Returns candidates, not spec slugs.
+#
+# Deliberately carries NO feature-directory grammar. The predicate lives in
+# `parse_feature_dir` (spec 051), and the copy that used to sit here demanded
+# three-or-more digits, so a link to a branch-scoped sibling
+# (`../1234.1-retry-budget/spec.md`) was invisible and the pair went
+# unreported while the family exited 0 — the same defect AGENTS.md records
+# against the two frontmatter derivations, in a third place.
+#
+# Nothing here has to recognize a feature directory: the caller matches each
+# candidate exactly (`grep -qFx`) against a slug the runtime enumerated, so a
+# segment that is not a spec — `..`, `framework`, `rules` — can never match.
+# Removing the grammar is therefore strictly safer than widening it.
 extract_sibling_links() {
   local file="$1"
-  grep -oE '\(\.\./([0-9][0-9][0-9]|[1-9][0-9][0-9][0-9]+)-[a-z][a-z0-9-]*/[^)]*\)' "$file" \
-    | sed -E 's|\(\.\./([^/)]+)/.*\)|\1|' \
+  grep -oE '\(\.\./[^/)]+/' "$file" \
+    | sed -E 's|\(\.\./([^/)]+)/|\1|' \
     | sort -u
 }
 
