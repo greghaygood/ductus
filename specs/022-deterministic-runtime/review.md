@@ -1,14 +1,14 @@
 ---
 spec: 022-deterministic-runtime
-reviewed-at: 2026-09-14T01:42:53Z
-reviewed-against: 0e4be7590037cb4cd5e5cad4f59814ecf0bcd80e
-diff-base: a2050318dd2ad77149c6bb284fed535a6800f731
+reviewed-at: 2026-09-15T02:17:36Z
+reviewed-against: e9d345ae25fc2762b342e7c97e3df77f458fc555
+diff-base: 950bcc76b45bf3b3c9b5b67779e7a8bc6e57c253
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 12
-scope: 87
+examined: 18
+scope: 60
 skipped-passes: []
 ---
 
@@ -16,20 +16,13 @@ skipped-passes: []
 
 ## Summary
 
-**This is a digest refresh after a mechanical canonical-record sync, not a full re-review of 022, and the record should be read as exactly that.** `ductus-v0.49.4` added `examined` to `CheckRuleIdsResult`, and `data-model.md` is the canonical registry of primitive result shapes, so the `check-rule-ids` example gained the field. That is a §spec-lifecycle mechanical sync — 022 stays `done` — but it changed a durable contract, so `reviewed-digest` no longer matched and `/{project}:audit` Family 19 blocked the release gate. 0 MUST, 0 SHOULD, 0 low-confidence; not blocking. No waivers.
+0 MUST violation(s), 0 SHOULD violation(s), 0 low-confidence finding(s) — recorded **after** two MUST-class defects this pass found in its own work and fixed, not instead of them. Five passes over the reopened window (base `950bcc76`, 31 modified-since / 60 in scope at 5,645 bytes, collapsed 26x from the pre-reopen 144 / 167 at 144,932 bytes; `--since HEAD` gave 0 / 33 and was declined for excluding this pass's own edits). Rule files: 11 discovered and loaded.
 
-**What was re-read, and what was not.** Examined **12 of 87**. The scope is 63 modified-since on base `a2050318`, which spans everything committed since 022's last reopen — three unrelated backfill passes and this release. Counted only files read end to end: `framework/constitution.md` (761 lines), `AGENTS.md` (157), `README.md` (314), `framework/commands/analyze.md` (399), `runtime/src/schema/services.rs` (250), and the eight 031 and 047 artifacts this session's earlier passes read in full.
+**Both defects were introduced by this pass and found by probe, not by reading.** Delegating `derive_dependencies::leading_slug` and `derive_references::is_spec_slug` to the shared `parse_feature_dir` widened the *form* correctly and widened the *charset* by accident, because `parse_sequential` deliberately leaves a sequential slug's charset open — it recognizes directories already on disk, while these call sites parse untrusted link text and write it verbatim into frontmatter. (1) A body containing `[x](../001-evil], status: done, [y/spec.md)` rendered `dependencies: [001-evil], status: done, [y, …]`, splicing a second key onto the line. (2) Fixing that by terminating the candidate on `/` alone then dropped a *legitimate* edge: `](../002-b)`, a directory-only sibling link, yielded `002-b)` and harvested nothing — the same silent-drop class the pass exists to fix. Both are closed by scanning to the first byte outside the feature-name charset, which restores the predecessor's boundary exactly while leaving the form rule widened; both are pinned by regression tests carrying the probes' own inputs. Neither was visible in this corpus — `derive-dependencies` reports `drift: false, updated: 0` across all 54 specs before and after, because no spec here carries a directory-only sibling link.
 
-Named rather than folded into the numerator:
+**Examined 18 of 60, and what was not read is named rather than folded into the numerator.** Read in full or over their whole changed surface: `derive_dependencies.rs`, `derive_references.rs`, `write_review.rs`, `write_analysis.rs`, `check_artifacts.rs`, the two changed structs in `schema/primitives.rs`, the three new scenarios, and eight edited contracts (`unreadable-scenario-is-reported`, `framework-list-dedup`, `criterion-path-existence-family`, `adopter-generator-promotion`, `apply-manifest-substitution-contract`, `cli-config-dir-per-contributor`, `dashboard-primitive`, `orphaned-reference-check`). **Not counted:** `.claude/commands/ductus/analyze.md` is a generated mirror — the generator was re-run and reported all 16 commands in sync, which is grounds to believe it correct and is not a read; `framework/commands/analyze.md` was read at steps 16–17 only; `data-model.md` (1,349 lines) at its changed entries only; `spec.md` and `tasks.md` at frontmatter and appended tasks only; `Cargo.lock` as a four-line version diff; the six remaining edited scenarios at their edited regions only. **In scope and absent:** `.github/workflows/markdown-only-pipeline.yml`, removed by 048 — it stays in scope because the plan lists it. Several other scope entries are directories from the plan's Affected Files rather than files.
 
-- `specs/022-deterministic-runtime/data-model.md` (1349 lines) — read in the sections bearing on this change: the primitive result-shape registry around `check-rule-ids`, plus a corpus grep confirming no sibling artifact states that shape (`spec.md` and three scenarios name the primitive, all describing behavior this change does not touch). Not read end to end, so not counted.
-- `runtime/src/primitives/check_rule_ids.rs` (443), `check_artifacts.rs`, `derive_references.rs` and `schema/primitives.rs` — read and reviewed **only in the regions this release changed**, each of which was proven red before its fix. The rest of those files was not re-read.
-- 022's `spec.md`, `tasks.md` and its **95 scenarios** (4855 lines) — not re-read at all. Nothing in this change reaches them.
-- The remaining ~70 scope files, which are the other passes' subjects rather than this one's.
-
-**Why the split is stated this way rather than resolved by reading more.** `specs/inbox.md` records the standing judgement that a full 022 re-review is *its own unit, not a doc fix batched into a release* — 022 is the largest spec in the corpus at roughly 7500 lines across its own artifacts. Spending that here would have made a three-line release into the corpus's biggest review, and claiming it without spending it is the conflation `examined` exists to prevent. The honest third option is this one: refresh the digest, record a truthful numerator, and say which question this record does and does not answer.
-
-**The three fixes, reviewed in full.** Each is a `QUAL-CLAIM-001` repair in the runtime's own machinery, and each regression was demonstrated failing before its fix. `check-rule-ids` now reports `examined`, so a real miss and an empty rule-file list are no longer byte-identical — the primitive that enforces rule citations previously yielded blocking findings against a correct spec. `ships_to_adopter` now normalizes its own candidate; the characterization matters and is corrected here, because `criterion-path-existence` passes an already-trimmed span and was **never** reachable by that defect, while `check-orphaned-references` passed the raw target and was the only live path. And `Services::duplicate_repos` now groups by the same `normalize_repo` the reference harvester keys on, because the defect was two notions of "the same repo" rather than a missing check. Verified through the built binary rather than the MCP tools: this repo's `check-orphaned-references` reports `findings: 0`, down from four.
+**Also verified rather than assumed:** the `empty-scope` change leaves the honest empty review byte-identical (the rendering branch is untouched and still selects the empty-scope Summary); `write-analysis`'s new `captured-issues` renders a count, never the issue text, so it carries no injection surface of its own; and `find_spec_segment` bounds its slug with `/` on both sides and requires a `spec.md` tail, so `derive_references` needed the charset guard but no boundary change.
 
 ## MUST violations (blocking)
 
