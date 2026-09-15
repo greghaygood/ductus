@@ -191,8 +191,8 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 
 ## 21. Classify the second-round entries
 
-- [ ] Judge each of the 44 entries the coverage check reports as unclassified against the reword test, one verdict and one reason each
-- [ ] Record them in `plan.md` §Classification as a second round, keyed by lead phrase like the first
-- [ ] Note that promotion is not performed by this task — the classification is the worklist, as it was in the first round
+- [x] Judge each of the 44 entries the coverage check reports as unclassified against the reword test, one verdict and one reason each
+- [x] Record them in `plan.md` §Classification as a second round, keyed by lead phrase like the first
+- [x] Note that promotion is not performed by this task — the classification is the worklist, as it was in the first round
 
 - **Done when**: every entry the coverage check reported is classified with its reason, the unclassified count is discharged to zero, and `plan.md` records that this is a second deliberate round rather than the standing requirement AC1 rejects. The promotions themselves are the next task and are deliberately not started here.
