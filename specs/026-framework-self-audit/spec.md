@@ -35,8 +35,8 @@ review:
   blocking: false
 next-criterion: 26
 analyze:
-  last-run: 2026-09-15T13:02:28Z
-  analyzed-against: 880e59a0906dbdbb273784d28079446d6f01d856
+  last-run: 2026-09-15T18:36:50Z
+  analyzed-against: 640eeee2cd7f7fb4b8758edb59031c7b73f66204
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
@@ -44,7 +44,7 @@ analyze:
   captured-issues: 0
   analyzed-digest:
     plan.md: 9c4dc8504682605f915315025b7fa65a6dc7418bdd53dcf969871e1e35b045b3
-    review.md: 5182705c347b4051a0921997678eb9dd8fb13a993cf1e07f63fee2b66dcaf07c
+    review.md: e0b8b8744443331279a243a6b82a4ddf594d368763754023f61d12983fc22f3a
     scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
     scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
     scenarios/family-10-migration-coverage.md: 8684e643e4ea938cbeeed6d1342aef27efc84a7bf7559b111b6a12cacacfa02b
@@ -55,7 +55,7 @@ analyze:
     scenarios/family-19-says-what-it-examined.md: 5bcffd3a32d015c740ee9ca232d86f4cb7d71f251705eb3d9f22cce1198ed1ed
     scenarios/family-22-adopter-shell-behavior.md: 2eac3b7db9587dd354168941be8a1816d11a9e6f7fb27ecd8b8f9c9f8f719754
     scenarios/family-23-sweep-target-manifest-parity.md: 9dfa1299cdeb27ad691c66d6e9adeb68187c7c60039576cafd6ba55f29274b38
-    scenarios/family-24-rename-sweep-residue.md: 7853d334d6836dfb565348172ef47377f73aa1687ab0e22f04d1e3cd18f63634
+    scenarios/family-24-rename-sweep-residue.md: 41d6c829f0851a3caab11650d24b7100992667969ee3f21454141b482819e132
     scenarios/family-25-unbalanced-inline-markup.md: bddc8f9f37f21e3404f24bf77f732d2adc591faa76038983b3b44a41e640e1c6
     scenarios/family-26-broken-relative-links.md: 60627b24354610f3e0f819abe7d0603faa9644c27e8cee5163a452804bb94b6c
     scenarios/family-27-done-spec-unchecked-criteria.md: d164ba1fedaababcb88f5a4062b150ae8bd7e017699d7ac6d310292a25489bf9
@@ -67,8 +67,8 @@ analyze:
     scenarios/host-namespace-parity.md: 05714fe6b728391f699ed7328e1aea252a48259ae489fa9c06e0d0609dc1d376
     scenarios/link-check-consolidation.md: f838133a535aa090e09d7f82903facc4dff8cc822c1dec5c22f9b4d1e17a5049
     scenarios/readme-command-parity.md: 3788aa1103dba1860af8cb9950a6425ed33e4a24498f825fcd980e0c9bb7f8bc
-    spec.md: 94f9784352eae1525c8d15760e984652f111cb0ed7436e6dc0c2716cbb121790
-    tasks.md: 7414cfe3b1d8400cbffd6fa7fd4c8295fd81d66bc325414d72c6574eca990c36
+    spec.md: 7f13cfa221ab4bf755f269410b082a5638d31ef3d4e78a980349e2205abe1eb9
+    tasks.md: 139112314b2de5b674945260a7c84d17d5826a0995417343700bfa44d30224b2
   unexamined-by-reason:
     not-a-live-claim: 14
   blocking: false
