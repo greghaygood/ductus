@@ -19,7 +19,7 @@ A configuration rule file is a markdown document with the following structure (m
 
 **Rationale:** {Threat the rule mitigates.}
 
-**Verification:** {Instruction to the validate agent on how to check the rule.}
+**Verification:** {Instruction to `/{project}:analyze` on how to check the rule.}
 
 **Source:** {Optional citation to authoritative origin.}
 
@@ -59,7 +59,7 @@ The full ID always includes the `CFG-` prefix to disambiguate from `BE-` (backen
 | Rule ID | yes | Level-3 heading (`### {ID}`) | Matches the format above. The heading contains nothing but the ID. |
 | Statement | yes | Block quote (`> …`) | One sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). |
 | Rationale | yes | Paragraph beginning `**Rationale:**` | Brief explanation of the threat or risk the rule mitigates. |
-| Verification | yes | Paragraph beginning `**Verification:**` | Instruction to the validate agent — see **Verification phrasing** below. |
+| Verification | yes | Paragraph beginning `**Verification:**` | Instruction to `/{project}:analyze` — see **Verification phrasing** below. |
 | Source | no | Paragraph beginning `**Source:**` | Citation to authoritative origin (e.g., 12-Factor App, NIST SP 800, IEC 60027 for unit suffixes). Optional but recommended. |
 | Deprecated | no | Paragraph beginning `**DEPRECATED in {version}:**` | Present only on deprecated rules. Includes the removal target version. The rule remains in the file with this label until removed. |
 
