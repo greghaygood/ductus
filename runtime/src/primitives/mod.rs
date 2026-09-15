@@ -2043,7 +2043,7 @@ pub(crate) fn read_scenario_section(path: &Path) -> Option<String> {
 
 /// The two candidate locations for a spec-pipeline template file, in
 /// resolution order: the installed adopter layout
-/// `{specs-root}/templates/{file}` (what `/ductus:init` scaffolds and the
+/// `{specs-root}/templates/{file}` (what `/ductus` scaffolds and the
 /// command prose names) first, then the framework source layout
 /// `framework/templates/spec/{file}` (the ductus repo itself). Shared by
 /// `create-feature`'s template copy and the `writeSpecBody` request builder

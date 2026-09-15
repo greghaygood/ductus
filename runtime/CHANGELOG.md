@@ -2,6 +2,59 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.7] — 2026-09-15
+
+### Changed
+
+- **Three doc comments named a slash command that no longer exists.**
+  `/{project}:init` was retired from the framework — it was a single
+  hand-maintained command file with no `framework/commands/` source, so no
+  generator rewrote it and no sweep reached it, and `/ductus` already covered
+  the greenfield case it served. `interpreter::payload` and
+  `primitives::mod` each described the installed adopter layout
+  `{specs-root}/templates/{file}` as what that command scaffolds, and a
+  `derive_boundary` test comment named it among the commands that run before
+  a repo's first commit. All three now name `/ductus`, which is what ships
+  the six spec templates into `{specs-root}/templates/` (the **Shared Files**
+  manifest rows) and creates the directory.
+
+  Comment-only: no behaviour, no result field and no shared parser changes,
+  so this carries no scenario under `022-deterministic-runtime`. The release
+  exists because a `runtime/` edit reaches adopters only through a tag, and
+  an unreleased pin on `main` halts acquisition.
+
+### Fixed
+
+- **The sweep-parity conformance test passed by corpus accident and was one
+  re-review away from failing permanently.**
+  `rust_and_family_19_agree_on_every_done_spec` asserts that the Rust
+  staleness rule and Family 19's Python answer alike, and its subject is the
+  set of `done` specs whose durable contracts differ from their
+  `reviewed-against`. Measured across the corpus: **exactly one spec has ever
+  supplied that subject** — `020`'s `data-model.md`, stale since its recorded
+  base but sweep-exempt, so Family 19 stayed green while the test stayed
+  non-vacuous. Its vacuity guard therefore asserted that an *unhealthy* corpus
+  must exist for the test to mean anything, and re-reviewing that one spec
+  emptied the set and turned the guard red. Proven by probe in both
+  directions before the fix: flipping `020` back to `done` made it pass,
+  reopening it made it fail.
+
+  `rust_and_family_19_agree_on_a_built_sweep` now carries the guard. It builds
+  its own repository — three durable contracts under a uniform
+  `govern` → `ductus` substitution, with a structural edit added to one in the
+  second case — and asserts both implementations against a known expected
+  verdict in **both** directions: a pure repo-wide sweep exempts everything it
+  touched, and one structural edit reads stale without costing the other two
+  their exemption. Three contracts rather than two because the exemption turns
+  on a pair being repo-wide, so a two-file fixture would leave the surviving
+  substitution unexplained and prove nothing about the exempt path.
+
+  The corpus pass keeps running and keeps failing on any disagreement, but an
+  empty comparison set there now reports *every review is current* instead of
+  failing — a healthy corpus and a check that could not run must not render
+  alike (§design-principles), which is the same rule the guard was written to
+  serve and was, in this one place, breaking.
+
 ## [0.49.6] — 2026-09-15
 
 ### Security

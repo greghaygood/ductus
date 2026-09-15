@@ -18,9 +18,23 @@
 //! consequence of 049's `govern → ductus` rename. Nothing compared them, so
 //! nothing said so.
 //!
-//! This test runs both over the real corpus and fails on the first spec where
-//! they differ. It asserts agreement, not a particular verdict, so it stays
-//! valid as the corpus changes.
+//! Two tests carry that. `rust_and_family_19_agree_on_a_built_sweep` builds
+//! its own repository with a known sweep and a known structural edit, so the
+//! parity rule is asserted deterministically and in **both** directions —
+//! exemption granted and exemption refused. `rust_and_family_19_agree_on_every_done_spec`
+//! then runs both over the real corpus and fails on the first spec where they
+//! differ; it asserts agreement, not a particular verdict, so it stays valid
+//! as the corpus changes.
+//!
+//! The corpus pass used to carry the vacuity guard itself, and that was wrong
+//! in a way that took until 2026-09-15 to surface: its subject is the set of
+//! `done` specs whose contracts differ from their `reviewed-against`, and for
+//! most of this repo's history **exactly one spec** supplied it — 020's
+//! `data-model.md`, stale but sweep-exempt. Re-reviewing that one spec emptied
+//! the set and turned the guard red, so the test was asserting that an
+//! *unhealthy* corpus must exist for it to mean anything. An empty set there
+//! is a healthy corpus, not a broken check; the guard belongs on the built
+//! fixture, which always has a subject.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -115,11 +129,16 @@ fn changed_contracts(root: &Path, slug: &str, base: &str) -> BTreeSet<String> {
 
 /// Family 19's verdict for one path, obtained by running its own
 /// `changed_beyond_spelling` — the Python side, unmodified.
-fn family_19_verdict(root: &Path, base: &str, paths: &BTreeSet<String>) -> BTreeSet<String> {
+fn family_19_verdict(
+    script_root: &Path,
+    git_root: &Path,
+    base: &str,
+    paths: &BTreeSet<String>,
+) -> BTreeSet<String> {
     if paths.is_empty() {
         return BTreeSet::new();
     }
-    let script = std::fs::read_to_string(root.join("scripts/audit/review-freshness.sh"))
+    let script = std::fs::read_to_string(script_root.join("scripts/audit/review-freshness.sh"))
         .expect("Family 19 source");
     // Reuse the family's own definitions rather than restating them: take the
     // python block between its heredoc markers, drop the driver loop at the
@@ -141,11 +160,11 @@ fn family_19_verdict(root: &Path, base: &str, paths: &BTreeSet<String>) -> BTree
     );
     let out = Command::new("python3")
         .arg("-")
-        .arg(root.to_str().unwrap())
+        .arg(git_root.to_str().unwrap())
         .arg("specs")
         .arg(base)
         .arg(serde_json::to_string(&paths.iter().collect::<Vec<_>>()).unwrap())
-        .current_dir(root)
+        .current_dir(git_root)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -218,7 +237,7 @@ fn rust_and_family_19_agree_on_every_done_spec() {
             .filter(|p| index.changed_beyond_spelling(p))
             .cloned()
             .collect();
-        let python = family_19_verdict(&root, base, &candidates);
+        let python = family_19_verdict(&root, &root, base, &candidates);
         assert_eq!(
             rust, python,
             "staleness verdicts disagree for {slug} (reviewed-against {base}); \
@@ -227,13 +246,161 @@ fn rust_and_family_19_agree_on_every_done_spec() {
         );
         compared += 1;
     }
-    assert!(
-        compared > 0,
-        "every done spec's contracts were unchanged, so nothing was actually \
-         compared — a green result here would mean the check could not run"
-    );
+    // An empty set here means every `done` spec's contracts match its
+    // `reviewed-against` — a healthy corpus, not a check that could not run.
+    // §design-principles forbids rendering those two alike, so say which this
+    // is. The parity rule's own vacuity guard lives on the built fixture
+    // above, which cannot go empty.
+    if compared == 0 {
+        eprintln!(
+            "no done spec carries a contract changed since its reviewed-against \
+             — every review is current, so the corpus pass had no subject. The \
+             rule itself is asserted by rust_and_family_19_agree_on_a_built_sweep."
+        );
+        return;
+    }
     eprintln!(
         "compared {compared} spec(s) with changed contracts across {} done spec(s)",
         specs.len()
     );
+}
+
+/// Commit everything staged in `repo`, on top of HEAD when one exists.
+///
+/// Fixed-time signature so the fixture's shas are stable run to run; nothing
+/// here reaches a golden, but a stable sha makes a failure reproducible from
+/// the message alone.
+fn commit_all(repo: &git2::Repository, message: &str, seconds: i64) -> String {
+    use git2::{IndexAddOption, Signature, Time};
+    let mut index = repo.index().unwrap();
+    index
+        .add_all(["*"], IndexAddOption::DEFAULT, None)
+        .expect("git add");
+    index.write().expect("index write");
+    let tree_id = index.write_tree().expect("write tree");
+    let tree = repo.find_tree(tree_id).unwrap();
+    let when = Time::new(seconds, 0);
+    let sig = Signature::new("Sweep Fixture", "sweep@example.com", &when).expect("signature");
+    let parents = match repo.head() {
+        Ok(head) => vec![head.peel_to_commit().expect("HEAD commit")],
+        Err(_) => Vec::new(),
+    };
+    let parent_refs: Vec<&git2::Commit<'_>> = parents.iter().collect();
+    repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parent_refs)
+        .expect("commit")
+        .to_string()
+}
+
+/// A throwaway repository whose `base..HEAD` window is a uniform
+/// `govern` → `ductus` substitution across three durable contracts, with a
+/// structural edit added to whichever contracts `structural` names.
+///
+/// Three files rather than two because the exemption turns on a pair being
+/// **repo-wide** — a substitution appearing in only one file is not one, so a
+/// two-file fixture with one structural edit would leave the remaining
+/// substitution unexplained and prove nothing about the exempt path.
+///
+/// Returns the temp dir (the caller keeps it alive) and the base sha.
+fn build_sweep_fixture(structural: &[&str]) -> (tempfile::TempDir, String) {
+    const CONTRACTS: [&str; 3] = ["alpha.md", "beta.md", "gamma.md"];
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let feature = tmp.path().join("specs").join("900-fixture");
+    std::fs::create_dir_all(feature.join("scenarios")).expect("fixture dirs");
+    std::fs::write(
+        feature.join("spec.md"),
+        "---\nstatus: done\n---\n\n# Fixture\n",
+    )
+    .expect("write spec.md");
+    for name in CONTRACTS {
+        std::fs::write(
+            feature.join("scenarios").join(name),
+            format!("# {name}\n\nThe `govern` runtime reads `govern` config.\n"),
+        )
+        .expect("write base contract");
+    }
+
+    let repo = git2::Repository::init(tmp.path()).expect("git init");
+    let base = commit_all(&repo, "fixture: base", 1_704_067_200);
+
+    for name in CONTRACTS {
+        let mut body = format!("# {name}\n\nThe `ductus` runtime reads `ductus` config.\n");
+        if structural.contains(&name) {
+            body.push_str("\nAn added sentence that no substitution explains.\n");
+        }
+        std::fs::write(feature.join("scenarios").join(name), body).expect("write swept contract");
+    }
+    commit_all(&repo, "fixture: sweep", 1_704_067_201);
+
+    (tmp, base)
+}
+
+/// The parity assertion with a subject it builds itself, in both directions.
+///
+/// This is where the vacuity guard belongs: the corpus pass can legitimately
+/// find nothing to compare, but this one always has three changed contracts,
+/// so a green result here always means the two implementations were actually
+/// run against each other.
+#[test]
+fn rust_and_family_19_agree_on_a_built_sweep() {
+    // (contracts receiving a structural edit, contracts expected to read stale)
+    let cases: [(&[&str], &[&str]); 2] = [
+        // Widened: a pure repo-wide sweep exempts every contract it touched.
+        (&[], &[]),
+        // Narrowed: one structural edit is stale, and does not cost the other
+        // two their exemption — the pair is still repo-wide.
+        (&["beta.md"], &["specs/900-fixture/scenarios/beta.md"]),
+    ];
+
+    for (structural, expected) in cases {
+        let (tmp, base) = build_sweep_fixture(structural);
+        let root = tmp.path();
+        let repo = git2::Repository::open(root).expect("open fixture");
+        let head = repo
+            .head()
+            .expect("HEAD")
+            .peel_to_commit()
+            .expect("HEAD commit")
+            .tree()
+            .expect("HEAD tree");
+        let base_tree = repo
+            .revparse_single(&base)
+            .expect("base rev")
+            .peel_to_commit()
+            .expect("base commit")
+            .tree()
+            .expect("base tree");
+
+        let candidates = changed_contracts(root, "900-fixture", &base);
+        assert_eq!(
+            candidates.len(),
+            3,
+            "the fixture must present all three contracts as changed, or this \
+             test is measuring something other than it claims"
+        );
+
+        let index =
+            ductus::primitives::mechanical_sweep::SweepIndex::build(&repo, &base_tree, &head);
+        let rust: BTreeSet<String> = candidates
+            .iter()
+            .filter(|p| index.changed_beyond_spelling(p))
+            .cloned()
+            .collect();
+        let python = family_19_verdict(&repo_root(), root, &base, &candidates);
+        let want: BTreeSet<String> = expected.iter().map(|s| (*s).to_string()).collect();
+
+        assert_eq!(
+            rust, want,
+            "Rust verdict wrong for structural={structural:?}"
+        );
+        assert_eq!(
+            python, want,
+            "Family 19 verdict wrong for structural={structural:?}"
+        );
+        assert_eq!(
+            rust, python,
+            "the transition gate and the release gate must answer the same \
+             question the same way for structural={structural:?}"
+        );
+    }
 }

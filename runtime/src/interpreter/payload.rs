@@ -428,7 +428,7 @@ fn build_write_spec_body_request(
 /// Resolve the template file the running command fills. `/ductus:plan` fills
 /// plan sections from the plan template; `/ductus:specify` fills the spec
 /// body from the spec template. Candidates, in order: the installed
-/// adopter layout `{specs-root}/templates/<file>` (what `/ductus:init`
+/// adopter layout `{specs-root}/templates/<file>` (what `/ductus`
 /// scaffolds and the command prose names), then the framework source
 /// layout `framework/templates/spec/<file>` (the ductus repo itself).
 /// Returns `(repo-relative path, content)` for the first candidate on

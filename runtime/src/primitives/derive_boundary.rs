@@ -391,7 +391,7 @@ mod tests {
 
     #[test]
     fn unborn_head_is_the_same_domain_outcome() {
-        // The fresh-repo case: /ductus:init, /ductus:specify and /ductus:plan all run
+        // The fresh-repo case: /ductus, /ductus:specify and /ductus:plan all run
         // before the first commit exists, so HEAD is unborn. libgit2 reports
         // that as an error; for this primitive it is ordinary no-history.
         let tmp = tempfile::tempdir().unwrap();
