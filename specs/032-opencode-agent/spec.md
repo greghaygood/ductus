@@ -14,17 +14,18 @@ review:
   blocking: false
 next-criterion: 12
 analyze:
-  last-run: 2026-09-14T00:19:54Z
-  analyzed-against: 3c182fe7f46d6fbabed5cc5cdc09de8786a39c8f
+  last-run: 2026-09-15T14:32:49Z
+  analyzed-against: c08c0eb6c2cb3b3bc11753624a08c5a2352756c1
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  captured-issues: 0
   analyzed-digest:
-    data-model.md: fd06e79cc0438429230c59e89544003f2f2553ab654d13310a760be0b3769d18
-    plan.md: 8453875e107486174c60560883873cf823e9b987ee06744385b01a0905dead0c
-    review.md: ee15a145cd14d0bf4d3ccf957d65a9b9eb29670720ac9f166289e207baf8a380
-    spec.md: 293442ea56c8c3059a65cc0d87c19dc8dee23d172c37abb5e1fca400ba8ea68b
+    data-model.md: 28960b6d43d9aee624e637b714af979fb3459aebf650b4ef5c5f21b8b50c7c7e
+    plan.md: ea15b1c32f84957ad59dfaf7752a9f55a5db40ac593ceb14f82c80d797c2aab7
+    review.md: cc73ba7fc54bd0f2bf34a0d5d70e31151caf8589e340c68ea9a1bc777191c03f
+    spec.md: bc8373227b5aa63aac7f135a3f970c40e4eaeecc0159f03d7535c98d85ebaa72
     tasks.md: 3eb8a2cd5ba18f68dbe7b38bac228bb272163884fc6e45b794df9cf54c38e50f
   blocking: false
 ---

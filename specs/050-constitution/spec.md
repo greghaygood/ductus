@@ -21,24 +21,25 @@ review:
   blocking: false
 next-criterion: 20
 analyze:
-  last-run: 2026-09-14T01:58:58Z
-  analyzed-against: e60f1a66dce339150ad77426a052dd612fcb65e6
+  last-run: 2026-09-15T14:32:49Z
+  analyzed-against: c08c0eb6c2cb3b3bc11753624a08c5a2352756c1
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 1
+  captured-issues: 0
   analyzed-digest:
-    plan.md: cc73c3c7af6784205158b9b957264e5fbfaafa5ac4708d0a9ba097fcb52028af
-    review.md: 650a8ff3d77c5da5131fbc39afc801d8d2753454837a2fec9e16a319ab245cad
+    plan.md: 02b3478dedb8be4537b0589927ebd1267b87f9fa6831608081853227352aa3d1
+    review.md: 6b71d9c1e08ae32213d182fedb2917589097fd4d319578397df3d32478b90a6c
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
-    scenarios/a-partial-read-is-not-a-read.md: 21a78c9fe7d1b8d76f6f6f35097fce17e1ca1fe1ae3723bcb7ec007b7c9aeb56
+    scenarios/a-partial-read-is-not-a-read.md: 8d6851e20f8a2e9f083434a37cbf39ab3bca533ec819a8a258197e4afb797b07
     scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
     scenarios/a-retired-filename-leaves-a-decision-record.md: f84a3177744eb03a859d82a4017495c24bcf24466448b7c49ad1a253147ab581
     scenarios/completion-claims-carry-no-caveats.md: 2b2e43f4cea73ba9c81dc21848b5c668e1db5bf6a5e3becd7467ce025c4179c4
     scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
-    spec.md: b5791754f6feeab24914cf088fb2b8b1e2aebb9d3b2c7dd0955e4204011afdc2
+    spec.md: 71b4f006ae8561726aa462535a83a4550d7c3da4a57e3766a3eb8757cdecb1ca
     tasks.md: 10dbf54f881b62be9bfc572e519445aac6d874a24f3eea3b6c642e74d945ddba
   unexamined-by-reason:
     ships-to-adopter: 1
