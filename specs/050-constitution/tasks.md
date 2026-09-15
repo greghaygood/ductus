@@ -171,11 +171,11 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 
 ## 19. Route knowledge by population rather than by kind
 
-- [ ] Implement the behavior described in `scenarios/knowledge-routes-by-population-not-by-kind.md`
-- [ ] State the population question in `framework/constitution.md` §drift-prevention — two ordered questions, the three tiers on the project-learning bullet, and why routing by kind conceals itself
-- [ ] Rewrite the `AGENTS.md` header (line 5) to ask who the learning is true for before naming a section, and correct its section list to this repository's actual sections
-- [ ] Rewrite `CLAUDE.md` §Auto-Memory Routing as two ordered questions rather than one repository-scoped question
-- [ ] Apply the same two edits to the shipped templates `framework/templates/project/agents.md` and `framework/templates/project/claude-md.md`, worded for an adopter
-- [ ] Record in `specs/inbox.md` that the flow-fix half is discharged and the bulk promotion pass is not
+- [x] Implement the behavior described in `scenarios/knowledge-routes-by-population-not-by-kind.md`
+- [x] State the population question in `framework/constitution.md` §drift-prevention — two ordered questions, the three tiers on the project-learning bullet, and why routing by kind conceals itself
+- [x] Rewrite the `AGENTS.md` header (line 5) to ask who the learning is true for before naming a section, and correct its section list to this repository's actual sections
+- [x] Rewrite `CLAUDE.md` §Auto-Memory Routing as two ordered questions rather than one repository-scoped question
+- [x] Apply the same two edits to the shipped templates `framework/templates/project/agents.md` and `framework/templates/project/claude-md.md`, worded for an adopter
+- [x] Record in `specs/inbox.md` that the flow-fix half is discharged and the bulk promotion pass is not
 
 - **Done when**: §drift-prevention's *Shared knowledge stays in git* states the two questions in order and routes a project learning by the three §Classification tiers; all four agent-facing surfaces point at it rather than restating it; `npx markdownlint-cli2` and `/ductus:audit` are clean, Family 25 included, with the `AGENTS.md` header still a single balanced line.

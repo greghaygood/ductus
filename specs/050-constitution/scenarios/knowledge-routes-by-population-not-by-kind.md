@@ -6,7 +6,7 @@ section: "Classification"
 
 ## Context
 
-This spec promoted 26 rules out of `AGENTS.md` and into the constitution, and recorded the test that decided each one: §Classification's three tiers are *"one question about the rule's **population**"*. The promotion worked. What it did not do was change where the **next** rule lands, and the measurement is unambiguous about the consequence.
+This spec classified 54 rule-bearing `AGENTS.md` entries and promoted 23 of them into the constitution — 3 more were already in the promoted shape — and recorded the test that decided each one: §Classification's three tiers are *"one question about the rule's **population**"*. The promotion worked. What it did not do was change where the **next** rule lands, and the measurement is unambiguous about the consequence.
 
 `AGENTS.md` held 54 rule-bearing entries at the 2026-08-17 survey. It held 92 on 2026-09-13, 106 on 2026-09-14, and 117 on 2026-09-15 — three measurements in three days, with **zero** entries promoted across that window. The queue refills faster than a promotion pass drains it, so a second bulk pass run against the same routing would reset a counter and nothing else.
 
@@ -44,7 +44,7 @@ The two templates are the half a three-site reading of this work misses. They ca
 - **A rule that is universal in substance but stated in this repository's terms.** Unchanged: it is **borderline**, and the reword test in `spec.md` §Classification decides it. The population question asks who a rule is true *for*; the reword test asks whether it can be *said* without repo-only machinery. A rule can pass the first and fail the second, and then it stays until it is reworded.
 - **A learning discovered while the population is genuinely unknown.** One instance is not a population. It goes to `AGENTS.md`, which is the honest answer rather than a hedge — the tier the evidence supports — and the standing-notice half of the inbox item leaves it in the unclassified set where a later pass re-asks. Guessing *universal* from a single instance is the error in the other direction and is more expensive, because it ships to every adopter.
 - **An organization with no registered shared constitution.** The middle tier has no destination, so a rule true across that organization's projects has nowhere canonical to go. It stays in `AGENTS.md` per project until the organization registers one under `.ductus/config.toml` `[constitutions.*]`. This is the state this repository is in — `resolve-constitutions` reports `examined: 0` here — so the tier is a destination named in advance rather than one in use.
-- **The templates are `create`/`skip`-strategy files.** The installer writes `AGENTS.md` and `CLAUDE.md` only when they do not already exist, so the corrected routing reaches **new** adoptions and never an existing adopter's copy. That is the documented strategy rather than a gap in this change: an adopter's `AGENTS.md` is theirs, and overwriting it to fix a header would destroy every rule they had written in it.
+- **Both templates are `skip`-strategy manifest entries.** The installer writes `AGENTS.md` and `CLAUDE.md` only when they do not already exist, so the corrected routing reaches **new** adoptions and never an existing adopter's copy. That is the documented strategy rather than a gap in this change: an adopter's `AGENTS.md` is theirs, and overwriting it to fix a header would destroy every rule they had written in it.
 
 ## What this does not do
 
