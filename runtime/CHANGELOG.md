@@ -2,6 +2,78 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.6] — 2026-09-15
+
+### Security
+
+- **`rustls` advanced 0.23.41 → 0.23.45 for RUSTSEC-2026-0285** (*TLS 1.3
+  handshake messages incorrectly accepted across encryption level
+  boundaries*, 5.3 medium), pulling `aws-lc-rs` 1.18.1, `aws-lc-sys` 0.45.0
+  and `rustls-webpki` 0.103.15. Lockfile only; `rustls` reaches the tree
+  transitively through `reqwest`. The advisory was published 2026-09-14 and
+  `ductus-v0.49.5` shipped before it landed in the database, so that release
+  links the affected version.
+
+  Note for anyone repeating the bump: a plain `cargo update -p rustls` stops
+  at 0.23.43, which is **still affected**, because the MSRV-aware resolver
+  caps at the latest version compatible with the declared `rust-version`. It
+  reports success, so taking it at face value leaves the advisory live while
+  looking fixed. `--precise 0.23.45` is required, and is safe here — all four
+  updated crates declare `rust-version 1.71`, under this crate's 1.88.
+
+### Fixed
+
+- **The two frontmatter generators derived no dependency edge for a
+  branch-scoped or four-digit sibling.** `derive_dependencies::leading_slug`
+  and `derive_references::is_spec_slug` each carried their own copy of the
+  feature-directory grammar at *exactly* three digits, disagreeing with
+  `parse_feature_dir` — the single membership rule spec 051 established — in
+  both directions. A body link to `1234.1-slug` or `1000-slug` harvested
+  nothing, silently: an absent edge is indistinguishable from a spec that
+  cites nobody. `traverse-deps` inherited the gap through the frontmatter it
+  reads, and because `scan_line` also backs the pre-`done` cross-spec-impact
+  back-link matcher, a declared impact on such a spec could never be
+  discharged.
+
+  Both now delegate the *form* to the shared grammar while keeping the
+  charset and the candidate boundary local, and that split is the durable
+  lesson. `parse_feature_dir` deliberately leaves a sequential slug's charset
+  open because it recognizes directories that already exist on disk; these
+  two call sites parse untrusted link text and write it verbatim into
+  frontmatter, which is the opposite trust context. Delegating wholesale let
+  a crafted target splice a second key onto the `dependencies:` line, and
+  terminating the candidate on `/` alone then dropped a legitimate
+  directory-only sibling link. Both were introduced and caught inside the
+  same review pass, both by probe rather than by reading, and both are pinned
+  by tests carrying the probes' own inputs.
+
+- **`write-review` let the `empty-scope` flag decide the denominator.**
+  `resolve_scope_size` short-circuited to `0` on the flag instead of deriving
+  the scope, and the realistic way to pass it wrongly is an over-cap
+  `compute-review-scope` call — 8 of 54 specs' payloads exceed 100KB — which
+  errors with no result and reads as *nothing in scope*. The resulting
+  `0/0/0`, `scope: 0`, `examined`-absent, non-blocking record was invisible
+  to every gate: Family 31's `examined` arms both guard on `total > 0`,
+  Family 19 sees a valid digest, and `check-review-gate` sees a non-blocking
+  review. The denominator is now always derived, which closes it with **no
+  new check** — a false empty scope carries the real `scope: N` beside a zero
+  `examined`, the shape Family 31 already reports. The flag keeps its
+  Summary-rendering job.
+
+### Added
+
+- **`write-analysis` records `captured-issues`.** `/{project}:analyze`
+  records how many findings a run *produced* as `advisory`, while the inbox
+  appends that persist them are separate calls — so a run that recorded
+  `advisory: 5` and captured nothing was byte-identical on disk to one that
+  captured all five. The review side has an agreement check holding
+  `review.md` against its own frontmatter; analyze has no counterpart,
+  because it writes no report artifact for one to compare against. The count
+  is **recorded, not derived**: `append-inbox`'s dedup guard legitimately
+  suppresses a re-append, so a correct re-run captures fewer than it found,
+  and forcing the two to agree would restore the same conflation from the
+  other side.
+
 ## [0.49.5] — 2026-09-14
 
 ### Changed
