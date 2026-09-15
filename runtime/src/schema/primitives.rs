@@ -1575,6 +1575,92 @@ pub struct CheckRuleIdsResult {
     pub examined: usize,
 }
 
+// -- check-promotion-coverage ------------------------------------------------
+
+/// Args for `check-promotion-coverage`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckPromotionCoverageArgs {
+    /// Repo-relative path to the rules file whose entries are counted
+    /// (e.g. the project's own contributor rules document).
+    #[arg(long)]
+    pub rules_file: String,
+    /// Level-2 heading names inside `rules-file` whose top-level bullets are
+    /// rule-bearing. Repeatable, and required: which sections carry rules is a
+    /// property of the project's own file, so a default would make the
+    /// denominator a claim this primitive is not entitled to make.
+    #[arg(long = "section")]
+    pub sections: Vec<String>,
+    /// Repo-relative path to the file carrying the classification table.
+    /// Omitted means the project keeps no table, which is a reported state
+    /// rather than a coverage of zero.
+    #[arg(long)]
+    pub table_file: Option<String>,
+    /// Level-2 heading inside `table-file` under which the classification
+    /// tables live. Every markdown table in the file is read when omitted.
+    #[arg(long)]
+    pub table_section: Option<String>,
+    /// Substring marking an entry as a pointer at the canonical source rather
+    /// than a restatement of it — in practice the constitution's repo-relative
+    /// path with its anchor separator.
+    #[arg(long)]
+    pub pointer_link: String,
+}
+
+/// Whether a classification table was available to compare against.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum PromotionTableState {
+    /// A table file was supplied and read.
+    Read,
+    /// No table file was supplied. Distinct from a table that is present and
+    /// empty: a project keeping no classification table has not been
+    /// examined-and-found-fully-routed, and the two must not render alike.
+    NoTable,
+}
+
+/// Result for `check-promotion-coverage`.
+///
+/// The four terms of `unclassified = rule-bearing - (table-keyed u
+/// constitution-citing)` are each reported alongside the difference, because
+/// the figure has never been reproducible by hand: every recorded
+/// disagreement about it resolved to a difference of **method** rather than
+/// decay — counting the pointer side as whole-file lines rather than as
+/// rule-bearing bullets in the named sections, and a matcher that failed to
+/// strip a trailing parenthetical from a table key. Reporting only the
+/// difference would hide exactly the terms those disagreements turned on.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckPromotionCoverageResult {
+    /// Top-level bullets across the named sections — the denominator.
+    pub rule_bearing: usize,
+    /// Entries matched by a classification-table key.
+    pub table_keyed: usize,
+    /// Entries carrying `pointer-link`.
+    pub pointer_citing: usize,
+    /// Size of the union of the two sets.
+    pub classified: usize,
+    /// `rule-bearing - classified`.
+    pub unclassified: usize,
+    /// The lead phrase of every entry in neither set, so the result is a
+    /// worklist rather than a number.
+    pub unclassified_entries: Vec<String>,
+    /// Table rows read from `table-file`.
+    pub table_rows: usize,
+    /// Table keys matching no entry. **Load-bearing, not a diagnostic**: this
+    /// is how a *reworded* entry surfaces. A lead-phrase key degrades loudly
+    /// to not matching at all, where a positional identifier would have
+    /// degraded silently to matching whichever entry later occupied its slot.
+    pub unmatched_keys: Vec<String>,
+    /// Named sections that do not occur in `rules-file`. Reported rather than
+    /// contributing zero bullets: a denominator that quietly shrinks when a
+    /// section is renamed moves coverage in the flattering direction, which is
+    /// the failure this whole measurement exists to prevent.
+    pub missing_sections: Vec<String>,
+    /// Whether a classification table was available.
+    pub table_state: PromotionTableState,
+}
+
 // -- run-generator -----------------------------------------------------------
 
 /// Args for `run-generator`.

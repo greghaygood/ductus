@@ -80,6 +80,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:ductus:resolve-constitutions", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:traverse-deps", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:check-rule-ids", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:ductus:check-promotion-coverage", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:run-generator", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:lint-markdown", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:gate-confirm", "permission": { "type": "allow" } }`

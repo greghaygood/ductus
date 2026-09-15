@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [021-runtime-boundary]
 review:
   last-run: 2026-09-15T16:29:08Z
@@ -110,7 +110,7 @@ review:
     scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
     scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   blocking: false
-next-criterion: 32
+next-criterion: 33
 analyze:
   last-run: 2026-09-15T16:30:40Z
   analyzed-against: 70ac18dd663a29958fd2e29b4293db6f143710c8
@@ -463,6 +463,7 @@ Stable relationships post-rewrite:
 - [x] AC29: The config-sourced path trust boundary is stated on `validate_no_traversal`, where the code that relies on it can be read against it: a primitive reading a path from committed config may skip the check only while every writer of that table records a path a human chose, and a writer that *originates* the value moves the table into the validated tier in the same change. `resolve_constitutions::classify` and `resolve_references::classify` cite that statement rather than restating it, each naming what it obliges of its own table. The statement says plainly that nothing enforces it.
 - [x] AC30: `check-review-gate` blocks `in-progress → done` on an undischarged `cross-spec-impact:` entry, ordered beside the fold check and ahead of the `review:` block. Discharge is the **reciprocal link** — the named spec's body or a scenario under it links back — read with `derive-dependencies`' matcher over the pointer scope, so a blockquoted signpost discharges. The result reports per entry (`discharged` / `undischarged` / `target-missing` / `self-reference`) on a pass as well as a block, and the check never writes. It shares the fold check's ordering rationale and no code with it.
 - [x] AC31: `write-review` and `diff-cross-spec` report `inbox-standing` — the **standing** backlog, distinct from the window each already reports — so `/{project}:review` and `/{project}:implement`'s completion summary render an `inbox` row on every run: `clean`, `outstanding` with the oldest item's `git blame` date, `age undeterminable` when blame cannot run, and `no-file` as its own state. The row is never omitted and never gates.
+- [x] AC32: `check-promotion-coverage` reports how much of a rules file is routed to its canonical source, as all four terms of `unclassified = rule-bearing − (table-keyed ∪ pointer-citing)` rather than the difference alone — every recorded disagreement about this figure resolved to a difference of **method** rather than decay, and the terms are what those disagreements turned on. `sections` is required with no default, since which sections carry rules is a property of the project's own file; a named section that does not occur is reported in `missing-sections` rather than contributing zero, because a denominator that silently shrinks moves coverage in the flattering direction. `unmatched-keys` is load-bearing rather than diagnostic — it is how a **reworded** entry surfaces, a lead-phrase key degrading loudly to no match where a positional identifier would degrade silently to the wrong entry. `table-state` separates `no-table` from a computed zero, and a supplied-but-unreadable `table-file` is an error rather than the absent state. `/{project}:audit` Family 38 renders the coverage line to stderr where it **never affects the exit code** (Family 19's shape), because promotion has to stay free for the reason §brownfield-inbox gives for capture; an unmatched key and a missing section are findings, each proven by probe in both directions.
 
 ## Non-Goals
 

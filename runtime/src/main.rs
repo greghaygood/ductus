@@ -12,17 +12,18 @@ use ductus::primitives;
 use ductus::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
-    CheckReviewAgreementArgs, CheckReviewGateArgs, CheckRuleIdsArgs, CheckStepReferencesArgs,
-    CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
-    CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
-    DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs, DiffCrossSpecArgs,
-    DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
-    GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
-    ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs, ResolveReferencesArgs,
-    RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
+    CheckPromotionCoverageArgs, CheckReviewAgreementArgs, CheckReviewGateArgs, CheckRuleIdsArgs,
+    CheckStepReferencesArgs, CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs,
+    CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
+    DeriveBoundaryArgs, DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs,
+    DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
+    FetchArchiveArgs, GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs,
+    MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs,
+    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
+    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
+    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -83,6 +84,7 @@ enum Command {
     TraverseDeps(TraverseDepsArgs),
     /// Verify cited rule IDs exist in rule files and aren't deprecated.
     CheckRuleIds(CheckRuleIdsArgs),
+    CheckPromotionCoverage(CheckPromotionCoverageArgs),
     /// Count tasks.md commits since the spec entered `in-progress`.
     CheckStuck(CheckStuckArgs),
     /// Derive the runtime write boundary from git history.
@@ -637,6 +639,9 @@ fn main() -> ExitCode {
         }
         Command::TraverseDeps(args) => emit_result(primitives::traverse_deps::run(&args, &repo)),
         Command::CheckRuleIds(args) => emit_result(primitives::check_rule_ids::run(&args, &repo)),
+        Command::CheckPromotionCoverage(args) => {
+            emit_result(primitives::check_promotion_coverage::run(&args, &repo))
+        }
         Command::CheckStuck(args) => emit_result(primitives::check_stuck::run(&args, &repo)),
         Command::DeriveBoundary(args) => {
             emit_result(primitives::derive_boundary::run(&args, &repo))

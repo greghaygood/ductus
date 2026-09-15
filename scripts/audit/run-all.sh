@@ -80,5 +80,6 @@ run_check "Family 34 — step reference integrity" "scripts/audit/step-reference
 run_check "Family 35 — manifest destination links" "scripts/audit/manifest-destination-links.sh"
 run_check "Family 36 — self-URL resolution" "scripts/audit/self-url-resolution.sh"
 run_check "Family 37 — analyze-record backlog" "scripts/audit/analyze-record-backlog.sh"
+run_check "Family 38 — promotion coverage" "scripts/audit/promotion-coverage.sh"
 
 exit "$drift"

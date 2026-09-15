@@ -39,14 +39,14 @@ use crate::schema::primitives::{
     AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckArtifactsArgs,
     CheckArtifactsResult, CheckCommandFlagsArgs, CheckCommandFlagsResult, CheckCorpusLinksArgs,
     CheckCorpusLinksResult, CheckOrphanedReferencesArgs, CheckOrphanedReferencesResult,
-    CheckReviewAgreementArgs, CheckReviewAgreementResult, CheckReviewGateArgs,
-    CheckReviewGateResult, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStepReferencesArgs,
-    CheckStepReferencesResult, CheckStuckArgs, CheckStuckResult, CheckUnfoldedSpecsArgs,
-    CheckUnfoldedSpecsResult, CheckboxToggleResult, ComputeReviewScopeArgs,
-    ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult, CreatePlanArtifactsArgs,
-    CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult, DashboardArgs,
-    DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult, DeriveDependenciesArgs,
-    DeriveDependenciesResult, DeriveReferencesArgs, DeriveReferencesResult,
+    CheckPromotionCoverageArgs, CheckPromotionCoverageResult, CheckReviewAgreementArgs,
+    CheckReviewAgreementResult, CheckReviewGateArgs, CheckReviewGateResult, CheckRuleIdsArgs,
+    CheckRuleIdsResult, CheckStepReferencesArgs, CheckStepReferencesResult, CheckStuckArgs,
+    CheckStuckResult, CheckUnfoldedSpecsArgs, CheckUnfoldedSpecsResult, CheckboxToggleResult,
+    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
+    CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult,
+    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    DeriveDependenciesArgs, DeriveDependenciesResult, DeriveReferencesArgs, DeriveReferencesResult,
     DeriveRoutingCandidatesArgs, DeriveRoutingCandidatesResult, DiffCrossSpecArgs,
     DiffCrossSpecResult, DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs,
     EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
@@ -409,6 +409,19 @@ impl GovRuntimeServer {
         params: Parameters<CheckRuleIdsArgs>,
     ) -> Result<Json<CheckRuleIdsResult>, String> {
         primitives::check_rule_ids::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "check-promotion-coverage",
+        description = "How much of a rules file is routed to its canonical source: rule-bearing minus (table-keyed union pointer-citing). A notice, never a gate."
+    )]
+    async fn check_promotion_coverage(
+        &self,
+        params: Parameters<CheckPromotionCoverageArgs>,
+    ) -> Result<Json<CheckPromotionCoverageResult>, String> {
+        primitives::check_promotion_coverage::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

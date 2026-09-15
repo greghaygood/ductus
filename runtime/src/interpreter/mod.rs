@@ -60,17 +60,18 @@ use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
-    CheckReviewAgreementArgs, CheckReviewGateArgs, CheckRuleIdsArgs, CheckStepReferencesArgs,
-    CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
-    CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
-    DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs, DiffCrossSpecArgs,
-    DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
-    GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RemoveInboxItemArgs,
-    ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs, ResolveReferencesArgs,
-    RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
+    CheckPromotionCoverageArgs, CheckReviewAgreementArgs, CheckReviewGateArgs, CheckRuleIdsArgs,
+    CheckStepReferencesArgs, CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs,
+    CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
+    DeriveBoundaryArgs, DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs,
+    DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
+    FetchArchiveArgs, GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs,
+    MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs,
+    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
+    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
+    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -723,6 +724,9 @@ fn dispatch_primitive(
         "resolve-constitutions" => call!(ResolveConstitutionsArgs, resolve_constitutions),
         "traverse-deps" => call!(TraverseDepsArgs, traverse_deps),
         "check-rule-ids" => call!(CheckRuleIdsArgs, check_rule_ids),
+        "check-promotion-coverage" => {
+            call!(CheckPromotionCoverageArgs, check_promotion_coverage)
+        }
         "run-generator" => call!(RunGeneratorArgs, run_generator),
         "lint-markdown" => call!(LintMarkdownArgs, lint_markdown),
         "fetch-archive" => call!(FetchArchiveArgs, fetch_archive),

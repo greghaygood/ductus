@@ -77,6 +77,7 @@ pub const PRIMITIVE_REGISTRY: &[&str] = &[
     "check-orphaned-references",
     "check-command-flags",
     "check-review-agreement",
+    "check-promotion-coverage",
     "derive-dependencies",
     "derive-references",
     "check-unfolded-specs",

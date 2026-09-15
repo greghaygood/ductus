@@ -445,3 +445,17 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Implement the behavior described in `scenarios/the-analyze-record-states-what-it-captured.md`
 
 - **Done when**: `write-analysis` accepts `captured-issues` and records the count in the `analyze:` block beside `advisory`; `WriteAnalysisResult` reports it; `framework/commands/analyze.md` step 17 documents the field and says why the two counts need not agree; 022's `data-model.md` result-shape registry carries the new Args and Result shape; and both the agreeing and diverging cases are pinned by tests in `write_analysis`'s suite.
+
+## 119. Promotion coverage is computed and reported as a notice
+
+- [x] Implement the behavior described in `scenarios/the-promotion-coverage-line.md`
+- [x] Add `check-promotion-coverage` — project-scoped, reporting all four terms of `unclassified = rule-bearing − (table-keyed ∪ pointer-citing)` rather than the difference alone, since every recorded disagreement about this figure was a difference of method rather than decay
+- [x] Reuse the shared comment- and fence-aware bullet grammar, and keep the **top-level** constraint local with the reason stated on both sides — the shared helper trims indentation for the inbox case, so delegating wholesale would widen the denominator to nested items (`QUAL-DELEG-001`)
+- [x] Report `no-table` as a state distinct from zero coverage, and make a supplied-but-unreadable `table-file` an error rather than the absent state
+- [x] Report `missing-sections` and `unmatched-keys` as their own fields — a renamed section shrinks the denominator in the flattering direction, and an unmatched key is how a reworded entry surfaces
+- [x] Wire all six Rust sites plus `framework/runtime-tools.txt`, and confirm `cargo test --test mcp` reports the manifest set-equal to `TOOL_NAMES`
+- [x] Add Family 38 as a shell entry point that calls the primitive rather than reimplementing the count, registered in `scripts/audit/run-all.sh`, `framework/commands/audit.md` and `scripts/audit/README.md` so Family 28 parity holds
+- [x] Keep the coverage line exit-code-neutral (Family 19's shape) and prove the two finding directions by probe: a bogus table key, and a renamed section
+- [x] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
+
+- **Done when**: `check-promotion-coverage` ships wired at all six Rust sites plus the shipped manifest, `/ductus:audit` Family 38 renders its coverage line to stderr without touching the exit code, an unmatched classification key and a missing named section are each findings proven by probe in both directions, `data-model.md` registers the result shape, and the runtime version is bumped and tagged in the same sitting.

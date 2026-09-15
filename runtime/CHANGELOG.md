@@ -2,6 +2,85 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.8] — 2026-09-15
+
+### Added
+
+- **`check-promotion-coverage` — how much of a rules file has been routed to
+  its canonical source.** §drift-prevention's *Shared knowledge stays in git*
+  routes a learning by **population** and names the constitution first, but
+  nothing reported how much had actually gone there. *Not having promoted* is
+  invisible by construction: a universal entry still sitting in the project's
+  own rules file looks exactly like one correctly judged project-only, because
+  neither carries a marker and a per-entry marker is the authored input
+  §design-principles rejects.
+
+  The primitive computes
+  `unclassified = rule-bearing − (table-keyed ∪ pointer-citing)` over committed
+  markdown, so it needs no authored input, and it reports **all four terms**
+  rather than the difference alone. That is not verbosity: the figure has been
+  re-derived by hand repeatedly and disagreed with itself every time, and never
+  once because of decay — each disagreement was a difference of *method*.
+  Counting the pointer side as anchor-bearing lines in the whole file rather
+  than as rule-bearing bullets in the named sections gives two honest answers
+  to one question, and a matcher that does not strip a trailing parenthetical
+  from a table key fails to match every key carrying one, reporting a coverage
+  gap that is an artifact of the instrument. The terms are what those
+  disagreements turned on.
+
+  `sections` is required with no default, because which sections carry rules is
+  a property of the project's own file; a named section that does not occur is
+  reported in `missing-sections` rather than contributing zero bullets, since a
+  denominator that quietly shrinks when a section is renamed moves coverage in
+  the flattering direction. `unmatched-keys` is load-bearing rather than
+  diagnostic — it is how a **reworded** entry surfaces, a lead-phrase key
+  degrading loudly to no match where a positional identifier would degrade
+  silently to whichever entry later occupied its slot. `table-state` separates
+  `no-table` from a computed zero, and a `table-file` that was supplied and
+  cannot be read is an **error** rather than the absent state, since treating
+  it as absent would report full coverage over a file nobody read.
+
+  Bullet counting reuses the shared comment- and fence-aware grammar the inbox
+  primitives already use, and keeps the **top-level** constraint local with the
+  reason recorded on both sides: that helper trims leading whitespace because
+  it was written for inbox bullets where nesting does not occur, so delegating
+  wholesale would have widened this count to nested list items. That is
+  `QUAL-DELEG-001`, the rule added in the same session, applied to its own
+  first case.
+
+- **`/ductus:audit` Family 38 — promotion coverage.** A shell entry point that
+  calls the primitive rather than reimplementing the count, per §runtime-boundary
+  principle 3. The coverage line goes to stderr and **never affects the exit
+  code**, which is Family 19's existing shape: promotion has to stay free for
+  the reason §brownfield-inbox gives for capture, and this suite is a hard
+  release gate. Two things *are* findings, and both are drift rather than
+  coverage — a classification key matching no entry, and a named section absent
+  from the rules file. Proven in both directions before being trusted: a bogus
+  key and a renamed section each take it to exit 1, and the renamed-section
+  probe dropped the denominator 121 → 118, which is the silent shrink the
+  finding exists to catch.
+
+  Maintainer-only by design. The inbox row renders in `/{project}:review` and
+  `/{project}:implement` because every project is scaffolded with an inbox, so
+  silence there would be wrong; a classification table is opt-in and
+  maintainer-owned, so an adopter would need configuration invented for them to
+  see anything but silence. `resolve-constitutions` sets the precedent for the
+  opt-in case: report nothing, and a project without the feature reads exactly
+  as before.
+
+### Fixed
+
+- **A history note claimed a release did something it did not.** Spec 022's
+  `write-session-primitive` scenario records the sequence of session-file path
+  choices, and a rename sweep rewrote 0.10.0's destination to the path that
+  only arrived two specs later — so the paragraph asserted that the 0.10.0
+  consolidation moved the file somewhere it did not. Repaired by naming
+  0.10.0's actual destination and stating why the retired spelling stays: a
+  sweep must not rewrite the record of the thing being swept, which is the one
+  case §drift-prevention exempts from a blanket substitution. The pre-sweep
+  bytes were **not** restored wholesale, because they also named a real adopter
+  project, which the sweep removed correctly.
+
 ## [0.49.7] — 2026-09-15
 
 ### Changed

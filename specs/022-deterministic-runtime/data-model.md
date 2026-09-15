@@ -464,6 +464,89 @@ Result:
 }
 ```
 
+### `check-promotion-coverage` — how much of a rules file is routed to its canonical source
+
+Project-scoped: no feature argument, like `check-review-agreement` and
+`check-orphaned-references`.
+
+Args:
+
+```json
+{
+  "rules-file": "AGENTS.md",
+  "sections": ["Workflow", "Gotchas", "Boundaries", "Design Principles"],
+  "table-file": "specs/050-constitution/plan.md",
+  "table-section": "Classification",
+  "pointer-link": "framework/constitution.md#"
+}
+```
+
+Result:
+
+```json
+{
+  "rule-bearing": 121,
+  "table-keyed": 98,
+  "pointer-citing": 74,
+  "classified": 119,
+  "unclassified": 2,
+  "unclassified-entries": ["append-task has two shapes that both return exit 0 while writing nothing, and neither is an error."],
+  "table-rows": 98,
+  "unmatched-keys": [],
+  "missing-sections": [],
+  "table-state": "read"
+}
+```
+
+Computes `unclassified = rule-bearing − (table-keyed ∪ pointer-citing)` over
+committed markdown, so it needs no authored input — which is what keeps it
+clear of the per-entry marker [§design-principles](../../framework/constitution.md#design-principles)
+rejects.
+
+**All four terms are reported, not just the difference.** The figure has been
+re-derived by hand repeatedly and disagreed with itself every time, and never
+once because of decay: each disagreement was a difference of *method*. Counting
+the pointer side as anchor-bearing lines in the whole file rather than as
+rule-bearing bullets in the named sections gives two honest answers to one
+question, and a matcher that does not strip a trailing parenthetical from a
+table key fails to match every key carrying one — reporting a coverage gap that
+is an artifact of the instrument. Reporting only the difference would hide
+exactly the terms those disagreements turned on.
+
+`sections` is required and has no default: which sections carry rules is a
+property of the project's own file, so a default would make the denominator a
+claim the primitive is not entitled to make. The sections are a **set** — naming
+one twice does not double its bullets — and one that does not occur is reported
+in `missing-sections` rather than contributing zero, because a denominator that
+quietly shrinks when a section is renamed moves coverage in the flattering
+direction.
+
+`unmatched-keys` is load-bearing rather than diagnostic: it is how a **reworded**
+entry surfaces. A lead-phrase key degrades loudly to not matching at all, where
+a positional identifier would degrade silently to matching whichever entry later
+occupied its slot. Keys match an entry's **lead phrase** — the bolded span
+opening the bullet — by prefix in either direction, after inline markup is
+normalized away and one trailing parenthetical is stripped.
+
+`table-state` distinguishes `read` from `no-table`. A project keeping no
+classification table has not been examined-and-found-fully-routed, so the two
+must not render alike; a `table-file` that was *supplied* and cannot be read is
+an **error** rather than the absent state, since treating it as absent would
+report full coverage over a file nobody read.
+
+Bullet counting reuses the shared comment- and fence-aware grammar the inbox
+primitives use, so a list-marker line inside a guidance comment is not an entry. The
+**top-level** constraint is kept local rather than delegated: that shared helper
+trims leading whitespace, because it was written for inbox bullets where nesting
+does not occur, and delegating wholesale would widen this count to nested list
+items (`QUAL-DELEG-001`).
+
+Consumed by `/{project}:audit` Family 38, which renders the coverage line to
+stderr where it never affects the exit code — **a notice, never a gate**, for the
+reason [§brownfield-inbox](../../framework/constitution.md#brownfield-inbox)
+gives for capture. See the scenario
+[`the-promotion-coverage-line`](scenarios/the-promotion-coverage-line.md).
+
 ### `check-rule-ids` — verify cited rule IDs exist and aren't deprecated
 
 Args:
