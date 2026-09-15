@@ -517,10 +517,17 @@ for spec_path in sorted(specs_dir.glob("*/spec.md")):
 # count reaches zero every record carries a digest, the arm above is dead code,
 # and this line is the evidence for deleting it.
 examined = examined_digest + examined_proxy
+# To **stderr**, like every other family's coverage line. It went to stdout
+# until 0.49.8, which meant run-all.sh captured and discarded it on exactly the
+# clean runs it exists for — the line was written on every run since this family
+# shipped and reached an aggregated one never. Ordering is preserved: run_check
+# passes stderr straight through and echoes captured stdout under the family
+# header afterwards, so this still lands above the findings it quantifies.
 print(
     f"review-freshness: examined {examined} spec(s) at status: done — "
     f"{examined_digest} by reviewed-digest, {examined_proxy} by commit-diff proxy; "
-    f"{grandfathered} grandfathered (no review: block); {unresolvable} unresolvable"
+    f"{grandfathered} grandfathered (no review: block); {unresolvable} unresolvable",
+    file=sys.stderr,
 )
 for finding in findings:
     print(finding)

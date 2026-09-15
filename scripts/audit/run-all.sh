@@ -26,13 +26,29 @@ run_check() {
     drift=1
     return
   fi
-  local output
-  if output="$("$script" 2>&1)"; then
-    # Exit 0 = no findings; emit nothing under the header.
+  local findings
+  # Findings go to stdout and are rendered under a per-family header when the
+  # family fails. A family's **coverage notices go to stderr** and are passed
+  # straight through in both cases, rather than being captured and discarded on
+  # success as they were until 0.49.8.
+  #
+  # That capture made every coverage line invisible on exactly the runs they
+  # exist for. Family 19 has closed each run with a line naming what it
+  # examined since it shipped, Families 30 and 35 report their counts the same
+  # way, and none of it ever reached an aggregated run — so a clean `run-all.sh`
+  # printed nothing at all, which is indistinguishable from a run that never
+  # executed. That is `QUAL-CLAIM-001` turned on this aggregator: the exit code
+  # said "no findings" and nothing said what had been looked at. Surfaced by
+  # Family 38, whose whole contract is a standing notice and which was silent
+  # on every clean run until this was fixed.
+  #
+  # The exit-code contract is unchanged, so CI still gates on it without
+  # parsing anything (spec 026 AC12).
+  if findings="$("$script")"; then
     :
   else
     echo "=== $label ==="
-    echo "$output"
+    echo "$findings"
     echo
     drift=1
   fi
