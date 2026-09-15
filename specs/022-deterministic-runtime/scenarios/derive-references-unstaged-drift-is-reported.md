@@ -7,7 +7,7 @@ section: "Bash script relationships"
 ## Context
 
 An adopter renamed a service alias in `.ductus/config.toml` — `[services.api]`
-became `[services.svc-zmc-api]`, same `repo` URL. Two of their specs carried
+became `[services.acme-api]`, same `repo` URL. Two of their specs carried
 `references:` entries naming the old alias. Those entries were dead for **nine
 commits**, and the pre-commit hook reported the tree in sync on every one of
 them.

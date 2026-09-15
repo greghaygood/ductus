@@ -5,7 +5,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 1. Author `framework/rules/quality-cross.md`
 
 - [x] Write the file header: title (`# Code Quality Rules`), an intro stating the discipline is cross-cutting (applies to every stack), the RFC 2119 note, the `QUAL-{CATEGORY}-{NNN}` ID-format / category-declaration line (category `STUB`, with the `See specs/036-quality-cross-rules/data-model.md` + `specs/008-security-rules/data-model.md` pointers), and the pin note adapted for a cross file (always applies; pin in `.ductus/config.toml` `[pinned]` if customized).
-- [x] Write the `## QUAL-STUB — Silent stubs` section with `### QUAL-STUB-001`: Statement (MUST), Rationale (silent-stub hazard + the anvil rate-limiter incident), and Verification (review-time three-part discriminator — reachable + contract-implies-work + no-loud-signal — plus the exemption list).
+- [x] Write the `## QUAL-STUB — Silent stubs` section with `### QUAL-STUB-001`: Statement (MUST), Rationale (silent-stub hazard + the adopter rate-limiter incident), and Verification (review-time three-part discriminator — reachable + contract-implies-work + no-loud-signal — plus the exemption list).
 - [x] Cross-reference rather than restate: cite `api-backend.md` `BE-SCHEMA-002` for the build-time schema fail-loud case.
 - Done when: the file exists with one well-formed `QUAL-STUB-001` rule (MUST), the `-cross.md` schema, and the `BE-SCHEMA-002` citation.
 

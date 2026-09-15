@@ -1,6 +1,6 @@
 ---
 title: "002-project-scaffolding — spec"
-status: done
+status: in-progress
 dependencies: [000-slash-commands, 001-system-spec-templates]
 tags: [templates, bootstrap]
 review:
@@ -35,7 +35,7 @@ Templates for the project-level files that every `ductus`-adopting project needs
 
 ## Problem
 
-Bootstrapping a new project requires creating several files that follow `ductus` conventions but are not currently provided as templates: a project README with a feature status table, a `.gitignore` that excludes claude settings but preserves commands, a `CLAUDE.md` with import directives, and a session state file. Projects like anvil created all of these independently.
+Bootstrapping a new project requires creating several files that follow `ductus` conventions but are not currently provided as templates: a project README with a feature status table, a `.gitignore` that excludes claude settings but preserves commands, a `CLAUDE.md` with import directives, and a session state file. Adopter projects created all of these independently.
 
 ## Behavior
 

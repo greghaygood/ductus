@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: []
 review:
   last-run: 2026-09-13T12:28:44Z
@@ -211,4 +211,6 @@ Both repos run the generators in CI and fail the build on a non-empty diff. Catc
   **Migration of existing specs.** The 16 existing specs have hand-authored frontmatter deps that may not match their body inline links. On first run after this lands, `gen-spec-deps.sh` may *remove* deps that aren't body-linked. Mitigation: a one-time migration step adds inline links to spec bodies for any frontmatter dep not already linked. This is an implementation task, not a runtime surprise.
 
   **Recategorization.** Item #13 moves from "Derive (proposal + author confirms)" to the same conceptual bucket as items #10–#12 — generated artifacts maintained by the pre-commit hook.
+
+  **Superseded mechanisms (018, 022).** This resolution records the decision as it was taken; three mechanisms it names in the present tense are gone, and it is annotated rather than rewritten because the decision itself carried across them unchanged — body authoritative, frontmatter derived, hook plus command-entry safety net. `.ductus/scripts/gen-spec-deps.sh` and `gen-readme-table.sh` were promoted to the `derive-dependencies` and `derive-references` primitives by `022-deterministic-runtime` (AC23), so nothing under `.ductus/scripts/` ships, refreshes on a `/ductus` run, or is pinnable. `framework/bootstrap/hooks/install.sh` was inlined into the installer by `018-adopter-owned-pre-commit` (AC21). And this repository's hook runs `gen-configure-mcp.sh`, `gen-claude-commands.sh` and `gen-help-tables.sh` plus those two primitives — not the four generators named above — verified against `.githooks/pre-commit`. AC12, AC21 and AC23 already carry this correction; Q7 states the same claims one tier upstream and was missed when they were made, which is why fixing a downstream copy first is the order that hides the upstream one.
 - **Q8 (constitutional promotion of the discipline principle):** Leave the principle in `AGENTS.md` for now. It is one day old (added 2026-05-06) and has been applied to two decisions (the upgrade-impact deferral and this spec). The framework's maturation path is: principles prove themselves in `AGENTS.md`, then promote to the constitution if they generalize — the §rules tier in spec 016 followed exactly this path after specs 008 and 015 established the pattern. Constitutional changes ship via `/ductus` to every adopter and are stickier to roll back; preemptive promotion skips the proving step. Re-evaluate in a follow-up spec once a third or fourth application accumulates.

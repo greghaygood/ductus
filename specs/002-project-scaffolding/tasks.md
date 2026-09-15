@@ -32,7 +32,7 @@ Done when: `framework/templates/project/claude-md.md` exists with both import di
 
 - [x] Run `npx markdownlint-cli2` on markdown templates (`project-readme.md`, `claude-md.md`)
 - [x] Verify `{project}` placeholder is used consistently across all templates
-- [x] Compare against anvil's README, .gitignore, and CLAUDE.md to ensure no important sections are missing
+- [x] Compare against an adopter project's README, .gitignore, and CLAUDE.md to ensure no important sections are missing
 - [x] Update spec status to `done`
 
-Done when: all templates pass lint (where applicable), placeholders are consistent, and no major gaps compared to anvil.
+Done when: all templates pass lint (where applicable), placeholders are consistent, and no major gaps compared to the adopter project.

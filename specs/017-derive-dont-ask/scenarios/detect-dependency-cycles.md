@@ -12,7 +12,7 @@ section: "Generators and Hooks"
 
 ## Context
 
-`scripts/gen-spec-deps.sh` rewrites every spec's frontmatter `dependencies` from body links on every commit (Q7 / AC23). The generator currently treats the resulting edges as the truth of the dep graph but never checks the graph for cycles. A cycle is a structural defect — `traverse-deps` cannot order such a graph, `/anvil:status` ordering by `blocked-by` becomes unstable, and the dashboard's blocked-by callout reports nonsense.
+`scripts/gen-spec-deps.sh` rewrites every spec's frontmatter `dependencies` from body links on every commit (Q7 / AC23). The generator currently treats the resulting edges as the truth of the dep graph but never checks the graph for cycles. A cycle is a structural defect — `traverse-deps` cannot order such a graph, `/{project}:status` ordering by `blocked-by` becomes unstable, and the dashboard's blocked-by callout reports nonsense.
 
 The most common path to a cycle is sibling [skip-prose-cross-references](skip-prose-cross-references.md): bidirectional navigational links between two specs make each one depend on the other. The opt-out scenario fixes the *source* of cycles, but the generator should still detect cycles in the *output* — both as a safety net for adopters who don't adopt the opt-out and as protection against any other path to a cycle (deliberate or accidental).
 

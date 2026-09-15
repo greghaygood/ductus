@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [009-scenario-targeting, 022-deterministic-runtime]
 review:
   last-run: 2026-09-13T13:27:44Z
@@ -48,7 +48,7 @@ The past tense is deliberate: this section describes the state that motivated th
 
 ### Observed case
 
-Adopter repo `svc-zmc-api`, spec `033-shared-request-primitives`, scenario
+An adopter repo running a backend service, spec `033-shared-request-primitives`, scenario
 `query-filter-type-conformance`: three open questions, one deciding a wire contract. `read-spec` reported no open questions, `check-artifacts` returned a single unrelated finding, and the pipeline pointed at `/implement`. Implementing then would have meant building against three unmade decisions.
 
 ### What already works

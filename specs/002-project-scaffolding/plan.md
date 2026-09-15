@@ -10,11 +10,11 @@ Create three new template files in the existing `framework/templates/project/` d
 
 ## Technical Decisions
 
-### README template derived from anvil
+### README template derived from an adopter project
 
-The project README template is based on anvil's `README.md` structure, generalized:
+The project README template is based on an adopter project's `README.md` structure, generalized:
 
-- Anvil-specific content (Go, PostgreSQL, NATS, Docker commands) replaced with `{project}` placeholders and generic sections
+- Project-specific content (Go, PostgreSQL, NATS, Docker commands) replaced with `{project}` placeholders and generic sections
 - Feature table format preserved — it's the standard from the constitution's numbering convention
 - Slash command references use `/{project}:*` pattern
 - Getting Started section references `/{project}:configure` and `/{project}:status` as decided during clarification

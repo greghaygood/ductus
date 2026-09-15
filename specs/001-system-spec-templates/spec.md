@@ -1,6 +1,6 @@
 ---
 title: "001-system-spec-templates — spec"
-status: done
+status: in-progress
 dependencies: []
 tags: [templates, pipeline]
 review:
@@ -35,7 +35,7 @@ Templates for the cross-cutting system specs that the constitution references bu
 
 ## Problem
 
-The constitution's spec phase defines a directory structure that includes `system.md`, `errors.md`, and `events.md` under `specs/`. The README tells adopters to "write `specs/system.md` describing your architecture" but provides no template or guidance on what sections to include. Projects like anvil have built these from scratch, establishing patterns that should be reusable.
+The constitution's spec phase defines a directory structure that includes `system.md`, `errors.md`, and `events.md` under `specs/`. The README tells adopters to "write `specs/system.md` describing your architecture" but provides no template or guidance on what sections to include. Adopter projects have built these from scratch, establishing patterns that should be reusable.
 
 ## Behavior
 

@@ -21,9 +21,9 @@ All existing templates (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `rese
 
 The three new templates follow this exact pattern. The difference is that system spec templates are placed directly in `specs/` (not in a numbered feature directory), so their headings use a descriptive title rather than `{NNN} — {Feature Name}`.
 
-### Section selection based on anvil analysis
+### Section selection based on adopter analysis
 
-Sections were chosen by analyzing what anvil's `system.md`, `errors.md`, and `events.md` contain, then generalizing. Anvil-specific content (Go patterns, pgx, NATS subjects) is stripped and replaced with technology-agnostic prompts.
+Sections were chosen by analyzing what an adopter project's `system.md`, `errors.md`, and `events.md` contain, then generalizing. Project-specific content (Go patterns, pgx, NATS subjects) is stripped and replaced with technology-agnostic prompts.
 
 ### All three are living documents
 
