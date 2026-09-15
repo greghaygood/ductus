@@ -1725,13 +1725,13 @@ mod tests {
         seed(tmp.path(), NEVER_REVIEWED);
         fs::write(
             tmp.path().join(".govern.toml"),
-            "[host]\nproject = \"anvil\"\n",
+            "[host]\nproject = \"acme\"\n",
         )
         .unwrap();
         let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
         assert_eq!(
             result.message.as_deref(),
-            Some("blocked: spec has not been reviewed — run /anvil:review before completing")
+            Some("blocked: spec has not been reviewed — run /acme:review before completing")
         );
     }
 

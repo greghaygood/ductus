@@ -3,10 +3,10 @@
 # committed `.govern.toml` `[host]` block (current adopters write it to the
 # gitignored `.govern.session.toml` instead; see the exec-opencode fixture).
 # The runtime would otherwise default to `.claude` / repo directory basename,
-# neither of which resolve under this fixture's `.augment/commands/anvil/`
+# neither of which resolve under this fixture's `.augment/commands/acme/`
 # layout.
 
 # ductus (host)
 [host]
 cli-config-dir = ".augment"
-project = "anvil"
+project = "acme"

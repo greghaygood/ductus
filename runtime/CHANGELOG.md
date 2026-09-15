@@ -2,6 +2,41 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.49.5] — 2026-09-14
+
+### Changed
+
+- **The placeholder project name used across the runtime's tests, fixtures
+  and doc comments is now `acme`, and no artifact here names a real adopter
+  project.** `AGENTS.md` §Workflow requires that another project's name is
+  never recorded in this repository — describe the shape instead — while
+  sanctioning a purpose-built fixture as the replacement. The fixtures were
+  named after the adopter they were derived from, so the rule appeared to
+  bless and forbid the same bytes, and the ambiguity had been re-opened in
+  several grooming passes without being settled.
+
+  The two halves turn out not to be independent, which is what settles it.
+  Most occurrences were the name used as an arbitrary value for the `project`
+  config key — in `#[cfg(test)]` modules, in the `exec-auggie` and
+  `exec-opencode` fixture trees (both as a `.govern.toml` value and as a
+  command-directory segment), and in the `parity/install` golden — where any
+  string works identically. But a handful named the adopter *as an adopter*
+  in prose, and one of those was a doc comment on a `clap::Args` field, which
+  renders as `--help` text: `ductus migrate-session-file --help` printed the
+  adopter's name in the shipped binary. That single attributing site is what
+  stopped the rest from reading as an arbitrary placeholder. With the prose
+  sites rewritten to describe the shape, the remaining value is genuinely
+  meaningless, and `acme` is the placeholder this repo already uses in
+  `framework/migrations/session-file-consolidate.md`.
+
+  No behaviour changes. The two fixture command directories were renamed with
+  `git mv` and every reference to them moved in the same commit, including
+  two `CHANGELOG.md` entries that cite the fixture path and would otherwise
+  have been left pointing at a directory that no longer exists. Historical
+  entries that attributed a report or an observation to the named adopter now
+  state the reproducing conditions instead, which is what a reader needs and
+  what survives outside one maintainer's machine.
+
 ## [0.49.4] — 2026-09-13
 
 ### Fixed
@@ -2029,7 +2064,7 @@ The **review-runtime-acceleration** series (spec 022 scenario `review-runtime-ac
 
 ### Added
 
-- **`Host` config loader and `.govern.toml` `[host]` block — parameterized command-file resolution.** The runtime previously resolved slash-command files via three hardcoded candidate paths, the middle of which baked in both Claude Code's config-dir name (`.claude`) and this repo's slash-command namespace (`gov/`). That combination broke adopters whose layout matched neither default: an Auggie adopter named `anvil` has commands under `.augment/commands/anvil/*.md` and the runtime's lookup never reached them. A new `gvrn::host::Host` public type and its `Host::load(repo: &Path) -> Self` constructor read the host's values from `.govern.toml`'s `[host]` block (`cli-config-dir` and `project` keys); both command-resolution callsites (`gvrn exec`'s `run_exec` in `runtime/src/main.rs` and the anchor-extractor's `locate_command_file` in `runtime/src/interpreter/payload.rs`) now construct the middle candidate as `{host.cli_config_dir}/commands/{host.project}/{name}.md`. When the block is absent the loader falls back to `.claude` / repo directory basename — preserving this repo's behavior unchanged — via two module-level consts (`DEFAULT_CLI_CONFIG_DIR`, `FALLBACK_PROJECT`). Six unit tests under `runtime/src/host::tests` cover missing file, empty file, block absent, full override, partial override (per-field defaults), and malformed-TOML fall-soft. An integration test under `runtime/tests/exec_subprocess.rs` (`exec_resolves_command_via_parameterized_host_block`) exercises the parameterized lookup against an Auggie-shaped fixture at `runtime/tests/fixtures/exec-auggie/` (no `framework/commands/` tree, command file at `.augment/commands/anvil/smoke.md`, `.govern.toml` declaring the override). Closes spec 022's `commands-dir-parameterization` scenario.
+- **`Host` config loader and `.govern.toml` `[host]` block — parameterized command-file resolution.** The runtime previously resolved slash-command files via three hardcoded candidate paths, the middle of which baked in both Claude Code's config-dir name (`.claude`) and this repo's slash-command namespace (`gov/`). That combination broke adopters whose layout matched neither default: an Auggie adopter named `acme` has commands under `.augment/commands/acme/*.md` and the runtime's lookup never reached them. A new `gvrn::host::Host` public type and its `Host::load(repo: &Path) -> Self` constructor read the host's values from `.govern.toml`'s `[host]` block (`cli-config-dir` and `project` keys); both command-resolution callsites (`gvrn exec`'s `run_exec` in `runtime/src/main.rs` and the anchor-extractor's `locate_command_file` in `runtime/src/interpreter/payload.rs`) now construct the middle candidate as `{host.cli_config_dir}/commands/{host.project}/{name}.md`. When the block is absent the loader falls back to `.claude` / repo directory basename — preserving this repo's behavior unchanged — via two module-level consts (`DEFAULT_CLI_CONFIG_DIR`, `FALLBACK_PROJECT`). Six unit tests under `runtime/src/host::tests` cover missing file, empty file, block absent, full override, partial override (per-field defaults), and malformed-TOML fall-soft. An integration test under `runtime/tests/exec_subprocess.rs` (`exec_resolves_command_via_parameterized_host_block`) exercises the parameterized lookup against an Auggie-shaped fixture at `runtime/tests/fixtures/exec-auggie/` (no `framework/commands/` tree, command file at `.augment/commands/acme/smoke.md`, `.govern.toml` declaring the override). Closes spec 022's `commands-dir-parameterization` scenario.
 
 - **Bootstrap procedure writes the `[host]` block on every `/govern` run.** `framework/bootstrap/govern.md` gains a new step 6 (between the existing `.gitignore` merge and `enforce-manifest` cleanup) that invokes `merge-managed-block` against `.govern.toml` with `marker-style: "line-prefix"` and `marker: "govern (host)"`. First-run creates the file with just the managed block; subsequent runs update the values in place under the `# govern (host)` preamble line, preserving every other section (`[pinned]`, `[workflows]`, `[migrations]`, `[review]`) byte-for-byte. The §Project Configuration section's example TOML and per-key reference now document the `[host]` schema; step 1's host-context list picks up the new `host-block` item; subsequent steps are renumbered (prior 6/7/8 → 7/8/9).
 
@@ -2037,7 +2072,7 @@ The **review-runtime-acceleration** series (spec 022 scenario `review-runtime-ac
 
 ### Fixed
 
-- **Auggie / Anvil / non-default-layout adopters can resolve their command files.** Before this release, an adopter whose `cli-config-dir` was not `.claude` or whose project namespace was not `gov` would invoke `gvrn exec <name>` and get `runtime exec: command file not found` — because the runtime's second candidate path was the literal `.claude/commands/gov/<name>.md` regardless of the adopter's actual layout. With the parameterized lookup, the runtime reads the adopter's values from `.govern.toml`'s `[host]` block and resolves the correct path on the first try.
+- **Auggie / non-default-layout adopters can resolve their command files.** Before this release, an adopter whose `cli-config-dir` was not `.claude` or whose project namespace was not `gov` would invoke `gvrn exec <name>` and get `runtime exec: command file not found` — because the runtime's second candidate path was the literal `.claude/commands/gov/<name>.md` regardless of the adopter's actual layout. With the parameterized lookup, the runtime reads the adopter's values from `.govern.toml`'s `[host]` block and resolves the correct path on the first try.
 
 ### Changed
 
@@ -2063,7 +2098,7 @@ The **review-runtime-acceleration** series (spec 022 scenario `review-runtime-ac
 
 ### Changed
 
-- **Session state consolidated onto `.govern.session.toml` at the repo root.** `write-session` and `dashboard` previously read/wrote `.claude/gov-session.json` — a hardcoded path that baked in both the AI CLI's config directory (`.claude/` for Claude Code) and the adopting project's name (`gov-session.json` for this repo). That broke adopters whose project name or AI CLI didn't match the runtime's baked-in constants (observed against an adopter named `anvil`, whose canonical session would have been `.claude/anvil-session.json`): `/{project}:target` wrote the gov-shaped filename while every downstream consumer read the bootstrap-substituted one, and the session never round-tripped. The fix is consolidation, not parameterization — both primitives now read/write `<repo>/.govern.session.toml`, a single location with no `{cli-config-dir}` or `{project}` variability. The new file sits alongside `.govern.toml` at the repo root, is gitignored (per-user, ephemeral state), and uses TOML to align with `.govern.toml`'s on-disk format. Keys are kebab-case (`scenario-path`, `set-at`) rather than the legacy camelCase (`scenarioPath`, `setAt`). The runtime CLI's walker-context seed in `gvrn exec` reads the same file via TOML→JSON bridging so parity fixtures keep working. Closes spec 022's reopened consolidation scope.
+- **Session state consolidated onto `.govern.session.toml` at the repo root.** `write-session` and `dashboard` previously read/wrote `.claude/gov-session.json` — a hardcoded path that baked in both the AI CLI's config directory (`.claude/` for Claude Code) and the adopting project's name (`gov-session.json` for this repo). That broke adopters whose project name or AI CLI didn't match the runtime's baked-in constants (observed against an adopter whose project name and AI CLI both differed from the runtime's defaults, whose canonical session would have been `.claude/{project}-session.json`): `/{project}:target` wrote the gov-shaped filename while every downstream consumer read the bootstrap-substituted one, and the session never round-tripped. The fix is consolidation, not parameterization — both primitives now read/write `<repo>/.govern.session.toml`, a single location with no `{cli-config-dir}` or `{project}` variability. The new file sits alongside `.govern.toml` at the repo root, is gitignored (per-user, ephemeral state), and uses TOML to align with `.govern.toml`'s on-disk format. Keys are kebab-case (`scenario-path`, `set-at`) rather than the legacy camelCase (`scenarioPath`, `setAt`). The runtime CLI's walker-context seed in `gvrn exec` reads the same file via TOML→JSON bridging so parity fixtures keep working. Closes spec 022's reopened consolidation scope.
 
 - **`merge-permissions`'s `path` is now required.** The previous `DEFAULT_PATH = ".claude/settings.local.json"` constant silently routed non-Claude hosts to a Claude-shaped destination. The bootstrap procedure already passes the path explicitly via `{cli-config-dir}/settings.local.json`, so the default was unused on every supported invocation path; removing it makes a missing path fail loudly instead of corrupting an Auggie adopter's settings.
 
@@ -2245,7 +2280,7 @@ No behavior changes, no schema changes, no public surface changes. CLI subcomman
 
   No schema changes; `CheckStuckArgs` and `CheckStuckResult` JSON shapes are unchanged. Lib tests 238 → 239; full crate suite still passes.
 
-  Reported 2026-05-17 from anvil/017-pagination (second occurrence). Inbox-routed via `/gov:groom`.
+  Reported 2026-05-17 from an adopter repo's own spec 017 (second occurrence). Inbox-routed via `/gov:groom`.
 
 ## [0.5.1] — 2026-05-17
 

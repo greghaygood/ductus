@@ -2376,7 +2376,7 @@ pub struct MigrateSessionFileArgs {
     /// Repo-relative path of the legacy session JSON, host-supplied
     /// from the bootstrap-substituted `{cli-config-dir}/{project}-session.json`
     /// template (e.g., `.claude/gov-session.json`,
-    /// `.claude/anvil-session.json`, `.augment/anvil-session.json`).
+    /// `.claude/acme-session.json`, `.augment/acme-session.json`).
     /// Validated as relative-and-no-`..`.
     #[arg(long)]
     pub legacy_path: String,
@@ -4858,14 +4858,14 @@ mod tests {
         let args = EnforceManifestArgs {
             expected_json: None,
             pinned_json: None,
-            directory: ".claude/commands/anvil".into(),
+            directory: ".claude/commands/acme".into(),
             expected: vec!["status.md".into(), "target.md".into()],
             pinned: vec!["adopter-custom.md".into()],
             recursive: false,
             glob_include: Some("*.md".into()),
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
-        assert_eq!(value["directory"], ".claude/commands/anvil");
+        assert_eq!(value["directory"], ".claude/commands/acme");
         assert_eq!(value["expected"][0], "status.md");
         assert_eq!(value["glob-include"], "*.md");
         assert_eq!(round_trip(&args), args);
@@ -4899,7 +4899,7 @@ mod tests {
         use super::{ApplyManifestArgs, ApplyManifestResult, ManifestEntry, ManifestEntryResult};
         use std::collections::BTreeMap;
         let mut subs = BTreeMap::new();
-        subs.insert("project".into(), "anvil".into());
+        subs.insert("project".into(), "acme".into());
         let args = ApplyManifestArgs {
             entries_json: None,
             pinned_json: None,
@@ -4915,7 +4915,7 @@ mod tests {
                 },
                 ManifestEntry {
                     source: "ductus.md".into(),
-                    dest: ".claude/commands/anvil/ductus.md".into(),
+                    dest: ".claude/commands/acme/ductus.md".into(),
                     strategy: "update".into(),
                     keep_literals: Some(vec!["project".into(), "cli-config-dir".into()]),
                 },
@@ -5027,10 +5027,10 @@ mod tests {
 
         // Adopter on a non-Claude host or non-`gov` project name:
         let auggie_args = MigrateSessionFileArgs {
-            legacy_path: ".augment/anvil-session.json".into(),
+            legacy_path: ".augment/acme-session.json".into(),
         };
         let v: serde_json::Value = serde_json::to_value(&auggie_args).unwrap();
-        assert_eq!(v["legacy-path"], ".augment/anvil-session.json");
+        assert_eq!(v["legacy-path"], ".augment/acme-session.json");
 
         let result = MigrateSessionFileResult {
             source: ".claude/gov-session.json".into(),

@@ -288,7 +288,7 @@ mod tests {
   "setAt": "2026-05-23T12:34:56Z",
   "url": "https://example.test/archive.tar.gz",
   "entries": [{"source": "a.md", "dest": "b.md", "strategy": "update"}],
-  "substitutions": {"project": "anvil"}
+  "substitutions": {"project": "acme"}
 }
 "#,
         );
@@ -304,7 +304,7 @@ mod tests {
         assert!(body.contains("[[entries]]"), "{body}");
         assert!(body.contains("source = \"a.md\""), "{body}");
         assert!(body.contains("[substitutions]"), "{body}");
-        assert!(body.contains("project = \"anvil\""), "{body}");
+        assert!(body.contains("project = \"acme\""), "{body}");
     }
 
     #[test]

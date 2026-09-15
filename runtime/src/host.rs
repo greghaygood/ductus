@@ -45,7 +45,7 @@ const FALLBACK_PROJECT: &str = "ductus";
 /// need at lookup time. `cli_config_dir` is the host's per-user
 /// config-dir name (e.g., `.claude` for Claude Code, `.augment` for
 /// Auggie); `project` is the slash-command namespace under that dir
-/// (e.g., `ductus` in this repo, `anvil` for the Anvil adopter).
+/// (e.g., `ductus` in this repo, `acme` for an adopter that set its own).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Host {
     /// Host's per-user config-dir name (e.g., `.claude`, `.augment`).
@@ -246,25 +246,25 @@ mod tests {
         let repo = tmp_repo("ductus-fixture");
         std::fs::write(
             repo.path().join(".govern.toml"),
-            "[host]\ncli-config-dir = \".augment\"\nproject = \"anvil\"\n",
+            "[host]\ncli-config-dir = \".augment\"\nproject = \"acme\"\n",
         )
         .unwrap();
         let host = Host::load(repo.path());
         assert_eq!(host.cli_config_dir, ".augment");
-        assert_eq!(host.project, "anvil");
+        assert_eq!(host.project, "acme");
     }
 
     #[test]
     fn host_block_partial_uses_defaults_for_missing() {
-        let repo = tmp_repo("anvil-fixture");
+        let repo = tmp_repo("acme-fixture");
         std::fs::write(
             repo.path().join(".govern.toml"),
-            "[host]\nproject = \"anvil\"\n",
+            "[host]\nproject = \"acme\"\n",
         )
         .unwrap();
         let host = Host::load(repo.path());
         assert_eq!(host.cli_config_dir, ".claude");
-        assert_eq!(host.project, "anvil");
+        assert_eq!(host.project, "acme");
     }
 
     #[test]
@@ -273,10 +273,10 @@ mod tests {
         // still comes from the committed `.govern.toml`. This is the team
         // case: the committed config may say `.claude` (or nothing), but a
         // contributor using OpenCode resolves their own `.opencode`.
-        let repo = tmp_repo("anvil-fixture");
+        let repo = tmp_repo("acme-fixture");
         std::fs::write(
             repo.path().join(".govern.toml"),
-            "[host]\ncli-config-dir = \".claude\"\nproject = \"anvil\"\n",
+            "[host]\ncli-config-dir = \".claude\"\nproject = \"acme\"\n",
         )
         .unwrap();
         std::fs::write(
@@ -286,12 +286,12 @@ mod tests {
         .unwrap();
         let host = Host::load(repo.path());
         assert_eq!(host.cli_config_dir, ".opencode");
-        assert_eq!(host.project, "anvil");
+        assert_eq!(host.project, "acme");
     }
 
     #[test]
     fn session_cli_config_dir_used_when_no_legacy_block() {
-        let repo = tmp_repo("anvil-fixture");
+        let repo = tmp_repo("acme-fixture");
         std::fs::write(
             repo.path().join(".govern.session.toml"),
             "cli-config-dir = \".opencode\"\n",
@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     fn malformed_session_falls_back_to_legacy_then_default() {
-        let repo = tmp_repo("anvil-fixture");
+        let repo = tmp_repo("acme-fixture");
         std::fs::write(
             repo.path().join(".govern.toml"),
             "[host]\ncli-config-dir = \".augment\"\n",
@@ -322,13 +322,13 @@ mod tests {
     fn command_file_candidates_cover_both_layouts_plural_first() {
         let host = Host {
             cli_config_dir: ".opencode".to_owned(),
-            project: "anvil".to_owned(),
+            project: "acme".to_owned(),
         };
         assert_eq!(
             host.command_file_candidates("specify"),
             vec![
-                ".opencode/commands/anvil/specify.md".to_owned(),
-                ".opencode/command/anvil/specify.md".to_owned(),
+                ".opencode/commands/acme/specify.md".to_owned(),
+                ".opencode/command/acme/specify.md".to_owned(),
             ],
             "plural (claude-style) tried first, then singular (opencode)"
         );

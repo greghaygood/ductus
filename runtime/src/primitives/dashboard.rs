@@ -1186,7 +1186,7 @@ reason = "Deferred until v2 perf budget lands."
     fn dashboard_reads_session_from_same_path_regardless_of_project_name() {
         // Headline of the consolidation: the dashboard reads
         // `.govern.session.toml` at the repo root. The path doesn't depend
-        // on project name (`gov` vs `anvil`) or AI CLI (`.claude/` vs
+        // on project name (`gov` vs `acme`) or AI CLI (`.claude/` vs
         // `.augment/`). The legacy `.claude/{project}-session.json` files
         // are not consulted — adopters migrate via /ductus.
         let tmp = TempDir::new().unwrap();

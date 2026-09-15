@@ -412,20 +412,20 @@ mod tests {
 
     #[test]
     fn apply_substitutions_replaces_known_placeholders() {
-        let map = subs(&[("project", "anvil"), ("cli-config-dir", ".claude")]);
+        let map = subs(&[("project", "acme"), ("cli-config-dir", ".claude")]);
         let (out, count) = apply_substitutions(
             "Project {project} lives at {cli-config-dir}/{project}-session.json.",
             &map,
         );
-        assert_eq!(out, "Project anvil lives at .claude/anvil-session.json.");
+        assert_eq!(out, "Project acme lives at .claude/acme-session.json.");
         assert_eq!(count, 3);
     }
 
     #[test]
     fn apply_substitutions_leaves_unknown_placeholders_intact() {
-        let map = subs(&[("project", "anvil")]);
+        let map = subs(&[("project", "acme")]);
         let (out, count) = apply_substitutions("{project} and {unknown}", &map);
-        assert_eq!(out, "anvil and {unknown}");
+        assert_eq!(out, "acme and {unknown}");
         assert_eq!(count, 1);
     }
 
@@ -492,7 +492,7 @@ mod tests {
             &dst,
             vec![entry("a.md", "a.md", "update")],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
 
@@ -502,7 +502,7 @@ mod tests {
         assert_eq!(result.entries[0].action, "created");
         assert_eq!(
             fs::read_to_string(dst.join("a.md")).unwrap(),
-            "Hello anvil\n"
+            "Hello acme\n"
         );
     }
 
@@ -519,13 +519,13 @@ mod tests {
             &dst,
             vec![entry("a.md", "a.md", "update")],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
 
         assert_eq!(result.updated, 1);
         assert_eq!(result.entries[0].action, "updated");
-        assert_eq!(fs::read_to_string(dst.join("a.md")).unwrap(), "new anvil\n");
+        assert_eq!(fs::read_to_string(dst.join("a.md")).unwrap(), "new acme\n");
     }
 
     #[test]
@@ -536,7 +536,7 @@ mod tests {
         fs::create_dir_all(&dst).unwrap();
         // Pre-seed the destination with the post-substitution content so
         // `update` sees a match.
-        fs::write(dst.join("a.md"), "Hello anvil\n").unwrap();
+        fs::write(dst.join("a.md"), "Hello acme\n").unwrap();
         let mtime_before = fs::metadata(dst.join("a.md")).unwrap().modified().unwrap();
 
         let args = args_for(
@@ -544,7 +544,7 @@ mod tests {
             &dst,
             vec![entry("a.md", "a.md", "update")],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
 
@@ -576,7 +576,7 @@ mod tests {
                 entry("existing.md", "existing.md", "create"),
             ],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
 
@@ -586,7 +586,7 @@ mod tests {
         assert_eq!(result.entries[1].action, "skipped-exists");
         assert_eq!(
             fs::read_to_string(dst.join("new.md")).unwrap(),
-            "new anvil\n"
+            "new acme\n"
         );
         // Existing destination is preserved verbatim.
         assert_eq!(
@@ -615,7 +615,7 @@ mod tests {
             &dst,
             vec![entry("AGENTS.md", "AGENTS.md", "skip-if-conflict")],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
 
@@ -796,7 +796,7 @@ mod tests {
                 entry("template.md", "template.md", "skip-if-conflict"),
             ],
             vec!["pinned.md".to_string()],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
 
@@ -890,7 +890,7 @@ mod tests {
             ],
             vec![],
             subs(&[
-                ("project", "anvil"),
+                ("project", "acme"),
                 ("cli-config-dir", ".claude"),
                 ("version", "0.3.0"),
             ]),
@@ -912,7 +912,7 @@ mod tests {
         // README has no keep-literals — every placeholder substituted.
         assert_eq!(
             fs::read_to_string(dst.join("README.md")).unwrap(),
-            "anvil 0.3.0\n"
+            "acme 0.3.0\n"
         );
     }
 
@@ -933,11 +933,11 @@ mod tests {
                 keep_literals: Some(vec!["nonexistent-key".into()]),
             }],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
         assert_eq!(result.created, 1);
-        assert_eq!(fs::read_to_string(dst.join("a.md")).unwrap(), "anvil\n");
+        assert_eq!(fs::read_to_string(dst.join("a.md")).unwrap(), "acme\n");
     }
 
     #[test]
@@ -1054,7 +1054,7 @@ mod tests {
                 entry("s.md", "s.md", "skip-if-conflict"),
             ],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
 
         let first = run(&args, tmp.path()).unwrap();
@@ -1097,7 +1097,7 @@ mod tests {
             &dst,
             vec![entry("logo.png", "logo.png", "update")],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
         assert_eq!(result.created, 1);
@@ -1123,7 +1123,7 @@ mod tests {
             &dst,
             vec![entry("gen.sh", "scripts/gen.sh", "update")],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
 
         // create (dest absent) keeps the executable bit.
@@ -1195,13 +1195,13 @@ mod tests {
                 "update",
             )],
             vec![],
-            subs(&[("project", "anvil")]),
+            subs(&[("project", "acme")]),
         );
         let result = run(&args, tmp.path()).unwrap();
         assert_eq!(result.created, 1);
         assert_eq!(
             fs::read_to_string(dst.join("framework/commands/status.md")).unwrap(),
-            "/anvil:status\n"
+            "/acme:status\n"
         );
     }
 }

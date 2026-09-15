@@ -222,10 +222,10 @@ fn exec_chains_bootstrap_primitives_extract_apply_merge() {
          source-root = {source_root:?}\n\
          target-root = {target_root:?}\n\
          path = \"CLAUDE.md\"\n\
-         block = \"framework managed block\\nproject = anvil\"\n\
+         block = \"framework managed block\\nproject = acme\"\n\
          \n\
          [substitutions]\n\
-         project = \"anvil\"\n\
+         project = \"acme\"\n\
          \n\
          [[entries]]\n\
          source = \"README.md\"\n\
@@ -267,14 +267,14 @@ fn exec_chains_bootstrap_primitives_extract_apply_merge() {
     assert!(tmp.path().join("staging/README.md").exists());
     let written = fs::read_to_string(tmp.path().join("project/README.md")).unwrap();
     assert!(
-        written.contains("# anvil") && written.contains("Project: anvil"),
+        written.contains("# acme") && written.contains("Project: acme"),
         "substitution didn't take effect: {written}"
     );
     let claude = fs::read_to_string(tmp.path().join("CLAUDE.md")).unwrap();
     assert!(
         claude.contains("<!-- BEGIN ductus-managed -->")
             && claude.contains("framework managed block")
-            && claude.contains("project = anvil"),
+            && claude.contains("project = acme"),
         "CLAUDE.md missing managed block:\n{claude}"
     );
 }
@@ -338,9 +338,9 @@ fn exec_resolves_bootstrap_procedure_under_framework_bootstrap() {
 fn exec_resolves_command_via_parameterized_host_block() {
     ensure_binary_built();
     // Auggie-shaped adopter project — no `framework/commands/` tree,
-    // command file at `.augment/commands/anvil/smoke.md`, `.govern.toml`
+    // command file at `.augment/commands/acme/smoke.md`, `.govern.toml`
     // declares `[host] cli-config-dir = ".augment"` and `project =
-    // "anvil"`. With the parameterized lookup wired up, the runtime
+    // "acme"`. With the parameterized lookup wired up, the runtime
     // reads the [host] block and resolves the second candidate path
     // accordingly; without it, the second candidate would be the
     // hardcoded `.claude/commands/ductus/smoke.md` (which doesn't exist
@@ -394,10 +394,10 @@ fn exec_resolves_command_via_parameterized_host_block() {
 fn exec_resolves_command_via_opencode_singular_command_dir() {
     ensure_binary_built();
     // OpenCode-shaped adopter project — no `framework/commands/` tree,
-    // command file at `.opencode/command/anvil/smoke.md` (the `opencode`
+    // command file at `.opencode/command/acme/smoke.md` (the `opencode`
     // layout uses a *singular* `command/` directory, unlike claude-style's
     // `commands/`). `.govern.toml` declares `[host] cli-config-dir =
-    // ".opencode"` and `project = "anvil"`. The runtime tries the plural
+    // ".opencode"` and `project = "acme"`. The runtime tries the plural
     // `commands/` candidate first (absent here), then the singular
     // `command/` candidate, which resolves. Without the singular candidate
     // the run would fail with "command file not found".

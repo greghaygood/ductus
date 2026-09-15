@@ -14,7 +14,7 @@ expected = ["specify.md"]
 set-at = "2026-05-12T00:00:00Z"
 
 [substitutions]
-project = "anvil"
+project = "acme"
 cli-config-dir = ".claude"
 
 [[entries]]

@@ -839,16 +839,16 @@ mod tests {
             &MergeManagedBlockArgs {
                 path: ".gitignore".into(),
                 block: ".tmp/".into(),
-                marker: Some("anvil".into()),
+                marker: Some("acme".into()),
                 marker_style: Some("line-prefix".into()),
             },
             tmp.path(),
         )
         .unwrap();
         assert_eq!(result.action, "created");
-        assert_eq!(result.marker, "anvil");
+        assert_eq!(result.marker, "acme");
         let body = fs::read_to_string(&path).unwrap();
-        assert_eq!(body, "# anvil\n.tmp/\n");
+        assert_eq!(body, "# acme\n.tmp/\n");
     }
 
     #[test]

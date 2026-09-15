@@ -17,9 +17,9 @@ Capture recipe (maintainer-only, requires an LLM-driven host):
      confirmation gate — invoking the command is itself the consent.
   6. After the run, record:
      a. `<a-clean-tempdir>/project/framework/commands/specify.md` with
-        `{project}` substituted to `anvil` (update strategy).
+        `{project}` substituted to `acme` (update strategy).
      b. `<a-clean-tempdir>/project/framework/templates/feature.md` with
-        `{project}` substituted to `anvil` (create strategy — written
+        `{project}` substituted to `acme` (create strategy — written
         because the dest was absent in this fixture).
      c. `<a-clean-tempdir>/project/AGENTS.md` with `{project}` LITERAL
         (skip-if-conflict strategy — no substitution).

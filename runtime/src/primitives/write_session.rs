@@ -18,7 +18,7 @@
 //! The previous shape — host-specific JSON at `{cli-config-dir}/{project}-session.json`
 //! (e.g., `.claude/gov-session.json`) — coupled the session location to
 //! both the AI CLI (`.claude/` vs `.augment/`) and the adopting project's
-//! name (`gov-session.json` vs `anvil-session.json`). Consolidating onto
+//! name (`gov-session.json` vs `acme-session.json`). Consolidating onto
 //! `.ductus/session.toml` at the repo root makes the path host-agnostic,
 //! project-name-agnostic, and uniform across every adopter; the runtime
 //! no longer hardcodes any AI CLI's config directory.
@@ -435,7 +435,7 @@ mod tests {
         // No host-specific or project-specific sibling exists.
         assert!(!tmp.path().join(".claude").exists());
         assert!(!tmp.path().join(".claude/gov-session.json").exists());
-        assert!(!tmp.path().join(".claude/anvil-session.json").exists());
+        assert!(!tmp.path().join(".claude/acme-session.json").exists());
     }
 
     #[test]

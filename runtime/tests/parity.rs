@@ -110,7 +110,7 @@ fn ductus_basic_post_run_filesystem_state_matches_expectations() {
     // runtime/tests/fixtures/ductus-basic/.govern.session.toml:
     //
     // - update strategy + substitution → specify.md, feature.md with
-    //   `{project}` → "anvil"
+    //   `{project}` → "acme"
     // - skip-if-conflict strategy → AGENTS.md with `{project}` LEFT
     //   LITERAL (substitution suppressed by strategy)
     // - pinned dest → framework/constitution.md preserved verbatim from
@@ -157,8 +157,8 @@ fn ductus_basic_post_run_filesystem_state_matches_expectations() {
     // update strategy + substitution applied.
     let specify = read("framework/commands/specify.md");
     assert!(
-        specify.contains("# /anvil:specify"),
-        "specify.md must substitute {{project}} → anvil: {specify:?}"
+        specify.contains("# /acme:specify"),
+        "specify.md must substitute {{project}} → acme: {specify:?}"
     );
     assert!(
         !specify.contains("{project}"),
@@ -168,7 +168,7 @@ fn ductus_basic_post_run_filesystem_state_matches_expectations() {
     // create strategy + substitution applied (dest absent at start).
     let feature = read("framework/templates/feature.md");
     assert!(
-        feature.contains("# anvil feature template"),
+        feature.contains("# acme feature template"),
         "feature.md must substitute {{project}}: {feature:?}"
     );
 

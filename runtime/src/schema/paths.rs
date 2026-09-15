@@ -459,7 +459,7 @@ mod tests {
         let repo = tmp_repo();
         write_toml(
             repo.path(),
-            "[host]\nproject = \"anvil\"\n\n[paths]\nspecs-root = \"design\"\n\n[review]\ntech-stack-verified = true\n",
+            "[host]\nproject = \"acme\"\n\n[paths]\nspecs-root = \"design\"\n\n[review]\ntech-stack-verified = true\n",
         );
         assert_eq!(Paths::load(repo.path()).specs_root, "design");
     }
