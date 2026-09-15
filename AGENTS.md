@@ -2,7 +2,7 @@
 
 The `ductus` framework — a pipeline-driven spec-to-implementation flow scaffolded into adopted projects.
 
-> **Agents:** this file is the committed home for project rules — append durable learnings to the matching section (Gotchas, Workflow, Boundaries, Code Style, Testing). Add a new section only when none fits.
+> **Agents:** this file is the committed home for rules true of **this project alone**. Before appending, ask who the learning is true for rather than what kind of learning it is — a rule true for every project running this pipeline is constitution material and belongs in [§drift-prevention](framework/constitution.md#drift-prevention)'s *Shared knowledge stays in git*, not here. When it is project-only, append it to the matching section (Workflow, Gotchas, Boundaries, Design Principles) and add a new section only when none fits.
 
 ## Constitution
 

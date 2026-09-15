@@ -2,7 +2,7 @@
 
 {One-line project description.}
 
-> **Agents:** this file is the committed home for project rules — append durable learnings to the matching section (Gotchas, Workflow, Boundaries, Code Style, Testing). Add a new section only when none fits.
+> **Agents:** this file is the committed home for rules true of **this project alone**. Before appending, ask who the learning is true for rather than what kind of learning it is — a rule true for every project running the pipeline belongs in the constitution's *Shared knowledge stays in git* ([§drift-prevention](.ductus/constitution.md#drift-prevention)), and one true across your organization's projects belongs in the shared constitution it registers. When it is project-only, append it to the matching section (Gotchas, Workflow, Boundaries, Code Style, Testing) and add a new section only when none fits.
 
 ## Constitution
 

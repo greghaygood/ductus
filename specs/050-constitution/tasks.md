@@ -168,3 +168,14 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Land it in the constitution rather than AGENTS.md — an adopter's corpus accumulates embedded copies for the same reasons, and a contributor-side entry does not propagate; reduce the AGENTS.md entry to a mirror that references the section rather than restating it
 
 - **Done when**: `framework/constitution.md` §drift-prevention states the pointer-not-copy rule with both the detectability and the per-session cost reasons, the scenario records the 020 instance that exposed it and names what nothing enforces, and `AGENTS.md`'s entry is a contributor-side mirror rather than a second copy of the rule. 020's own §Embedded artifacts is **not** remediated here — that is its own back-edge, tracked in `specs/inbox.md`.
+
+## 19. Route knowledge by population rather than by kind
+
+- [ ] Implement the behavior described in `scenarios/knowledge-routes-by-population-not-by-kind.md`
+- [ ] State the population question in `framework/constitution.md` §drift-prevention — two ordered questions, the three tiers on the project-learning bullet, and why routing by kind conceals itself
+- [ ] Rewrite the `AGENTS.md` header (line 5) to ask who the learning is true for before naming a section, and correct its section list to this repository's actual sections
+- [ ] Rewrite `CLAUDE.md` §Auto-Memory Routing as two ordered questions rather than one repository-scoped question
+- [ ] Apply the same two edits to the shipped templates `framework/templates/project/agents.md` and `framework/templates/project/claude-md.md`, worded for an adopter
+- [ ] Record in `specs/inbox.md` that the flow-fix half is discharged and the bulk promotion pass is not
+
+- **Done when**: §drift-prevention's *Shared knowledge stays in git* states the two questions in order and routes a project learning by the three §Classification tiers; all four agent-facing surfaces point at it rather than restating it; `npx markdownlint-cli2` and `/ductus:audit` are clean, Family 25 included, with the `AGENTS.md` header still a single balanced line.
