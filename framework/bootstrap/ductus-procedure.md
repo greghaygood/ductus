@@ -27,6 +27,14 @@ Three things follow, and each is the point of the split:
 A run that halts in the pre-flight phase never reads this file — which is exactly
 the set of sections §Pre-flight abort already skips.
 
+**Where a named section lives.** The reverse of the rule the installed half
+states: a **bolded section name** or `§name` below that has no heading in *this*
+file is in `framework/bootstrap/ductus.md`, the half the adopter has installed —
+§Pre-flight Phase, §Derived values, §Shared Files, §Per-Agent Scaffolding,
+§Project Configuration, §Collect Project Inputs, §Archive fetch and extract and
+§Pre-flight abort among them. That file is already loaded whenever this one is
+read, because reaching this file means the run got past the archive fetch.
+
 ## Pre-run Migrations
 
 Adopter-side cleanup for conventions that have been removed or renamed since the adopter's last `/ductus` run. Driven by a machine-readable registry at `framework/migrations.toml` (one `[[migrations]]` entry per active removal); per-entry procedure bodies live at `framework/migrations/{id}.md`. Spec [027 — Bootstrap Migration Registry](https://github.com/stonean/ductus/blob/main/specs/027-bootstrap-migration-registry/spec.md) defines the contract.
