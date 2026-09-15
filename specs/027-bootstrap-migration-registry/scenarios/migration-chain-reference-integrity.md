@@ -68,7 +68,8 @@ input `AGENTS.md`'s second Design Principle rules out: correctness would depend
 on remembering to fill it in, and the cases where it is forgotten are the cases
 where it mattered.
 
-**Its durable home is `/{project}:analyze`, under §Project-level consistency.**
+**Its durable home is `/{project}:analyze`, under
+`framework/commands/analyze.md` §Project-level consistency.**
 A check that runs only during `/{project}` runs only while an adopter is
 already mid-bootstrap; an orphaned reference discovered a week later has no
 surface to report it. That section already exists for exactly this subject —
@@ -138,7 +139,8 @@ report-not-repair rule above applies: name them, let the operator decide.
 
 - **Where should the check live — the bootstrap procedure or an
   `/{project}:audit` family?** **Neither, as posed: `/{project}:analyze` under
-  §Project-level consistency, with the bootstrap as a second call site.**
+  `framework/commands/analyze.md` §Project-level consistency, with the bootstrap
+  as a second call site.**
   Resolved 2026-08-17 by the operator.
 
   The question offered two options and both were wrong for the same reason.
@@ -151,7 +153,8 @@ report-not-repair rule above applies: name them, let the operator decide.
   looking.
 
   `/{project}:analyze` is neither of those. It ships to adopters, it already
-  carries a §Project-level consistency section scoped to exactly this subject —
+  carries a `framework/commands/analyze.md` §Project-level consistency section
+  scoped to exactly this subject —
   framework-owned paths referenced from files outside the target feature — and
   that section is already read-only and advisory with an established
   advisory→blocking promotion path this check inherits. No new command, no new

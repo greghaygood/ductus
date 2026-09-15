@@ -115,7 +115,7 @@ dedups, preserving adopter entries (mirrors the Claude/Auggie configure posture)
 
 ## Notes
 
-- Detection (`/ductus` §Agent Selection) is unchanged — it keys on `config_dir`
+- Detection (`/ductus` §Agent Selection, in `framework/bootstrap/ductus.md`) is unchanged — it keys on `config_dir`
   existing in the project (`.agents/` for Antigravity).
 - The global plugin schema (`plugin.json` + `skills/` + `rules/` +
   `mcp_config.json` under `~/.gemini/config/plugins/`) is **out of scope** — the

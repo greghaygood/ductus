@@ -68,8 +68,9 @@ auto-wire (host-side). Idempotent: an existing `mcp.ductus` entry is a no-op.
 
 ### Region 2 — `permission`
 
-Bootstrap seed (`settings_template`, written by `install.sh` and §Permission
-Setup so the fetch/scaffold phase does not prompt):
+Bootstrap seed (`settings_template`, written by `install.sh` and
+`framework/bootstrap/ductus.md` §Permission Setup so the fetch/scaffold phase
+does not prompt):
 
 ```json
 {

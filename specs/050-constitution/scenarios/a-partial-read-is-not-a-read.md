@@ -8,7 +8,7 @@ section: "Follow-on scenarios"
 
 An agent opened this project's `AGENTS.md` with a shell command whose output exceeded the tool's cap. The harness wrote the full text to a temp file and returned the **first 2KB** as a preview, with an explicit notice naming the file it had saved. The agent used the preview, never opened the saved file, and carried on as though it had read `AGENTS.md`.
 
-The preview ended partway through §Project Structure. §Workflow's first rule — *commit directly to `main`; this repo is trunk-based; do not branch first* — sits at line 40, past the cut. The agent branched. The rule had been stated unambiguously since 2026-06-11 and had already been violated once before.
+The preview ended partway through `AGENTS.md` §Project Structure. §Workflow's first rule — *commit directly to `main`; this repo is trunk-based; do not branch first* — sits at line 40, past the cut. The agent branched. The rule had been stated unambiguously since 2026-06-11 and had already been violated once before.
 
 **[§grounding](../../../framework/constitution.md#grounding) did not catch this, and could not have.** It governs *whether* a source was consulted — "Read the file; do not recall it" — and says nothing about whether the consultation was **complete**. A read that returns 2% of a file satisfies it exactly as well as one that returns all of it. The agent did not reason from memory; it reasoned from a real read that had silently dropped 98% of its subject.
 
