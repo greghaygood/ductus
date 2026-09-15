@@ -2,13 +2,13 @@
 status: in-progress
 dependencies: [021-runtime-boundary]
 review:
-  last-run: 2026-09-15T02:17:36Z
-  reviewed-against: e9d345ae25fc2762b342e7c97e3df77f458fc555
+  last-run: 2026-09-15T16:29:08Z
+  reviewed-against: 23a5fd80c997e2863cafc3caca96155f7f200eef
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 18
-  scope: 60
+  examined: 1
+  scope: 48
   reviewed-digest:
     data-model.md: c397e90295145b1b852300e7f3604e69ea168214009c69d77a5f632c9afd6040
     scenarios/a-done-spec-has-no-transition-to-gate.md: bad3db76667fc6620b34a2a6dfa39fb6e461523984128314df82f05717a74493
@@ -43,7 +43,7 @@ review:
     scenarios/criterion-path-existence-family.md: 90be23f6f7a0182d9cee0b1aac53f960c4f66c1f6b7fe666852eaa1b5076f905
     scenarios/dashboard-primitive.md: 6fca09779d8eedf9a791ccfe87b5d63a0bfb427eff6ac41545fde8509ba49e7d
     scenarios/derive-boundary-uncommitted-spec-dir.md: ca28aaef13416801e00bc40d9d58da09c7a513b237bb659597e1efc91a0aaef5
-    scenarios/derive-references-unstaged-drift-is-reported.md: a16e7ec25a3be056668079316b47b915bf105d0292c57ffad026a0e577a458e5
+    scenarios/derive-references-unstaged-drift-is-reported.md: 358d0b1eb96d338a4dee7ee026382bd9011599407d408d5921e564ec4862d846
     scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
     scenarios/done-when-authoring-forms.md: 080f8717135b67c8400e072dae02f172e40cb0b6ad596c3e227d6cc5f90d0191
     scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
