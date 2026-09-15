@@ -47,3 +47,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Cite the four originating instances in the rule's Source paragraph so the rule is traceable to observed defects rather than speculation.
 
 - **Done when**: `scripts/lint-rule-ids.sh` accepts `QUAL-CLAIM-001`; the category appears in both the `quality-cross.md` header and `data-model.md` (table + namespace section); markdownlint and `bash scripts/audit/run-all.sh` pass; `/ductus:review` is re-run before 036 advances back to `done`.
+
+## 8. Add QUAL-DELEG-001 (delegation to shared code)
+
+- [x] Declare the `DELEG` category in the `quality-cross.md` file header, per the per-file category-declaration policy
+- [x] Register the category in `data-model.md` §Category abbreviations and add the `QUAL-DELEG` namespace entry under §Rule set
+- [x] Author the rule as SHOULD, with a Verification clause naming the enumeration a delegation owes and treating a test exercising both the widened and the narrowed direction as compliant
+- [x] State the discriminator against `QUAL-CLAIM-001` and `QUAL-GROUND-001` in the Rationale, as `QUAL-CLAIM-001` does against its siblings
+- [x] Carry the `050-constitution` signpost in the spec body so the declared cross-spec impact is discharged by a reciprocal link rather than by deleting the key
+- [x] Verify: `scripts/lint-rule-ids.sh` passes, `check-rule-ids` reports the ID known against `examined: 11`, and `npx markdownlint-cli2` is clean
+
+- **Done when**: `framework/rules/quality-cross.md` carries `QUAL-DELEG-001` with Statement / Rationale / Verification, the `DELEG` category is declared in the file header and registered in `data-model.md`, `scripts/lint-rule-ids.sh` and `check-rule-ids` accept the ID, and `050-constitution`'s `cross-spec-impact:` declaration is discharged by the signpost this spec carries.

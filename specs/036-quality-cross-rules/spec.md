@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
 review:
   last-run: 2026-09-13T18:52:58Z
@@ -12,7 +12,7 @@ review:
   reviewed-digest:
     data-model.md: d2b50651c6a32eafeb1673d032c04fe6cd31fc82d3b4d3b33faf5831260c7248
   blocking: false
-next-criterion: 10
+next-criterion: 11
 analyze:
   last-run: 2026-09-15T16:30:40Z
   analyzed-against: 70ac18dd663a29958fd2e29b4293db6f143710c8
@@ -59,6 +59,16 @@ Inaugural rule:
 - **`GROUND`** (`QUAL-GROUND-001`, SHOULD) — code whose correctness depends on an external contract it does not own (database schema, external API shape, config key, file/wire format) should bind to it so a wrong assumption fails loudly, rather than silently encoding a guess. The code-side counterpart to `/ductus:analyze`'s artifact-grounding check; both enforce constitution §grounding. Added after the inaugural delivery per the category-growth policy (`data-model.md` §Category abbreviations), consolidating the code-side grounding enforcement into this existing `QUAL`-surface home rather than a new spec.
 - **`CLAIM`** (`QUAL-CLAIM-001`, SHOULD) — a clean, empty, or in-sync result should distinguish *"examined the subject and found nothing"* from *"could not examine the subject"*, rather than emitting the same value for both. Where `STUB` governs unimplemented paths returning success and `GROUND` governs unverified assumptions inside logic, `CLAIM` governs a fully-implemented path whose **output** overstates what it verified — absence of evidence rendered as evidence of absence. Added per the same category-growth policy, derived from four instances observed in `ductus`'s own tooling rather than proposed speculatively. The rule's Source paragraph is the record of which they were, and of the later fifth instance an adopter surfaced.
 
+> **Signpost ([050-constitution](../050-constitution/spec.md)):** `QUAL-DELEG-001` was added here rather than to the
+> constitution. 050's second promotion round classified the `AGENTS.md` entry
+> *replacing a hand-rolled predicate with a shared one widens everything it was quietly doing*
+> as universal by its reword test, but the rule states a requirement about **code** rather than
+> about the pipeline — a fourth destination the three-tier classification cannot express — so
+> [§rules](../../framework/constitution.md#rules) routes it to a rule file with a permanent ID
+> and a Verification clause, through this spec's back-edge because this spec owns the `QUAL`
+> surface. 050 records the obligation in its `cross-spec-impact:` frontmatter; this signpost is
+> its discharge.
+
 ## Acceptance Criteria
 
 - [x] AC1: `framework/rules/quality-cross.md` exists, ends in the `-cross.md` suffix, and follows the canonical rule schema (`### {ID}` headings; Statement / Rationale / Verification; RFC 2119 language) per [008-security-rules](../008-security-rules/spec.md)'s data-model.
@@ -70,6 +80,8 @@ Inaugural rule:
 - [x] AC7: The file is added to the `/ductus` **Shared Files** manifest in `framework/bootstrap/ductus.md` (slotted between `performance-frontend.md` and `security-backend.md`) and is auto-selected for every stack via the `-cross.md` suffix ([024-rule-loader](../024-rule-loader/spec.md)), composing with [033-rule-surface-setting](../033-rule-surface-setting/spec.md).
 - [x] AC8: `QUAL-GROUND-001` (SHOULD) is present with Statement / Rationale / Verification, the `GROUND` category is declared in the file header and registered in the data-model, and the rule is enforced by `/ductus:review`'s quality pass as the code-side counterpart to `/ductus:analyze`'s grounding check (constitution §grounding).
 - [x] AC9: `QUAL-CLAIM-001` (SHOULD) is present with Statement / Rationale / Verification, the `CLAIM` category is declared in the file header and registered in the data-model, and its Rationale states the discriminator against `QUAL-STUB-001` and `QUAL-GROUND-001` so a reviewer choosing between the three has the distinction in hand. Its Verification carries a promotion criterion to MUST, and its Source cites the observed instances it was derived from — naming which are confirmed and which are unassessed, so the rule does not itself assert more than was verified.
+
+- [x] AC10: `QUAL-DELEG-001` (SHOULD) is present with Statement / Rationale / Verification, the `DELEG` category is declared in the file header and registered in the data-model, and its Rationale states the discriminator against `QUAL-CLAIM-001` and `QUAL-GROUND-001` — this rule governs a correct-looking substitution of one implementation for another, whose two failure directions are opposite. The Verification clause names the enumeration a delegation owes (character set, length or form, termination, ordering, input trust level) and treats a test exercising **both** the widened and the narrowed direction as compliant, since one direction proves half.
 
 ## Open Questions
 
