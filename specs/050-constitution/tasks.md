@@ -210,11 +210,11 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 
 ## 23. Promote the second round
 
-- [ ] Write each promoted entry's canonical text as a bullet in the existing section whose subject it shares — never a new section, so AC10's anchor set is unchanged and §Resolved Questions' bullets-not-sections rule holds
-- [ ] Word each promotion for an adopter: cite the constitution, the pipeline commands, the artifacts, or runtime primitives, and never a path, script, workflow, or release loop that exists only here
-- [ ] Rewrite each promoted entry's `AGENTS.md` line to name its constitution section and state nothing the constitution does not, keeping the bolded lead phrase byte-identical so `plan.md`'s table keys still resolve
-- [ ] Leave every entry in the project-only and already-promoted tables byte-identical (AC4)
-- [ ] Route the one entry that is universal but governs **code** to `framework/rules/quality-cross.md` with a permanent ID, through the owning spec's back-edge per §rules — not to the constitution
-- [ ] Verify: the anchor set is unchanged, `npx markdownlint-cli2` passes, each promoted rule's distinctive phrasing finds one normative statement and one pointer, and `plan.md`'s second-round table keys still match 1:1
+- [x] Write each promoted entry's canonical text as a bullet in the existing section whose subject it shares — never a new section, so AC10's anchor set is unchanged and §Resolved Questions' bullets-not-sections rule holds
+- [x] Word each promotion for an adopter: cite the constitution, the pipeline commands, the artifacts, or runtime primitives, and never a path, script, workflow, or release loop that exists only here
+- [x] Rewrite each promoted entry's `AGENTS.md` line to name its constitution section and state nothing the constitution does not, keeping the bolded lead phrase byte-identical so `plan.md`'s table keys still resolve
+- [x] Leave every entry in the project-only and already-promoted tables byte-identical (AC4)
+- [x] Route the one entry that is universal but governs **code** to `framework/rules/quality-cross.md` with a permanent ID, through the owning spec's back-edge per §rules — not to the constitution
+- [x] Verify: the anchor set is unchanged, `npx markdownlint-cli2` passes, each promoted rule's distinctive phrasing finds one normative statement and one pointer, and `plan.md`'s second-round table keys still match 1:1
 
 - **Done when**: every entry in `plan.md` §Classification's `#### Second round — promote` table has its canonical normative text as a bullet in `framework/constitution.md` under an existing section, each such entry's `AGENTS.md` line is a pointer stating nothing normative of its own, the anchor set before and after is identical, no project-only entry is altered, and the one entry routed to a rule file is registered there rather than here.
