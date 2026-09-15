@@ -2,16 +2,17 @@
 status: in-progress
 dependencies: []
 review:
-  last-run: 2026-09-15T16:06:25Z
-  reviewed-against: f352f6b8ba78759b69d506ed0cb0649ffcf6275a
+  last-run: 2026-09-15T18:22:57Z
+  reviewed-against: 84218ec14fb01780ebc1c907f3b5e229896212d0
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 11
-  scope: 11
+  examined: 8
+  scope: 8
   reviewed-digest:
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
+    scenarios/a-measurement-states-its-method-and-units.md: 4c250a480c11e9788058f1012b647daa14aba2036d4a3baa9d0c1ba3c5965b2a
     scenarios/a-partial-read-is-not-a-read.md: 8d6851e20f8a2e9f083434a37cbf39ab3bca533ec819a8a258197e4afb797b07
     scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
     scenarios/a-retired-filename-leaves-a-decision-record.md: f84a3177744eb03a859d82a4017495c24bcf24466448b7c49ad1a253147ab581
