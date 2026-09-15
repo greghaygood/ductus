@@ -142,13 +142,89 @@ to *matches the wrong entry*.
 **Coverage, measured 2026-09-15 against `AGENTS.md` at 119 rule-bearing entries**
 (Workflow 49, Gotchas 59, Boundaries 3, Design Principles 8): *unclassified =
 rule-bearing − (table-keyed ∪ constitution-citing)* = 119 − 75 = **44** (Workflow 7,
-Gotchas 34, Design Principles 3). All 54 table entries still resolve to a live entry,
+Gotchas 34, Design Principles 3) — **discharged to 0 by the second round below, which
+classifies exactly those 44.** Verified rather than asserted: the 98 keys both rounds
+carry resolve to 98 distinct entries, and 98 ∪ 47 citing = 119, the whole rule-bearing
+set. All 54 first-round entries still resolve to a live entry,
 and 47 in-scope entries cite a `framework/constitution.md#` anchor. Count the citing
 side as **rule-bearing bullets in the four in-scope sections** — a bare
 `grep -c` over the file answers 51, because it counts anchor-bearing *lines*
 including two outside those sections, and 51 is right about lines while 44 needs 47.
 This is a **notice, never a gate**: promotion has to stay free, or the honest choice
 between a growing backlog and a silent one pushes toward silence.
+
+### Second round — classified 2026-09-15
+
+The 44 entries the coverage check above reported as unclassified, judged by the
+same reword test and recorded the same way (AC1). **26 to promote, 1 routes to a
+rule file rather than here, 1 already promoted in substance, 16 project-only.**
+This is a second deliberate round, not a standing requirement — AC1 rejects the
+latter and is unchanged. Promotion itself is *not* done by this task; this is the
+worklist, exactly as the first round's classification preceded its promotions.
+
+#### Second round — promote
+
+| Entry | Reason |
+| --- | --- |
+| `examined` counts the in-scope files the passes *read*. A file you are confident about by other means is named in the Summary, never folded into the numerator | The field ships on every review record; the generated-mirror temptation is the adopter's too |
+| The local gate is the whole CI surface, not the checks that look related to your change | **R** — stated as *pick the gate from the blast radius, not the file extension*, dropping this repo's script list |
+| After pushing, read every workflow's run — not the one whose name matches what you changed | **R** — a green *chosen* workflow is evidence about itself; true of any multi-workflow project |
+| Verify what a commit actually contains before reporting it landed — `git show --stat`, not the absence of an error | Git discipline behind every completion claim; `git show --stat` plus `git status --short` answer different questions |
+| Read the clock and read the sha — never write either from recollection | Both values are adopter-written fields on the review and analyze records |
+| A spec's review diff base moves forward on every reopen, so the window shrinks — measure it before reaching for `--since` | `compute-review-scope` ships; every adopter's base moves on every back-edge |
+| `remove-inbox-item` takes the bullet text, so never drive it from line numbers — each removal shifts the lines under you | **R** — match by text and assert uniqueness; never edit by position over a list that shrinks as you walk it |
+| A scenario's link to a sibling spec needs `../../`, and the depth error is the half the hook catches | Adopters have scenarios and sibling specs, and the dependency derivation ships with the cycle check |
+| "Record" spans five destinations in this framework — name the artifact and section, never the verb alone | **R** — the five destinations are all adopter-facing commands with different gate semantics |
+| Piping a gate command's output replaces its exit status — `cmd \| tail` reports `tail`'s success, not `cmd`'s | **R** — never pipe a command whose exit code you intend to read; the shown output is genuine and the status is manufactured |
+| A `§` reference resolves by *line*, and intra-document by longest-first heading match — a line wrap alone breaks it | Adopters cite constitution anchors and run the anchor resolver |
+| A review record written before `ductus-v0.49.0` carries no `examined` and no `reviewed-digest`, so a green `done` spec may be one nothing can judge | **R** — stated by capability rather than by version; adopters upgrade through the same boundary and hold the same records |
+| An acceptance criterion's parenthetical enumeration is a claim of its own, and it drifts from what the artifact does | Adopters write criteria carrying enumerations, and the enumeration goes stale while the requirement holds |
+| A spec with no recorded `in-progress` transition derives an *empty* diff base, and `write-review` then resolves `scope: 0` | Both primitives ship; the incoherent `examined`-over-zero record is reachable in any corpus |
+| A sweep can make a quoted instruction point at itself, and the identical sentence may be correct one file over — classify by *who emits it*, never by the string | **R** — classify a swept user-facing string by *who emits it*; adopters rename things too |
+| A spec body must not carry a point-in-time status section — it goes stale silently and then contradicts its own frontmatter | Pure spec-authoring rule; pipeline state is derived everywhere, not only here |
+| Only a spec's durable contracts stale its review — `scenarios/*.md` and `data-model.md`, nothing else — and that is what prices a corpus sweep | The digest covers `scenarios/*.md` and `data-model.md` for every adopter; this is what prices any corpus sweep |
+| `criterion-path-existence` only sees a path inside backticks — an unbackticked one is not a finding, not a skip, and not a candidate | **R** — stated as how to write a path claim so it is checkable (backticked, interior slash, repo-relative) |
+| `unexamined` cannot be measured while the spec is `in-progress`, and the gate's own ordering is what hides that | The family is `done`-only and the gate ordering is the shipped one, so the trap is identical in any adopter repo |
+| A spec's own completion commit can destroy content, and a `## Heading` absorbed into an unterminated code span is invisible to every check this project has — including the gate that reads it | **R** — drops the Family-25 scoping note; the blindness is in the shared markdown reader every adopter uses |
+| `set-status` takes `--from` and `--to`, not `--status` — and the refusal is the useful half | **R** — the two-sided form's rationale (a transition computed from a stale read fails loudly) is the general half |
+| A recorded measurement can encode a constraint you have not found yet — when a fresh derivation disagrees with a recorded one, hunt the constraint before concluding the record is wrong | §grounding discipline for the case where the older measurement is the better-informed one |
+| `write-review` derives `scope` itself, so a count you measured earlier and typed into the Summary can contradict the record it is written into — and nothing compares the two | One call writes both, so nothing can compare them; true wherever the primitive runs |
+| Removing an embedded copy is a corpus sweep, not a deletion — grep for what pointed at it, including the artifacts that *describe* it | The pointer-not-copy rule already ships; this is what *replacing* one costs, classified by tense |
+| A `data-model.md` that claims "authoritative shapes" drifts from the runtime silently — check it against a record the runtime actually wrote, not against the code | **R** — check a schema table against an artifact the writer actually wrote, not against the code |
+| A conformance test whose subject is drawn from corpus state can go vacuous, and its vacuity guard will then assert that an unhealthy corpus must exist | Extends §design-principles' check-that-cannot-run to the case where the vacuity guard inverts |
+
+#### Second round — routes to a rule file, not here
+
+| Entry | Reason |
+| --- | --- |
+| Replacing a hand-rolled predicate with a shared one widens everything it was quietly doing, not just the part you meant to fix | Universal, but it governs *code* rather than the pipeline, so §rules puts it in a `quality-cross` rule with an ID rather than in this document |
+
+#### Second round — already promoted in substance
+
+| Entry | Reason |
+| --- | --- |
+| A feature directory is not necessarily `NNN-slug` — ask `parse_feature_dir`, never the first three bytes | §numbering already states that the membership rule is defined in exactly one place and is called rather than restated; what remains here is the Rust function name |
+
+#### Second round — project-only
+
+| Entry | Reason |
+| --- | --- |
+| A pushed tag is not a published release, and `release not found` is the *normal* answer for the ~11 minutes in between | This project's release pipeline, its job order and its crates.io step |
+| Do not capture an observation about the pipeline's own machinery while reviewing framework work — `specs/inbox.md`'s "do not frontfill" rule binds agents too | The premise — a review executed *by* the machinery it reviews — holds only for this framework's own repository |
+| After changing runtime source, verify through the built binary — not the MCP tools | Adopters do not change runtime source |
+| `framework/commands/help.md` is generated — hand-edits to it are reverted on the next commit | Framework build step |
+| Registering a runtime primitive is five sites, and two of them are only found by tests — de-registering one is the same five | Framework build step |
+| `check-artifacts`' `skipped` array names targets that could not be *reached*, never subjects that were empty | About *authoring* a check family; the interpretive half is already §design-principles |
+| A prose-only edit to `framework/commands/*.md` can break a Rust test, so run `cargo test` before calling such a change verified | Framework build step |
+| A new slash command wires into five places outside `framework/commands/`, and two of them are load-bearing for adopters | Framework build step |
+| Never write a literal `ductus-vX.Y.Z` into a `framework/commands/*.md` prose line — `BLESS` will template it into a time bomb | Framework build step, and the trap is this repo's parity goldens |
+| An apostrophe anywhere in an `/audit` family's embedded python closes the shell string holding it | The audit is maintainer-only |
+| `check-orphaned-references` used to report `AGENTS.md` → `specs/rules/` on every run in this repo, and it was never a finding. Fixed in `ductus-v0.49.4` — the primitive now excludes it itself, and this repo reports `findings: 0` | Turns entirely on this repository keeping its rule files outside the adopter-side path |
+| In a `set -e` script, `[ test ] && cmd` as the *last* command of a block exits the script when the test is false | Shell idiom in this project's own tooling rather than pipeline governance |
+| clap expands `{n}` in a doc comment as a newline, so a `#[derive(clap::Args)]` field's docs cannot contain one | Runtime source detail |
+| Editing `framework/commands/implement.md` stales the `implement-basic` parity golden, because the golden records the fixture repo's commit shas | This repo's parity fixture |
+| `cargo` exits 101 from the repo root, and 101 is also what a failing test suite returns — so a mis-rooted probe reads exactly like the failure it was meant to prove | This repo's toolchain and the harness's working-directory behaviour |
+| `grep` here is ugrep, and a bounded-context pattern exceeds its complexity limit — erroring once per file, which reads exactly like a scan that found nothing | This machine's tooling, not the framework's |
 
 `R` marks a verdict reached through the reword test rather than directly.
 

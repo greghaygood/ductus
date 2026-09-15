@@ -188,3 +188,11 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Record the measured coverage (*unclassified = rule-bearing − (table-keyed ∪ constitution-citing)*) with the in-scope denominator it needs, as a notice and never a gate
 
 - **Done when**: `plan.md` §Classification is keyed by lead phrase, the coverage figure is re-derivable from `AGENTS.md` on disk rather than from git archaeology, and the citing-side denominator is stated so a bare `grep -c` over the file is not mistaken for it. The standing-notice *rendering* is not done here — it is runtime work on the `inbox-standing` precedent and carries a release.
+
+## 21. Classify the second-round entries
+
+- [ ] Judge each of the 44 entries the coverage check reports as unclassified against the reword test, one verdict and one reason each
+- [ ] Record them in `plan.md` §Classification as a second round, keyed by lead phrase like the first
+- [ ] Note that promotion is not performed by this task — the classification is the worklist, as it was in the first round
+
+- **Done when**: every entry the coverage check reported is classified with its reason, the unclassified count is discharged to zero, and `plan.md` records that this is a second deliberate round rather than the standing requirement AC1 rejects. The promotions themselves are the next task and are deliberately not started here.
