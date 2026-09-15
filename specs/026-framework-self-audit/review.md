@@ -1,14 +1,14 @@
 ---
 spec: 026-framework-self-audit
-reviewed-at: 2026-09-15T13:02:08Z
-reviewed-against: 880e59a0906dbdbb273784d28079446d6f01d856
-diff-base: c1b00ea8661acd9a55392c39947b1569773edfcd
+reviewed-at: 2026-09-15T18:36:19Z
+reviewed-against: 1110d6fc9634a77b5fa09b53f3341beef902cfa7
+diff-base: 6014d53caae11bcba77bc868829234207e49b459
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 8
-scope: 39
+examined: 18
+scope: 20
 skipped-passes: []
 ---
 
@@ -16,17 +16,25 @@ skipped-passes: []
 
 ## Summary
 
-Reviewed the `/ductus:init` retirement (cc870e18) and the ductus-v0.49.7 release (880e59a0) against 026's window. Rule files: all 11 loaded via `discover-rule-files`. Five passes run — security, reuse, quality, efficiency, simplicity — 0 MUST, 0 SHOULD, 0 low-confidence.
+Five passes over the resolved scope. **`examined: 18` of `scope: 20`**, and the two not counted are named individually rather than folded into the numerator.
 
-Scope and what was NOT read. `examined: 8` of `scope: 39`, `diff-base c1b00ea8` (the parent of the reopen commit, so the pass's own edits are inside the window). This is a deliberately small numerator over a wide scope and the split is stated rather than implied. **Read end to end**: `AGENTS.md`, `framework/constitution.md`, `runtime/tests/mechanical_sweep_parity.rs`, `scripts/gen-claude-commands.sh`, `scripts/audit/manifest-parity.sh`, `scripts/audit/check-zero.sh`, `specs/026-framework-self-audit/scenarios/host-namespace-parity.md`, `version`.
+**`.claude/commands/ductus/audit.md`** — the generated mirror of `framework/commands/audit.md`, which was read in full. `scripts/gen-claude-commands.sh` was re-run in this pass and reported all 18 command copies regenerated, so there are good grounds to believe it correct; that is confidence, not a read, and `examined` is only the second. **`.github/workflows/markdown-only-pipeline.yml`** — **absent**. It stays in scope because `plan.md` lists it, and its absence is grounded rather than assumed: 026's own §Resolved Questions records that `048-govern-acquired-runtime` removed that workflow and the `/audit` step now runs as `(h) Framework self-audit` in `.github/workflows/framework-checks.yml`.
 
-**Seven in-scope paths do not exist and could not be read**, none folded into the numerator: `.claude/commands/ductus/init.md`, deleted by this change; the five `specs/004-tech-stack-selection/` artifacts, removed by this change; and `.github/workflows/markdown-only-pipeline.yml`, which predates this pass and was already absent. They stay in scope because `compute-review-scope` reads the plan's Affected Files.
+The other 18 were read in full this session, including all eleven rule files `discover-rule-files` reports under `selected`, loaded before the passes ran.
 
-**Read only in part, named rather than counted**: `specs/026-framework-self-audit/spec.md` — all 25 acceptance criteria were read through `read-spec` and the §Behavior §2 Manifest-parity block was read and rewritten here, but the file was not read whole; `framework/commands/audit.md` and `scripts/audit/README.md` were read only at their Family 2 entries, which is what this change could falsify — both list the family by name with no behavioural claim attached, so the header rewrite contradicts neither. The three `runtime/src/` doc comments corrected by 0.49.7 were read with their enclosing functions (`load_template`, `template_candidates`), which is how the corrected text was confirmed against behaviour rather than assumed.
+**Security.** No source in scope but shell. The change adds six alternatives to a literal-built regex in `rename-sweep-residue.sh`; no input crosses a boundary, nothing is eval'd on user data, and `shellcheck -S warning` is clean over all 55 tracked scripts. The surface-specific rule sets (security-backend/frontend, api-backend, concurrency, observability, reliability, performance, accessibility, configuration-cross) verify design-time commitments this change makes none of — read and found to have no subject here, which is a different statement from checked-and-passed.
 
-**Not read at all, and named individually rather than summarised**: `.claude/commands/ductus/audit.md` (generated from `framework/commands/audit.md`, whose Family 2 entry was read; `scripts/gen-claude-commands.sh --check` reported in sync this pass — grounds to believe it correct, and not a read); `.github/workflows/runtime-release.yml`; `runtime/legacy-prose-commands.txt`; and seven sibling audit families this change does not touch — `adopter-shell-behavior.sh`, `cross-doc-consistency.sh`, `introducing-drift.sh`, `placeholder-roundtrip.sh`, `sibling-coupling.sh`, `ssot-invariants.sh`, `template-alignment.sh`. What covers them instead is `scripts/audit/run-all.sh`, which ran green after the commit and is the gate those files exist to serve; that is evidence about their behaviour, not a substitute for having read them.
+**Quality — `QUAL-CLAIM-001`, the rule this change is most exposed to, since the family *is* a claim-checker.** Three checks. The widened family still reports its examined-file count on stderr and still treats a degenerate scan as a finding rather than a pass, so the property that made it honest is unchanged. The header states its own limit outright: a ditransitive sentence (*"give ductus its due"*) would be a false positive, measured absent across the 584 tracked markdown files as of today. And the correction it carries is of exactly this shape — the family previously exited 0 over 514 files with live residue present, which is a check that could not see what it exists to find, and the record now says so instead of retaining *"exactly the 8 real sites, no others"*.
 
-Quality pass, verified rather than assumed. Family 2's installer sub-check is retired rather than deferred, and the script carries no code for it — the body implements the MCP permission half alone, so the header change removes a stale deferral note and deletes nothing executable. `check-zero.sh` drives `gen-claude-commands.sh --check`, which exits 0 with the file gone and `init.md` no longer in `expected`. The Family 19 / `check-review-gate` parity test is the one real defect this pass surfaced: it had been non-vacuous only because 020 carried a stale-but-sweep-exempt `data-model.md`, so reopening 020 emptied its subject. Fixed in 0.49.7 with a fixture-backed test that cannot go vacuous, proven failable by probe in both directions.
+**Reuse.** The construction count is now stated in five places — script header, scenario, AC17, `framework/commands/audit.md`, `scripts/audit/README.md`. That is the framework's existing shape for all 37 families and Family 28 mechanically holds only the family-number registration, not the descriptions, so the prose copies are held by discipline. The disposition taken was the sweep `AGENTS.md` prescribes for a canonical set: all five were located and updated in one pass, and the task records that as a subtask rather than leaving it to be rediscovered.
+
+**Simplicity.** `POSSESSIVES` is a separate variable rather than six more alternatives inside `FOLLOWERS`. Functionally identical; kept separate because the scenario and both registries now describe *three* constructions and a reader matching prose to code should find three lists.
+
+**Two things the probe found that reading did not, recorded because they are the evidence the widening is calibrated rather than guessed.** Probing the **narrowed** direction — not the widened one — is what caught both: `my` had to be dropped from the possessive class because `README.md` documents adoption as `/ductus my-project`, so the front page puts the name before `my` in correct prose; and the inbox item recording the ninth site had quoted the defect in `*italics*` without the double quotes the family's stripper protects, so the widened run reported the item describing the bug. Neither was predictable by reading the pattern.
+
+**Calibration, re-derived rather than quoted.** `govern its` occurs exactly once at `9da4a7ae^` — the `api-backend.md` site — and `their` / `our` / `your` / `his` / `her` zero times each. The whole closed class ships anyway because the existing lists are grammar-calibrated, not frequency-calibrated: at that same commit three of the seven followers (`whether`, `these`, `those`) and seven of the eight modals had zero instances and are listed regardless. That measurement is what makes adding the plural consistent with precedent rather than speculative.
+
+**Pre-reopen window, measured before the flip because it is not recoverable after it:** base `c1b00ea8`, **81 modified-since / 93 in scope at 52,446 bytes**. Post-reopen: **8 / 20 at 4,234 bytes** on `6014d53c`, a 12x byte reduction, both legs inline.
 
 ## MUST violations (blocking)
 

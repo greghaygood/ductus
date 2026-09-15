@@ -2,13 +2,13 @@
 status: in-progress
 dependencies: [017-derive-dont-ask, 022-deterministic-runtime, 023-govern-refinement, 024-rule-loader, 025-rule-opt-out]
 review:
-  last-run: 2026-09-15T13:02:08Z
-  reviewed-against: 880e59a0906dbdbb273784d28079446d6f01d856
+  last-run: 2026-09-15T18:36:19Z
+  reviewed-against: 1110d6fc9634a77b5fa09b53f3341beef902cfa7
   must-violations: 0
   should-violations: 0
   low-confidence: 0
-  examined: 8
-  scope: 39
+  examined: 18
+  scope: 20
   reviewed-digest:
     scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
     scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
@@ -20,7 +20,7 @@ review:
     scenarios/family-19-says-what-it-examined.md: 5bcffd3a32d015c740ee9ca232d86f4cb7d71f251705eb3d9f22cce1198ed1ed
     scenarios/family-22-adopter-shell-behavior.md: 2eac3b7db9587dd354168941be8a1816d11a9e6f7fb27ecd8b8f9c9f8f719754
     scenarios/family-23-sweep-target-manifest-parity.md: 9dfa1299cdeb27ad691c66d6e9adeb68187c7c60039576cafd6ba55f29274b38
-    scenarios/family-24-rename-sweep-residue.md: 7853d334d6836dfb565348172ef47377f73aa1687ab0e22f04d1e3cd18f63634
+    scenarios/family-24-rename-sweep-residue.md: 41d6c829f0851a3caab11650d24b7100992667969ee3f21454141b482819e132
     scenarios/family-25-unbalanced-inline-markup.md: bddc8f9f37f21e3404f24bf77f732d2adc591faa76038983b3b44a41e640e1c6
     scenarios/family-26-broken-relative-links.md: 60627b24354610f3e0f819abe7d0603faa9644c27e8cee5163a452804bb94b6c
     scenarios/family-27-done-spec-unchecked-criteria.md: d164ba1fedaababcb88f5a4062b150ae8bd7e017699d7ac6d310292a25489bf9
