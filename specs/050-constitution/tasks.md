@@ -179,3 +179,12 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Record in `specs/inbox.md` that the flow-fix half is discharged and the bulk promotion pass is not
 
 - **Done when**: §drift-prevention's *Shared knowledge stays in git* states the two questions in order and routes a project learning by the three §Classification tiers; all four agent-facing surfaces point at it rather than restating it; `npx markdownlint-cli2` and `/ductus:audit` are clean, Family 25 included, with the `AGENTS.md` header still a single balanced line.
+
+## 20. Re-key §Classification so the coverage check is re-derivable
+
+- [ ] Derive the survey-era positional-ID → lead-phrase mapping from `AGENTS.md` at the classification pass's own commit, and verify it reproduces the recorded 54
+- [ ] Re-key all 54 `plan.md` §Classification rows to the `AGENTS.md` lead phrase, keeping the positional ID in parentheses so the section's prose references still resolve
+- [ ] State in the section preamble why the positional ID cannot stay the key, and state the lead phrase's own limit — a reworded entry stops matching
+- [ ] Record the measured coverage (*unclassified = rule-bearing − (table-keyed ∪ constitution-citing)*) with the in-scope denominator it needs, as a notice and never a gate
+
+- **Done when**: `plan.md` §Classification is keyed by lead phrase, the coverage figure is re-derivable from `AGENTS.md` on disk rather than from git archaeology, and the citing-side denominator is stated so a bare `grep -c` over the file is not mistaken for it. The standing-notice *rendering* is not done here — it is runtime work on the `inbox-standing` precedent and carries a release.
