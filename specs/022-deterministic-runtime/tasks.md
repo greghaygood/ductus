@@ -439,3 +439,9 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [ ] Implement the behavior described in `scenarios/an-empty-scope-flag-does-not-decide-the-denominator.md`
 
 - **Done when**: `resolve_scope_size` derives `scope` through `compute-review-scope` in every case, with no `empty-scope` short-circuit; a genuinely empty window still resolves to 0 and the empty-scope Summary still renders; a false empty-scope run carries the real `scope: N` beside a zero `examined`, which Family 31 already reports as `examined-nothing`; and the behaviour is pinned by tests in `write_review`'s suite. The errored-derivation half is deferred with a recorded trigger on the scenario, not left silent.
+
+## 118. The analyze record states what it captured
+
+- [ ] Implement the behavior described in `scenarios/the-analyze-record-states-what-it-captured.md`
+
+- **Done when**: `write-analysis` accepts `captured-issues` and records the count in the `analyze:` block beside `advisory`; `WriteAnalysisResult` reports it; `framework/commands/analyze.md` step 17 documents the field and says why the two counts need not agree; 022's `data-model.md` result-shape registry carries the new Args and Result shape; and both the agreeing and diverging cases are pinned by tests in `write_analysis`'s suite.

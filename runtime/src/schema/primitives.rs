@@ -623,6 +623,27 @@ pub struct WriteAnalysisArgs {
     #[serde(default)]
     #[arg(long = "unexamined-reason", value_parser = parse_reason_count)]
     pub unexamined_by_reason: Vec<(String, u32)>,
+    /// Inbox items this run captured, recorded as `analyze.captured-issues`.
+    ///
+    /// The mirror of `write-review`'s field of the same name, and it exists
+    /// for the reason `unexamined` does. `advisory` states how many findings
+    /// the run produced; §brownfield-inbox requires that a findings-producing
+    /// command *record* them rather than only print them — but the appends
+    /// are separate `append-inbox` calls the host makes, so a run that
+    /// recorded `advisory: 5` and captured nothing was byte-identical to one
+    /// that captured all five. Nothing could tell them apart: the review side
+    /// has `check-review-agreement` pinning `review.md` to its frontmatter,
+    /// and analyze has no counterpart because it writes no report artifact.
+    ///
+    /// Recorded rather than derived, deliberately. Counting inbox bullets
+    /// here would make `captured-issues == advisory` look like an invariant
+    /// when it is not: `append-inbox`'s `dedup-prefix` guard legitimately
+    /// suppresses a re-append, so a correct re-run captures fewer than it
+    /// found. What the field buys is that the two numbers are both *stated*,
+    /// so a divergence is legible and an agreement check becomes writable.
+    #[serde(default)]
+    #[arg(long = "captured-issue")]
+    pub captured_issues: Vec<String>,
 }
 
 /// Parse a `reason=count` pair for `--unexamined-reason`.
@@ -665,6 +686,9 @@ pub struct WriteAnalysisResult {
     /// opposed to being inserted for the first time. Reported so a caller can
     /// tell a re-analysis from a spec leaving the grandfathered population.
     pub replaced: bool,
+    /// The `captured-issues` count actually written, so a caller can confirm
+    /// the record states what it passed.
+    pub captured_issues: u32,
 }
 
 /// Parsed spec frontmatter.

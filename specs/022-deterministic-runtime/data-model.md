@@ -404,14 +404,16 @@ Args:
   "feature": "042-widget", "analyzed-at": "2026-09-06T14:00:00Z",
   "analyzed-against": "abc123", "hard-fail": 0, "blocking-findings": 0,
   "advisory": 8,
-  "unexamined-by-reason": { "not-a-live-claim": 79, "root-absent": 26 }
+  "unexamined-by-reason": { "not-a-live-claim": 79, "root-absent": 26 },
+  "captured-issues": ["convention: link-adjacent-drift — ... — specs/042-widget/spec.md"]
 }
 ```
 
 Result:
 
 ```json
-{ "spec-path": "specs/042-widget/spec.md", "blocking": false, "unexamined": 105, "replaced": true }
+{ "spec-path": "specs/042-widget/spec.md", "blocking": false, "unexamined": 105, "replaced": true,
+  "captured-issues": 1 }
 ```
 
 Writes the spec's `analyze:` frontmatter block — the durable record that `/{project}:analyze` ran, and what `check-review-gate` reads to hold a spec out of `done` until it has. Splices without disturbing sibling keys, and refuses a spec whose frontmatter does not parse rather than recording a clean run into it.

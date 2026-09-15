@@ -171,6 +171,7 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         blocking,
         unexamined,
         replaced,
+        captured_issues: u32::try_from(args.captured_issues.len()).unwrap_or(u32::MAX),
     })
 }
 
@@ -200,6 +201,9 @@ fn render_analyze_yaml(
     let _ = writeln!(block, "  blocking-findings: {}", args.blocking_findings);
     let _ = writeln!(block, "  advisory: {}", args.advisory);
     let _ = writeln!(block, "  unexamined: {unexamined}");
+    // Beside `advisory`, because the pair is the point: how many findings this
+    // run produced, and how many of them it actually landed in the inbox.
+    let _ = writeln!(block, "  captured-issues: {}", args.captured_issues.len());
     // The record's description of its own subject. Paths are feature-relative
     // and the digests are hex, so neither needs quoting; both are derived from
     // the filesystem rather than supplied, so neither can carry a newline.
@@ -269,7 +273,50 @@ mod tests {
             advisory: 0,
             unexamined: 0,
             unexamined_by_reason: vec![],
+            captured_issues: vec![],
         }
+    }
+
+    #[test]
+    fn records_captured_issues_beside_advisory() {
+        // The pair is the point: `advisory` says how many findings the run
+        // produced, `captured-issues` how many it landed in the inbox. Before
+        // this field a run that recorded `advisory: 3` and captured nothing
+        // was byte-identical to one that captured all three, and nothing
+        // could tell them apart — the review side has
+        // `check-review-agreement`, and analyze has no counterpart because it
+        // writes no report artifact to compare against.
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 3;
+        a.captured_issues = vec![
+            "convention: a.rs names a retired path".into(),
+            "bug: b.rs drops an error".into(),
+            "perf: c.rs re-reads the config per call".into(),
+        ];
+        let result = run(&a, tmp.path()).unwrap();
+        assert_eq!(result.captured_issues, 3);
+        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
+        assert!(spec.contains("  advisory: 3"));
+        assert!(spec.contains("  captured-issues: 3"));
+    }
+
+    #[test]
+    fn a_divergence_between_advisory_and_captured_is_recorded_not_smoothed() {
+        // The two numbers are NOT required to agree, and the field would be
+        // worse than useless if they were forced to: `append-inbox`'s
+        // dedup-prefix guard legitimately suppresses a re-append, so a correct
+        // re-run captures fewer than it found. What must not happen is the
+        // divergence being invisible.
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 4;
+        a.captured_issues = vec![];
+        let result = run(&a, tmp.path()).unwrap();
+        assert_eq!(result.captured_issues, 0);
+        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
+        assert!(spec.contains("  advisory: 4"));
+        assert!(spec.contains("  captured-issues: 0"));
     }
 
     #[test]
