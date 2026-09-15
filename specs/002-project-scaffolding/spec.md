@@ -1,6 +1,6 @@
 ---
 title: "002-project-scaffolding — spec"
-status: in-progress
+status: done
 dependencies: [000-slash-commands, 001-system-spec-templates]
 tags: [templates, bootstrap]
 review:
@@ -15,17 +15,18 @@ review:
   blocking: false
 next-criterion: 8
 analyze:
-  last-run: 2026-09-13T12:56:15Z
-  analyzed-against: bb00da17511252d54407291db83b42f01645089a
+  last-run: 2026-09-15T16:30:40Z
+  analyzed-against: 70ac18dd663a29958fd2e29b4293db6f143710c8
   hard-fail: 0
   blocking-findings: 0
-  advisory: 1
+  advisory: 0
   unexamined: 0
+  captured-issues: 0
   analyzed-digest:
-    plan.md: b96d5509760876f40a9baa1feaf8ba7ce3b7491c77e2d914ee2bce8d4dffb27e
+    plan.md: 7d0e457e8d32e052d2573837ef765572891578f2bb6c6aade251cea331379d06
     review.md: 50a9022a4b2ef92bdb9748e2c5d932d38f1c15ea12078c5e2901d0256c2d1293
-    spec.md: 91b3cd6ddf9af88e522c951e6c2c88abaa01d76c79f647770f9d328efb788db2
-    tasks.md: f20f54d7009f4906a984cd6f54fb0345813d757f12075268ddca8a87aec1ca20
+    spec.md: 650be7fa96bb4f196c0e01ba8b973f11bf021742d575394cade7e420a3189255
+    tasks.md: 9d5d750873ac5ed9a60a32a65c0399554b038edfd7e12e89683168ddba54dae0
   blocking: false
 ---
 

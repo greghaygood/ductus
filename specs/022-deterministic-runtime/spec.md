@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [021-runtime-boundary]
 review:
   last-run: 2026-09-15T16:29:08Z
@@ -112,8 +112,8 @@ review:
   blocking: false
 next-criterion: 32
 analyze:
-  last-run: 2026-09-15T02:18:59Z
-  analyzed-against: f2e46900c00d0cddc7b8e4e69bf03e108380b299
+  last-run: 2026-09-15T16:30:40Z
+  analyzed-against: 70ac18dd663a29958fd2e29b4293db6f143710c8
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
@@ -122,7 +122,7 @@ analyze:
   analyzed-digest:
     data-model.md: c397e90295145b1b852300e7f3604e69ea168214009c69d77a5f632c9afd6040
     plan.md: 84cd0d8ec5cc089c4c4d7961258140dc777edc6cd36c9220a0806e30fcbb14ec
-    review.md: e5bdef515f764d6773bfb0b2f75468973f374adadcd3407648b94b965bee9444
+    review.md: a3b33aec2f2c0c46bd89941a43b4e0cdb4c06d31fa012835069bc7fd62dde6ff
     scenarios/a-done-spec-has-no-transition-to-gate.md: bad3db76667fc6620b34a2a6dfa39fb6e461523984128314df82f05717a74493
     scenarios/a-review-states-what-it-read.md: a9d8ffdd823dfec6ea56f7c57d84e375e39adfbaf83dc61e9a16099d1828bf1b
     scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -155,7 +155,7 @@ analyze:
     scenarios/criterion-path-existence-family.md: 90be23f6f7a0182d9cee0b1aac53f960c4f66c1f6b7fe666852eaa1b5076f905
     scenarios/dashboard-primitive.md: 6fca09779d8eedf9a791ccfe87b5d63a0bfb427eff6ac41545fde8509ba49e7d
     scenarios/derive-boundary-uncommitted-spec-dir.md: ca28aaef13416801e00bc40d9d58da09c7a513b237bb659597e1efc91a0aaef5
-    scenarios/derive-references-unstaged-drift-is-reported.md: a16e7ec25a3be056668079316b47b915bf105d0292c57ffad026a0e577a458e5
+    scenarios/derive-references-unstaged-drift-is-reported.md: 358d0b1eb96d338a4dee7ee026382bd9011599407d408d5921e564ec4862d846
     scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
     scenarios/done-when-authoring-forms.md: 080f8717135b67c8400e072dae02f172e40cb0b6ad596c3e227d6cc5f90d0191
     scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
@@ -221,7 +221,7 @@ analyze:
     scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
     scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
     scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-    spec.md: 83434d44252d77d9119e2d724b428a95e621e81f6c7d23dc5013f7228d70a5ac
+    spec.md: c72bb6640d6378652a272d46641d68d9e7e11bb94ea7b2baa87cdde2695c4fe0
     tasks.md: 3ebccb30162cf9e72af308b3db22f38bd78dd0e9a77e449deec53578f4cc4f41
   unexamined-by-reason:
     not-a-live-claim: 2

@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
 review:
   last-run: 2026-09-13T18:52:58Z
@@ -14,18 +14,19 @@ review:
   blocking: false
 next-criterion: 10
 analyze:
-  last-run: 2026-09-13T18:53:52Z
-  analyzed-against: 01f6a72f1d50041843dd142bf01e3322710c7825
+  last-run: 2026-09-15T16:30:40Z
+  analyzed-against: 70ac18dd663a29958fd2e29b4293db6f143710c8
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 0
+  captured-issues: 0
   analyzed-digest:
     data-model.md: d2b50651c6a32eafeb1673d032c04fe6cd31fc82d3b4d3b33faf5831260c7248
-    plan.md: 4358ca510dd4b5b236a6c5403dfaaba46c2c13fd17a590679f77f967db3ff7d8
+    plan.md: 1ced24bfc8d00bbbc7dcf9e6676ced44da133ec6c93516a0ab0a8da0ccc99a58
     review.md: 8f42a27615b499779536e79b489811fb1c6e25a15c177c4f276a9c4ec2d85245
-    spec.md: 16ea31e9b812d931ced60f3140df7c40a21a0e41715252975de4ccda31f58e21
-    tasks.md: 689844c5612bac347b1c1521a069e4538fa5ee305bd72da6a0b224999887a57b
+    spec.md: 33d2c8f9c97865709f7570b76facc0e3c6dceeb619c46941f4293496a713b0fa
+    tasks.md: 32a18d823f93a360aee08c0c619ea9173b2211bacdb9e75b966f4b0baff487a9
   blocking: false
 ---
 
