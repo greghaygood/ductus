@@ -4,40 +4,40 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Create the archive half
 
-- [ ] Create `framework/bootstrap/ductus-procedure.md` with frontmatter carrying a `description:`, an H1, and a short preamble saying what the file is, that it is read from the extracted archive and never installed, and that §Instructions in `ductus.md` is the numbered walker.
-- [ ] Append the five blocks **verbatim** in original file order (A §Pre-run Migrations, B §Frontmatter Migration, C §Security Audit (brownfield), D §Hook Installation, E §What This Command Does NOT Do → §Directory Creation).
-- [ ] Confirm the copy is byte-exact against the source ranges before any prose repair — diff the extracted bytes rather than eyeballing.
+- [x] Create `framework/bootstrap/ductus-procedure.md` with frontmatter carrying a `description:`, an H1, and a short preamble saying what the file is, that it is read from the extracted archive and never installed, and that §Instructions in `ductus.md` is the numbered walker.
+- [x] Append the five blocks **verbatim** in original file order (A §Pre-run Migrations, B §Frontmatter Migration, C §Security Audit (brownfield), D §Hook Installation, E §What This Command Does NOT Do → §Directory Creation).
+- [x] Confirm the copy is byte-exact against the source ranges before any prose repair — diff the extracted bytes rather than eyeballing.
 
 - **Done when**: `framework/bootstrap/ductus-procedure.md` exists and its nine sections are byte-identical to their source ranges in `ductus.md` at `dfc4a3fc`.
 
 ## 2. Excise the five blocks and leave one pointer
 
-- [ ] Delete blocks E, D, C, B, A from `framework/bootstrap/ductus.md` in that order — bottom-up, so each earlier block's line numbers stay valid while the edit is in flight.
-- [ ] Add one `## The archive half` section immediately after §File Fetching naming `{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md`, what it holds, and when the run reads it.
-- [ ] Repair, as a **separately identifiable** edit, only the prose the move falsifies: §Pre-flight abort's skipped-section enumeration (which names sections now in the other file) and any "below"/"above" directional wording whose target left the file.
-- [ ] Re-read every surviving `**Section**` and `§Section` reference in `ductus.md` and confirm it resolves within `ductus.md` or is explicitly qualified as living in the archive half.
+- [x] Delete blocks E, D, C, B, A from `framework/bootstrap/ductus.md` in that order — bottom-up, so each earlier block's line numbers stay valid while the edit is in flight.
+- [x] Add one `## The archive half` section immediately after §File Fetching naming `{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md`, what it holds, and when the run reads it.
+- [x] Repair, as a **separately identifiable** edit, only the prose the move falsifies: §Pre-flight abort's skipped-section enumeration (which names sections now in the other file) and any "below"/"above" directional wording whose target left the file.
+- [x] Re-read every surviving `**Section**` and `§Section` reference in `ductus.md` and confirm it resolves within `ductus.md` or is explicitly qualified as living in the archive half.
 
 - **Done when**: `ductus.md` holds none of the nine moved sections, carries exactly one pointer to the archive half, and no surviving cross-reference in it names a section that is neither present nor qualified.
 
 ## 3. Allowlist the archive half as reference prose
 
-- [ ] Add `framework/bootstrap/ductus-procedure.md` to `runtime/legacy-prose-commands.txt`.
-- [ ] Correct that file's header, which asserts every entry is a `framework/commands/*.md` file — a claim the new entry falsifies.
-- [ ] Run `bash scripts/lint-procedure-parseability.sh` and confirm it passes, then confirm by probe that removing the entry makes it **fail** — a lint that passes for the wrong reason is worth less than no lint.
+- [x] Add `framework/bootstrap/ductus-procedure.md` to `runtime/legacy-prose-commands.txt`.
+- [x] Correct that file's header, which asserts every entry is a `framework/commands/*.md` file — a claim the new entry falsifies.
+- [x] Run `bash scripts/lint-procedure-parseability.sh` and confirm it passes, then confirm by probe that removing the entry makes it **fail** — a lint that passes for the wrong reason is worth less than no lint.
 
 - **Done when**: the parseability lint passes with the entry and fails without it, proven by running it both ways.
 
 ## 4. Re-copy the retired bootstrap alias
 
-- [ ] `cp framework/bootstrap/ductus.md framework/bootstrap/govern.md` in the same commit as task 2.
-- [ ] Run `bash scripts/audit/transitional-bootstrap-parity.sh` and confirm Family 21 passes.
+- [x] `cp framework/bootstrap/ductus.md framework/bootstrap/govern.md` in the same commit as task 2.
+- [x] Run `bash scripts/audit/transitional-bootstrap-parity.sh` and confirm Family 21 passes.
 
 - **Done when**: `cmp framework/bootstrap/ductus.md framework/bootstrap/govern.md` reports no difference and Family 21 exits 0.
 
 ## 5. Re-earn the consumer classification by running it
 
-- [ ] Run each of the seven audit families named in the spec's §What the split does not reach (`installer-command-parity`, `sweep-target-manifest-parity`, `manifest-destination-links`, `self-url-resolution`, `installer-registry-parity`, `host-namespace-parity`, `runtime-probe-parity`) and confirm each reports a **non-empty** extraction rather than merely exiting 0.
-- [ ] Probe `adopter_destinations` in both directions: confirm it derives the same destination set from the post-split `ductus.md` as from the pre-split file, and confirm it returns empty when the manifest tables are absent — so the passing result is known to distinguish the two.
+- [x] Run each of the seven audit families named in the spec's §What the split does not reach (`installer-command-parity`, `sweep-target-manifest-parity`, `manifest-destination-links`, `self-url-resolution`, `installer-registry-parity`, `host-namespace-parity`, `runtime-probe-parity`) and confirm each reports a **non-empty** extraction rather than merely exiting 0.
+- [x] Probe `adopter_destinations` in both directions: confirm it derives the same destination set from the post-split `ductus.md` as from the pre-split file, and confirm it returns empty when the manifest tables are absent — so the passing result is known to distinguish the two.
 
 - **Done when**: every consumer resolves a non-empty subject after the split, and the `adopter_destinations` probe has demonstrated both the populated and the empty outcome.
 
