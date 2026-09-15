@@ -266,6 +266,19 @@ Opened by [048](../048-govern-acquired-runtime/spec.md)'s AC10 adopter runs, whi
 
 - **Done when**: `scripts/audit/rename-sweep-residue.sh` reports the project name in verb position across the markdown corpus, is wired into `run-all.sh` as Family 24, is listed in `scripts/audit/README.md`, and reports its examined-file count on stderr with a degenerate scan treated as a finding. Proven red against the pre-repair corpus (8 findings) and green at HEAD (0).
 
+#### 29a. Widen it to the possessive-determiner construction (2026-09-15)
+
+Extends task 29 rather than opening a second task on the same scenario, per 023's `extend-existing-scenario-task`. The family's first two constructions could not see a ninth surviving site, so it exited 0 over 514 files with live residue present.
+
+- [x] Add the possessive-determiner class, calibrated on **recall over known-true instances** — `govern its` occurs once at `9da4a7ae^` (the `framework/rules/api-backend.md` site) and `their` / `our` / `your` / `his` / `her` zero times
+- [x] Add the whole closed class rather than `its` alone: the existing lists are grammar-calibrated, not frequency-calibrated — three of seven followers and seven of eight modals had zero pre-sweep instances and are listed anyway
+- [x] Exclude `my` on the same test the header applies to `the`, `to` and `that` — `README.md` documents adoption as `/ductus my-project`, so the name is followed by `my` in correct prose on the front page
+- [x] Probe the **narrowed** direction as well as the widened one: the `my` false positive and an unquoted example in `specs/inbox.md` were both found that way, and neither was predictable by reading
+- [x] Correct the ninth-site count and the *exactly the 8 real sites* measurement wherever it is stated — the scenario, AC17, `framework/commands/audit.md`, `scripts/audit/README.md` and the script header
+- [x] Re-run `scripts/gen-claude-commands.sh` and the full cargo suite, since `framework/commands/audit.md` is runtime-adjacent
+
+- **Done when**: the family reports the name followed by a possessive determiner, proven in both directions — clean over the corpus with `my` excluded, and firing on exactly `framework/rules/api-backend.md:73` when the defect is restored — and every surface stating the construction count or the eight-sites measurement is corrected.
+
 ### 30. Family 25 — unbalanced inline markup
 
 - [x] Implement the behavior described in `scenarios/family-25-unbalanced-inline-markup.md`

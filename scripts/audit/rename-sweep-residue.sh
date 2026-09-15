@@ -13,29 +13,65 @@
 # does" — where the inflected form survived only because it never matched the
 # word boundary.
 #
-# Eight sites survived. Three ship to adopters, and one of those is
+# NINE sites survived, not eight. Three ship to adopters, and one of those is
 # framework/templates/project/agents.md, a `create`-strategy file: the broken
 # sentence is written into a new adopter's AGENTS.md once and corrected by no
 # later run. All 23 existing families were green throughout; the residue was
 # found by an ad-hoc grep during an unrelated review.
 #
-# DETECTION. Two constructions, both drawn from closed word classes, so this is
-# exact rather than heuristic:
+# The ninth was framework/rules/api-backend.md, found 2026-09-15 and invisible
+# to the original two classes by construction: it read "this rule and
+# `BE-ERRENV-002` ductus its contract shape", which is the name followed by a
+# POSSESSIVE DETERMINER rather than by a demonstrative or wh-word. It also
+# ships to adopters. Until that repair this family exited 0 over 514 markdown
+# files with live residue present, which is the shape it exists to prevent.
+#
+# DETECTION. Three constructions, all drawn from closed word classes, so this
+# is exact rather than heuristic:
 #
 #   1. A modal + the project name. A modal is always followed by a bare
 #      infinitive and the project name is a proper noun, so the pair cannot be
 #      correct under any phrasing.
 #   2. The project name + a demonstrative or wh-word. A proper noun does not
 #      take one.
+#   3. The project name + a possessive determiner. Same argument: a proper
+#      noun does not take one, so the pair marks a verb slot.
 #
-# MEASURED. The union reports 8 findings at the commit before the repair —
-# exactly the 8 real sites, no others — and 0 after it.
+# MEASURED. The two-class union reported 8 findings at the commit before the
+# original repair and 0 after — true of what it could see, and an undercount
+# of the corpus, which is why "exactly the 8 real sites, no others" no longer
+# stands. Calibrated on recall over known-true instances rather than on a
+# count: at 9da4a7ae^ the verb took a possessive exactly once (`govern its`,
+# the api-backend.md site) and `their`/`our`/`your`/`his`/`her` zero times.
+#
+# WHY THE WHOLE POSSESSIVE CLASS, on one instance. The existing lists are
+# grammar-calibrated, not frequency-calibrated: measured at 9da4a7ae^, three
+# of the seven followers (`whether`, `these`, `those`) and seven of the eight
+# modals had zero instances and are listed anyway, because the closed word
+# class is the argument. Listing only `its` would break that precedent and
+# leave the next sweep's plural uncovered.
+#
+# KNOWN LIMIT, stated rather than implied. A ditransitive sentence — "give
+# ductus its due", "grant ductus their place" — puts a possessive after the
+# name legitimately and would be reported. That is the trade the DELIBERATE
+# EXCLUSIONS below refuse for `the`/`to`/`that`, and it is accepted here on
+# measurement: the construction appears 0 times across the 584 tracked
+# markdown files (2026-09-15), where "a change to ductus" and "stripped of
+# ductus the same commit" are both common. If one is ever written, quote it or
+# reword it rather than widening the exclusions.
 #
 # DELIBERATE EXCLUSIONS. `the` is absent from the second list: "with `PATH`
 # stripped of ductus the same commit succeeds" is correct prose. `to ductus`
 # and `that ductus` are absent for the same reason — "a change to ductus" and
 # "the version that ductus pins" are ordinary. Each would trade a real finding
 # for a standing false positive.
+#
+# `my` is excluded from the possessive class on the same test, and it is the
+# one member measured to fail it: README.md documents adoption as
+# "/ductus my-project", so the name is followed by `my` in correct prose on
+# the project's front page. Caught by probing the narrowed direction before
+# shipping the widening, not by reasoning about it; `govern my` also occurs
+# zero times at 9da4a7ae^, so excluding it costs no recall.
 #
 # A degenerate scan — no files examined — is a finding, never a pass. A
 # corpus-wide grep that matches nothing is otherwise indistinguishable from a
@@ -58,7 +94,13 @@ MODALS="should|must|shall|may|might|would|could|can"
 # Demonstratives and wh-words: a proper noun does not take one.
 FOLLOWERS="this|what|how|across|whether|these|those"
 
-PATTERN="(^|[^[:alnum:]_])($MODALS) $NAME([^[:alnum:]_]|\$)|(^|[^[:alnum:]_])$NAME ($FOLLOWERS)([^[:alnum:]_]|\$)"
+# Possessive determiners: a proper noun does not take one either. The closed
+# class minus `my`, for the reason the header records — the lists are
+# calibrated on grammar rather than on how often each member happened to
+# occur, and `my` is excluded by measurement (see DELIBERATE EXCLUSIONS).
+POSSESSIVES="its|their|our|your|his|her"
+
+PATTERN="(^|[^[:alnum:]_])($MODALS) $NAME([^[:alnum:]_]|\$)|(^|[^[:alnum:]_])$NAME ($FOLLOWERS|$POSSESSIVES)([^[:alnum:]_]|\$)"
 
 # --- Collect the corpus ---------------------------------------------------
 #
