@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: []
 review:
   last-run: 2026-09-15T16:06:25Z
@@ -22,15 +22,15 @@ review:
   blocking: false
 next-criterion: 21
 analyze:
-  last-run: 2026-09-15T16:07:01Z
-  analyzed-against: 8d869b8d0458a6417427ae682522c8b4ddab4837
+  last-run: 2026-09-15T17:39:24Z
+  analyzed-against: 280275813287583c6a17d8ad4fb80fea3ebf20f5
   hard-fail: 0
   blocking-findings: 0
   advisory: 0
   unexamined: 1
   captured-issues: 0
   analyzed-digest:
-    plan.md: 02b3478dedb8be4537b0589927ebd1267b87f9fa6831608081853227352aa3d1
+    plan.md: 181bc79deaaa55652604a3d2fc5c46c8e198b12b5983fc0aaa08c944750d291d
     review.md: 1f477f6d7ea93753d6eb0aca23e677caf70374c8f33974a6eb1827144f08181c
     scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
     scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
@@ -42,7 +42,7 @@ analyze:
     scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
     scenarios/knowledge-routes-by-population-not-by-kind.md: 0e934ea65cbaf2bf31acc4f45c461bfb868be45deb5aa9fa6601c59b8c003c5c
     spec.md: 161761f32c1b1db89d9436489ea9455ebacebd3490b091abb8a38eb669eac1b2
-    tasks.md: 2528b8005648f9c587f5182803c1cf4778577e2a900c4099ba0e5f208cf7bea1
+    tasks.md: c7975b5c19eaeef772054a34bfe551b24eb2e2fbeb441581b2bdd2a83f1ffba0
   unexamined-by-reason:
     ships-to-adopter: 1
   blocking: false
