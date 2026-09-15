@@ -37,7 +37,7 @@ Split `framework/bootstrap/ductus.md` so the file an adopter curls, installs int
 
 The file's own `§Pre-flight Phase` existed to keep the restart-requiring checks cheap: it states that neither check "pays the cost of the multi-hundred-KB archive; both run on a small fetch or no fetch". That property held for the *fetches* the phase performs and had eroded for the *file* that performs them.
 
-The **cause was structural rather than editorial**. Composition was measured at 90.2% prose, 7.0% tables, 2.8% fenced blocks, so the reductions a cleanup pass reaches — dead shell fallback, inline permission blobs, retired-release tokens — recover low single digits. Size was not what a dead-code pass would have bought.
+The **cause was structural rather than editorial**. Composition re-measured 2026-09-15 over the 146,953-byte pre-split file: **90.4% prose, 6.9% tables, 2.7% fenced blocks** (the backlog item's 90.2 / 7.0 / 2.8, which held to within 0.2 points). So the reductions a cleanup pass reaches — dead shell fallback, inline permission blobs, retired-release tokens — recover low single digits. Size was not what a dead-code pass would have bought.
 
 ## The boundary
 
@@ -137,7 +137,7 @@ The self-update check keeps comparing the installed file against upstream, now o
 
 ### Rationale disposition
 
-Rationale is 17–25% of the file and does not move as one class:
+Rationale does not move as one class. (`specs/inbox.md` puts it at 17–25% of the file — a figure this spec carries as that item's rather than its own, because nothing here acts on it: the disposition below is a rule about *which* rationale moves, not a budget.)
 
 - **Rationale that constrains execution stays** with the step it constrains, in whichever half that step lands. It is what stops an agent doing the tempting wrong thing, and a pointer to it elsewhere would be read after the mistake.
 - **Dated incident narrative moves** to the spec that decided the fix, with a pointer back from the procedure.
