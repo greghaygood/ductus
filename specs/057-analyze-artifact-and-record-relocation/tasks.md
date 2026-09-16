@@ -199,6 +199,16 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 - **Done when**: No user-facing runtime surface — tool description, CLI help, or emitted message — places either record in `spec.md` frontmatter, and every doc comment that does is either corrected or demonstrably past-tense.
 
+## 23. Discharge the 022 obligation the relocation created
+
+- [x] Task 17's search found 10 lines across 6 of `022-deterministic-runtime`'s **durable contracts** that place the records in `spec.md` frontmatter — `data-model.md` at 750, 752, 759, 787 and 791 (the canonical registry of the gate's check order and the two digest subject sets), and one line each in the scenarios `implement-completion-gate`, `primitive-robustness-hardening`, `review-base-includes-the-transition-commit`, `review-gate-unexaminable-contracts` and `review-runtime-acceleration`
+- [x] Nothing in 022's `spec.md`, `plan.md` or `tasks.md` is affected — the exposure is entirely in the digested set, which is what prices it
+- [x] 022 is the durable home for runtime rules (AGENTS.md §Workflow), so these are 057's to correct: reopen 022, fix the claims by tense, and link back here. **The estimate above was low by a factor of four.** Sweeping on three patterns rather than the location classifier alone returned 69 candidates across 23 files, of which 41 were real across 17 durable contracts — 16 in `data-model.md`. The classifier could not see most of them by construction: it keys a record token to `spec.md` / "spec frontmatter" / "the spec", and `ordered after every \`review:\` check` names no file. Four scenarios needed more than a re-point because their closing argument rested on Family 31 or on an asymmetry 057 removed
+- [x] Price it before starting: every hit is a durable contract, so this costs a reopen **plus a full five-pass re-review**, and AGENTS.md records that a full 022 re-review is the largest single unit in the corpus and has never been spent
+- [x] Declare `022-deterministic-runtime` in this spec's `cross-spec-impact:` so the pre-done gate holds 057 until 022 links back
+
+- **Done when**: No durable contract under 022 places either record in `spec.md` frontmatter, 022's review and analysis are current, it is back at `done` with a back-link to 057, and the `cross-spec-impact:` entry is discharged.
+
 ## 24. AC7 is not met: `analysis.md` stales its own record
 
 Found 2026-09-16 recording the task-18 discharges' analyze runs. The
@@ -226,13 +236,3 @@ analyze records are stale**, each on the same three paths — `analysis.md`,
 - [x] Check this against AC10's claim that the migration "leaves `spec.md` with no residual block" — that criterion is met; this is a consequence the spec never claimed either way, which is why it needs stating rather than fixing
 
 - **Done when**: the disposition is recorded in both artifacts with the measurement that priced it, and no criterion asserts a freshness property the migration does not leave true.
-
-## 23. Discharge the 022 obligation the relocation created
-
-- [x] Task 17's search found 10 lines across 6 of `022-deterministic-runtime`'s **durable contracts** that place the records in `spec.md` frontmatter — `data-model.md` at 750, 752, 759, 787 and 791 (the canonical registry of the gate's check order and the two digest subject sets), and one line each in the scenarios `implement-completion-gate`, `primitive-robustness-hardening`, `review-base-includes-the-transition-commit`, `review-gate-unexaminable-contracts` and `review-runtime-acceleration`
-- [x] Nothing in 022's `spec.md`, `plan.md` or `tasks.md` is affected — the exposure is entirely in the digested set, which is what prices it
-- [x] 022 is the durable home for runtime rules (AGENTS.md §Workflow), so these are 057's to correct: reopen 022, fix the claims by tense, and link back here. **The estimate above was low by a factor of four.** Sweeping on three patterns rather than the location classifier alone returned 69 candidates across 23 files, of which 41 were real across 17 durable contracts — 16 in `data-model.md`. The classifier could not see most of them by construction: it keys a record token to `spec.md` / "spec frontmatter" / "the spec", and `ordered after every \`review:\` check` names no file. Four scenarios needed more than a re-point because their closing argument rested on Family 31 or on an asymmetry 057 removed
-- [x] Price it before starting: every hit is a durable contract, so this costs a reopen **plus a full five-pass re-review**, and AGENTS.md records that a full 022 re-review is the largest single unit in the corpus and has never been spent
-- [x] Declare `022-deterministic-runtime` in this spec's `cross-spec-impact:` so the pre-done gate holds 057 until 022 links back
-
-- **Done when**: No durable contract under 022 places either record in `spec.md` frontmatter, 022's review and analysis are current, it is back at `done` with a back-link to 057, and the `cross-spec-impact:` entry is discharged.

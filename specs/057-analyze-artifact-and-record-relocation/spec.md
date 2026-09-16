@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [020-code-review, 027-bootstrap-migration-registry, 047-analyze-findings-durability]
 next-criterion: 27
 cross-spec-impact:
@@ -150,32 +150,32 @@ backfilling.
 
 ## Acceptance Criteria
 
-- [ ] AC1: `/{project}:analyze` writes `specs/{feature}/analysis.md`, whose frontmatter carries the run record 047 defines — `last-run`, `analyzed-against`, the three tier counts, `unexamined`, `unexamined-by-reason`, `analyzed-digest`, and the derived `blocking` — and whose body summarizes the run's findings.
-- [ ] AC2: `spec.md` frontmatter carries neither a `review:` nor an `analyze:` block, and the spec template ships without them, so a newly created spec opens with `status` and `dependencies` alone.
-- [ ] AC3: `/{project}:review` writes its run record to `review.md`'s frontmatter only, and no longer stamps `spec.md`.
-- [ ] AC4: `check-review-gate` reads the review record from `review.md` and the analyze record from `analysis.md`, and blocks `in-progress → done` on exactly the conditions it blocked on before the relocation — a differential check against the pre-relocation gate on the same inputs produces the same verdicts.
-- [ ] AC5: A spec with no `review.md` is reported as never-reviewed, and one with no `analysis.md` as never-analyzed; a present-but-unparseable artifact is reported as undeterminable, never as never-run.
-- [ ] AC6: `validate-frontmatter` validates each record against the artifact that owns it, and reports a `review:` or `analyze:` block still present in `spec.md` as a violation, so a stale copy cannot shadow the authoritative record.
-- [ ] AC7: The analyze staleness basis excludes `analysis.md`'s own frontmatter record, so an analyze run that has just written its record does not report itself stale; `review.md` remains in the subject set including its record.
-- [ ] AC8: `/{project}:status` and `dashboard` render the same review and analyze state they rendered before, sourced from the new locations.
-- [ ] AC9: `/{project}:audit`'s exempt-population family counts the same population from the relocated records, and its committed high-water mark is reconciled in the same change rather than left measuring a field that no longer exists.
-- [ ] AC10: A migration relocates every existing spec's records with values intact, invents no record for a spec that has none, and leaves `spec.md` with no residual block.
-- [ ] AC11: Full markdown lint passes across the migrated corpus.
-- [ ] AC12: The relocated review record carries every field from both former sides — `blocking` and `waivers` from the `spec.md` block, `diff-base`, `captured-issues`, and `skipped-passes` from `review.md`, and one timestamp for the pair spelled `last-run` / `reviewed-at` — so the merge drops no field.
-- [ ] AC13: `analysis.md`'s body carries no `- [ ]` checkbox items in any section, checked mechanically rather than by review, so the report cannot become a second triage surface.
-- [ ] AC14: Each analyze run overwrites `analysis.md` against a fixed section skeleton — Summary, hard failures, blocking findings, advisory findings, unexamined targets with their reasons, and captured issues — and never appends to a previous run's content. The sixth section is where the findings' text lands: the tier sections carry counts, because per-tier counts are all the writer receives, while the captured bullets record `family — message — path` without recording which tier produced them.
-- [ ] AC15: `check-review-agreement` and the audit family built on it are removed, and the never-reviewed and never-analyzed cases its `single_sided` count distinguished remain distinguishable through AC5.
-- [ ] AC16: The change adds one `framework/migrations.toml` entry with its `framework/migrations/{id}.md` procedure file, and 027's audit family — which fails a convention removal carrying no registry entry — passes against it.
-- [ ] AC17: The shipped CI template step reads the record from `review.md` and `analysis.md` and bounds its exempt set with a committed high-water mark; no predicate in the step is satisfiable by every spec in a migrated corpus.
-- [ ] AC18: The migration procedure detects an adopter CI file still carrying the pre-relocation block-presence check and tells the adopter to re-copy the template, since `/{project}` does not install CI files.
-- [ ] AC19: Every analyze run writes `analysis.md` — including a clean run and an empty scope — so an absent file means never-analyzed rather than nothing-to-report, and the never-run signal AC5 depends on stays sound.
-- [ ] AC20: The migration is idempotent: re-running it over a partially migrated corpus completes the remainder and leaves already-migrated specs byte-identical, so an interrupted run is resumable rather than corrupting.
-- [ ] AC21: The constitution's **Frontmatter Schema** section declares the review and analyze records at their new homes — the owning artifact, each field, and its type — instead of leaving them under the Open-schema rule, and the runtime is updated to match that declaration rather than the reverse (§runtime-boundary principle 4).
-- [ ] AC22: `docs/analyze.md` documents the record field-by-field at `analysis.md` and describes the artifact's fixed skeleton; `docs/slash-commands.md`, `docs/shared-constitution.md`, and `README.md` carry no statement placing either record in `spec.md` frontmatter.
-- [ ] AC23: Every framework command file that names the blocks — `review.md`, `analyze.md`, `implement.md`, `audit.md`, `consolidate.md` — is updated in both its runtime steps and its markdown-only reference, so the two paths describe one location.
-- [ ] AC24: The generated per-agent command mirrors match their updated sources, and the command-parity audit passes.
-- [ ] AC25: `AGENTS.md` and the spec template's frontmatter guidance describe the new location.
-- [ ] AC26: A repo-wide search for the pre-relocation shape — a `review:` or `analyze:` block addressed as `spec.md` frontmatter — returns no hit outside this spec's own Motivation and Resolved Questions, so the documentation sweep is verified mechanically rather than asserted.
+- [x] AC1: `/{project}:analyze` writes `specs/{feature}/analysis.md`, whose frontmatter carries the run record 047 defines — `last-run`, `analyzed-against`, the three tier counts, `unexamined`, `unexamined-by-reason`, `analyzed-digest`, and the derived `blocking` — and whose body summarizes the run's findings.
+- [x] AC2: `spec.md` frontmatter carries neither a `review:` nor an `analyze:` block, and the spec template ships without them, so a newly created spec opens with `status` and `dependencies` alone.
+- [x] AC3: `/{project}:review` writes its run record to `review.md`'s frontmatter only, and no longer stamps `spec.md`.
+- [x] AC4: `check-review-gate` reads the review record from `review.md` and the analyze record from `analysis.md`, and blocks `in-progress → done` on exactly the conditions it blocked on before the relocation — a differential check against the pre-relocation gate on the same inputs produces the same verdicts.
+- [x] AC5: A spec with no `review.md` is reported as never-reviewed, and one with no `analysis.md` as never-analyzed; a present-but-unparseable artifact is reported as undeterminable, never as never-run.
+- [x] AC6: `validate-frontmatter` validates each record against the artifact that owns it, and reports a `review:` or `analyze:` block still present in `spec.md` as a violation, so a stale copy cannot shadow the authoritative record.
+- [x] AC7: The analyze staleness basis excludes `analysis.md`'s own frontmatter record, so an analyze run that has just written its record does not report itself stale; `review.md` remains in the subject set including its record.
+- [x] AC8: `/{project}:status` and `dashboard` render the same review and analyze state they rendered before, sourced from the new locations.
+- [x] AC9: `/{project}:audit`'s exempt-population family counts the same population from the relocated records, and its committed high-water mark is reconciled in the same change rather than left measuring a field that no longer exists.
+- [x] AC10: A migration relocates every existing spec's records with values intact, invents no record for a spec that has none, and leaves `spec.md` with no residual block.
+- [x] AC11: Full markdown lint passes across the migrated corpus.
+- [x] AC12: The relocated review record carries every field from both former sides — `blocking` and `waivers` from the `spec.md` block, `diff-base`, `captured-issues`, and `skipped-passes` from `review.md`, and one timestamp for the pair spelled `last-run` / `reviewed-at` — so the merge drops no field.
+- [x] AC13: `analysis.md`'s body carries no `- [ ]` checkbox items in any section, checked mechanically rather than by review, so the report cannot become a second triage surface.
+- [x] AC14: Each analyze run overwrites `analysis.md` against a fixed section skeleton — Summary, hard failures, blocking findings, advisory findings, unexamined targets with their reasons, and captured issues — and never appends to a previous run's content. The sixth section is where the findings' text lands: the tier sections carry counts, because per-tier counts are all the writer receives, while the captured bullets record `family — message — path` without recording which tier produced them.
+- [x] AC15: `check-review-agreement` and the audit family built on it are removed, and the never-reviewed and never-analyzed cases its `single_sided` count distinguished remain distinguishable through AC5.
+- [x] AC16: The change adds one `framework/migrations.toml` entry with its `framework/migrations/{id}.md` procedure file, and 027's audit family — which fails a convention removal carrying no registry entry — passes against it.
+- [x] AC17: The shipped CI template step reads the record from `review.md` and `analysis.md` and bounds its exempt set with a committed high-water mark; no predicate in the step is satisfiable by every spec in a migrated corpus.
+- [x] AC18: The migration procedure detects an adopter CI file still carrying the pre-relocation block-presence check and tells the adopter to re-copy the template, since `/{project}` does not install CI files.
+- [x] AC19: Every analyze run writes `analysis.md` — including a clean run and an empty scope — so an absent file means never-analyzed rather than nothing-to-report, and the never-run signal AC5 depends on stays sound.
+- [x] AC20: The migration is idempotent: re-running it over a partially migrated corpus completes the remainder and leaves already-migrated specs byte-identical, so an interrupted run is resumable rather than corrupting.
+- [x] AC21: The constitution's **Frontmatter Schema** section declares the review and analyze records at their new homes — the owning artifact, each field, and its type — instead of leaving them under the Open-schema rule, and the runtime is updated to match that declaration rather than the reverse (§runtime-boundary principle 4).
+- [x] AC22: `docs/analyze.md` documents the record field-by-field at `analysis.md` and describes the artifact's fixed skeleton; `docs/slash-commands.md`, `docs/shared-constitution.md`, and `README.md` carry no statement placing either record in `spec.md` frontmatter.
+- [x] AC23: Every framework command file that names the blocks — `review.md`, `analyze.md`, `implement.md`, `audit.md`, `consolidate.md` — is updated in both its runtime steps and its markdown-only reference, so the two paths describe one location.
+- [x] AC24: The generated per-agent command mirrors match their updated sources, and the command-parity audit passes.
+- [x] AC25: `AGENTS.md` and the spec template's frontmatter guidance describe the new location.
+- [x] AC26: A repo-wide search for the pre-relocation shape — a `review:` or `analyze:` block addressed as `spec.md` frontmatter — returns no hit outside this spec's own Motivation and Resolved Questions, so the documentation sweep is verified mechanically rather than asserted.
 
 ## Applicable Rules
 
