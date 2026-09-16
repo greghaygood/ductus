@@ -160,11 +160,11 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 19. Discharge the 026 obligation task 14 created
 
-- [ ] Reopen `026-framework-self-audit` — task 14 deleted Family 31, which its AC22 specifies and its `scenarios/family-31-review-block-agreement.md` is the durable contract for
-- [ ] Delete that scenario: it is obsolete, and §scenarios says an obsolete scenario is deleted rather than marked with a status
-- [ ] Annotate AC22 as superseded, naming 057 and the reason — the family's subject was the intersection of two records of one fact, and there is one record now
-- [ ] Re-run `/{project}:review` and `/{project}:analyze` over 026: deleting a scenario changes a durable contract, so the recorded `reviewed-digest` goes stale and `check-review-gate` will answer `review-stale`
-- [ ] Return 026 to `done`, and confirm it links back to 057 so the `cross-spec-impact:` entry is discharged
+- [x] Reopen `026-framework-self-audit` — task 14 deleted Family 31, which its AC22 specifies and its `scenarios/family-31-review-block-agreement.md` is the durable contract for
+- [x] Delete that scenario: it is obsolete, and §scenarios says an obsolete scenario is deleted rather than marked with a status
+- [x] Annotate AC22 as superseded, naming 057 and the reason — the family's subject was the intersection of two records of one fact, and there is one record now
+- [x] Re-run `/{project}:review` and `/{project}:analyze` over 026: deleting a scenario changes a durable contract, so the recorded `reviewed-digest` goes stale and `check-review-gate` will answer `review-stale`
+- [x] Return 026 to `done`, and confirm it links back to 057 so the `cross-spec-impact:` entry is discharged
 
 - **Done when**: 026 carries no scenario or ticked criterion asserting Family 31 exists, its review and analysis are current, it is back at `done`, and the `026-framework-self-audit` entry in this spec's `cross-spec-impact:` is discharged by the reciprocal back-link.
 
