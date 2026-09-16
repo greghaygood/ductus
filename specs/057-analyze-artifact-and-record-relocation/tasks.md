@@ -134,10 +134,10 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 16. Sweep the documentation
 
-- [ ] Update `framework/commands/review.md`, `analyze.md`, `implement.md`, `audit.md`, and `consolidate.md` — runtime steps **and** markdown-only references
-- [ ] Update `docs/analyze.md` field-by-field, including the `analysis.md` skeleton
-- [ ] Update `docs/slash-commands.md`, `docs/shared-constitution.md`, `README.md` (the `/analyze` entry states the old location outright), and `AGENTS.md`
-- [ ] Regenerate the per-agent command mirrors
+- [x] Update `framework/commands/review.md`, `analyze.md`, `implement.md`, `audit.md`, and `consolidate.md` — runtime steps **and** markdown-only references
+- [x] Update `docs/analyze.md` field-by-field, including the `analysis.md` skeleton
+- [x] Update `docs/slash-commands.md`, `docs/shared-constitution.md`, `README.md` (the `/analyze` entry states the old location outright), and `AGENTS.md`
+- [x] Regenerate the per-agent command mirrors
 
 - **Done when**: the command-parity audit passes and every mirror matches its source.
 
@@ -174,3 +174,12 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 - [x] Surveyed for others: `marker-list-parity.sh` and `template-alignment.sh` match on `analyze.md` the command file, not the record, and the pre-commit hooks read neither — so these two are the whole set
 
 - **Done when**: Family 19 resolves a `reviewed-against` for every done spec and reports its grandfathered count from the absence of `review.md`, and `mechanical_sweep_parity` builds a non-empty subject and passes.
+
+## 21. Reconcile the version pin and cut the release
+
+- [ ] Audit Family 20 has been red on `main` since `783602c5`: tasks 11-12 bumped `runtime/Cargo.toml` and `runtime/CHANGELOG.md` to 0.50.0 and left the repo-root `version` file at 0.49.8. It is red in the **safe** direction — `/{project}` reads the root file, 0.49.8 is published, so no adopter is halted — but the audit is a hard release gate and will block the tag
+- [ ] Bump the root `version` file to 0.50.0 **and** push `ductus-v0.50.0` in the same sitting: a bumped pin with no tag sends every adopter after assets that do not exist and aborts their run
+- [ ] Do this only after 057, and the specs it reopens (026, 020, 047), are back at `done` — a release is cut from completed work
+- [ ] Run `scripts/audit/run-all.sh` after committing and before tagging, and confirm Family 20 is green; then read every workflow run for that sha, not only the one whose name matches
+
+- **Done when**: All three version sites read 0.50.0, `scripts/audit/run-all.sh` is green including Family 20, and `ductus-v0.50.0` is pushed and its release workflow has published.

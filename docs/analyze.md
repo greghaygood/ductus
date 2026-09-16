@@ -1,8 +1,8 @@
 # Analyze
 
-The deep reference for `/analyze` — the audit that reads a feature's artifacts against each other, and the `analyze:` record it leaves behind. The [README](../README.md#commands) and [docs/slash-commands.md](slash-commands.md#analyze--a-report-of-where-a-features-own-artifacts-disagree) cover when to reach for it; this is where the check families, the severity tiers, and the meaning of every field in the record live.
+The deep reference for `/analyze` — the audit that reads a feature's artifacts against each other, and the `analysis.md` it leaves behind. The [README](../README.md#commands) and [docs/slash-commands.md](slash-commands.md#analyze--a-report-of-where-a-features-own-artifacts-disagree) cover when to reach for it; this is where the check families, the severity tiers, and the meaning of every field in the record live.
 
-The command's own procedure — the numbered runtime steps and the markdown-only reference for each check — is [`framework/commands/analyze.md`](../framework/commands/analyze.md). The record was introduced by [047 — Analyze findings durability](../specs/047-analyze-findings-durability/spec.md).
+The command's own procedure — the numbered runtime steps and the markdown-only reference for each check — is [`framework/commands/analyze.md`](../framework/commands/analyze.md). The record was introduced by [047 — Analyze findings durability](../specs/047-analyze-findings-durability/spec.md), which put it in `spec.md` frontmatter; [057 — Analyze artifact and record relocation](../specs/057-analyze-artifact-and-record-relocation/spec.md) moved it to `analysis.md`, the artifact this command owns.
 
 ## What it does
 
@@ -11,7 +11,7 @@ The command's own procedure — the numbered runtime steps and the markdown-only
 It is read-only *on its subject*. Three writes are in scope and no others:
 
 1. **Capture** — every surviving finding is appended to `{specs-root}/inbox.md` before anything is rendered, so an audit's results outlive the session that ran it. Appends are deduplicated on `{category}: {family} — {message}`, so re-running against an unchanged repo appends nothing.
-2. **Record** — the `analyze:` frontmatter block on the spec, written on **every** run, including a clean one and one whose scope was empty.
+2. **Record** — `specs/{feature}/analysis.md`, written whole on **every** run, including a clean one and one whose scope was empty. Its frontmatter is the record; its body is a fixed section skeleton. `spec.md` is never written.
 3. **Revert** — with `--fix` only, a `done` spec whose review state or scenario questions have drifted is set back to `in-progress`, with a non-silent notice naming the spec and what drifted.
 
 The line is between the *subject* and the *observation*: analyze never mutates an artifact it audits, and `--fix` is the only path that writes a status.
@@ -28,8 +28,8 @@ Flags: `--all` scans every feature under the spec root (project-level checks sti
 | Artifact completeness | Blocking | `plan.md` / `tasks.md` present at `planned` and later |
 | Plan and task consistency | Blocking | Plan cites the spec and lists decisions and files; tasks are numbered and carry done-when conditions |
 | Rule integrity and citations | Blocking / advisory | Cited rule IDs resolve; deprecated citations and non-firing `## Applicable Rules` entries are advisory |
-| Review state drift | Blocking | A `done` spec whose `review:` block is missing a run or reports `blocking: true` |
-| Analyze state drift | Blocking | A `done` spec whose `analyze:` block is missing a run or reports `blocking: true` |
+| Review state drift | Blocking | A `done` spec whose `review.md` record is missing a run or reports `blocking: true` |
+| Analyze state drift | Blocking | A `done` spec whose `analysis.md` record is missing a run or reports `blocking: true` |
 | Scenario open questions | Blocking at `done`, advisory otherwise | Unresolved `## Open Questions` in any `scenarios/*.md` |
 | Scenario consistency | Advisory | Scenario sections present; a still-pending scenario has a task |
 | Grounding | Advisory | Descriptive claims about the existing system are cited or hedged (form, never truth) |
@@ -51,54 +51,61 @@ Advisory families introduced with a **published promotion criterion** (grounding
 
 ## The record
 
-Each run writes an `analyze:` block into the spec's frontmatter:
+Each run writes `specs/{feature}/analysis.md`. The record is that file's own
+frontmatter — top-level keys, not a nested block:
 
 ```yaml
-analyze:
-  last-run: 2026-09-06T19:02:22Z
-  analyzed-against: 15845324188478f97e99f320e6e05d5ae350fad7
-  hard-fail: 0
-  blocking-findings: 0
-  advisory: 3
-  unexamined: 4
-  analyzed-digest:
-    data-model.md: 9c1b…
-    scenarios/retry-on-timeout.md: 3f2a…
-    spec.md: 71d4…
-    tasks.md: b085…
-  unexamined-by-reason:
-    root-absent: 4
-  blocking: false
+---
+spec: 047-analyze-findings-durability
+last-run: 2026-09-06T19:02:22Z
+analyzed-against: 15845324188478f97e99f320e6e05d5ae350fad7
+hard-fail: 0
+blocking-findings: 0
+advisory: 3
+unexamined: 4
+captured-issues: 3
+analyzed-digest:
+  data-model.md: 9c1b…
+  review.md: e0b8…
+  scenarios/retry-on-timeout.md: 3f2a…
+  spec.md: 71d4…
+  tasks.md: b085…
+unexamined-by-reason:
+  root-absent: 4
+blocking: false
+---
 ```
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `last-run` | ISO-8601 UTC timestamp, or `null` | When the analysis ran. `null` (the template's initial value) or an absent block means **never analyzed** |
+| `spec` | Feature slug | The feature the record belongs to, mirroring `review.md`'s |
+| `last-run` | ISO-8601 UTC timestamp, or `null` | When the analysis ran. A **missing `analysis.md`** is the never-analyzed state; a `null` here says the same thing for a record that exists |
 | `analyzed-against` | Commit sha, or `null` | The HEAD sha at the time of the run — **provenance**, not the staleness basis |
 | `hard-fail` | Integer | Hard-fail findings: malformed frontmatter and missing required fields |
 | `blocking-findings` | Integer | Blocking-tier findings |
 | `advisory` | Integer | Advisory-tier findings. Recorded, **never** gated on |
 | `unexamined` | Integer | Targets the run could not examine — the size of the informational skipped set |
 | `unexamined-by-reason` | Map of `reason: count` | The `unexamined` total broken out over a closed reason set. Omitted entirely when empty |
-| `analyzed-digest` | Map of `path: sha256` | Per-path digest of every `.md` under the feature **as this run read it**, keyed within the feature directory. The staleness basis. Omitted when empty, which only a pre-digest record can be |
+| `analyzed-digest` | Map of `path: sha256` | Per-path digest of every `.md` under the feature **as this run read it**, keyed within the feature directory, `review.md` included and this file's own record excised. The staleness basis. Omitted when empty, which only a pre-digest record can be |
 | `analyzed-unreadable` | List of paths | Subjects that exist but could not be read when the digest was taken, recorded rather than digested as empty. Omitted when empty |
+| `captured-issues` | Integer | Findings this run appended to the inbox. Read beside `advisory`: how many findings the run produced, and how many it actually recorded |
 | `blocking` | Boolean | **Derived**, never supplied: `true` when `hard-fail` or `blocking-findings` exceeds zero |
 
-The block is spliced in place, so every sibling frontmatter key — `status`, `dependencies`, `review:` — survives untouched. A spec whose frontmatter does not parse gets **no** record: that spec is one the analysis would have hard-failed on, and writing a clean record into it would invert the whole mechanism.
+The file is rewritten whole on every run, so the record and the report below it can never disagree. `spec.md` is left alone entirely — it carries neither this record nor the review one, and a residual block there is reported as a violation rather than tolerated under the open-schema rule. A spec whose frontmatter does not parse gets **no** record: that spec is one the analysis would have hard-failed on, and writing a clean record into it would invert the whole mechanism.
 
 ### `last-run`
 
-The field the completion gate reads first. Its *absence* is the signal: a spec with no `analyze:` block, or with `last-run: null`, has never completed an analysis, and the gate blocks `done` on exactly that. Before the record existed, a spec that had passed both pipeline gates and one that had passed only the review were byte-identical on disk — which is why the record is written on every run, clean ones included. A run that declines to write one is indistinguishable from a run that never happened.
+The field the completion gate reads first. Its *absence* is the signal: a feature with no `analysis.md`, or a record with `last-run: null`, has never completed an analysis, and the gate blocks `done` on exactly that. A present-but-unparseable `analysis.md` is a **third** state — undeterminable — and must never be collapsed into never-analyzed. Before the record existed, a spec that had passed both pipeline gates and one that had passed only the review were byte-identical on disk — which is why the record is written on every run, clean ones included. A run that declines to write one is indistinguishable from a run that never happened.
 
 ### `analyzed-against` and `analyzed-digest`
 
 `analyzed-against` is the HEAD sha at the time of the run, so the counts are attributable to a known tree. It is **provenance, not the staleness basis**, and is read for exactly one thing: the mechanical-sweep rename exemption, which genuinely needs two trees.
 
-`analyzed-digest` is what freshness compares. Staleness was a commit comparison in the first cut of this check and that design produced false blocks: `/{project}:analyze` reads the **working tree**, while `analyzed-against` records a *commit*, and the two coincide only when the tree is clean — which at the moment analyze runs it usually is not, since `/{project}:review` has just written `review.md` and the `review:` block and `mark-task` rewrote `tasks.md` before that. Diffing the sha therefore blocked records whose run had genuinely read the current content, as soon as that content was committed. The digest states what the run actually read, so committing content the analysis already examined does not stale it. `spec.md` is digested with its own `analyze:` block excised — the record is written after the subjects are read, so a digest covering it could never match; without that exclusion the rule flagged all 54 of this repo's recorded specs, and with it, 1.
+`analyzed-digest` is what freshness compares. Staleness was a commit comparison in the first cut of this check and that design produced false blocks: `/{project}:analyze` reads the **working tree**, while `analyzed-against` records a *commit*, and the two coincide only when the tree is clean — which at the moment analyze runs it usually is not, since `/{project}:review` has just written `review.md` and `mark-task` rewrote `tasks.md` before that. Diffing the sha therefore blocked records whose run had genuinely read the current content, as soon as that content was committed. The digest states what the run actually read, so committing content the analysis already examined does not stale it. The excision is of **this file's own record** — written after the subjects are read, so a digest covering it could never match — which means `spec.md` is digested whole. Before the relocation the same exclusion had to perform block surgery on `spec.md`; without any exclusion the rule flagged all 54 of this repo's recorded specs, and with it, 1.
 
 The operational rule is still to **write the record last**, after every edit to the spec is in — which is what the command's own step ordering does (capture → record → render). What changed is the consequence of getting it wrong: a record written before a further edit is now reported as stale by the completion gate rather than standing as a quietly-outdated claim. A record carrying **no** digest — every one written before the field existed — reads `undeterminable`: not current, not stale, and not a sha-diff fallback. It does not block, and it clears on the next run.
 
-The `review:` record works identically over its own narrower subject set (`scenarios/*.md` and `data-model.md`) through `reviewed-digest`. One comparison, two subject sets.
+The review record in `review.md` works identically over its own narrower subject set (`scenarios/*.md` and `data-model.md`) through `reviewed-digest`. One comparison, two subject sets.
 
 ### `hard-fail` and `blocking-findings`
 
@@ -106,11 +113,11 @@ The two counts that gate. Together they derive `blocking`, and either above zero
 
 ### `advisory`
 
-Recorded and never gated on, which is the deliberate asymmetry with the `review:` block — there, an outstanding SHOULD does block `done`, because §implement-phase says advisory is not ignorable at the review gate. Analyze's advisory tier is a different contract: its members are checks introduced advisory **with their own published promotion criteria**, and gating on them here would promote every one of them at once, past the criteria each declares. The count still rides the gate's guidance line, so a blocked spec says how much advisory work stands.
+Recorded and never gated on, which is the deliberate asymmetry with the review record — there, an outstanding SHOULD does block `done`, because §implement-phase says advisory is not ignorable at the review gate. Analyze's advisory tier is a different contract: its members are checks introduced advisory **with their own published promotion criteria**, and gating on them here would promote every one of them at once, past the criteria each declares. The count still rides the gate's guidance line, so a blocked spec says how much advisory work stands.
 
 ### `unexamined`
 
-The honesty field, and the one with no counterpart in `review:`. A clean analyze is **two different states** — every target examined and clean, or some target unexaminable and the rest clean — and a record carrying only finding counts collapses that into the reassuring reading, inside the artifact a later gate trusts. That is `QUAL-CLAIM-001` in the worst possible place.
+The honesty field, and the one with no counterpart in the review record. A clean analyze is **two different states** — every target examined and clean, or some target unexaminable and the rest clean — and a record carrying only finding counts collapses that into the reassuring reading, inside the artifact a later gate trusts. That is `QUAL-CLAIM-001` in the worst possible place.
 
 It is written even when zero: a zero that was computed and a field that was never written are not the same claim.
 
@@ -140,13 +147,41 @@ Two classes live in the set, and they call for opposite responses:
 
 Derived by the runtime from `hard-fail` and `blocking-findings`, never accepted from the caller — for the same reason `unexamined` is derived from its breakdown: a value a caller can contradict is one that will eventually be contradicted.
 
+## The report body
+
+Below the frontmatter, `analysis.md` carries a fixed section skeleton,
+rendered whole on every run and never appended to:
+
+```text
+# Analysis — {feature}
+
+## Summary
+## Hard failures
+## Blocking findings
+## Advisory findings
+## Unexamined targets
+## Captured issues
+```
+
+The three tier sections carry **counts**, because per-tier counts are all the
+writer receives. `## Captured issues` is the only section that can carry
+finding *text*: the writer is handed one list of captured inbox bullets
+recording `family — message — path`, with no record of which tier produced
+each, so they cannot be split across the tier sections — and a body without
+this section would restate the frontmatter and stop there.
+
+**No section carries a `- [ ]` item**, and that is enforced mechanically
+rather than by convention: any checkbox marker a captured bullet arrives with
+is stripped rather than trusted not to be there. A checkbox is what would turn
+this report into a second triage queue, and routing belongs to the inbox.
+
 ## Reading a record
 
 Taking the example block above: the run examined the spec at `15845324` on 2026-09-06 and found nothing that gates — `blocking: false`, so the completion gate passes on this spec. Three advisory findings stand; they are in `inbox.md` and are real work, just not work that holds `done`. Four targets went unexamined, and the breakdown settles what that means: all four are `root-absent`, an exclusion by construction, so nothing is owed and the clean result is as clean as it looks. Had those four been `artifact-unreadable` or `target-missing`, the same `unexamined: 4` would have meant the opposite — a gap in what the run could see, on a spec whose record otherwise reads as verified.
 
 ## Where the record is read
 
-- **The completion gate.** `check-review-gate` runs the `analyze:` checks after every `review:` check, because the pipeline is `review → analyze → done` and naming the later gate for an earlier defect sends a contributor to the wrong command. An absent block or a `null` `last-run` blocks with *"spec has not been analyzed"*; `blocking: true` blocks naming both counts, with the advisory and unexamined counts on the guidance line. **There is no grandfather clause here, and there must not be one** — this gate fires at the moment a spec is being completed, so the record is always writable.
-- **Freshness, after presence.** A third check asks whether the recorded analysis still describes the current artifacts, by comparing **content rather than commits**: the record carries `analyzed-digest`, a per-path digest of every `.md` under the feature (`review.md` included) as the run read it from disk, with the spec's own `analyze:` block excised. Without this check, `review → fix → done` passed on an analysis from before the fixes — the presence check asks only whether `last-run` is set. `analyzed-against` is provenance, not the basis: it records where `HEAD` was, while analyze reads the working tree, so comparing it blocked records whose analysis had genuinely read the current content the moment that content was committed. It is still read for the mechanical-sweep rename exemption, which needs two trees. `/{project}:review` renders the same state as a row in its own summary from the same comparison, so the row and the gate cannot disagree. A record with no digest reads undeterminable — not current, not stale — and clears on the next run. The `review:` record now carries `reviewed-digest` and works identically over its own narrower subject set (`scenarios/*.md`, `data-model.md`), which is why the gate's old notice about durable contracts it could not examine is gone: the comparison reads the working tree, so that state is answered rather than reported.
-- **The `analyze-state-drift` check family.** The counterpart to review-state drift: a `done` spec with `last-run` unset or `blocking: true` has drifted. Here a grandfather rule *does* apply — a `done` spec with no `analyze:` block at all predates the record.
+- **The completion gate.** `check-review-gate` runs the analyze checks after every review check, because the pipeline is `review → analyze → done` and naming the later gate for an earlier defect sends a contributor to the wrong command. An absent `analysis.md` or a `null` `last-run` blocks with *"spec has not been analyzed"*; `blocking: true` blocks naming both counts, with the advisory and unexamined counts on the guidance line. **There is no grandfather clause here, and there must not be one** — this gate fires at the moment a spec is being completed, so the record is always writable.
+- **Freshness, after presence.** A third check asks whether the recorded analysis still describes the current artifacts, by comparing **content rather than commits**: the record carries `analyzed-digest`, a per-path digest of every `.md` under the feature (`review.md` included) as the run read it from disk, with `analysis.md`'s own record excised. Without this check, `review → fix → done` passed on an analysis from before the fixes — the presence check asks only whether `last-run` is set. `analyzed-against` is provenance, not the basis: it records where `HEAD` was, while analyze reads the working tree, so comparing it blocked records whose analysis had genuinely read the current content the moment that content was committed. It is still read for the mechanical-sweep rename exemption, which needs two trees. `/{project}:review` renders the same state as a row in its own summary from the same comparison, so the row and the gate cannot disagree. A record with no digest reads undeterminable — not current, not stale — and clears on the next run. The review record carries `reviewed-digest` and works identically over its own narrower subject set (`scenarios/*.md`, `data-model.md`), which is why the gate's old notice about durable contracts it could not examine is gone: the comparison reads the working tree, so that state is answered rather than reported.
+- **The `analyze-state-drift` check family.** The counterpart to review-state drift: a `done` spec with `last-run` unset or `blocking: true` has drifted. Here a grandfather rule *does* apply — a `done` spec with no `analysis.md` at all predates the record.
 - **`/audit` Family 37.** Counts exactly that grandfathered population against a committed high-water mark, so the exemption is bounded and shrinking rather than a silent permanent hiding place. The set cannot legitimately grow: the completion gate has no grandfather clause, so growth means it was bypassed. The backlog is not backfillable — an analyze record asserts *that a run happened*, which nothing on disk substantiates, and writing one for a run that did not happen is the fabrication the record exists to prevent.

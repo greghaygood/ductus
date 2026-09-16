@@ -177,7 +177,7 @@ Two consequences worth knowing, because both are more restrictive than they look
 Warning and continuing has an obvious failure mode: the run proceeds under fewer rules than your config declares, and the output looks normal. `ductus` closes that directly.
 
 - **`/ductus:review`** renders an **Unexamined governance** section in `review.md`, naming each source it could not read and its reason. The primitive that writes the report resolves the registry itself, so the section cannot be omitted.
-- **`/ductus:analyze`** records the same under `constitution-unresolved` in the `analyze:` record's `unexamined-by-reason` breakdown, where the pre-`done` gate and any later reader will see it.
+- **`/ductus:analyze`** records the same under `constitution-unresolved` in the `analysis.md` record's `unexamined-by-reason` breakdown, where the pre-`done` gate and any later reader will see it.
 
 This is `QUAL-CLAIM-001` applied to the review's own inputs: a result must distinguish *examined and found nothing* from *could not examine*. A project with nothing registered renders `*None.*` and reads exactly as it did before.
 

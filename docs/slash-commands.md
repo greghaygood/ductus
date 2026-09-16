@@ -40,7 +40,7 @@ MUST violations keep the spec out of `done` until they are fixed or waived with 
 
 **Reach for it when something is out of sync and you want to know what.** A task list that no longer matches the plan, a ticked criterion whose file is gone, a spec at `done` with a blocking review.
 
-Unlike `/review`, it audits artifacts against *each other* rather than against code, and it runs at any time. It is also the pipeline's second gate: every run records its counts in the spec's `analyze:` block, and `/implement` will not write `done` until that record exists and reports nothing blocking. Read-only on what it audits; `--fix` reverts a `done` spec drifted by review state or unresolved scenario questions, and `--all` scans every feature. Full reference: **[docs/analyze.md](analyze.md)**.
+Unlike `/review`, it audits artifacts against *each other* rather than against code, and it runs at any time. It is also the pipeline's second gate: every run writes `analysis.md` — its counts in that file's frontmatter, its findings in the body — and `/implement` will not write `done` until that record exists and reports nothing blocking. Read-only on what it audits; `--fix` reverts a `done` spec drifted by review state or unresolved scenario questions, and `--all` scans every feature. Full reference: **[docs/analyze.md](analyze.md)**.
 
 ## Refine — adjust a spec's artifacts
 
@@ -74,7 +74,7 @@ That number is scaffolding, not a home. `/fold` is how you take it down: run it 
 
 ### `/consolidate` — an entire spec directory
 
-`spec.md`, its scenarios, plan, tasks, and review.
+`spec.md`, its scenarios, plan, tasks, and its `review.md` and `analysis.md`.
 
 **Reach for it when one spec replaces another and you want only the new one left.** Two triggers lead here:
 

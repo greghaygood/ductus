@@ -41,7 +41,7 @@ Adding `--into` to `/{project}:fold` instead was considered and rejected: fold's
 
 ## Scope Boundaries
 
-- This command re-points inbound pointers across the spec root and removes the **source** feature directory. It writes **nothing** to the target spec — not its body, its scenarios, its `tasks.md`, its `status`, or its `review:` block.
+- This command re-points inbound pointers across the spec root and removes the **source** feature directory. It writes **nothing** to the target spec — not its body, its scenarios, its `tasks.md`, its `status`, or its `review.md` and `analysis.md` records.
 - Removal is irreversible and writes no backup: recovery is git history, exactly as for `/{project}:prune`.
 - `dependencies:` and `references:` are never hand-edited here. They are derived from body links, and the pre-commit generators regenerate them from the rewritten bodies on the next commit.
 - Do NOT read or modify source code or test files — consolidation merges specifications, not implementations.

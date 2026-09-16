@@ -35,7 +35,7 @@ Report an unrecognized `--flag` and stop. Never absorb it into the feature ident
 ## Scope Boundaries
 
 - Reads the target spec, its `plan.md` (for Affected Files), the in-scope source files, the selected rule files, `AGENTS.md`, and `.ductus/config.toml`; diffs `specs/inbox.md` over the review window. Do NOT review files outside the resolved scope, and do NOT introduce review criteria from outside the project's rule files and `AGENTS.md`.
-- Writes exactly three artifacts: `specs/NNN/review.md`, the target spec's frontmatter `review:` block, and — when the run recorded any observations — one `specs/inbox.md` bullet per observation (all three via `write-review`); with `--waive`, appends a waiver entry; with `--fix`, applies auto-fixable findings to the working tree. No other files are modified — status transitions belong to `/{project}:implement`.
+- Writes exactly two artifacts: `specs/NNN/review.md` — the whole record, in that file's own frontmatter — and, when the run recorded any observations, one `specs/inbox.md` bullet per observation (both via `write-review`). `spec.md` is **not** written: the record has one home (spec 057); with `--waive`, appends a waiver entry; with `--fix`, applies auto-fixable findings to the working tree. No other files are modified — status transitions belong to `/{project}:implement`.
 - Reference: §runtime-host-integration, §brownfield-inbox, §text-first-artifacts, §spec-phase (spec-root resolution) (constitution loaded by `/{project}:target` — do not re-read).
 
 ## Inputs
@@ -118,8 +118,8 @@ Run once per targeted feature (every in-progress or done spec under `--all`, oth
 5. <!-- llm:performReview --> Run the **quality** pass: detect bugs, missing error handling, unhandled edge cases, and contract violations; low-confidence findings are recorded separately and do not block.
 6. <!-- llm:performReview --> Run the **efficiency** pass: flag N+1 queries, repeated work, and unbounded loops over user-controlled input.
 7. <!-- llm:performReview --> Run the **simplicity** pass: flag overengineering, premature abstraction, and dead branches; mark a finding auto-fixable when a simpler form is mechanically derivable. A dimension-restricting flag (`--security` / `--simplicity` / `--quality`) skips the unselected passes.
-8. Invoke `process-waivers` to classify the spec's `review.waivers` against the findings the passes just accumulated (apply / expire / retain / malformed / duplicate), emitting each notice it returns. **On a dimension-restricted run (`--security` / `--simplicity` / `--quality`), pass the skipped dimensions as `skipped-passes`** so a waiver whose rule did not fire is _retained_, not expired — the partial run cannot see the dimensions it didn't run, so it must not prune their waivers. The applied set is excluded from the blocking count; the expired set is dropped on the next write; the retained set is left in the frontmatter untouched. On an unrestricted run `skipped-passes` is empty and a waiver expires only when its file is gone or its rule genuinely no longer fires.
-9. Invoke `write-review` with the accumulated pass findings, the accumulated pass **observations**, the waiver results (`applied` / `expired`), and the scope to render `specs/NNN-feature/review.md`, update the spec `review:` frontmatter block, and capture each observation to `specs/inbox.md`. Supply the required scalars the primitives don't produce — `reviewed-at` (the current UTC timestamp) and `reviewed-against` (HEAD sha), both host-provided (as the session-write's `set-at` is); `diff-base` comes from step 1; and **`examined`, how many of the in-scope files the passes above actually read**. The primitive resolves the scope itself and records it as `scope`, so `examined` is a numerator against a denominator no caller supplies. It applies the cross-pass dedup (highest-severity-wins on rule + file + overlapping range), buckets findings into MUST / SHOULD / low-confidence / waived, prunes expired waivers (preserving any adopter-authored waiver fields on the survivors), records the skipped passes, renders the observations, and sets blocking when MUST violations remain. With `--fix`, apply the auto-fixable findings, re-run the affected passes, and invoke `write-review` a second time for the post-fix counts. The result also carries `analyze-freshness`, the state of the spec's `analyze:` record — its recorded digest compared against the spec's analyze subjects as they are now — which you render as the `analyze` row described under [Output](#output). It never affects the exit code.
+8. Invoke `process-waivers` to classify the waivers recorded in `review.md` against the findings the passes just accumulated (apply / expire / retain / malformed / duplicate), emitting each notice it returns. **On a dimension-restricted run (`--security` / `--simplicity` / `--quality`), pass the skipped dimensions as `skipped-passes`** so a waiver whose rule did not fire is _retained_, not expired — the partial run cannot see the dimensions it didn't run, so it must not prune their waivers. The applied set is excluded from the blocking count; the expired set is dropped on the next write; the retained set is left in the frontmatter untouched. On an unrestricted run `skipped-passes` is empty and a waiver expires only when its file is gone or its rule genuinely no longer fires.
+9. Invoke `write-review` with the accumulated pass findings, the accumulated pass **observations**, the waiver results (`applied` / `expired`), and the scope to render `specs/NNN-feature/review.md` — record and report together in one file — and capture each observation to `specs/inbox.md`. Supply the required scalars the primitives don't produce — `reviewed-at` (the current UTC timestamp) and `reviewed-against` (HEAD sha), both host-provided (as the session-write's `set-at` is); `diff-base` comes from step 1; and **`examined`, how many of the in-scope files the passes above actually read**. The primitive resolves the scope itself and records it as `scope`, so `examined` is a numerator against a denominator no caller supplies. It applies the cross-pass dedup (highest-severity-wins on rule + file + overlapping range), buckets findings into MUST / SHOULD / low-confidence / waived, prunes expired waivers (preserving any adopter-authored waiver fields on the survivors), records the skipped passes, renders the observations, and sets blocking when MUST violations remain. With `--fix`, apply the auto-fixable findings, re-run the affected passes, and invoke `write-review` a second time for the post-fix counts. The result also carries `analyze-freshness`, the state of the feature's `analysis.md` record — its recorded digest compared against the spec's analyze subjects as they are now — which you render as the `analyze` row described under [Output](#output). It never affects the exit code.
 
 ## Markdown-only reference
 
@@ -511,24 +511,38 @@ When `--fix` is set, after writing the report:
    `review.md` with the post-fix counts.
 4. Stage the modified files but do not commit. The user owns the commit.
 
-### 6. Update spec frontmatter
+### 6. Record the run in `review.md`
 
-After writing the report, update the target spec's frontmatter:
+The record is `review.md`'s own frontmatter, written in the same pass as the
+report body below it. `spec.md` is not touched — one fact, one home
+(spec 057):
 
 ```yaml
-review:
-  last-run: 2026-05-10T14:32:00Z
-  reviewed-against: <sha>
-  must-violations: 0
-  should-violations: 3
-  low-confidence: 2
-  examined: 38
-  scope: 46
-  reviewed-digest:
-    scenarios/retry.md: 3f2a…
-    data-model.md: 9c1b…
-  blocking: false
+---
+spec: 020-code-review
+last-run: 2026-05-10T14:32:00Z
+reviewed-against: <sha>
+diff-base: <sha>
+must-violations: 0
+should-violations: 3
+low-confidence: 2
+captured-issues: 0
+examined: 38
+scope: 46
+skipped-passes: []
+reviewed-digest:
+  scenarios/retry.md: 3f2a…
+  data-model.md: 9c1b…
+blocking: false
+waivers: []
+---
 ```
+
+The timestamp is spelled `last-run`, matching the analyze record. It was
+`reviewed-at` here and `last-run` in the spec block — one instant under two
+names, which the reconciliation check had to key _by meaning rather than by
+name_ to compare at all. With one home the second spelling had nothing left to
+justify it, and the relocation migration folds the pair.
 
 `reviewed-digest` is the record's description of **what this review read** — a
 per-path digest of the spec's durable contracts (`scenarios/*.md`,
@@ -540,11 +554,15 @@ came back as a contract that had changed since the review when it had changed
 only since the commit the review was labelled with. `reviewed-against` stays as
 provenance, read for the mechanical-sweep rename exemption alone.
 
-`review.md` and `spec.md` are deliberately outside the digest — this command
-writes both, so counting them would stale every review the instant it was
-recorded. That is the inverse of the `analyze:` record's subject set, which
-_includes_ them, because they are this command's outputs and that command's
-inputs. A spec with no scenarios and no data model records
+`review.md` and `spec.md` are deliberately outside the digest. `review.md` is
+this command's own output, so counting it would stale every review the instant
+it was recorded. `spec.md` is outside for the same reason historically —
+`write-review` used to stamp a block into it — and that rationale lapsed when
+the record moved; the set is left unchanged regardless, because adding
+`spec.md` would stale every review on any spec-body edit, which is a behavior
+change rather than a relocation. That is the inverse of the analyze record's
+subject set, which _includes_ them, because they are this command's outputs
+and that command's inputs. A spec with no scenarios and no data model records
 `reviewed-digest: {}` — taken and empty, which reads as current, and is
 distinct from an absent digest, which cannot be judged at all.
 
@@ -557,24 +575,25 @@ list when present.)
 
 ## Blocking semantics
 
-A spec MUST NOT advance from `in-progress` to `done` while its frontmatter
-records `review.blocking: true`. This is enforced as follows:
+A spec MUST NOT advance from `in-progress` to `done` while its `review.md`
+records `blocking: true`. This is enforced as follows:
 
 1. **`/{project}:implement`** — before marking `status: done`, its `check-review-gate`
    runs every check in a fixed order, first failure wins; the full order and
    its message texts are canonical in the pre-done gate step of
-   `framework/commands/implement.md`, and only the two `review:` checks are
+   `framework/commands/implement.md`, and only the two review checks are
    restated here. Ahead of them run the feature directory's markdown lint,
    unresolved scenario open questions, and an undischarged fold — any of which
-   halts before the review block is consulted. Behind them run the review
-   staleness check and the `analyze:` checks. Then the `review:` block: a
-   missing/null `review.last-run` (or absent block) halts with
+   halts before the review record is consulted. Behind them run the review
+   staleness check and the analyze checks. Then the review record read from
+   `review.md`: a missing/null `last-run` — or **no `review.md` at all**, which
+   is the never-run state — halts with
 
    ```text
    blocked: spec has not been reviewed — run /{project}:review before completing
    ```
 
-   and only `review.blocking: true` halts with the MUST-violations message plus
+   and only `blocking: true` halts with the MUST-violations message plus
    waive guidance:
 
    ```text
@@ -583,17 +602,21 @@ records `review.blocking: true`. This is enforced as follows:
    ```
 
 2. **`/{project}:analyze`** — adds a check to its existing audit: if the spec's
-   status is `done` but `review.blocking` is `true` or `review.last-run` is
-   missing, this is a validation failure. Composable with `--fix`:
+   status is `done` but its `review.md` records `blocking: true` or a missing
+   `last-run`, this is a validation failure. Composable with `--fix`:
    `/{project}:analyze --fix` reverts `done` → `in-progress` and emits a notice
    (it never silently downgrades; the notice is the point).
 
 3. **CI hook** — the shipped GHA template at
-   `framework/templates/ci/adopter-generators.yml` fails when any
-   spec at `status: done` has `review.blocking: true` or missing
-   `review.last-run`. A `done` spec with **no** `review:` block at all is
-   grandfathered (it predates `/{project}:review`) and exempt — matching
-   `/{project}:analyze`'s own grandfather rule.
+   `framework/templates/ci/adopter-generators.yml` fails when any spec at
+   `status: done` has a record with `blocking: true` or a missing `last-run`,
+   in `review.md` or in `analysis.md`. A `done` spec with **no** `review.md`
+   (or no `analysis.md`) has never been reviewed (or analyzed) and is exempt —
+   matching `/{project}:analyze`'s own grandfather rule — but that exemption is
+   **bounded** by a committed high-water mark, because the set cannot
+   legitimately grow. Keying it on the absence of a `spec.md` block instead is
+   what the template used to do, and the relocation made that predicate true of
+   every spec.
 
 This implements the constitution's quality gate via three mutually reinforcing
 mechanisms rather than relying on any single one — consistent with the
@@ -624,20 +647,19 @@ A MUST violation can be waived only with explicit, recorded justification:
 /{project}:review --waive <rule-id> --reason "<text>"
 ```
 
-This appends to the target spec's frontmatter:
+This appends to `review.md`'s frontmatter:
 
 ```yaml
-review:
-  waivers:
-    - rule: SEC-BE-014
-      file: src/api/internal.ts
-      reason: "Endpoint is internal-only behind mTLS; rule applies to public APIs"
-      waived-at: 2026-05-10T14:40:00Z
-      waived-by: <git config user.email>
+waivers:
+  - rule: SEC-BE-014
+    file: src/api/internal.ts
+    reason: "Endpoint is internal-only behind mTLS; rule applies to public APIs"
+    waived-at: 2026-05-10T14:40:00Z
+    waived-by: <git config user.email>
 ```
 
 Waived findings drop out of the `must-violations` count (there is no separate
-`waived-violations` frontmatter field; `write-review` reports the waived count
+`waived-violations` field; `write-review` reports the waived count
 only in its transient result). They appear in `review.md` under the **Waived
 findings** section. They survive across `/{project}:review` runs as long as the
 rule ID and file location still match; if either changes, the waiver expires
@@ -649,7 +671,7 @@ expire the waiver.
 
 On every `/{project}:review` run, after the review passes have produced their
 findings (see **Run review passes**) and before counting them into `must-violations`
-or writing `review.md`, walk `review.waivers` and classify each entry against
+or writing the record, walk the recorded `waivers` and classify each entry against
 those findings. A waiver can only be judged against findings that exist — when
 an empty scope skips the passes entirely, leave the waivers untouched; and on
 a dimension-restricted run, waivers anchored to skipped dimensions apply
@@ -663,7 +685,7 @@ unchanged rather than expiring:
    (renamed, deleted, moved) or the rule no longer fires there (offending
    code fixed, rule removed, rule renamed — IDs are permanent per
    `specs/008-security-rules/data-model.md`, so a renamed rule is a
-   different rule). On expiry, drop the entry from `review.waivers` on the
+   different rule). On expiry, drop the entry from the recorded `waivers` on the
    next frontmatter write AND emit one line on stdout:
 
    ```text
@@ -682,7 +704,7 @@ unchanged rather than expiring:
 
 - A waiver entry missing any of `rule`, `file`, `reason`, `waived-at`, or
   `waived-by` is **skipped** with a one-line warning naming the offending
-  entry (e.g. `malformed waiver at review.waivers[2]: missing 'reason'`).
+  entry (e.g. `malformed waiver at waivers[2]: missing 'reason'`).
   The entry is NOT auto-removed; the operator must clean it up to silence
   the warning. Malformed entries are operator-authored state, not garbage
   for the framework to collect.
@@ -692,7 +714,7 @@ unchanged rather than expiring:
   NOT auto-pruned. Same reasoning: the framework treats duplicates as
   operator state worth investigating, not silent state to clean up.
 
-The `review.waivers` list follows the §text-first-artifacts open-schema
+The `waivers` list follows the §text-first-artifacts open-schema
 rule. Adopters MAY add fields (e.g., `co-waived-by`, `approved-by-team`,
 `ticket`) to enforce org-specific waiver policy in their own CI; `/{project}:review`
 and `/{project}:analyze` will not error on unknown fields, and `write-review`
@@ -786,7 +808,7 @@ read identically.
 ### The `analyze` row
 
 `/{project}:review` is the command that most reliably _invalidates_ an analyze
-record — it rewrites `review.md` and the spec's `review:` block, `--fix`
+record — it rewrites `review.md`, `--fix`
 rewrites code, and an operator resolving MUST violations rewrites more — and it
 used to say nothing about it. The pipeline mandates
 `/{project}:review → /{project}:analyze → done` and the pre-done gate enforces
@@ -815,12 +837,11 @@ commit comparison, which is why this row and the pre-done gate cannot disagree
 — there is no reference point left for them to differ on, and neither reports a
 record as stale merely because content the analysis already examined has since
 been committed. Writing this review supersedes the record because `review.md`
-and the spec's `review:` block are themselves analyze subjects, not because
-`HEAD` moved.
+is itself an analyze subject, not because `HEAD` moved.
 
-The `review:` record works the same way, over its own narrower subject set —
+The review record works the same way, over its own narrower subject set —
 one comparison, two subject sets. See `reviewed-digest` under
-[Update spec frontmatter](#6-update-spec-frontmatter).
+[Record the run in `review.md`](#6-record-the-run-in-reviewmd).
 
 A record carrying no `analyzed-digest` — every record written before this
 existed — renders the fourth state. It is not current and not stale: nothing on
