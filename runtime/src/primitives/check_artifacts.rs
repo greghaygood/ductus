@@ -547,7 +547,7 @@ fn record_unreadable_artifact(
             family: family.into(),
             severity: "blocking".into(),
             message: format!(
-                "unreadable artifact: {path} could not be read, so this check never examined it                  — a done spec cannot rest on an analysis that could not read its own subject"
+                "unreadable artifact: {path} could not be read, so this check never examined it — a done spec cannot rest on an analysis that could not read its own subject"
             ),
             path,
         });

@@ -819,12 +819,12 @@ fn cross_spec_impact_block(
     let mut guidance = Vec::new();
     if !undischarged.is_empty() {
         guidance.push(format!(
-            "Record the change in each affected spec with a signpost linking back to {feature},              then re-run this gate — discharge is the reciprocal link, not the key's removal.              Run /{project}:amend against a spec that is already done to take the back-edge."
+            "Record the change in each affected spec with a signpost linking back to {feature}, then re-run this gate — discharge is the reciprocal link, not the key's removal. Run /{project}:amend against a spec that is already done to take the back-edge."
         ));
     }
     if !missing.is_empty() {
         guidance.push(
-            "An entry naming no spec directory is a typo — correct the slug, or remove the              entry if the impact turned out not to exist."
+            "An entry naming no spec directory is a typo — correct the slug, or remove the entry if the impact turned out not to exist."
                 .to_string(),
         );
     }
