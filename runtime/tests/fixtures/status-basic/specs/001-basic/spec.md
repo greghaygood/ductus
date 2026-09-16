@@ -5,13 +5,6 @@ tags: [test, pipeline]
 references:
   - service: api
     spec: 003-user
-review:
-  last-run: null
-  reviewed-against: null
-  must-violations: 0
-  should-violations: 0
-  low-confidence: 0
-  blocking: false
 ---
 
 # 001 — Basic Status Fixture

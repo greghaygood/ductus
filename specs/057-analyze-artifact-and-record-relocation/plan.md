@@ -131,6 +131,34 @@ own case. A dual-read deprecation window was rejected — it re-creates the
 two-homes condition this spec exists to remove, and AC6 requires a residual
 `spec.md` block to be a *violation*, which a dual-read would have to tolerate.
 
+### Why the runtime work is sequenced additively
+
+`Frontmatter` is a shared type, so removing its `review` and `analyze` fields
+breaks every reader in one compile. The first task breakdown put that removal
+early and asked each following task to pass `cargo test` — unreachable, because
+the tree does not build again until the last of them lands.
+
+Two call sites made it worse than a red tree. `process_waivers.rs:65` and
+`invalidate_review.rs:94` parse their own minimal frontmatter structs rather
+than `Frontmatter`, so they would have kept compiling, found no `review:` block,
+and behaved as though every spec had zero waivers — a waiver losing its
+structural existence, which is the precise shape of the 031 failure this spec is
+built on.
+
+So tasks 2-9 are ordered additively: the merged type and the loaders first
+(additive), then the writers, then the readers, and the `Frontmatter` field
+removal last. Each step compiles and tests. Tasks 3 and 4 deliberately leave the
+`spec.md` block write in place until task 9 retires it — a refactoring sequence
+internal to this change, not the shipped dual-read the Trade-offs section
+rejects. The distinction is that nothing ships between task 3 and task 9.
+
+**One correction to the data model from this sequencing.** `waivers` is listed
+there as part of the merged review record, which is right as a schema claim, but
+it is not a field on `ReviewBlock` and must not become one: three raw parsers
+own it with `#[serde(flatten)]` to preserve an organization's custom fields, and
+`schema/primitives.rs` carries no `serde_norway::Value` for the `JsonSchema`
+derive to accept. Waivers change file in task 5 and stay open-schema.
+
 ## Affected Files
 
 | File | Action | Purpose |

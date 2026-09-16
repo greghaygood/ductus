@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: in-progress
 dependencies: [020-code-review, 027-bootstrap-migration-registry, 047-analyze-findings-durability]
 review:
   last-run: null
@@ -176,7 +176,7 @@ backfilling.
 - [ ] AC11: Full markdown lint passes across the migrated corpus.
 - [ ] AC12: The relocated review record carries every field from both former sides — `blocking` and `waivers` from the `spec.md` block, `diff-base`, `captured-issues`, and `skipped-passes` from `review.md`, and one timestamp for the pair spelled `last-run` / `reviewed-at` — so the merge drops no field.
 - [ ] AC13: `analysis.md`'s body carries no `- [ ]` checkbox items in any section, checked mechanically rather than by review, so the report cannot become a second triage surface.
-- [ ] AC14: Each analyze run overwrites `analysis.md` against a fixed section skeleton — Summary, hard failures, blocking findings, advisory findings, and unexamined targets with their reasons — and never appends to a previous run's content.
+- [ ] AC14: Each analyze run overwrites `analysis.md` against a fixed section skeleton — Summary, hard failures, blocking findings, advisory findings, unexamined targets with their reasons, and captured issues — and never appends to a previous run's content. The sixth section is where the findings' text lands: the tier sections carry counts, because per-tier counts are all the writer receives, while the captured bullets record `family — message — path` without recording which tier produced them.
 - [ ] AC15: `check-review-agreement` and the audit family built on it are removed, and the never-reviewed and never-analyzed cases its `single_sided` count distinguished remain distinguishable through AC5.
 - [ ] AC16: The change adds one `framework/migrations.toml` entry with its `framework/migrations/{id}.md` procedure file, and 027's audit family — which fails a convention removal carrying no registry entry — passes against it.
 - [ ] AC17: The shipped CI template step reads the record from `review.md` and `analysis.md` and bounds its exempt set with a committed high-water mark; no predicate in the step is satisfiable by every spec in a migrated corpus.

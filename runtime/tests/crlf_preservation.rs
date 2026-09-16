@@ -64,7 +64,10 @@ fn assert_crlf(path: &Path, what: &str) {
     );
 }
 
-const SPEC: &str = "---\nstatus: in-progress\ndependencies: []\nreview:\n  last-run: 2026-08-01T00:00:00Z\n  reviewed-against: abc123\n  must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  blocking: false\nnext-criterion: 2\n---\n\n# 050 — Alpha\n\n## Motivation\n\nWhy.\n\n## Acceptance Criteria\n\n- [ ] AC1: Something is true.\n\n## Open Questions\n\n*None.*\n";
+const SPEC: &str = "---\nstatus: in-progress\ndependencies: []\nnext-criterion: 2\n---\n\n# 050 — Alpha\n\n## Motivation\n\nWhy.\n\n## Acceptance Criteria\n\n- [ ] AC1: Something is true.\n\n## Open Questions\n\n*None.*\n";
+
+/// A recorded review, in the artifact that owns it (spec 057).
+const REVIEW_RECORD: &str = "---\nspec: 050-alpha\nlast-run: 2026-08-01T00:00:00Z\nreviewed-against: abc123\nmust-violations: 0\nblocking: false\n---\n\n# Review — 050-alpha\n\n## Summary\n\nClean.\n";
 
 #[test]
 fn rewrite_spec_links_preserves_crlf() {
@@ -289,11 +292,26 @@ fn write_review_preserves_crlf_across_both_halves() {
     )
     .unwrap();
 
-    assert_crlf(&spec, "write-review");
-    let after = read(&spec);
+    // The spec is no longer a write target, so its CRLF survives by not being
+    // touched at all — asserted rather than assumed, because "untouched" is the
+    // new contract and a future edit that reintroduced a spec write would have
+    // to break this line to do it.
+    assert_crlf(&spec, "write-review (spec untouched)");
+    assert_eq!(
+        read(&spec),
+        read_expected_spec(),
+        "spec.md must be untouched"
+    );
+
+    // The record is the file that gets written.
+    let record = repo.join("specs/050-alpha/review.md");
+    let after = read(&record);
     assert!(after.contains("reviewed-against: deadbeef"), "{after}");
-    // The body half came through the same writer, not around it.
-    assert!(after.contains("## Motivation"), "{after}");
+}
+
+/// `SPEC` as it lands on disk, for the untouched comparison.
+fn read_expected_spec() -> String {
+    SPEC.replace('\n', "\r\n")
 }
 
 #[test]
@@ -302,6 +320,9 @@ fn invalidate_review_preserves_crlf_across_both_halves() {
     let repo = tmp.path();
     let spec = repo.join("specs/050-alpha/spec.md");
     write_crlf(&spec, SPEC);
+    // The record it invalidates, CRLF like everything else in this checkout.
+    let record = repo.join("specs/050-alpha/review.md");
+    write_crlf(&record, REVIEW_RECORD);
 
     let result = primitives::invalidate_review::run(
         &InvalidateReviewArgs {
@@ -312,8 +333,18 @@ fn invalidate_review_preserves_crlf_across_both_halves() {
     .unwrap();
     assert!(result.invalidated);
 
-    assert_crlf(&spec, "invalidate-review");
-    let after = read(&spec);
+    // The record is rewritten in place, so its line ending is the one that has
+    // to survive — frontmatter and report body alike, since the splice is LF
+    // while the body is carried through as it was read.
+    assert_crlf(&record, "invalidate-review");
+    let after = read(&record);
     assert!(after.contains("last-run: null"), "{after}");
-    assert!(after.contains("## Motivation"), "{after}");
+    assert!(after.contains("## Summary"), "{after}");
+    // And the spec is untouched, CRLF included.
+    assert_crlf(&spec, "invalidate-review (spec untouched)");
+    assert_eq!(
+        read(&spec),
+        read_expected_spec(),
+        "spec.md must be untouched"
+    );
 }

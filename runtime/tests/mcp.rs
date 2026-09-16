@@ -557,9 +557,15 @@ async fn process_waivers_applies_via_mcp() {
     fs::create_dir_all(&dir).unwrap();
     fs::write(
         dir.join("spec.md"),
-        "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n    \
-         - rule: SEC-BE-014\n      file: src/x.ts\n      reason: internal-only endpoint behind mTLS\n      \
-         waived-at: 2026-01-01T00:00:00Z\n      waived-by: dev@example.com\n---\n\n# x\n",
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# x\n",
+    )
+    .unwrap();
+    // Waivers live in `review.md`'s frontmatter (spec 057 task 5).
+    fs::write(
+        dir.join("review.md"),
+        "---\nspec: 001-x\nlast-run: 2026-01-01T00:00:00Z\nblocking: false\nwaivers:\n  \
+         - rule: SEC-BE-014\n    file: src/x.ts\n    reason: internal-only endpoint behind mTLS\n    \
+         waived-at: 2026-01-01T00:00:00Z\n    waived-by: dev@example.com\n---\n\n# Review — 001-x\n",
     )
     .unwrap();
     fs::create_dir_all(tmp.path().join("src")).unwrap();
@@ -749,7 +755,8 @@ async fn write_review_reports_examined_against_a_derived_scope_via_mcp() {
     let report = fs::read_to_string(tmp.path().join("specs/001-x/review.md")).unwrap();
     assert!(!report.contains("examined:"), "{report}");
 
-    // Stated: echoed on the wire and written to both records.
+    // Stated: echoed on the wire and written to the record — which has one
+    // home now (spec 057), so the spec must not carry a second copy.
     let mut stated = base;
     stated["examined"] = json!(4);
     let result = call_tool(&client, "write-review", stated).await;
@@ -758,7 +765,7 @@ async fn write_review_reports_examined_against_a_derived_scope_via_mcp() {
     let report = fs::read_to_string(tmp.path().join("specs/001-x/review.md")).unwrap();
     assert!(report.contains("examined: 4"), "{report}");
     let spec = fs::read_to_string(tmp.path().join("specs/001-x/spec.md")).unwrap();
-    assert!(spec.contains("  examined: 4"), "{spec}");
+    assert!(!spec.contains("examined:"), "{spec}");
 }
 
 #[tokio::test]

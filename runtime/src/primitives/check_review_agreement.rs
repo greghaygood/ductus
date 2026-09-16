@@ -518,10 +518,17 @@ pub fn run(_args: &CheckReviewAgreementArgs, repo: &Path) -> Result<CheckReviewA
     }
 
     let guidance = if examined.is_empty() {
+        // Spec 057 made this the permanent state, not a symptom. The record has
+        // one home now, so no spec carries both copies and there is nothing
+        // left to reconcile — this primitive and its audit family are retired
+        // in the same change. Until they are, the empty subject must keep
+        // reporting guidance rather than a clean verdict: comparing nothing and
+        // reporting agreement is precisely the false green this was built to
+        // prevent, and it would be worse pointed at itself.
         format!(
-            "no spec under {specs_root}/ carries both a `review:` block and a review.md — \
-             the enumeration or the frontmatter parse broke, and comparing nothing reports \
-             agreement"
+            "no spec under {specs_root}/ carries both a `review:` block and a review.md — the \
+             review record now lives in review.md alone, so this check has no subject and is \
+             superseded by validate-frontmatter's residual-block finding"
         )
     } else {
         String::new()

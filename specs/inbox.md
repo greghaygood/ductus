@@ -36,3 +36,5 @@
         specs/008-security-rules/spec.md): `- [ ] {Rule ID}: {artifact} does not address — {summary}`.
 
      When an item is migrated, remove it from this list. -->
+
+- [ ] convention: `validate-frontmatter` emits `severity: "blocking"` for every finding, including malformed YAML and a missing `status`, which the constitution's Validation Severity section classifies as **Hard fail** — so the primitive's vocabulary is coarser than the schema it enforces and a reader cannot tell the tiers apart — runtime/src/primitives/validate_frontmatter.rs (captured during 057-analyze-artifact-and-record-relocation)

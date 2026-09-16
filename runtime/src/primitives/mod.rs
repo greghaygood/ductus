@@ -527,6 +527,123 @@ pub enum PrimitiveError {
 /// Convenience alias for primitive return values.
 pub type Result<T> = std::result::Result<T, PrimitiveError>;
 
+/// The three states loading an audit record can produce.
+///
+/// Absent and unreadable are **different answers**, and collapsing the second
+/// into the first is the failure spec 057 AC5 names: a `review.md` that exists
+/// but will not parse says nothing about whether a review ran, while a
+/// `review.md` that is not there says a review did not. Reporting the former as
+/// never-run claims a fact the artifact never supplied — `QUAL-CLAIM-001`
+/// applied to the gate's own inputs.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum RecordLoad<T> {
+    /// The artifact does not exist. The never-run state, and information in
+    /// its own right: every run writes its artifact, so absence is never
+    /// ambiguous between "no run" and "nothing to report".
+    Absent,
+    /// The artifact exists but its frontmatter could not be read or parsed.
+    /// Carries the reason, so a caller reports *why* it is undeterminable
+    /// rather than that it is.
+    Unreadable(String),
+    /// The record, as the artifact carries it.
+    Present(T),
+}
+
+impl<T> RecordLoad<T> {
+    /// The record when one was read, else `None`.
+    ///
+    /// Reaching for this is an explicit decision to treat absent and unreadable
+    /// alike, which is right for a caller whose subject is something else —
+    /// and wrong for a gate, which is why the gate matches on the variants.
+    pub(crate) fn as_present(&self) -> Option<&T> {
+        match self {
+            Self::Present(record) => Some(record),
+            Self::Absent | Self::Unreadable(_) => None,
+        }
+    }
+}
+
+/// Load an audit record from the frontmatter of the artifact that owns it.
+///
+/// A missing file is [`RecordLoad::Absent`]; every other failure — unreadable
+/// bytes, a missing frontmatter fence, YAML that will not deserialize — is
+/// [`RecordLoad::Unreadable`] with the reason.
+pub(crate) fn load_record<T: serde::de::DeserializeOwned>(path: &Path) -> RecordLoad<T> {
+    if !path.exists() {
+        return RecordLoad::Absent;
+    }
+    let content = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(source) => return RecordLoad::Unreadable(source.to_string()),
+    };
+    let (fm_text, _body) = match split_frontmatter(&content, path) {
+        Ok(split) => split,
+        Err(error) => return RecordLoad::Unreadable(error.to_string()),
+    };
+    match serde_norway::from_str::<T>(fm_text) {
+        Ok(record) => RecordLoad::Present(record),
+        Err(error) => RecordLoad::Unreadable(error.to_string()),
+    }
+}
+
+/// The review record, from `{feature_dir}/review.md`.
+pub(crate) fn load_review_record(
+    feature_dir: &Path,
+) -> RecordLoad<crate::schema::primitives::ReviewBlock> {
+    load_record(&feature_dir.join(REVIEW_RECORD_FILE))
+}
+
+/// The analyze record, from `{feature_dir}/analysis.md`.
+pub(crate) fn load_analyze_record(
+    feature_dir: &Path,
+) -> RecordLoad<crate::schema::primitives::AnalyzeBlock> {
+    load_record(&feature_dir.join(ANALYSIS_RECORD_FILE))
+}
+
+/// The waivers recorded in `review.md`'s frontmatter.
+///
+/// Generic over the waiver shape because the callers want different ones —
+/// `process-waivers` parses loosely so a malformed entry is a reportable
+/// warning rather than a whole-file parse failure, while `write-review` parses
+/// with `#[serde(flatten)]` so an organization's custom fields survive the
+/// re-render. What they must **not** differ on is where the list lives, which
+/// is the one thing this function owns.
+///
+/// An absent `review.md` yields an empty list rather than an error: no review,
+/// no waivers. That is a state, not a failure.
+pub(crate) fn read_recorded_waivers<T: serde::de::DeserializeOwned>(
+    feature_dir: &Path,
+) -> Result<Vec<T>> {
+    #[derive(serde::Deserialize)]
+    struct WaiverFm<T> {
+        #[serde(default = "Vec::new")]
+        waivers: Vec<T>,
+    }
+
+    let path = feature_dir.join(REVIEW_RECORD_FILE);
+    if !path.is_file() {
+        return Ok(Vec::new());
+    }
+    let content = read_text(&path)?;
+    let (fm_text, _body) = split_frontmatter(&content, &path)?;
+    let parsed: WaiverFm<T> =
+        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
+            path: path.clone(),
+            source,
+        })?;
+    Ok(parsed.waivers)
+}
+
+/// The artifact owning the review record.
+pub(crate) const REVIEW_RECORD_FILE: &str = "review.md";
+
+/// The artifact owning the analyze record.
+///
+/// `analysis.md`, not `analyze.md`: the runtime already pairs `write-review`
+/// with `write-analysis`, and `review.md` takes its command's noun rather than
+/// its verb (spec 057).
+pub(crate) const ANALYSIS_RECORD_FILE: &str = "analysis.md";
+
 /// Split a markdown file's content into its frontmatter YAML block and the
 /// body that follows. Returns an error if no `---` opening fence is present
 /// or no closing fence is found.
@@ -2162,6 +2279,125 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+
+    // --- audit record loading -------------------------------------------------
+    // Absent, unreadable and present are three answers, not two (spec 057 AC5).
+    // Each case below pins one of them, because the failure this guards against
+    // is precisely the collapse of the middle one into the first.
+
+    #[test]
+    fn record_load_reports_absent_when_the_artifact_is_not_there() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(
+            load_review_record(dir.path()),
+            RecordLoad::Absent,
+            "a feature with no review.md has not been reviewed"
+        );
+        assert_eq!(load_analyze_record(dir.path()), RecordLoad::Absent);
+    }
+
+    #[test]
+    fn record_load_reports_unreadable_rather_than_absent_on_a_broken_artifact() {
+        let dir = tempfile::tempdir().unwrap();
+
+        // Present, but no frontmatter fence at all.
+        std::fs::write(dir.path().join("review.md"), "# Review\n\nno frontmatter\n").unwrap();
+        assert!(
+            matches!(load_review_record(dir.path()), RecordLoad::Unreadable(_)),
+            "a review.md with no frontmatter says nothing about whether a review ran"
+        );
+
+        // Present, fenced, but the YAML will not deserialize into the record.
+        std::fs::write(
+            dir.path().join("analysis.md"),
+            "---\nhard-fail: not-a-number\n---\n\n# Analysis\n",
+        )
+        .unwrap();
+        assert!(
+            matches!(load_analyze_record(dir.path()), RecordLoad::Unreadable(_)),
+            "a record whose types do not parse is undeterminable, never never-run"
+        );
+    }
+
+    #[test]
+    fn record_load_carries_every_merged_field() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("review.md"),
+            "---\n\
+             spec: 057-analyze-artifact-and-record-relocation\n\
+             last-run: 2026-09-15T00:00:00Z\n\
+             reviewed-against: abc1234\n\
+             diff-base: def5678\n\
+             must-violations: 1\n\
+             should-violations: 2\n\
+             low-confidence: 3\n\
+             captured-issues: 4\n\
+             examined: 5\n\
+             scope: 6\n\
+             skipped-passes: [security, simplicity]\n\
+             blocking: true\n\
+             ---\n\n# Review\n",
+        )
+        .unwrap();
+
+        let RecordLoad::Present(record) = load_review_record(dir.path()) else {
+            panic!("expected a present record");
+        };
+
+        // The fields that existed on only one side before the merge are the
+        // ones a careless merge drops, so they are asserted individually.
+        assert_eq!(
+            record.spec.as_deref(),
+            Some("057-analyze-artifact-and-record-relocation")
+        );
+        assert_eq!(record.diff_base.as_deref(), Some("def5678"));
+        assert_eq!(record.captured_issues, Some(4));
+        assert_eq!(record.skipped_passes, vec!["security", "simplicity"]);
+
+        // ...and the fields that were duplicated still arrive.
+        assert_eq!(record.last_run.as_deref(), Some("2026-09-15T00:00:00Z"));
+        assert_eq!(record.reviewed_against.as_deref(), Some("abc1234"));
+        assert_eq!(record.must_violations, 1);
+        assert_eq!(record.should_violations, 2);
+        assert_eq!(record.low_confidence, 3);
+        assert_eq!(record.examined, Some(5));
+        assert_eq!(record.scope, Some(6));
+        assert!(record.blocking);
+    }
+
+    #[test]
+    fn record_load_round_trips_the_analyze_record() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("analysis.md"),
+            "---\n\
+             spec: 057-analyze-artifact-and-record-relocation\n\
+             last-run: 2026-09-15T00:00:00Z\n\
+             analyzed-against: abc1234\n\
+             hard-fail: 0\n\
+             blocking-findings: 0\n\
+             advisory: 2\n\
+             unexamined: 1\n\
+             blocking: false\n\
+             analyzed-digest:\n\
+             \u{20} spec.md: aaaa\n\
+             ---\n\n# Analysis\n",
+        )
+        .unwrap();
+
+        let RecordLoad::Present(record) = load_analyze_record(dir.path()) else {
+            panic!("expected a present record");
+        };
+        assert_eq!(record.last_run.as_deref(), Some("2026-09-15T00:00:00Z"));
+        assert_eq!(record.advisory, 2);
+        assert_eq!(record.unexamined, 1);
+        assert!(!record.blocking);
+        assert_eq!(
+            record.analyzed_digest.get("spec.md").map(String::as_str),
+            Some("aaaa")
+        );
+    }
 
     // --- numbered task headings ----------------------------------------------
     // Moved here with the helper (scenario numbered-heading-grammar-single-source).

@@ -32,7 +32,7 @@ use std::path::Path;
 
 use sha2::{Digest, Sha256};
 
-use crate::primitives::{read_text, split_frontmatter, write_review};
+use crate::primitives::read_text;
 use crate::schema::primitives::{AnalyzeBlock, RecordFreshness};
 
 /// Any `.md` artifact under the feature — the analyze record's subject set.
@@ -50,14 +50,29 @@ pub(crate) fn is_analyze_subject(rel_within_feature: &str) -> bool {
 }
 
 /// A scenario or the data model — the artifacts a **review** reads, and the
-/// subject set of the `review:` record.
+/// subject set of the review record.
 ///
 /// Deliberately narrower than [`is_analyze_subject`], and the two must not be
-/// merged. A review reads *code*, so `review.md` and `spec.md` are its outputs
-/// rather than its inputs — `write-review` touches both, and counting them
-/// would stale every review the instant it was recorded. An analysis reads
-/// *artifacts*, so those same files are among its subjects. Same mechanism,
-/// different claims.
+/// merged. A review reads *code*, so `review.md` is its output rather than its
+/// input — counting it would stale every review the instant it was recorded.
+/// An analysis reads *artifacts*, so that same file is among its subjects. Same
+/// mechanism, different claims.
+///
+/// ## `spec.md`'s exclusion now rests on nothing, and is kept anyway
+///
+/// `spec.md` was excluded for the same stated reason as `review.md`:
+/// `write-review` touched both, so digesting either would have staled the
+/// record it was writing. Spec 057 moved the record to `review.md`, and
+/// `write-review` no longer touches `spec.md` at all — so for that half the
+/// reason has lapsed, and the exclusion is now a bare fact rather than a
+/// consequence.
+///
+/// It is left in place deliberately. Adding `spec.md` to this set would make
+/// every recorded review stale on any spec-body edit, which is a change to what
+/// the gate *means* — defensible on its own merits, and not something to slip
+/// into a relocation whose whole claim (AC4) is that the gate's verdicts are
+/// unchanged. Whoever revisits it should argue it as its own change, and should
+/// know that this comment, not a stale rationale, is what they are overturning.
 ///
 /// Mirrors `scripts/audit/review-freshness.sh`'s rule exactly.
 pub(crate) fn is_review_contract(rel_within_feature: &str) -> bool {
@@ -82,12 +97,19 @@ pub(crate) struct SubjectDigest {
 
 /// Digest every analyze subject under `feature_dir`.
 ///
-/// `spec.md` is digested with its own `analyze:` frontmatter block **excised**.
-/// That exclusion is load-bearing rather than tidy: the record is written after
-/// the subjects are read, so a digest covering the block could never match on
-/// the next comparison and every run would stale itself. Measured on the
-/// sha-diff design the same exclusion was what took the flagged population
-/// from 54 of 54 specs down to 1.
+/// `analysis.md` is digested with its own frontmatter **excised**. That
+/// exclusion is load-bearing rather than tidy: the record is written after the
+/// subjects are read, so a digest covering it could never match on the next
+/// comparison and every run would stale itself. Measured on the sha-diff design
+/// the same exclusion was what took the flagged population from 54 of 54 specs
+/// down to 1.
+///
+/// It used to apply to `spec.md`'s `analyze:` block and moved with the record
+/// (spec 057). The excision got simpler on the way: dropping a file's whole
+/// frontmatter needs no YAML parse, so unlike the block surgery it replaced it
+/// cannot half-succeed and leave a digest over a partially-excised file.
+/// `spec.md` is now digested whole, which means a frontmatter edit there moves
+/// the digest — visible where the old excision hid it.
 ///
 /// Both failure modes are reported, and they are one line apart: a subject the
 /// walk could not **reach** and one it opened and could not **read** both land
@@ -130,8 +152,15 @@ pub(crate) fn subject_digest(feature_dir: &Path, is_subject: fn(&str) -> bool) -
         }
         match read_text(entry.path()) {
             Ok(text) => {
-                let digested = if rel == "spec.md" {
-                    strip_analyze_block(&text, entry.path()).unwrap_or(text)
+                // The record's own artifact is digested with its frontmatter
+                // excised (spec 057). The exclusion followed the record out of
+                // `spec.md`: this file is written *after* its subjects are
+                // read, so a digest covering it can never match, and every
+                // analysis would report itself stale the instant it was
+                // recorded. `spec.md` is now digested whole — with the block
+                // gone, there is nothing in it to excise.
+                let digested = if rel == crate::primitives::ANALYSIS_RECORD_FILE {
+                    strip_record_frontmatter(&text)
                 } else {
                     text
                 };
@@ -146,23 +175,25 @@ pub(crate) fn subject_digest(feature_dir: &Path, is_subject: fn(&str) -> bool) -
     out
 }
 
-/// `spec.md` with its `analyze:` frontmatter block removed, or `None` when the
-/// frontmatter will not split (in which case the caller digests the file whole
-/// — a spec whose frontmatter is unparseable is a real difference, not one to
-/// normalize away).
+/// An artifact's body, with its frontmatter dropped entirely.
 ///
-/// Reuses [`write_review::splice_top_level_block`] with an empty replacement
-/// rather than re-deriving "find the top-level key and its extent". Sharing
-/// that is deliberate for the reason the splice was generalized in the first
-/// place: two implementations of the same region logic agree until one meets a
-/// frontmatter shape the other has not, and here disagreement would mean a
-/// record that can never match.
-fn strip_analyze_block(text: &str, path: &Path) -> Option<String> {
-    let (fm_text, body) = split_frontmatter(text, path).ok()?;
-    Some(format!(
-        "{}\n---\n{body}",
-        write_review::splice_top_level_block(fm_text, "analyze", "")
-    ))
+/// Simpler than the block surgery this replaces: the record owns the whole
+/// frontmatter of its own file, so excising it needs no YAML parse and cannot
+/// half-succeed. A file with no frontmatter fence is returned unchanged —
+/// there is nothing to strip, and the digest over its bytes is correct.
+fn strip_record_frontmatter(text: &str) -> String {
+    let Some(rest) = text
+        .strip_prefix("---\n")
+        .or_else(|| text.strip_prefix("---\r\n"))
+    else {
+        return text.to_string();
+    };
+    for fence in ["\n---\n", "\n---\r\n"] {
+        if let Some(idx) = rest.find(fence) {
+            return rest[idx + fence.len()..].to_string();
+        }
+    }
+    text.to_string()
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -368,20 +399,72 @@ mod tests {
         assert_eq!(paths, vec!["scenarios/a.md", "spec.md", "tasks.md"]);
     }
 
-    /// The exclusion the whole comparison rests on: the record is written after
-    /// the subjects are read, so a digest covering the `analyze:` block could
-    /// never match and every run would stale itself.
+    /// The exclusion the whole comparison rests on, at its new address: the
+    /// record is written after the subjects are read, so a digest covering it
+    /// could never match and every run would stale itself. It moved with the
+    /// record — from `spec.md`'s `analyze:` block to `analysis.md`'s own
+    /// frontmatter (spec 057 AC7).
     #[test]
-    fn the_analyze_block_does_not_change_the_spec_digest() {
+    fn the_records_own_frontmatter_does_not_change_its_digest() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), "");
+        fs::write(
+            tmp.path().join("analysis.md"),
+            "---\nspec: 001-x\nlast-run: null\n---\n\n# Analysis\n\nSame body.\n",
+        )
+        .unwrap();
+        let before = subject_digest(tmp.path(), is_analyze_subject);
+
+        // A second run records different counts and a different timestamp.
+        fs::write(
+            tmp.path().join("analysis.md"),
+            "---\nspec: 001-x\nlast-run: 2026-09-07T00:00:00Z\nadvisory: 4\nblocking: false\n---\n\n# Analysis\n\nSame body.\n",
+        )
+        .unwrap();
+        let after = subject_digest(tmp.path(), is_analyze_subject);
+
+        assert_eq!(
+            before.digests["analysis.md"], after.digests["analysis.md"],
+            "a record rewriting its own frontmatter must not stale itself"
+        );
+    }
+
+    /// The other half: with the block gone, `spec.md` is digested whole, so a
+    /// frontmatter edit there **does** move the digest. The old excision would
+    /// have hidden it.
+    #[test]
+    fn a_spec_frontmatter_edit_does_change_its_digest() {
         let tmp = tempdir().unwrap();
         seed(tmp.path(), "");
         let before = subject_digest(tmp.path(), is_analyze_subject);
-
-        let block = "analyze:\n  last-run: 2026-09-07T00:00:00Z\n  analyzed-against: abc123\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 0\n  unexamined: 0\n  blocking: false\n";
-        seed(tmp.path(), block);
+        fs::write(
+            tmp.path().join("spec.md"),
+            "---\nstatus: done\ndependencies: []\n---\n\n# Spec\n",
+        )
+        .unwrap();
         let after = subject_digest(tmp.path(), is_analyze_subject);
+        assert_ne!(before.digests["spec.md"], after.digests["spec.md"]);
+    }
 
-        assert_eq!(before.digests["spec.md"], after.digests["spec.md"]);
+    /// The body still counts — excising the frontmatter must not excise
+    /// everything.
+    #[test]
+    fn the_records_body_does_change_its_digest() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), "");
+        fs::write(
+            tmp.path().join("analysis.md"),
+            "---\nspec: 001-x\n---\n\n# Analysis\n\nOne finding.\n",
+        )
+        .unwrap();
+        let before = subject_digest(tmp.path(), is_analyze_subject);
+        fs::write(
+            tmp.path().join("analysis.md"),
+            "---\nspec: 001-x\n---\n\n# Analysis\n\nTwelve findings.\n",
+        )
+        .unwrap();
+        let after = subject_digest(tmp.path(), is_analyze_subject);
+        assert_ne!(before.digests["analysis.md"], after.digests["analysis.md"]);
     }
 
     #[test]

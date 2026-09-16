@@ -46,8 +46,21 @@ pub fn run(args: &ReadSpecArgs, repo: &Path) -> Result<ReadSpecResult> {
     let scenario_open_questions = scan.questions;
     let scenario_files_unreadable = scan.unreadable;
 
+    // The records, from the artifacts that own them (spec 057). Read here so a
+    // caller gets the spec and its records in one call; absent and unreadable
+    // both collapse to `None`, because a caller that must tell them apart is a
+    // gate and gates load the record directly.
+    let review = crate::primitives::load_review_record(&feature_dir)
+        .as_present()
+        .cloned();
+    let analyze = crate::primitives::load_analyze_record(&feature_dir)
+        .as_present()
+        .cloned();
+
     Ok(ReadSpecResult {
         frontmatter,
+        review,
+        analyze,
         sections,
         acceptance_criteria,
         open_questions,
@@ -335,6 +348,73 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+    /// `read-spec` still hands back the record — composed from the artifact
+    /// that owns it, rather than read out of the spec's frontmatter.
+    ///
+    /// The storage moved; the interface did not. A caller that wanted the spec
+    /// and its record in one call still gets exactly that (spec 057).
+    #[test]
+    fn the_records_are_composed_from_their_artifacts() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: done\ndependencies: []\n---\n\n# X\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("review.md"),
+            "---\nspec: 001-x\nlast-run: 2026-09-15T00:00:00Z\nmust-violations: 2\nblocking: true\n---\n\n# Review\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("analysis.md"),
+            "---\nspec: 001-x\nlast-run: 2026-09-15T01:00:00Z\nadvisory: 3\nblocking: false\n---\n\n# Analysis\n",
+        )
+        .unwrap();
+
+        let result = run(
+            &ReadSpecArgs {
+                feature: "001-x".into(),
+                include_body: false,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+
+        let review = result.review.expect("review record");
+        assert_eq!(review.must_violations, 2);
+        assert!(review.blocking);
+        let analyze = result.analyze.expect("analyze record");
+        assert_eq!(analyze.advisory, 3);
+    }
+
+    /// No artifacts, no records — and no error. An unreviewed feature is a
+    /// state, not a failure.
+    #[test]
+    fn a_feature_with_no_record_artifacts_reports_none() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: draft\ndependencies: []\n---\n\n# X\n",
+        )
+        .unwrap();
+
+        let result = run(
+            &ReadSpecArgs {
+                feature: "001-x".into(),
+                include_body: false,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(result.review.is_none());
+        assert!(result.analyze.is_none());
+    }
+
     use std::path::PathBuf;
 
     fn fixture_repo() -> PathBuf {

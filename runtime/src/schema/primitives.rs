@@ -48,10 +48,15 @@ pub struct ReviewBlock {
     /// changed when the review had read exactly that content and only the
     /// commit had moved.
     ///
-    /// `review.md` and `spec.md` are deliberately outside the set —
-    /// `write-review` touches both, so counting them would stale every review
-    /// the instant it was recorded. That is the opposite of the analyze
-    /// record's set, and correctly so: they are this command's *outputs*.
+    /// `review.md` is deliberately outside the set — it is where this record
+    /// lives, so counting it would stale every review the instant it was
+    /// recorded. That is the opposite of the analyze record's set, and
+    /// correctly so: it is this command's *output*.
+    ///
+    /// `spec.md` is outside the set too, but no longer for that reason:
+    /// `write-review` stopped touching it when the record moved (spec 057).
+    /// See `is_review_contract` for why the exclusion is kept anyway, and what
+    /// changing it would cost.
     ///
     /// `None` means no digest was recorded — a pre-digest review, which is
     /// [`RecordFreshness::Undeterminable`]. `Some` of an **empty** map means
@@ -90,6 +95,26 @@ pub struct ReviewBlock {
     /// what `examined` is a claim against.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scope: Option<u32>,
+    /// Feature slug the record belongs to.
+    ///
+    /// The four fields below existed on only one side of the pre-relocation
+    /// split: `review.md`'s own frontmatter carried them and the spec's
+    /// `review:` block did not. `check-review-agreement` called them "fields on
+    /// only one side" and declined to compare them, which was correct while the
+    /// record had two homes. With one home they are simply part of the record,
+    /// and carrying them is what keeps the merge from dropping a field (spec
+    /// 057, AC12).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spec: Option<String>,
+    /// The sha the review diffed from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diff_base: Option<String>,
+    /// Observations the run appended to the inbox.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub captured_issues: Option<u32>,
+    /// Review dimensions that did not run this pass, by name.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skipped_passes: Vec<String>,
 }
 
 /// Parsed `analyze:` frontmatter block — the durable record that
@@ -127,9 +152,10 @@ pub struct AnalyzeBlock {
     /// [`crate::primitives::analyze_subjects`] for the failure and the
     /// measurement.
     ///
-    /// `spec.md` is digested with its own `analyze:` block excised, because
-    /// this record is written after the subjects are read and a digest
-    /// covering it could never match.
+    /// `analysis.md` is digested with its own frontmatter excised, because this
+    /// record is written after the subjects are read and a digest covering it
+    /// could never match. The exclusion moved here with the record (spec 057);
+    /// `spec.md` is digested whole.
     ///
     /// Empty means the record predates the field, which is
     /// [`RecordFreshness::Undeterminable`] rather than a match: nothing on
@@ -732,14 +758,20 @@ pub struct Frontmatter {
     /// finding.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub cross_spec_impact: Vec<String>,
-    /// Last-review block, when set.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub review: Option<ReviewBlock>,
-    /// Last-analysis block, when set. Absent on a spec that predates the
-    /// analyze record, which the drift family grandfathers and Family 37
-    /// counts — see [`AnalyzeBlock`].
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub analyze: Option<AnalyzeBlock>,
+    // No `review` or `analyze` field. Each record lives in the frontmatter of
+    // the artifact that owns it — `review.md` and `analysis.md` — and is loaded
+    // through `load_review_record` / `load_analyze_record` (spec 057).
+    //
+    // Their absence here is the point: with one home per record, nothing can
+    // read a second copy, so nothing can read a *stale* second copy. That was
+    // not hypothetical — 031 and 041 carried `should-violations: 1` in
+    // `spec.md` while their reports recorded `0`, for weeks, because every gate
+    // read exactly one of the two files.
+    //
+    // The open-schema rule means a residual block in an unmigrated tree still
+    // deserializes harmlessly rather than failing the parse, which is why
+    // `validate-frontmatter` reports it explicitly instead of relying on this
+    // type to reject it.
 }
 
 /// One parsed body section.
@@ -799,6 +831,24 @@ pub struct ScenarioOpenQuestion {
 pub struct ReadSpecResult {
     /// Parsed frontmatter.
     pub frontmatter: Frontmatter,
+    /// The review record, read from `review.md`, when the feature has one.
+    ///
+    /// Composed at read time from the artifact that owns it — **not** a second
+    /// storage location, which is the thing spec 057 removed. Nothing writes
+    /// the record here; this field exists so a caller that wants the record
+    /// alongside the spec gets it in one call rather than reaching for a second
+    /// path, exactly as it did when the block lived in the frontmatter above.
+    ///
+    /// `None` covers both an absent artifact and an unreadable one. A caller
+    /// that needs to tell those apart is a gate, and gates load the record
+    /// directly so the distinction survives.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub review: Option<ReviewBlock>,
+    /// The analyze record, read from `analysis.md`, when the feature has one.
+    /// The counterpart to [`Self::review`], with the same read-time-only
+    /// caveat.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub analyze: Option<AnalyzeBlock>,
     /// Body sections in document order.
     pub sections: Vec<SpecSection>,
     /// Acceptance-criteria checkboxes.
@@ -3080,6 +3130,16 @@ pub enum ReviewGateBlock {
     /// The spec has no completed review: the `review:` block is absent or
     /// its `last-run` is null.
     NotReviewed,
+    /// The record artifact exists but its frontmatter could not be read or
+    /// parsed, so whether a review ran is **undeterminable**.
+    ///
+    /// Distinct from [`Self::NotReviewed`] on purpose. Absence is an answer —
+    /// every run writes its artifact, so no artifact means no run — while a
+    /// file that will not parse says nothing at all. Reporting the second as
+    /// the first would claim a fact the artifact never supplied, and would send
+    /// the operator to run a review that has very possibly already happened.
+    /// It blocks either way: the gate cannot confirm what it cannot read.
+    RecordUnreadable,
     /// The last review left blocking MUST violations
     /// (`review.blocking: true`).
     MustViolations,
@@ -3110,6 +3170,10 @@ pub enum ReviewGateBlock {
     /// trace, so a spec that had passed both gates and one that had passed
     /// only the first were identical on disk.
     NotAnalyzed,
+    /// `analysis.md` exists but its frontmatter could not be read or parsed.
+    /// The analyze half of [`Self::RecordUnreadable`], and undeterminable for
+    /// the same reason.
+    AnalyzeRecordUnreadable,
     /// The last analysis left findings in the hard-fail or blocking tier
     /// (`analyze.blocking: true`).
     ///
@@ -4375,18 +4439,17 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::{
-        AcceptanceCriterion, AnalyzeBlock, AnchorReference, BTreeMap, CheckRuleIdsArgs,
-        CheckRuleIdsResult, CheckStuckArgs, CheckStuckResult, CheckboxToggleResult, Classification,
-        DependencyEdge, DeriveBoundaryArgs, DeriveBoundaryResult, Frontmatter, FrontmatterFinding,
-        GateConfirmArgs, GateConfirmResult, InboxStanding, InboxState, LintMarkdownArgs,
-        LintMarkdownResult, MarkCriterionArgs, MarkTaskArgs, MarkdownViolation,
-        MigrateSessionFileArgs, MigrateSessionFileResult, OpenQuestion, PruneAction, PruneGate,
-        PruneMode, PruneSection, PruneTasksArgs, PruneTasksResult, ReadSpecArgs, ReadSpecResult,
-        ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs, ResolveAnchorResult, ReviewBlock,
-        RuleCitation, RunGeneratorArgs, RunGeneratorResult, ScenarioOpenQuestion, SetStatusArgs,
-        SetStatusResult, SizeSummary, SpecSection, Subtask, Task, TraverseDepsArgs,
-        TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs,
-        WriteSessionResult,
+        AcceptanceCriterion, AnchorReference, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStuckArgs,
+        CheckStuckResult, CheckboxToggleResult, Classification, DependencyEdge, DeriveBoundaryArgs,
+        DeriveBoundaryResult, Frontmatter, FrontmatterFinding, GateConfirmArgs, GateConfirmResult,
+        InboxStanding, InboxState, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
+        MarkTaskArgs, MarkdownViolation, MigrateSessionFileArgs, MigrateSessionFileResult,
+        OpenQuestion, PruneAction, PruneGate, PruneMode, PruneSection, PruneTasksArgs,
+        PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
+        ResolveAnchorArgs, ResolveAnchorResult, RuleCitation, RunGeneratorArgs, RunGeneratorResult,
+        ScenarioOpenQuestion, SetStatusArgs, SetStatusResult, SizeSummary, SpecSection, Subtask,
+        Task, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+        ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
     };
 
     fn round_trip<T>(value: &T) -> T
@@ -4418,20 +4481,9 @@ mod tests {
                 tags: vec![],
                 folds_into: None,
                 cross_spec_impact: vec![],
-                review: Some(ReviewBlock::default()),
-                analyze: Some(AnalyzeBlock {
-                    last_run: Some("2026-09-05T18:00:00Z".into()),
-                    analyzed_against: Some("abc123".into()),
-                    hard_fail: 0,
-                    blocking_findings: 0,
-                    advisory: 2,
-                    unexamined: 1,
-                    unexamined_by_reason: BTreeMap::from([("root-absent".to_string(), 1)]),
-                    blocking: false,
-                    analyzed_digest: std::collections::BTreeMap::new(),
-                    analyzed_unreadable: vec![],
-                }),
             },
+            review: None,
+            analyze: None,
             sections: vec![SpecSection {
                 heading: "Motivation".into(),
                 level: 2,

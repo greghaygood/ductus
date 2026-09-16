@@ -356,10 +356,9 @@ fn review_primitive_results_thread_into_perform_review_and_write_review() {
 
     assert_observations_threaded(tmp.path(), &review);
 
-    let spec_after = std::fs::read_to_string(&spec_path).unwrap();
     assert!(
-        spec_after.contains("blocking: true"),
-        "the MUST finding set blocking in the spec review block:\n{spec_after}"
+        review.contains("blocking: true"),
+        "the MUST finding set blocking in the record:\n{review}"
     );
 }
 
@@ -503,10 +502,16 @@ fn process_waivers_binds_fired_from_accumulated_pass_findings() {
     std::fs::create_dir_all(&spec_dir).unwrap();
     std::fs::write(
         spec_dir.join("spec.md"),
-        "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n    \
-         - rule: SEC-BE-001\n      file: src/a.rs\n      \
-         reason: \"Internal-only path behind mTLS; rule targets public endpoints\"\n      \
-         waived-at: 2026-07-07T00:00:00Z\n      waived-by: test@example.com\n---\n\n# X\n",
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# X\n",
+    )
+    .unwrap();
+    // Waivers live in `review.md`'s frontmatter (spec 057 task 5).
+    std::fs::write(
+        spec_dir.join("review.md"),
+        "---\nspec: 001-x\nlast-run: 2026-07-07T00:00:00Z\nblocking: false\nwaivers:\n  \
+         - rule: SEC-BE-001\n    file: src/a.rs\n    \
+         reason: \"Internal-only path behind mTLS; rule targets public endpoints\"\n    \
+         waived-at: 2026-07-07T00:00:00Z\n    waived-by: test@example.com\n---\n\n# Review — 001-x\n",
     )
     .unwrap();
     std::fs::create_dir_all(tmp.path().join("src")).unwrap();
@@ -574,14 +579,13 @@ fn process_waivers_binds_fired_from_accumulated_pass_findings() {
         review.contains("Internal-only path behind mTLS"),
         "applied waiver reason reached write-review:\n{review}"
     );
-    let spec_after = std::fs::read_to_string(spec_dir.join("spec.md")).unwrap();
     assert!(
-        spec_after.contains("blocking: false"),
-        "the waived finding does not block:\n{spec_after}"
+        review.contains("blocking: false"),
+        "the waived finding does not block:\n{review}"
     );
     assert!(
-        spec_after.contains("SEC-BE-001"),
-        "the still-valid waiver was not pruned from the spec:\n{spec_after}"
+        review.contains("SEC-BE-001"),
+        "the still-valid waiver was not pruned from the record:\n{review}"
     );
 }
 
@@ -598,10 +602,16 @@ fn applied_waiver_threads_from_process_waivers_into_write_review() {
     // Spec carries a waiver anchored at (SEC-BE-001, src/a.rs).
     std::fs::write(
         spec_dir.join("spec.md"),
-        "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n    \
-         - rule: SEC-BE-001\n      file: src/a.rs\n      \
-         reason: \"Internal-only path behind mTLS; rule targets public endpoints\"\n      \
-         waived-at: 2026-07-07T00:00:00Z\n      waived-by: test@example.com\n---\n\n# X\n",
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# X\n",
+    )
+    .unwrap();
+    // Waivers live in `review.md`'s frontmatter (spec 057 task 5).
+    std::fs::write(
+        spec_dir.join("review.md"),
+        "---\nspec: 001-x\nlast-run: 2026-07-07T00:00:00Z\nblocking: false\nwaivers:\n  \
+         - rule: SEC-BE-001\n    file: src/a.rs\n    \
+         reason: \"Internal-only path behind mTLS; rule targets public endpoints\"\n    \
+         waived-at: 2026-07-07T00:00:00Z\n    waived-by: test@example.com\n---\n\n# Review — 001-x\n",
     )
     .unwrap();
     std::fs::create_dir_all(tmp.path().join("src")).unwrap();
@@ -670,10 +680,9 @@ fn applied_waiver_threads_from_process_waivers_into_write_review() {
         review.contains("Internal-only path behind mTLS"),
         "applied waiver reason reached write-review:\n{review}"
     );
-    let spec_after = std::fs::read_to_string(spec_dir.join("spec.md")).unwrap();
     assert!(
-        spec_after.contains("blocking: false"),
-        "a waived finding does not block:\n{spec_after}"
+        review.contains("blocking: false"),
+        "a waived finding does not block:\n{review}"
     );
 }
 

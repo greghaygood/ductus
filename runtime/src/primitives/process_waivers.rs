@@ -26,7 +26,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::primitives::{PrimitiveError, Result, read_text, split_frontmatter};
+use crate::primitives::{PrimitiveError, Result};
 use crate::schema::paths;
 use crate::schema::primitives::{ProcessWaiversArgs, ProcessWaiversResult, WaiverRef};
 
@@ -55,17 +55,11 @@ pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResul
             feature: args.feature.clone(),
         });
     }
-    let content = read_text(&spec_path)?;
-    let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;
-    let frontmatter: SpecFrontmatter =
-        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
-            path: spec_path.clone(),
-            source,
-        })?;
-    let waivers = frontmatter
-        .review
-        .map(|review| review.waivers)
-        .unwrap_or_default();
+    // The waivers live in `review.md`'s frontmatter, beside the rest of the
+    // review record (spec 057). `spec.md` is still read above, because its
+    // existence is what makes this a feature at all.
+    let waivers: Vec<RawWaiver> =
+        super::read_recorded_waivers(spec_path.parent().unwrap_or_else(|| Path::new(".")))?;
 
     // A dimension-restricted run (any pass skipped) cannot see the full set
     // of findings, so it must not expire a waiver on the strength of "the
@@ -150,20 +144,6 @@ fn first_missing_field(waiver: &RawWaiver) -> Option<&'static str> {
         .map(|(field, _)| *field)
 }
 
-/// Minimal spec frontmatter shape: just the `review.waivers` list.
-#[derive(Deserialize)]
-struct SpecFrontmatter {
-    #[serde(default)]
-    review: Option<ReviewFrontmatter>,
-}
-
-/// `review:` block — only `waivers` is consulted here.
-#[derive(Deserialize, Default)]
-struct ReviewFrontmatter {
-    #[serde(default)]
-    waivers: Vec<RawWaiver>,
-}
-
 /// One waiver entry, parsed loosely so a malformed entry (missing field) is a
 /// reportable warning rather than a whole-frontmatter parse failure.
 #[derive(Deserialize)]
@@ -195,10 +175,29 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let dir = tmp.path().join("specs").join(feature);
         std::fs::create_dir_all(&dir).unwrap();
-        let content = format!(
-            "---\nstatus: in-progress\ndependencies: []\nreview:\n  waivers:\n{waivers_yaml}---\n\n# Spec\n"
-        );
-        std::fs::write(dir.join("spec.md"), content).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: in-progress\ndependencies: []\n---\n\n# Spec\n",
+        )
+        .unwrap();
+        // The waivers live in `review.md` now (spec 057 task 5). Callers still
+        // pass entries indented for the old nested position, so they are
+        // de-indented one level here rather than at eleven call sites — the
+        // fixtures pin waiver *semantics*, and rewriting them all would risk
+        // changing a case while moving it.
+        let mut deindented = String::new();
+        for line in waivers_yaml.lines() {
+            deindented.push_str(line.strip_prefix("  ").unwrap_or(line));
+            deindented.push('\n');
+        }
+        let waivers_yaml = deindented;
+        std::fs::write(
+            dir.join("review.md"),
+            format!(
+                "---\nspec: {feature}\nlast-run: 2026-01-01T00:00:00Z\nblocking: false\nwaivers:\n{waivers_yaml}---\n\n# Review\n"
+            ),
+        )
+        .unwrap();
         for rel in existing_files {
             let path = tmp.path().join(rel);
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();

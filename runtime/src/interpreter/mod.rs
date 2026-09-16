@@ -1128,9 +1128,14 @@ mod tests {
         assert!(review.contains("should-violations: 1"));
         assert!(review.contains("### MUST: SEC-BE-001"));
         assert!(review.contains("### SHOULD: QUAL-002"));
-        // Blocking flowed to the spec review block.
-        let spec = std::fs::read_to_string(dir.join("spec.md")).unwrap();
-        assert!(spec.contains("blocking: true"));
+        // Blocking flowed into the record, which lives in review.md (spec 057).
+        assert!(review.contains("blocking: true"), "{review}");
+        assert!(
+            !std::fs::read_to_string(dir.join("spec.md"))
+                .unwrap()
+                .contains("blocking:"),
+            "the spec carries no review record"
+        );
     }
 
     #[test]

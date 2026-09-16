@@ -38,8 +38,8 @@ use crate::primitives::{
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
-    ConstitutionOutcome, Frontmatter, RecordFreshness, ReviewFinding, ReviewObservation,
-    WriteReviewArgs, WriteReviewResult,
+    ConstitutionOutcome, RecordFreshness, ReviewFinding, ReviewObservation, WriteReviewArgs,
+    WriteReviewResult,
 };
 /// Reject any scalar field that would inject document structure.
 ///
@@ -154,6 +154,25 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
     let governance_section = render_unexamined_governance(repo);
     // The denominator `examined` is a claim against — see `resolve_scope_size`.
     let scope = resolve_scope_size(args, repo);
+    // Read the spec and resolve the surviving waivers BEFORE either render:
+    // the report now carries the full record, waivers included, so both homes
+    // are rendered from one computation rather than two.
+    let spec_content = read_text(&spec_path)?;
+    // Validate the spec's frontmatter before anything is written.
+    //
+    // This parse used to happen as a by-product of reading waivers out of the
+    // spec. With the waivers moved to `review.md` (spec 057 task 5) nothing
+    // else needs it, so it is deliberate now — and it has to be: without it a
+    // spec whose frontmatter will not parse receives a `review.md` recording a
+    // clean run, which is the inversion the halt exists to prevent. The
+    // scenario primitive-robustness-hardening pins it.
+    let (spec_fm_text, _) = split_frontmatter(&spec_content, &spec_path)?;
+    let _: crate::schema::primitives::Frontmatter =
+        serde_norway::from_str(spec_fm_text).map_err(|source| PrimitiveError::Yaml {
+            path: spec_path.clone(),
+            source,
+        })?;
+    let surviving = surviving_waivers(&feature_dir, args)?;
     let report = render_report(
         args,
         &Buckets {
@@ -165,16 +184,10 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
         blocking,
         &governance_section,
         scope,
+        &surviving,
+        &contracts,
     );
     let review_path = feature_dir.join("review.md");
-    let spec_content = read_text(&spec_path)?;
-    let counts = RecordedCounts {
-        must: must_n,
-        should: should_n,
-        low: low_n,
-        scope,
-    };
-    let updated = update_spec_review_block(&spec_content, &spec_path, args, counts, &contracts)?;
 
     // Both outputs computed; only now touch the filesystem.
     //
@@ -187,21 +200,26 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
     // prefix already matches.
     let observations_captured = capture_observations(&args.observations, &args.feature, repo)?;
 
+    // One write, one home. `spec.md` is read for validation above and never
+    // written here — the record it used to carry now lives in `review.md`
+    // alone (spec 057), which also retires the two-writes-must-not-diverge
+    // hazard the ordering comment above was built around.
     write_atomic(&review_path, &report)?;
-    if updated != spec_content {
-        write_atomic(&spec_path, &updated)?;
-    }
 
     // The analyze row `/{project}:review` renders (spec 047 AC12), computed
-    // AFTER the writes above and against the working tree — which is the whole
-    // point of the reference point. This call has just rewritten `review.md`
-    // and the spec's `review:` block, both of them analyze subjects, so the
-    // record it reports on is superseded from this moment; a committed
-    // comparison would say `current` until someone committed and would then be
-    // wrong retroactively. Reading the spec's `analyze:` block from `updated`
-    // rather than re-reading the file keeps the answer consistent with the
-    // bytes just written.
-    let analyze_freshness = analyze_freshness_of(&updated, &spec_path, &args.feature, repo);
+    // AFTER the write above and against the working tree — which is the whole
+    // point of the reference point. This call has just rewritten `review.md`,
+    // an analyze subject, so the record it reports on is superseded from this
+    // moment; a committed comparison would say `current` until someone
+    // committed and would then be wrong retroactively.
+    //
+    // The record is read from `analysis.md` rather than from the spec text this
+    // call just produced (spec 057). That is not merely a path change: the old
+    // form read the `analyze:` block out of the in-memory `updated` spec so the
+    // answer matched the bytes being written. With the record in its own
+    // artifact — one this call does not touch — reading it from disk *is* the
+    // consistent answer.
+    let analyze_freshness = analyze_freshness_of(&feature_dir, &args.feature, repo);
 
     Ok(WriteReviewResult {
         inbox_standing: super::inbox_standing::standing(repo),
@@ -272,20 +290,17 @@ fn resolve_scope_size(args: &WriteReviewArgs, repo: &Path) -> u32 {
 /// [`RecordFreshness::Undeterminable`] rather than an error: the review
 /// itself has already been written by this point, and failing the whole call
 /// over the notice would trade a report for a row.
-fn analyze_freshness_of(
-    spec_text: &str,
-    spec_path: &Path,
-    feature: &str,
-    repo: &Path,
-) -> RecordFreshness {
+fn analyze_freshness_of(feature_dir: &Path, feature: &str, repo: &Path) -> RecordFreshness {
     let root = paths::Paths::load(repo).specs_root;
     let rel_dir = format!("{root}/{feature}");
-    let block = split_frontmatter(spec_text, spec_path)
-        .ok()
-        .and_then(|(fm_text, _body)| serde_norway::from_str::<Frontmatter>(fm_text).ok())
-        .and_then(|frontmatter| frontmatter.analyze);
-    match block {
-        Some(analyze) => analyze_subjects::analyze_freshness(repo, &rel_dir, Some(&analyze)),
+    // An unreadable record is reported as never-run here, deliberately: this
+    // is an advisory row in a review's stdout, not a gate, and the gate is
+    // where the absent/undeterminable distinction is load-bearing. Blocking a
+    // review's summary line on a damaged analyze record would let one record's
+    // damage suppress an unrelated command's output.
+    let record = crate::primitives::load_analyze_record(feature_dir);
+    match record.as_present() {
+        Some(analyze) => analyze_subjects::analyze_freshness(repo, &rel_dir, Some(analyze)),
         None => RecordFreshness::NeverRun,
     }
 }
@@ -438,6 +453,8 @@ fn render_report(
     blocking: bool,
     governance_section: &str,
     scope: u32,
+    waivers: &[RawWaiverFull],
+    contracts: &crate::primitives::analyze_subjects::SubjectDigest,
 ) -> String {
     let (must, should, low, waived) = (buckets.must, buckets.should, buckets.low, buckets.waived);
     let feature = &args.feature;
@@ -447,7 +464,11 @@ fn render_report(
     if let Some(scenario) = args.scenario.as_deref().filter(|s| !s.trim().is_empty()) {
         let _ = writeln!(fm, "scenario: {scenario}");
     }
-    let _ = writeln!(fm, "reviewed-at: {}", args.reviewed_at);
+    // `last-run`, not `reviewed-at`. The two names were one instant spelled
+    // twice across the record's two homes, and `check-review-agreement` had to
+    // key that pair "by meaning, not by name" to compare them at all. With one
+    // home the second spelling has nothing left to justify it (spec 057).
+    let _ = writeln!(fm, "last-run: {}", args.reviewed_at);
     let _ = writeln!(fm, "reviewed-against: {}", args.reviewed_against);
     let _ = writeln!(fm, "diff-base: {}", args.diff_base);
     let _ = writeln!(fm, "must-violations: {}", must.len());
@@ -462,6 +483,28 @@ fn render_report(
     }
     let _ = writeln!(fm, "scope: {scope}");
     let _ = writeln!(fm, "skipped-passes: [{}]", args.skipped_passes.join(", "));
+    // The three fields that lived only in the spec's `review:` block. They
+    // arrive here unchanged in meaning: `reviewed-digest` is still always
+    // written (empty map included, so "digest taken over a spec with no
+    // durable contracts" stays distinct from "pre-digest record"), `blocking`
+    // is still derived rather than accepted, and waivers still carry their
+    // adopter-authored extras verbatim.
+    if contracts.digests.is_empty() {
+        let _ = writeln!(fm, "reviewed-digest: {{}}");
+    } else {
+        let _ = writeln!(fm, "reviewed-digest:");
+        for (path, digest) in &contracts.digests {
+            let _ = writeln!(fm, "  {path}: {digest}");
+        }
+    }
+    if !contracts.unreadable.is_empty() {
+        let _ = writeln!(fm, "reviewed-unreadable:");
+        for path in &contracts.unreadable {
+            let _ = writeln!(fm, "  - {path}");
+        }
+    }
+    let _ = writeln!(fm, "blocking: {blocking}");
+    render_waivers_at(&mut fm, waivers, "");
     fm.push_str("---");
 
     let summary = args
@@ -729,49 +772,19 @@ fn render_skipped(skipped: &[String]) -> String {
 
 // -- spec frontmatter update -------------------------------------------------
 
-/// Rewrite the spec's `review:` frontmatter block with the fresh scalar fields,
-/// preserving every other top-level key verbatim and pruning expired waivers
-/// from `review.waivers`. Inserts the block when absent.
-/// The numbers a review records about itself: its three finding counts and
-/// the derived scope its `examined` claim is measured against.
-#[derive(Clone, Copy)]
-struct RecordedCounts {
-    must: u32,
-    should: u32,
-    low: u32,
-    scope: u32,
-}
-
-fn update_spec_review_block(
-    content: &str,
-    spec_path: &Path,
-    args: &WriteReviewArgs,
-    counts: RecordedCounts,
-    contracts: &crate::primitives::analyze_subjects::SubjectDigest,
-) -> Result<String> {
-    let (fm_text, body) = split_frontmatter(content, spec_path)?;
-    let existing: SpecReviewFm =
-        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
-            path: spec_path.into(),
-            source,
-        })?;
-    let existing_waivers = existing.review.map(|r| r.waivers).unwrap_or_default();
-    let surviving: Vec<RawWaiverFull> = existing_waivers
+/// The waivers that survive this run: every recorded waiver the run did not
+/// expire, with its open-schema extras intact.
+///
+/// Extracted when the report started carrying the whole record: the report is
+/// rendered before the record is assembled, and computing the surviving set
+/// twice would be two chances to prune differently — the class of divergence
+/// `check-review-agreement` was built to catch.
+fn surviving_waivers(feature_dir: &Path, args: &WriteReviewArgs) -> Result<Vec<RawWaiverFull>> {
+    let recorded: Vec<RawWaiverFull> = crate::primitives::read_recorded_waivers(feature_dir)?;
+    Ok(recorded
         .into_iter()
         .filter(|waiver| !is_expired(waiver, &args.expired_waivers))
-        .collect();
-
-    let block = render_review_yaml(args, counts, &surviving, contracts);
-    let new_fm = splice_review_block(fm_text, &block);
-    // The splice joins with `\n` and the fences are literal, while `body` is
-    // carried through untouched — so on a CRLF spec the two halves would
-    // disagree. Normalize the whole file to its own ending instead: a
-    // partially-converted file is the outcome no later reader can tell from
-    // a hand-edit.
-    Ok(crate::primitives::with_line_ending(
-        &format!("---\n{new_fm}\n---\n{body}"),
-        crate::primitives::line_ending_of(content),
-    ))
+        .collect())
 }
 
 /// Whether a waiver's `(rule, file)` anchor is in the expired set.
@@ -784,73 +797,25 @@ fn is_expired(waiver: &RawWaiverFull, expired: &[crate::schema::primitives::Waiv
         .any(|entry| entry.rule == rule && entry.file == file)
 }
 
-/// Render the `review:` YAML block (no trailing newline).
-fn render_review_yaml(
-    args: &WriteReviewArgs,
-    counts: RecordedCounts,
-    waivers: &[RawWaiverFull],
-    contracts: &crate::primitives::analyze_subjects::SubjectDigest,
-) -> String {
-    let RecordedCounts {
-        must,
-        should,
-        low,
-        scope,
-    } = counts;
-    let mut block = String::from("review:\n");
-    let _ = writeln!(block, "  last-run: {}", args.reviewed_at);
-    let _ = writeln!(block, "  reviewed-against: {}", args.reviewed_against);
-    let _ = writeln!(block, "  must-violations: {must}");
-    let _ = writeln!(block, "  should-violations: {should}");
-    let _ = writeln!(block, "  low-confidence: {low}");
-    // What the passes read, and what they were asked to read. Omitted when the
-    // run stated nothing, so a record that never made the claim is absent
-    // rather than reading as a computed zero — the distinction the `examined`
-    // doc comment draws and `check-review-agreement` reports on.
-    if let Some(examined) = args.examined {
-        let _ = writeln!(block, "  examined: {examined}");
-    }
-    let _ = writeln!(block, "  scope: {scope}");
-    // The record's description of its own subject, derived here rather than
-    // accepted as an argument — the same discipline that derives `blocking`.
-    // No caller can record a digest it did not take, and this digest and the
-    // one the gate recomputes come from one function.
-    // Always written, empty map included: `reviewed-digest: {}` records that
-    // the digest was taken over a spec with no durable contracts, which the
-    // gate reads as current. Omitting it there would be indistinguishable from
-    // a pre-digest record and leave such a spec unjudgeable forever.
-    if contracts.digests.is_empty() {
-        let _ = writeln!(block, "  reviewed-digest: {{}}");
-    } else {
-        let _ = writeln!(block, "  reviewed-digest:");
-        for (path, digest) in &contracts.digests {
-            let _ = writeln!(block, "    {path}: {digest}");
-        }
-    }
-    if !contracts.unreadable.is_empty() {
-        let _ = writeln!(block, "  reviewed-unreadable:");
-        for path in &contracts.unreadable {
-            let _ = writeln!(block, "    - {path}");
-        }
-    }
-    let _ = writeln!(block, "  blocking: {}", must > 0);
-    render_waivers(&mut block, waivers);
-    block.trim_end_matches('\n').to_string()
-}
-
-/// Append the `waivers:` list to a rendered `review:` block, preserving
-/// every adopter-authored extra field verbatim (§text-first-artifacts'
-/// open-schema rule).
+/// Append the `waivers:` list to a rendered record, at the given base indent,
+/// preserving every adopter-authored extra field verbatim
+/// (§text-first-artifacts' open-schema rule).
 ///
-/// Shared with `invalidate-review`, which drops the review's scalars but
-/// must not drop operator state: a waiver is a recorded judgement, and an
-/// invalidation says the *review* is out of date, not that the judgement
-/// was withdrawn.
-pub(crate) fn render_waivers(block: &mut String, waivers: &[RawWaiverFull]) {
+/// Shared with `invalidate-review`, which drops the review's scalars but must
+/// not drop operator state: a waiver is a recorded judgement, and an
+/// invalidation says the *review* is out of date, not that the judgement was
+/// withdrawn.
+///
+/// The indent is a parameter rather than a constant because the record briefly
+/// had two homes while it was being relocated (spec 057). Only one remains —
+/// top-level in `review.md` — so `base` is `""` at every call site today; it is
+/// kept because the alternative was two renderers that could drift, and that
+/// trade does not change now that one of them is gone.
+pub(crate) fn render_waivers_at(block: &mut String, waivers: &[RawWaiverFull], base: &str) {
     if waivers.is_empty() {
         return;
     }
-    block.push_str("  waivers:\n");
+    let _ = writeln!(block, "{base}waivers:");
     for waiver in waivers {
         let fields = [
             ("rule", waiver.rule.as_deref()),
@@ -862,13 +827,22 @@ pub(crate) fn render_waivers(block: &mut String, waivers: &[RawWaiverFull]) {
         let mut first = true;
         for (key, value) in fields {
             if let Some(value) = value {
-                let indent = if first { "    - " } else { "      " };
+                let indent = if first {
+                    format!("{base}  - ")
+                } else {
+                    format!("{base}    ")
+                };
                 let _ = writeln!(block, "{indent}{key}: {}", yaml_string(value));
                 first = false;
             }
         }
         for (key, value) in &waiver.extra {
-            let indent = if first { "    - " } else { "      " };
+            let indent = if first {
+                format!("{base}  - ")
+            } else {
+                format!("{base}    ")
+            };
+            let indent = indent.as_str();
             render_extra_field(block, indent, key, value);
             first = false;
         }
@@ -914,53 +888,6 @@ fn render_extra_field(block: &mut String, indent: &str, key: &str, value: &serde
             }
         }
     }
-}
-
-/// Replace the `review:` block region of a frontmatter body with `block`,
-/// preserving surrounding top-level keys. Appends the block when no `review:`
-/// key is present.
-pub(crate) fn splice_review_block(fm_text: &str, block: &str) -> String {
-    splice_top_level_block(fm_text, "review", block)
-}
-
-/// Replace (or append) the `{key}:` block region of a frontmatter body,
-/// preserving surrounding top-level keys.
-///
-/// Generalized out of `splice_review_block` when the `analyze:` block needed
-/// exactly the same splice. Sharing it is the point rather than a tidy-up: two
-/// copies of "find the top-level key, find where it ends, swap the region"
-/// would agree until one of them met a frontmatter shape the other had not,
-/// and the failure mode is a corrupted `spec.md` rather than a wrong answer.
-pub(crate) fn splice_top_level_block(fm_text: &str, key: &str, block: &str) -> String {
-    let lines: Vec<&str> = fm_text.lines().collect();
-    let start = lines.iter().position(|line| top_level_key_is(line, key));
-    let mut out: Vec<&str> = Vec::new();
-    if let Some(i) = start {
-        let mut end = i + 1;
-        while end < lines.len() && !is_new_top_level(lines[end]) {
-            end += 1;
-        }
-        out.extend_from_slice(&lines[..i]);
-        out.extend(block.lines());
-        out.extend_from_slice(&lines[end..]);
-    } else {
-        out.extend_from_slice(&lines);
-        out.extend(block.lines());
-    }
-    out.join("\n")
-}
-
-/// Whether `line` is the top-level (unindented) `{key}:` frontmatter key.
-fn top_level_key_is(line: &str, key: &str) -> bool {
-    !line.starts_with([' ', '\t'])
-        && line
-            .strip_prefix(key)
-            .is_some_and(|rest| rest.starts_with(':'))
-}
-
-/// Whether `line` opens a new top-level key (non-empty, unindented).
-fn is_new_top_level(line: &str) -> bool {
-    !line.is_empty() && !line.starts_with([' ', '\t'])
 }
 
 /// Emit a YAML scalar for text that MUST round-trip as a string — double-quotes
@@ -1015,25 +942,6 @@ fn needs_quote(value: &str) -> bool {
 }
 
 // -- existing-frontmatter parse shapes ---------------------------------------
-
-/// Minimal spec frontmatter shape: just the `review.waivers` list, parsed
-/// loosely so a malformed waiver entry survives as reportable state.
-#[derive(Deserialize)]
-pub(crate) struct SpecReviewFm {
-    #[serde(default)]
-    pub(crate) review: Option<RawReviewBlock>,
-}
-
-#[derive(Deserialize, Default)]
-pub(crate) struct RawReviewBlock {
-    /// The recorded review timestamp. `None` (absent or explicit `null`) is
-    /// the un-reviewed state the pre-`done` gate blocks on, and the state
-    /// `invalidate-review` restores.
-    #[serde(default, rename = "last-run")]
-    pub(crate) last_run: Option<String>,
-    #[serde(default)]
-    pub(crate) waivers: Vec<RawWaiverFull>,
-}
 
 /// One waiver entry with every field optional, so pruning preserves the full
 /// record (`waived-at` / `waived-by` included) that `WaiverRef` drops. Unknown
@@ -1095,10 +1003,70 @@ mod tests {
         }
     }
 
-    /// The claim and its denominator land in **both** records, so
-    /// `check-review-agreement` has two sides to compare.
+    /// The report's frontmatter carries the **whole** record — the pre-relocation
+    /// merge is only correct if nothing is dropped, so every field that lived
+    /// on one side is asserted individually rather than through a struct
+    /// comparison that a defaulted field would silently satisfy (spec 057 AC12).
     #[test]
-    fn examined_and_scope_are_written_to_both_records() {
+    fn review_md_frontmatter_deserializes_into_the_whole_record() {
+        let dir = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(
+            &dir,
+            "001-x",
+            "waivers:\n  - rule: SEC-001\n    file: src/a.rs\n    reason: Justified.\n    ticket: OPS-42",
+        );
+        let mut args = base_args("001-x");
+        args.examined = Some(7);
+        args.skipped_passes = vec!["security".into()];
+        let out = run(&args, dir.path()).unwrap();
+
+        let report = review_md(&dir, "001-x");
+        let (fm, _body) = crate::primitives::split_frontmatter(&report, Path::new("review.md"))
+            .expect("report carries frontmatter");
+        let record: crate::schema::primitives::ReviewBlock =
+            serde_norway::from_str(fm).expect("frontmatter deserializes into the record");
+
+        // The timestamp under its one surviving name.
+        assert_eq!(record.last_run.as_deref(), Some(args.reviewed_at.as_str()));
+        assert!(
+            !report.contains("reviewed-at:"),
+            "the second spelling is retired: {report}"
+        );
+
+        // Fields that were report-only before the merge.
+        assert_eq!(record.spec.as_deref(), Some("001-x"));
+        assert_eq!(record.diff_base.as_deref(), Some(args.diff_base.as_str()));
+        assert_eq!(record.captured_issues, Some(0));
+        assert_eq!(record.skipped_passes, vec!["security".to_string()]);
+
+        // Fields that were block-only before the merge.
+        assert_eq!(record.blocking, out.blocking);
+        assert!(
+            record.reviewed_digest.is_some(),
+            "the digest is always recorded, empty map included"
+        );
+
+        // Waivers keep their adopter-authored extras across the move, at the
+        // top-level indent this home uses.
+        assert!(report.contains("waivers:"), "{report}");
+        assert!(report.contains("  - rule: SEC-001"), "{report}");
+        assert!(
+            report.contains("ticket: OPS-42"),
+            "open-schema waiver fields survive the relocation: {report}"
+        );
+
+        // Duplicated fields still arrive.
+        assert_eq!(record.examined, Some(7));
+        assert_eq!(record.scope, Some(out.scope));
+    }
+
+    /// The claim and its denominator land in the record — and nowhere else.
+    ///
+    /// Was `examined_and_scope_are_written_to_both_records`, whose point was
+    /// giving `check-review-agreement` two sides to compare. With one home the
+    /// property worth pinning inverts: the spec must carry neither.
+    #[test]
+    fn examined_and_scope_are_written_to_the_record_alone() {
         let dir = spec_repo("001-x", "status: in-progress\ndependencies: []");
         let mut args = base_args("001-x");
         args.examined = Some(7);
@@ -1112,9 +1080,12 @@ mod tests {
             "{report}"
         );
 
-        let spec = fs::read_to_string(dir.path().join("specs/001-x/spec.md")).unwrap();
-        assert!(spec.contains("  examined: 7"), "{spec}");
-        assert!(spec.contains(&format!("  scope: {}", out.scope)), "{spec}");
+        assert!(
+            !fs::read_to_string(dir.path().join("specs/001-x/spec.md"))
+                .unwrap()
+                .contains("examined:"),
+            "the spec is not a second home for the claim"
+        );
     }
 
     /// An unstated claim is **absent**, never rendered as a computed zero —
@@ -1127,8 +1098,12 @@ mod tests {
 
         let report = review_md(&dir, "001-x");
         assert!(!report.contains("examined:"), "{report}");
-        let spec = fs::read_to_string(dir.path().join("specs/001-x/spec.md")).unwrap();
-        assert!(!spec.contains("examined:"), "{spec}");
+        assert!(
+            !fs::read_to_string(dir.path().join("specs/001-x/spec.md"))
+                .unwrap()
+                .contains("examined:"),
+            "the spec carries no record at all now"
+        );
         // The denominator is always written: it was always computed.
         assert!(report.contains("scope: "), "{report}");
     }
@@ -1177,6 +1152,26 @@ mod tests {
         tmp
     }
 
+    /// Seed `review.md` with a prior run's recorded waivers — the home the
+    /// list moved to (spec 057 task 5). The fixtures below previously seeded
+    /// the spec's `review:` block; the property each one asserts is unchanged,
+    /// only the file it is asserted against.
+    fn seed_waivers(tmp: &TempDir, feature: &str, waivers_yaml: &str) {
+        let dir = tmp.path().join("specs").join(feature);
+        fs::write(
+            dir.join("review.md"),
+            format!(
+                "---\nspec: {feature}\nlast-run: 2026-01-01T00:00:00Z\nmust-violations: 0\nblocking: false\n{waivers_yaml}\n---\n\n# Review — {feature}\n"
+            ),
+        )
+        .unwrap();
+    }
+
+    /// The waivers `review.md` records, parsed back through the one reader.
+    fn recorded(tmp: &TempDir, feature: &str) -> Vec<RawWaiverFull> {
+        crate::primitives::read_recorded_waivers(&tmp.path().join("specs").join(feature)).unwrap()
+    }
+
     fn review_md(tmp: &TempDir, feature: &str) -> String {
         fs::read_to_string(tmp.path().join("specs").join(feature).join("review.md")).unwrap()
     }
@@ -1206,15 +1201,17 @@ mod tests {
     /// would then have been wrong retroactively.
     #[test]
     fn writing_a_review_supersedes_the_analyze_record_it_reports() {
-        let tmp = spec_repo(
-            "001-x",
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        fs::write(
+            tmp.path().join("specs/001-x/analysis.md"),
             concat!(
-                "status: in-progress\ndependencies: []\n",
-                "analyze:\n  last-run: 2026-09-06T00:00:00Z\n",
-                "  analyzed-against: PLACEHOLDER\n  hard-fail: 0\n",
-                "  blocking-findings: 0\n  advisory: 0\n  unexamined: 0\n  blocking: false",
+                "---\nspec: 001-x\nlast-run: 2026-09-06T00:00:00Z\n",
+                "analyzed-against: PLACEHOLDER\nhard-fail: 0\n",
+                "blocking-findings: 0\nadvisory: 0\nunexamined: 0\nblocking: false\n",
+                "---\n\n# Analysis — 001-x\n",
             ),
-        );
+        )
+        .unwrap();
         // A real repo, and a record pointing at its only commit.
         let repository = git2::Repository::init(tmp.path()).unwrap();
         let sha = {
@@ -1230,35 +1227,29 @@ mod tests {
                 .unwrap()
                 .to_string()
         };
-        let spec = tmp.path().join("specs/001-x/spec.md");
-        let text = fs::read_to_string(&spec).unwrap();
-        fs::write(&spec, text.replace("PLACEHOLDER", &sha)).unwrap();
-
         // Give the record a digest of the subjects as they are now, so it is
         // judgeable at all. Without one the honest answer is undeterminable,
         // which is what every pre-digest record reports.
+        let analysis = tmp.path().join("specs/001-x/analysis.md");
         let subjects = analyze_subjects::subject_digest(
             &tmp.path().join("specs/001-x"),
             analyze_subjects::is_analyze_subject,
         );
-        let text = fs::read_to_string(&spec).unwrap();
-        let mut block = String::from("analyze:\n  last-run: 2026-09-06T00:00:00Z\n");
-        let _ = writeln!(block, "  analyzed-against: {sha}");
-        block.push_str("  hard-fail: 0\n  blocking-findings: 0\n  advisory: 0\n  unexamined: 0\n");
-        block.push_str("  analyzed-digest:\n");
+        let mut fm = String::from("spec: 001-x\nlast-run: 2026-09-06T00:00:00Z\n");
+        let _ = writeln!(fm, "analyzed-against: {sha}");
+        fm.push_str("hard-fail: 0\nblocking-findings: 0\nadvisory: 0\nunexamined: 0\n");
+        fm.push_str("analyzed-digest:\n");
         for (path, digest) in &subjects.digests {
-            let _ = writeln!(block, "    {path}: {digest}");
+            let _ = writeln!(fm, "  {path}: {digest}");
         }
-        block.push_str("  blocking: false");
-        let (fm_text, body) = split_frontmatter(&text, &spec).unwrap();
-        let new_fm = splice_top_level_block(fm_text, "analyze", &block);
-        fs::write(&spec, format!("---\n{new_fm}\n---\n{body}")).unwrap();
+        fm.push_str("blocking: false\n");
+        fs::write(&analysis, format!("---\n{fm}---\n\n# Analysis — 001-x\n")).unwrap();
 
         let result = run(&base_args("001-x"), tmp.path()).unwrap();
         let RecordFreshness::Stale { paths, .. } = &result.analyze_freshness else {
             panic!(
-                "writing a review rewrites review.md and the spec's `review:` block, both \
-                 analyze subjects, so the digest must no longer match: {:?}",
+                "writing a review rewrites review.md, an analyze subject, so the \
+                 digest must no longer match: {:?}",
                 result.analyze_freshness
             );
         };
@@ -1374,9 +1365,9 @@ mod tests {
         let result = run(&args, tmp.path()).unwrap();
         assert!(result.blocking);
         assert_eq!(result.exit_code, 1);
-        let spec = spec_md(&tmp, "001-x");
-        assert!(spec.contains("blocking: true"));
-        assert!(spec.contains("must-violations: 1"));
+        let report = review_md(&tmp, "001-x");
+        assert!(report.contains("blocking: true"), "{report}");
+        assert!(report.contains("must-violations: 1"), "{report}");
     }
 
     #[test]
@@ -1463,10 +1454,10 @@ mod tests {
     fn a_spec_with_no_durable_contracts_records_an_empty_digest() {
         let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
+        let report = review_md(&tmp, "001-x");
         assert!(
-            spec.contains("reviewed-digest: {}"),
-            "an empty digest is written, not omitted: {spec}"
+            report.contains("reviewed-digest: {}"),
+            "an empty digest is written, not omitted: {report}"
         );
     }
 
@@ -1481,17 +1472,17 @@ mod tests {
         fs::write(dir.join("tasks.md"), "# Tasks\n").unwrap();
 
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
-        assert!(spec.contains("  reviewed-digest:"), "{spec}");
-        assert!(spec.contains("    scenarios/retry.md: "), "{spec}");
-        assert!(spec.contains("    data-model.md: "), "{spec}");
+        let report = review_md(&tmp, "001-x");
+        assert!(report.contains("reviewed-digest:"), "{report}");
+        assert!(report.contains("  scenarios/retry.md: "), "{report}");
+        assert!(report.contains("  data-model.md: "), "{report}");
         assert!(
-            !spec.contains("    tasks.md: "),
-            "tasks.md is not a review contract: {spec}"
+            !report.contains("  tasks.md: "),
+            "tasks.md is not a review contract: {report}"
         );
         assert!(
-            !spec.contains("    review.md: "),
-            "the report this call writes is not its own subject: {spec}"
+            !report.contains("  review.md: "),
+            "the report this call writes is not its own subject: {report}"
         );
     }
 
@@ -1503,77 +1494,78 @@ mod tests {
             finding("A-1", "must", "src/a.rs", "1-2", "high"),
             finding("B-2", "should", "src/b.rs", "1-2", "high"),
         ];
+        let before = spec_md(&tmp, "001-x");
         run(&args, tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
-        assert!(spec.contains("review:"));
-        assert!(spec.contains("last-run: 2026-07-02T12:00:00Z"));
-        assert!(spec.contains("reviewed-against: abc1234"));
-        assert!(spec.contains("must-violations: 1"));
-        assert!(spec.contains("should-violations: 1"));
-        assert!(spec.contains("low-confidence: 0"));
-        assert!(spec.contains("blocking: true"));
-        // Untouched keys preserved.
-        assert!(spec.contains("status: in-progress"));
-        assert!(spec.contains("dependencies: []"));
+        let report = review_md(&tmp, "001-x");
+        assert!(
+            report.contains("last-run: 2026-07-02T12:00:00Z"),
+            "{report}"
+        );
+        assert!(report.contains("reviewed-against: abc1234"), "{report}");
+        assert!(report.contains("must-violations: 1"), "{report}");
+        assert!(report.contains("should-violations: 1"), "{report}");
+        assert!(report.contains("low-confidence: 0"), "{report}");
+        assert!(report.contains("blocking: true"), "{report}");
+        assert_eq!(
+            spec_md(&tmp, "001-x"),
+            before,
+            "the spec is no longer a write target"
+        );
     }
 
     #[test]
     fn frontmatter_review_block_replaced_when_present() {
-        let tmp = spec_repo(
-            "001-x",
-            "status: in-progress\ndependencies: []\nreview:\n  last-run: 2020-01-01T00:00:00Z\n  must-violations: 9\n  blocking: true",
-        );
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", "must-violations: 9");
         let args = base_args("001-x");
         run(&args, tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
+        let spec = review_md(&tmp, "001-x");
         assert!(spec.contains("must-violations: 0"));
         assert!(spec.contains("blocking: false"));
         assert!(!spec.contains("must-violations: 9"));
         assert!(!spec.contains("2020-01-01"));
-        // The frontmatter still parses and keeps sibling keys.
-        assert!(spec.contains("status: in-progress"));
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        assert!(parsed.review.is_some());
+        // The record still parses, and the spec is untouched beside it.
+        let (fm, _) = split_frontmatter(&spec, Path::new("review.md")).unwrap();
+        let record: crate::schema::primitives::ReviewBlock = serde_norway::from_str(fm).unwrap();
+        assert_eq!(record.must_violations, 0);
+        assert!(spec_md(&tmp, "001-x").contains("status: in-progress"));
     }
 
     #[test]
     fn expired_waiver_pruned_from_spec_frontmatter() {
-        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-014\n      file: src/gone.ts\n      reason: No longer relevant.\n      waived-at: 2026-01-01T00:00:00Z\n      waived-by: dev@example.com\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com";
-        let tmp = spec_repo("001-x", frontmatter);
+        let frontmatter = "waivers:\n  - rule: SEC-BE-014\n    file: src/gone.ts\n    reason: No longer relevant.\n    waived-at: 2026-01-01T00:00:00Z\n    waived-by: dev@example.com\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: Still valid.\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com";
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", frontmatter);
         let mut args = base_args("001-x");
         args.expired_waivers = vec![waiver("SEC-BE-014", "src/gone.ts")];
         run(&args, tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
+        let report = review_md(&tmp, "001-x");
         // Expired anchor gone; surviving waiver kept with all its fields.
-        assert!(!spec.contains("src/gone.ts"));
-        assert!(spec.contains("rule: SEC-BE-020"));
-        assert!(spec.contains("file: src/keep.ts"));
-        assert!(spec.contains("waived-by: dev@example.com"));
-        assert!(spec.contains("Still valid."));
-        // The rewritten block still parses.
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        assert_eq!(parsed.review.unwrap().waivers.len(), 1);
+        assert!(!report.contains("src/gone.ts"), "{report}");
+        assert!(report.contains("rule: SEC-BE-020"), "{report}");
+        assert!(report.contains("file: src/keep.ts"), "{report}");
+        assert!(report.contains("waived-by: dev@example.com"), "{report}");
+        assert!(report.contains("Still valid."), "{report}");
+        // The rewritten record still parses through the shared reader.
+        assert_eq!(recorded(&tmp, "001-x").len(), 1);
     }
 
     #[test]
     fn preserves_adopter_authored_waiver_fields_across_rewrite() {
         // §text-first-artifacts open schema: an org-specific policy field on a
         // surviving waiver must round-trip, not vanish on the re-render.
-        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      ticket: SEC-1234\n      approved-by-team: platform-security";
-        let tmp = spec_repo("001-x", frontmatter);
+        let frontmatter = "waivers:\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: Still valid.\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com\n    ticket: SEC-1234\n    approved-by-team: platform-security";
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", frontmatter);
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
-        assert!(spec.contains("ticket: SEC-1234"), "{spec}");
+        let report = review_md(&tmp, "001-x");
+        assert!(report.contains("ticket: SEC-1234"), "{report}");
         assert!(
-            spec.contains("approved-by-team: platform-security"),
-            "{spec}"
+            report.contains("approved-by-team: platform-security"),
+            "{report}"
         );
         // Still parses and the extras survive a round-trip parse.
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        let waivers = parsed.review.unwrap().waivers;
+        let waivers = recorded(&tmp, "001-x");
         assert_eq!(waivers.len(), 1);
         assert_eq!(
             waivers[0].extra.get("ticket").and_then(|v| v.as_str()),
@@ -1587,14 +1579,12 @@ mod tests {
         // key, a bare-numeric key) must re-emit quoted, so the frontmatter
         // stays valid and the key keeps its identity — not silently corrupt
         // spec.md (which is written without a re-parse).
-        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      \"@owner\": alice\n      \"weird: key\": v\n      \"1234\": numeric-key";
-        let tmp = spec_repo("001-x", frontmatter);
+        let frontmatter = "waivers:\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: Still valid.\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com\n    \"@owner\": alice\n    \"weird: key\": v\n    \"1234\": numeric-key";
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", frontmatter);
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
         // The rewritten frontmatter still parses (no corruption/injection)...
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        let waivers = parsed.review.unwrap().waivers;
+        let waivers = recorded(&tmp, "001-x");
         assert_eq!(waivers.len(), 1);
         // ...and the exotic keys survived under the waiver entry, not as
         // leaked siblings or an injected top-level key.
@@ -1610,35 +1600,33 @@ mod tests {
         // quoted like the extras, so it round-trips through the spec
         // frontmatter as a string instead of a bool/number and does not break
         // the next RawWaiver parse.
-        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: \"true\"\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com";
-        let tmp = spec_repo("001-x", frontmatter);
+        let frontmatter = "waivers:\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: \"true\"\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com";
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", frontmatter);
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
+        let report = review_md(&tmp, "001-x");
         // Bool-like known value is quoted, not rendered as a bare `reason: true`.
         assert!(
-            spec.contains("reason: \"true\""),
-            "bool-like known waiver field must be quoted:\n{spec}"
+            report.contains("reason: \"true\""),
+            "bool-like known waiver field must be quoted:\n{report}"
         );
         // Timestamp-shaped known field is unchanged — no golden churn.
-        assert!(spec.contains("waived-at: 2026-01-02T00:00:00Z"));
-        // The rewritten block still parses (a bare `reason: true` would not
+        assert!(report.contains("waived-at: 2026-01-02T00:00:00Z"));
+        // The rewritten record still parses (a bare `reason: true` would not
         // round-trip into the string-typed field).
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        assert_eq!(parsed.review.unwrap().waivers.len(), 1);
+        assert_eq!(recorded(&tmp, "001-x").len(), 1);
     }
 
     #[test]
     fn preserves_string_typed_waiver_extra_values_across_rewrite() {
         // A string value that looks like a number/bool/null must round-trip as
         // a string, not silently change type.
-        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      ticket: \"1234\"\n      flagged: \"true\"";
-        let tmp = spec_repo("001-x", frontmatter);
+        let frontmatter = "waivers:\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: Still valid.\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com\n    ticket: \"1234\"\n    flagged: \"true\"";
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", frontmatter);
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        let extra = &parsed.review.unwrap().waivers[0].extra;
+        let waivers = recorded(&tmp, "001-x");
+        let extra = &waivers[0].extra;
         assert_eq!(extra.get("ticket").and_then(|v| v.as_str()), Some("1234"));
         assert_eq!(extra.get("flagged").and_then(|v| v.as_str()), Some("true"));
     }
@@ -1647,15 +1635,13 @@ mod tests {
     fn preserves_nested_waiver_extra_field_with_correct_nesting() {
         // A non-scalar adopter field (nested mapping) must round-trip nested,
         // not flattened into sibling keys of the waiver entry.
-        let frontmatter = "status: in-progress\ndependencies: []\nreview:\n  last-run: 2026-01-01T00:00:00Z\n  must-violations: 0\n  blocking: false\n  waivers:\n    - rule: SEC-BE-020\n      file: src/keep.ts\n      reason: Still valid.\n      waived-at: 2026-01-02T00:00:00Z\n      waived-by: dev@example.com\n      approvals:\n        security: alice\n        lead: bob";
-        let tmp = spec_repo("001-x", frontmatter);
+        let frontmatter = "waivers:\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: Still valid.\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com\n    approvals:\n      security: alice\n      lead: bob";
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(&tmp, "001-x", frontmatter);
         run(&base_args("001-x"), tmp.path()).unwrap();
-        let spec = spec_md(&tmp, "001-x");
         // Re-parse and confirm `approvals` survived as a nested mapping, not
         // as flattened sibling keys.
-        let (fm, _) = split_frontmatter(&spec, Path::new("spec.md")).unwrap();
-        let parsed: SpecReviewFm = serde_norway::from_str(fm).unwrap();
-        let waivers = parsed.review.unwrap().waivers;
+        let waivers = recorded(&tmp, "001-x");
         assert_eq!(waivers.len(), 1);
         let approvals = waivers[0]
             .extra

@@ -122,8 +122,14 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         validate_cross_spec_impact(impact, &mut findings);
     }
 
-    if let Some(review) = map.get("review") {
-        validate_review_block(review, &mut findings);
+    validate_no_residual_records(map, &mut findings);
+
+    // Each record is validated where it now lives. Validating the spec covers
+    // the whole feature, so no caller has to learn a second path to check.
+    if path.file_name().is_some_and(|name| name == "spec.md")
+        && let Some(dir) = path.parent()
+    {
+        validate_record_artifacts(dir, &mut findings);
     }
 
     let clean = findings.is_empty();
@@ -209,33 +215,62 @@ fn validate_cross_spec_impact(impact: &YamlValue, findings: &mut Vec<Frontmatter
     }
 }
 
-fn validate_review_block(review: &YamlValue, findings: &mut Vec<FrontmatterFinding>) {
-    let YamlValue::Mapping(map) = review else {
-        findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
-            field: "review".into(),
-            message: "review must be a mapping".into(),
-        });
-        return;
-    };
-    for key in ["must-violations", "should-violations", "low-confidence"] {
-        if let Some(value) = map.get(key)
-            && !matches!(value, YamlValue::Number(_))
-        {
+/// Report a `review:` or `analyze:` block still present in spec frontmatter.
+///
+/// The open-schema rule admits fields nothing has claimed; it does not
+/// re-admit a field this schema has moved (spec 057). A second copy of a
+/// gate-read record is the drift condition, not an unknown field, so it is
+/// reported rather than ignored — and the finding names the remedy, because an
+/// operator who has just upgraded has no other way to know what moved.
+///
+/// The block's *fields* are no longer checked here. They are validated where
+/// the record now lives, by deserializing the artifact into the record type —
+/// a strictly stronger check than the hand-rolled number-and-bool pass this
+/// replaced, and one that cannot drift from the type it validates.
+fn validate_no_residual_records(
+    map: &serde_norway::Mapping,
+    findings: &mut Vec<FrontmatterFinding>,
+) {
+    for key in ["review", "analyze"] {
+        if map.get(key).is_some() {
+            let home = if key == "review" {
+                "review.md"
+            } else {
+                "analysis.md"
+            };
             findings.push(FrontmatterFinding {
                 severity: "blocking".into(),
-                field: format!("review.{key}"),
-                message: "must be a number".into(),
+                field: key.into(),
+                message: format!(
+                    "`{key}:` no longer belongs in spec frontmatter — the record lives in {home}. Run the record-relocation migration to move it."
+                ),
             });
         }
     }
-    if let Some(value) = map.get("blocking")
-        && !matches!(value, YamlValue::Bool(_))
-    {
+}
+
+/// Validate the two record artifacts beside a spec.
+///
+/// **Absence is never a finding.** A feature with no `review.md` has not been
+/// reviewed, and that is a state the pre-`done` gate reports — not a schema
+/// defect. What *is* a defect is an artifact that exists and carries no
+/// readable record: the gate cannot tell from it whether the run happened, so
+/// it is reported here rather than left for a later command to stumble on.
+fn validate_record_artifacts(dir: &Path, findings: &mut Vec<FrontmatterFinding>) {
+    use crate::primitives::RecordLoad;
+
+    if let RecordLoad::Unreadable(reason) = crate::primitives::load_review_record(dir) {
         findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
-            field: "review.blocking".into(),
-            message: "must be a boolean".into(),
+            severity: "hard-fail".into(),
+            field: "review.md".into(),
+            message: format!("review.md exists but carries no readable record: {reason}"),
+        });
+    }
+    if let RecordLoad::Unreadable(reason) = crate::primitives::load_analyze_record(dir) {
+        findings.push(FrontmatterFinding {
+            severity: "hard-fail".into(),
+            field: "analysis.md".into(),
+            message: format!("analysis.md exists but carries no readable record: {reason}"),
         });
     }
 }
@@ -301,6 +336,100 @@ mod tests {
         let findings = findings_for("status: draft\ndependencies: []\ncross-spec-impact: [50]\n");
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].field, "cross-spec-impact");
+    }
+
+    /// A residual `review:` or `analyze:` block is reported, not tolerated.
+    ///
+    /// The open-schema rule admits fields nothing has claimed; it must not
+    /// re-admit a field this schema has moved, or the relocation would leave
+    /// two homes for one gate-read fact and no signal that it had.
+    #[test]
+    fn a_residual_record_block_in_the_spec_is_reported() {
+        for key in ["review", "analyze"] {
+            let findings = findings_for(&format!(
+                "status: done\ndependencies: []\n{key}:\n  blocking: false\n"
+            ));
+            let found = findings
+                .iter()
+                .find(|f| f.field == key)
+                .unwrap_or_else(|| panic!("no finding for residual {key}: {findings:?}"));
+            assert_eq!(found.severity, "blocking");
+            assert!(
+                found.message.contains("no longer belongs"),
+                "{}",
+                found.message
+            );
+            assert!(
+                found.message.contains("migration"),
+                "the finding names the remedy: {}",
+                found.message
+            );
+        }
+    }
+
+    /// A migrated spec validates clean — the check fires on the residual, not
+    /// on the relocation.
+    #[test]
+    fn a_migrated_spec_is_clean() {
+        let findings = findings_for("status: done\ndependencies: []\n");
+        assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    /// An **absent** record artifact is never a finding: a feature with no
+    /// review.md has not been reviewed, which is a state the gate reports, not
+    /// a schema defect.
+    #[test]
+    fn an_absent_record_artifact_is_not_a_finding() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("spec.md");
+        std::fs::write(&path, "---\nstatus: draft\ndependencies: []\n---\n\n# X\n").unwrap();
+        let result = run(
+            &ValidateFrontmatterArgs {
+                path: path.to_string_lossy().into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(result.clean, "{:?}", result.findings);
+    }
+
+    /// A record artifact that exists and carries nothing readable **is** a
+    /// defect: the gate cannot tell from it whether the run happened.
+    #[test]
+    fn an_unreadable_record_artifact_is_a_hard_fail() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("spec.md");
+        std::fs::write(&path, "---\nstatus: draft\ndependencies: []\n---\n\n# X\n").unwrap();
+        // Present, but with no frontmatter fence at all.
+        std::fs::write(tmp.path().join("review.md"), "# Review\n\nno record here\n").unwrap();
+        // Present and fenced, but the record's types do not parse.
+        std::fs::write(
+            tmp.path().join("analysis.md"),
+            "---\nhard-fail: not-a-number\n---\n\n# Analysis\n",
+        )
+        .unwrap();
+
+        let result = run(
+            &ValidateFrontmatterArgs {
+                path: path.to_string_lossy().into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(!result.clean);
+        for field in ["review.md", "analysis.md"] {
+            let found = result
+                .findings
+                .iter()
+                .find(|f| f.field == field)
+                .unwrap_or_else(|| panic!("no finding for {field}: {:?}", result.findings));
+            assert_eq!(found.severity, "hard-fail");
+            assert!(
+                found.message.contains("carries no readable record"),
+                "{}",
+                found.message
+            );
+        }
     }
 
     fn findings_for(frontmatter: &str) -> Vec<FrontmatterFinding> {

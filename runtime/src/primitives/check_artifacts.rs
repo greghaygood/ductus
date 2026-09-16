@@ -113,8 +113,8 @@ use crate::primitives::{
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
-    ArtifactFinding, CheckArtifactsArgs, CheckArtifactsResult, Frontmatter, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, SkippedTarget, Task,
+    ArtifactFinding, CheckArtifactsArgs, CheckArtifactsResult, ReadSpecArgs, ReadSpecResult,
+    ReadTasksArgs, SkippedTarget, Task,
 };
 use crate::schema::status::COMPATIBLE_STATUSES;
 
@@ -182,8 +182,28 @@ pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResul
         tasks.as_ref().map(|t| t.tasks.as_slice()),
         repo,
     );
-    check_review_drift(&mut findings, frontmatter, &status, &spec_path, repo);
-    check_analyze_drift(&mut findings, frontmatter, &status, &spec_path, repo);
+    // The records live in their own artifacts now (spec 057). An unreadable
+    // one is deliberately treated as absent here rather than reported: this
+    // family's subject is *drift between a done spec and its record*, and a
+    // record that will not parse is a different defect, owned by
+    // `validate-frontmatter` and by the pre-done gate. Reporting it twice, in
+    // two vocabularies, is how one problem becomes two findings.
+    let review_record = crate::primitives::load_review_record(&feature_dir);
+    let analyze_record = crate::primitives::load_analyze_record(&feature_dir);
+    check_review_drift(
+        &mut findings,
+        review_record.as_present(),
+        &status,
+        &spec_path,
+        repo,
+    );
+    check_analyze_drift(
+        &mut findings,
+        analyze_record.as_present(),
+        &status,
+        &spec_path,
+        repo,
+    );
 
     let mut skipped: Vec<SkippedTarget> = Vec::new();
     check_scenario_open_questions(
@@ -572,7 +592,7 @@ fn record_unreadable_artifact(
 /// the criteria it declares.
 fn check_analyze_drift(
     findings: &mut Vec<ArtifactFinding>,
-    frontmatter: &Frontmatter,
+    analyze: Option<&crate::schema::primitives::AnalyzeBlock>,
     status: &str,
     spec_path: &Path,
     repo: &Path,
@@ -580,8 +600,8 @@ fn check_analyze_drift(
     if status != "done" {
         return;
     }
-    let Some(analyze) = &frontmatter.analyze else {
-        return; // grandfathered: no analyze block at all
+    let Some(analyze) = analyze else {
+        return; // grandfathered: no analyze record at all
     };
     let spec_rel = rel_path(spec_path, repo);
     if analyze.last_run.is_none() {
@@ -615,7 +635,7 @@ fn check_analyze_drift(
 /// are silently exempt (the block populates lazily on first review).
 fn check_review_drift(
     findings: &mut Vec<ArtifactFinding>,
-    frontmatter: &Frontmatter,
+    review: Option<&crate::schema::primitives::ReviewBlock>,
     status: &str,
     spec_path: &Path,
     repo: &Path,
@@ -623,8 +643,8 @@ fn check_review_drift(
     if status != "done" {
         return;
     }
-    let Some(review) = &frontmatter.review else {
-        return; // grandfathered: no review block at all
+    let Some(review) = review else {
+        return; // grandfathered: no review record at all
     };
     let spec_rel = rel_path(spec_path, repo);
     if review.last_run.is_none() {
@@ -1654,23 +1674,60 @@ mod tests {
         fs::write(path, body).unwrap();
     }
 
-    fn spec(status: &str, review: Option<&str>) -> String {
-        spec_with_analyze(status, review, None)
+    /// The spec body alone. The `review` argument survives for the callers
+    /// that describe a review state, but the block it names no longer lands in
+    /// this file — see [`seed_review`], which the same callers use to put it
+    /// where the record now lives (spec 057).
+    fn spec(status: &str, _review: Option<&str>) -> String {
+        format!("---\nstatus: {status}\ndependencies: []\n---\n\n# Demo\n")
+    }
+
+    /// Write a review record to the artifact that owns it.
+    fn seed_review(repo: &Path, block: &str) {
+        let mut body = String::new();
+        for line in block.lines() {
+            body.push_str(line.strip_prefix("  ").unwrap_or(line));
+            body.push('\n');
+        }
+        write(
+            repo,
+            &format!("specs/{FEATURE}/review.md"),
+            &format!("---\nspec: {FEATURE}\n{body}---\n\n# Review — {FEATURE}\n"),
+        );
     }
 
     /// `spec` plus an explicit `analyze:` block. `None` reproduces the
     /// grandfathered shape — a `done` spec written before the record existed
     /// — which the drift family must leave alone.
-    fn spec_with_analyze(status: &str, review: Option<&str>, analyze: Option<&str>) -> String {
-        let review_block = review
-            .map(|r| format!("review:\n{r}\n"))
-            .unwrap_or_default();
-        let analyze_block = analyze
-            .map(|a| format!("analyze:\n{a}\n"))
-            .unwrap_or_default();
-        format!(
-            "---\nstatus: {status}\ndependencies: []\n{review_block}{analyze_block}---\n\n# Demo\n"
-        )
+    /// Write the spec plus whichever records the case carries, each into the
+    /// artifact that owns it (spec 057).
+    ///
+    /// `None` means the record is absent, which is the grandfather case these
+    /// families exempt — a `done` spec predating the command. That was "no
+    /// block in the frontmatter" and is now "no artifact"; the state the tests
+    /// describe is unchanged.
+    fn seed_feature(repo: &Path, status: &str, review: Option<&str>, analyze: Option<&str>) {
+        write(
+            repo,
+            &format!("specs/{FEATURE}/spec.md"),
+            &format!("---\nstatus: {status}\ndependencies: []\n---\n\n# Demo\n"),
+        );
+        for (block, file, heading) in [
+            (review, "review.md", "Review"),
+            (analyze, "analysis.md", "Analysis"),
+        ] {
+            let Some(block) = block else { continue };
+            let mut body = String::new();
+            for line in block.lines() {
+                body.push_str(line.strip_prefix("  ").unwrap_or(line));
+                body.push('\n');
+            }
+            write(
+                repo,
+                &format!("specs/{FEATURE}/{file}"),
+                &format!("---\nspec: {FEATURE}\n{body}---\n\n# {heading} — {FEATURE}\n"),
+            );
+        }
     }
 
     const CLEAN_ANALYZE: &str = "  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 1\n  blocking: false";
@@ -1681,11 +1738,7 @@ mod tests {
     #[test]
     fn a_done_spec_with_a_clean_analyze_block_is_not_drift() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze("done", Some(CLEAN_REVIEW), Some(CLEAN_ANALYZE)),
-        );
+        seed_feature(tmp.path(), "done", Some(CLEAN_REVIEW), Some(CLEAN_ANALYZE));
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/plan.md"),
@@ -1711,11 +1764,7 @@ mod tests {
     #[test]
     fn a_done_spec_with_no_analyze_block_is_grandfathered() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze("done", Some(CLEAN_REVIEW), None),
-        );
+        seed_feature(tmp.path(), "done", Some(CLEAN_REVIEW), None);
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/plan.md"),
@@ -1735,14 +1784,11 @@ mod tests {
     #[test]
     fn a_done_spec_with_a_null_analyze_last_run_is_drift() {
         let tmp = tempdir().unwrap();
-        write(
+        seed_feature(
             tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze(
-                "done",
-                Some(CLEAN_REVIEW),
-                Some("  last-run: null\n  blocking: false"),
-            ),
+            "done",
+            Some(CLEAN_REVIEW),
+            Some("  last-run: null\n  blocking: false"),
         );
         write(
             tmp.path(),
@@ -1761,15 +1807,12 @@ mod tests {
     #[test]
     fn a_done_spec_with_blocking_analyze_findings_is_drift() {
         let tmp = tempdir().unwrap();
-        write(
+        seed_feature(
             tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze(
-                "done",
-                Some(CLEAN_REVIEW),
-                Some(
-                    "  last-run: 2026-07-10T00:00:00Z\n  hard-fail: 1\n  blocking-findings: 2\n  blocking: true",
-                ),
+            "done",
+            Some(CLEAN_REVIEW),
+            Some(
+                "  last-run: 2026-07-10T00:00:00Z\n  hard-fail: 1\n  blocking-findings: 2\n  blocking: true",
             ),
         );
         write(
@@ -1792,15 +1835,12 @@ mod tests {
     #[test]
     fn advisory_and_unexamined_counts_are_not_analyze_drift() {
         let tmp = tempdir().unwrap();
-        write(
+        seed_feature(
             tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze(
-                "done",
-                Some(CLEAN_REVIEW),
-                Some(
-                    "  last-run: 2026-07-10T00:00:00Z\n  advisory: 9\n  unexamined: 5\n  blocking: false",
-                ),
+            "done",
+            Some(CLEAN_REVIEW),
+            Some(
+                "  last-run: 2026-07-10T00:00:00Z\n  advisory: 9\n  unexamined: 5\n  blocking: false",
             ),
         );
         write(
@@ -1822,11 +1862,7 @@ mod tests {
     #[test]
     fn an_in_progress_spec_without_an_analyze_block_is_not_drift() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze("in-progress", Some(CLEAN_REVIEW), None),
-        );
+        seed_feature(tmp.path(), "in-progress", Some(CLEAN_REVIEW), None);
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/plan.md"),
@@ -2152,6 +2188,7 @@ mod tests {
             "specs/042-demo/spec.md",
             &spec("done", Some("  blocking: false")),
         );
+        seed_review(tmp.path(), "  blocking: false");
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         let result = run(&args(), tmp.path()).unwrap();
@@ -2170,6 +2207,10 @@ mod tests {
                 "done",
                 Some("  last-run: 2026-07-01T00:00:00Z\n  blocking: true\n  must-violations: 2"),
             ),
+        );
+        seed_review(
+            tmp.path(),
+            "  last-run: 2026-07-01T00:00:00Z\n  blocking: true\n  must-violations: 2",
         );
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
@@ -2199,6 +2240,10 @@ mod tests {
                     "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 1",
                 ),
             ),
+        );
+        seed_review(
+            tmp.path(),
+            "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 1",
         );
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
@@ -2277,6 +2322,7 @@ mod tests {
             "specs/042-demo/spec.md",
             &spec("in-progress", Some("  blocking: false")),
         );
+        seed_review(tmp.path(), "  blocking: false");
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         let result = run(&args(), tmp.path()).unwrap();
@@ -2300,6 +2346,7 @@ mod tests {
             "specs/042-demo/spec.md",
             &spec("done", Some("  blocking: true")),
         );
+        seed_review(tmp.path(), "  blocking: true");
         // done + no plan.md/tasks.md + review drift (last-run unset AND
         // blocking true) → completeness ×2, then review drift ×2. The
         // scenario family is skipped at done.
@@ -2417,6 +2464,7 @@ mod tests {
             &format!("specs/{FEATURE}/spec.md"),
             &spec("done", Some(CLEAN_REVIEW)),
         );
+        seed_review(tmp.path(), CLEAN_REVIEW);
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/plan.md"),
@@ -2452,6 +2500,7 @@ mod tests {
             &format!("specs/{FEATURE}/spec.md"),
             &spec("in-progress", Some(CLEAN_REVIEW)),
         );
+        seed_review(repo, CLEAN_REVIEW);
         write(repo, &format!("specs/{FEATURE}/plan.md"), plan_body);
         write(repo, &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
         write(
@@ -2637,11 +2686,7 @@ mod tests {
     #[test]
     fn an_unreadable_artifact_blocks_a_done_spec() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec_with_analyze("done", Some(CLEAN_REVIEW), Some(CLEAN_ANALYZE)),
-        );
+        seed_feature(tmp.path(), "done", Some(CLEAN_REVIEW), Some(CLEAN_ANALYZE));
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/plan.md"),
@@ -2789,6 +2834,7 @@ mod tests {
                 spec("in-progress", Some(CLEAN_REVIEW))
             ),
         );
+        seed_review(tmp.path(), CLEAN_REVIEW);
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/tasks.md"),
@@ -3110,6 +3156,7 @@ mod tests {
                 spec("done", Some(CLEAN_REVIEW))
             ),
         );
+        seed_review(tmp.path(), CLEAN_REVIEW);
         write(tmp.path(), &format!("specs/{FEATURE}/plan.md"), "# Plan\n");
         write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
         let result = run(&args(), tmp.path()).unwrap();
@@ -3290,6 +3337,7 @@ mod tests {
             &format!("specs/{FEATURE}/spec.md"),
             &spec("done", Some(CLEAN_REVIEW)),
         );
+        seed_review(tmp.path(), CLEAN_REVIEW);
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/plan.md"),

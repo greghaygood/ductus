@@ -46,7 +46,6 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
 
-use crate::primitives::write_review::splice_top_level_block;
 use crate::primitives::{
     PrimitiveError, Result, read_text, rel_path, split_frontmatter, validate_no_traversal,
     write_atomic,
@@ -81,7 +80,7 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
 
     let spec_path = feature_dir.join("spec.md");
     let content = read_text(&spec_path)?;
-    let (fm_text, body) = split_frontmatter(&content, &spec_path)?;
+    let (fm_text, _body) = split_frontmatter(&content, &spec_path)?;
 
     // Parse before writing. The value is not used, but a frontmatter block
     // that does not deserialize must not receive a record asserting a clean
@@ -158,13 +157,15 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
             .map_or_else(|| repo.to_path_buf(), std::path::Path::to_path_buf),
         crate::primitives::analyze_subjects::is_analyze_subject,
     );
-    let block = render_analyze_yaml(args, blocking, unexamined, &by_reason, &subjects);
-    let new_fm = splice_top_level_block(fm_text, "analyze", &block);
-    let rendered = crate::primitives::with_line_ending(
-        &format!("---\n{new_fm}\n---\n{body}"),
-        crate::primitives::line_ending_of(&content),
-    );
-    write_atomic(&spec_path, &rendered)?;
+    // The artifact is written on EVERY run — clean, empty-scope, blocking
+    // alike. A later gate reads its absence as "never analyzed" (spec 057 AC5),
+    // so a run that declined to write because it had nothing to report would
+    // make "no analysis" and "a clean analysis" the same state on disk. That is
+    // the byte-identical failure `write-analysis` was built to end, one level
+    // out.
+    let analysis_path = feature_dir.join(crate::primitives::ANALYSIS_RECORD_FILE);
+    let report = render_analysis(args, blocking, unexamined, &by_reason, &subjects);
+    write_atomic(&analysis_path, &report)?;
 
     Ok(WriteAnalysisResult {
         spec_path: rel_path(&spec_path, repo),
@@ -175,62 +176,139 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     })
 }
 
-/// Render the `analyze:` YAML block (no trailing newline).
+/// Render `analysis.md` — the record's frontmatter plus the fixed skeleton.
 ///
-/// Every value is a timestamp, a sha, an integer, or a bool, so none needs the
-/// quoting `render_review_yaml`'s open-schema waiver fields do — but the two
-/// host-supplied strings still cannot be trusted to be single-line. An
-/// embedded newline in `analyzed-against` would inject arbitrary frontmatter
-/// keys, which is the injection `write-review` already guards; the guard lives
-/// in [`single_line`] here for the same reason.
-fn render_analyze_yaml(
+/// The counterpart to `write-review`'s `render_report`, and deliberately the
+/// same shape: one artifact per command, carrying its own record and a report
+/// a person can read. Overwritten whole on every run, so the file always
+/// describes the current analysis and git carries the history.
+fn render_analysis(
     args: &WriteAnalysisArgs,
     blocking: bool,
     unexamined: u32,
     by_reason: &BTreeMap<String, u32>,
     subjects: &crate::primitives::analyze_subjects::SubjectDigest,
 ) -> String {
-    let mut block = String::from("analyze:\n");
-    let _ = writeln!(block, "  last-run: {}", single_line(&args.analyzed_at));
+    let feature = &args.feature;
+    let mut out = String::from("---\n");
+    let _ = writeln!(out, "spec: {}", single_line(feature));
+    let _ = writeln!(out, "last-run: {}", single_line(&args.analyzed_at));
     let _ = writeln!(
-        block,
-        "  analyzed-against: {}",
+        out,
+        "analyzed-against: {}",
         single_line(&args.analyzed_against)
     );
-    let _ = writeln!(block, "  hard-fail: {}", args.hard_fail);
-    let _ = writeln!(block, "  blocking-findings: {}", args.blocking_findings);
-    let _ = writeln!(block, "  advisory: {}", args.advisory);
-    let _ = writeln!(block, "  unexamined: {unexamined}");
-    // Beside `advisory`, because the pair is the point: how many findings this
-    // run produced, and how many of them it actually landed in the inbox.
-    let _ = writeln!(block, "  captured-issues: {}", args.captured_issues.len());
-    // The record's description of its own subject. Paths are feature-relative
-    // and the digests are hex, so neither needs quoting; both are derived from
-    // the filesystem rather than supplied, so neither can carry a newline.
+    let _ = writeln!(out, "hard-fail: {}", args.hard_fail);
+    let _ = writeln!(out, "blocking-findings: {}", args.blocking_findings);
+    let _ = writeln!(out, "advisory: {}", args.advisory);
+    let _ = writeln!(out, "unexamined: {unexamined}");
+    let _ = writeln!(out, "captured-issues: {}", args.captured_issues.len());
     if !subjects.digests.is_empty() {
-        let _ = writeln!(block, "  analyzed-digest:");
+        let _ = writeln!(out, "analyzed-digest:");
         for (path, digest) in &subjects.digests {
-            let _ = writeln!(block, "    {path}: {digest}");
+            let _ = writeln!(out, "  {path}: {digest}");
         }
     }
     if !subjects.unreadable.is_empty() {
-        let _ = writeln!(block, "  analyzed-unreadable:");
+        let _ = writeln!(out, "analyzed-unreadable:");
         for path in &subjects.unreadable {
-            let _ = writeln!(block, "    - {path}");
+            let _ = writeln!(out, "  - {path}");
         }
     }
-    // Omitted when empty, so a fully-examined run carries no map rather than
-    // a map of zeroes. Reasons are a closed set of kebab-case identifiers, so
-    // no quoting is needed; a reason outside it would be a caller defect the
-    // arg parser has already rejected as unparseable rather than reshaped.
     if !by_reason.is_empty() {
-        let _ = writeln!(block, "  unexamined-by-reason:");
+        let _ = writeln!(out, "unexamined-by-reason:");
         for (reason, count) in by_reason {
-            let _ = writeln!(block, "    {reason}: {count}");
+            let _ = writeln!(out, "  {reason}: {count}");
         }
     }
-    let _ = writeln!(block, "  blocking: {blocking}");
-    block.trim_end_matches('\n').to_string()
+    let _ = writeln!(out, "blocking: {blocking}");
+    out.push_str("---\n\n");
+
+    let _ = writeln!(out, "# Analysis — {feature}\n");
+    let verdict = if blocking { "blocking" } else { "not blocking" };
+    let _ = writeln!(out, "## Summary\n");
+    let _ = writeln!(
+        out,
+        "{} hard-fail, {} blocking, {} advisory; {verdict}. {} unexamined target(s). \
+         Findings route to the inbox — this report records them, `/{{project}}:groom` routes them.\n",
+        args.hard_fail, args.blocking_findings, args.advisory, unexamined,
+    );
+    let _ = writeln!(out, "## Hard failures\n\n{}\n", tier_line(args.hard_fail));
+    let _ = writeln!(
+        out,
+        "## Blocking findings\n\n{}\n",
+        tier_line(args.blocking_findings)
+    );
+    let _ = writeln!(
+        out,
+        "## Advisory findings\n\n{}\n",
+        tier_line(args.advisory)
+    );
+    let _ = writeln!(
+        out,
+        "## Unexamined targets\n\n{}\n",
+        render_unexamined(unexamined, by_reason)
+    );
+    let _ = write!(
+        out,
+        "## Captured issues\n\n{}\n",
+        render_captured_plain(&args.captured_issues)
+    );
+    out
+}
+
+/// A tier's one-line count, or `*None.*`.
+fn tier_line(count: u32) -> String {
+    if count == 0 {
+        "*None.*".to_string()
+    } else {
+        format!("{count} finding(s) — see **Captured issues** below and the inbox.")
+    }
+}
+
+/// The unexamined breakdown, or `*None — every target was examined.*`
+///
+/// Zero with no breakdown is stated explicitly rather than left blank: a clean
+/// run with nothing skipped and a clean run with something skipped are two
+/// results, and an empty section would read as the first while meaning either.
+fn render_unexamined(unexamined: u32, by_reason: &BTreeMap<String, u32>) -> String {
+    if unexamined == 0 && by_reason.is_empty() {
+        return "*None — every target was examined.*".to_string();
+    }
+    if by_reason.is_empty() {
+        return format!("{unexamined} target(s) unexamined; no breakdown recorded.");
+    }
+    by_reason
+        .iter()
+        .map(|(reason, count)| format!("- {reason}: {count}"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The captured findings as plain bullets, with any checkbox marker stripped.
+///
+/// The strip is the mechanical half of spec 057 AC13: these strings are inbox
+/// bullets, and the inbox's form *is* `- [ ] …`. Rendering them verbatim would
+/// make this report a second triage queue — the parallel surface 047 rejected —
+/// so the guarantee is enforced here rather than asked of every caller.
+fn render_captured_plain(issues: &[String]) -> String {
+    if issues.is_empty() {
+        return "*None.*".to_string();
+    }
+    issues
+        .iter()
+        .map(|line| {
+            let text = line.trim();
+            let text = text.strip_prefix("- ").unwrap_or(text);
+            let text = text
+                .strip_prefix("[ ] ")
+                .or_else(|| text.strip_prefix("[x] "))
+                .or_else(|| text.strip_prefix("[X] "))
+                .unwrap_or(text);
+            format!("- {}", text.trim())
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Collapse any line break in a host-supplied scalar to a space.
@@ -261,6 +339,105 @@ mod tests {
         )
         .unwrap();
         tmp
+    }
+
+    /// `analysis.md`'s text, after a run.
+    fn analysis_md(tmp: &TempDir) -> String {
+        fs::read_to_string(tmp.path().join("specs/042-demo/analysis.md")).unwrap()
+    }
+
+    fn analysis_exists(tmp: &TempDir) -> bool {
+        tmp.path().join("specs/042-demo/analysis.md").exists()
+    }
+
+    /// The artifact is written on a run with nothing whatsoever to report.
+    ///
+    /// This is the load-bearing case, not the trivial one: a later gate reads
+    /// the file's *absence* as never-analyzed, so a clean run that skipped the
+    /// write would make "no analysis" and "a clean analysis" identical on disk
+    /// (spec 057 AC19).
+    #[test]
+    fn a_clean_run_still_writes_the_artifact() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        run(&args(), tmp.path()).unwrap();
+
+        let report = analysis_md(&tmp);
+        let (fm, body) =
+            crate::primitives::split_frontmatter(&report, Path::new("analysis.md")).unwrap();
+        let record: crate::schema::primitives::AnalyzeBlock =
+            serde_norway::from_str(fm).expect("frontmatter deserializes into the record");
+
+        assert_eq!(record.last_run.as_deref(), Some("2026-09-05T18:00:00Z"));
+        assert!(!record.blocking);
+        assert!(
+            body.contains("*None — every target was examined.*"),
+            "a clean run says so rather than leaving the section blank: {body}"
+        );
+    }
+
+    /// Every section of the skeleton is present on every run, in order.
+    #[test]
+    fn the_skeleton_is_fixed_and_complete() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        run(&args(), tmp.path()).unwrap();
+        let report = analysis_md(&tmp);
+
+        let expected = [
+            "# Analysis — 042-demo",
+            "## Summary",
+            "## Hard failures",
+            "## Blocking findings",
+            "## Advisory findings",
+            "## Unexamined targets",
+            "## Captured issues",
+        ];
+        let mut cursor = 0;
+        for heading in expected {
+            let found = report[cursor..]
+                .find(heading)
+                .unwrap_or_else(|| panic!("{heading} missing or out of order in:\n{report}"));
+            cursor += found + heading.len();
+        }
+    }
+
+    /// No section carries a checkbox — the mechanical half of AC13.
+    ///
+    /// The captured bullets arrive in the inbox's own `- [ ] …` form, so the
+    /// guarantee has to be enforced by the renderer rather than asked of the
+    /// caller. Feeding it exactly that form is the point of the fixture.
+    #[test]
+    fn the_report_carries_no_checkbox_even_when_captures_arrive_with_one() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 2;
+        a.captured_issues = vec![
+            "- [ ] convention: criterion-path-existence — specs/system.md missing — spec.md".into(),
+            "bug: task-consistency — task 4 has no Done when — tasks.md".into(),
+        ];
+        run(&a, tmp.path()).unwrap();
+
+        let report = analysis_md(&tmp);
+        assert!(
+            !report.contains("- [ ]") && !report.contains("- [x]"),
+            "analysis.md must never become a second triage queue:\n{report}"
+        );
+        assert!(
+            report.contains("- convention: criterion-path-existence"),
+            "the finding's text still lands, just without the marker:\n{report}"
+        );
+        assert!(report.contains("- bug: task-consistency"), "{report}");
+    }
+
+    /// An unexamined breakdown reaches the report, not just the record.
+    #[test]
+    fn unexamined_reasons_are_rendered() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.unexamined_by_reason = vec![("no-readable-state".into(), 3)];
+        run(&a, tmp.path()).unwrap();
+
+        let report = analysis_md(&tmp);
+        assert!(report.contains("- no-readable-state: 3"), "{report}");
     }
 
     fn args() -> WriteAnalysisArgs {
@@ -296,9 +473,9 @@ mod tests {
         ];
         let result = run(&a, tmp.path()).unwrap();
         assert_eq!(result.captured_issues, 3);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  advisory: 3"));
-        assert!(spec.contains("  captured-issues: 3"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("advisory: 3"));
+        assert!(spec.contains("captured-issues: 3"));
     }
 
     #[test]
@@ -314,41 +491,73 @@ mod tests {
         a.captured_issues = vec![];
         let result = run(&a, tmp.path()).unwrap();
         assert_eq!(result.captured_issues, 0);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  advisory: 4"));
-        assert!(spec.contains("  captured-issues: 0"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("advisory: 4"));
+        assert!(spec.contains("captured-issues: 0"));
     }
 
+    /// A first run creates the artifact, and leaves `spec.md` alone.
+    ///
+    /// Was `inserts_the_block_when_absent`: the record used to be spliced into
+    /// spec frontmatter, so the contract was "insert without disturbing the
+    /// neighbours". With one home per record there are no neighbours, and the
+    /// contract worth pinning is that the spec is not touched at all.
     #[test]
-    fn inserts_the_block_when_absent() {
+    fn a_first_run_writes_the_artifact_and_leaves_the_spec_untouched() {
         let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let before = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
+
         let result = run(&args(), tmp.path()).unwrap();
         assert!(!result.replaced);
         assert!(!result.blocking);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("analyze:\n"));
-        assert!(spec.contains("  last-run: 2026-09-05T18:00:00Z"));
-        assert!(spec.contains("  blocking: false"));
-        // Surrounding keys survive.
-        assert!(spec.contains("status: in-progress"));
-        assert!(spec.contains("dependencies: []"));
+
+        let report = analysis_md(&tmp);
+        assert!(
+            report.contains("last-run: 2026-09-05T18:00:00Z"),
+            "{report}"
+        );
+        assert!(report.contains("blocking: false"), "{report}");
+
+        let after = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
+        assert_eq!(before, after, "the spec is not a write target any more");
     }
 
+    /// A re-run overwrites its own artifact whole, and the review record beside
+    /// it is untouched.
+    ///
+    /// The sibling-preservation contract survives the relocation; what changed
+    /// is that the sibling is a *file* rather than an adjacent frontmatter
+    /// block, which makes it harder to damage rather than easier.
     #[test]
-    fn replaces_an_existing_block_without_disturbing_review() {
-        let tmp = spec_repo(
-            "status: done\ndependencies: []\nreview:\n  last-run: 2020-01-01T00:00:00Z\n  \
-             blocking: false\nanalyze:\n  last-run: 2019-01-01T00:00:00Z\n  blocking: true\n\
-             next-criterion: 7",
+    fn a_rerun_overwrites_its_own_record_and_leaves_the_review_record_alone() {
+        let tmp = spec_repo("status: done\ndependencies: []\nnext-criterion: 7");
+        let dir = tmp.path().join("specs/042-demo");
+        fs::write(
+            dir.join("analysis.md"),
+            "---\nspec: 042-demo\nlast-run: 2019-01-01T00:00:00Z\nblocking: true\n---\n\n# Analysis\n",
+        )
+        .unwrap();
+        let review = "---\nspec: 042-demo\nlast-run: 2020-01-01T00:00:00Z\nblocking: false\n---\n\n# Review\n";
+        fs::write(dir.join("review.md"), review).unwrap();
+
+        run(&args(), tmp.path()).unwrap();
+
+        let report = analysis_md(&tmp);
+        assert!(!report.contains("2019-01-01T00:00:00Z"), "{report}");
+        assert!(
+            report.contains("last-run: 2026-09-05T18:00:00Z"),
+            "{report}"
         );
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(result.replaced);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(!spec.contains("2019-01-01T00:00:00Z"));
-        assert!(spec.contains("  last-run: 2026-09-05T18:00:00Z"));
-        // The sibling block and the key after it are untouched.
-        assert!(spec.contains("review:\n  last-run: 2020-01-01T00:00:00Z"));
-        assert!(spec.contains("next-criterion: 7"));
+        assert_eq!(
+            fs::read_to_string(dir.join("review.md")).unwrap(),
+            review,
+            "the review record is not this command's to write"
+        );
+        assert!(
+            fs::read_to_string(dir.join("spec.md"))
+                .unwrap()
+                .contains("next-criterion: 7")
+        );
     }
 
     #[test]
@@ -382,9 +591,9 @@ mod tests {
         )
         .unwrap();
         assert!(!result.blocking);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  advisory: 9"));
-        assert!(spec.contains("  blocking: false"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("advisory: 9"));
+        assert!(spec.contains("blocking: false"));
     }
 
     /// A bare total answers *that* something was unexamined and nothing
@@ -406,14 +615,14 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.unexamined, 92);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  unexamined: 92"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("unexamined: 92"));
         // BTreeMap order, so the rendering is byte-stable across runs.
         let block = spec.split("unexamined-by-reason:").nth(1).unwrap();
         let order: Vec<&str> = block
             .lines()
             .skip(1) // the remainder of the `unexamined-by-reason:` line itself
-            .take_while(|l| l.starts_with("    "))
+            .take_while(|l| l.starts_with("  "))
             .map(|l| l.trim().split(':').next().unwrap())
             .collect();
         assert_eq!(
@@ -442,8 +651,8 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.unexamined, 4);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  unexamined: 4"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("unexamined: 4"));
         // Anchored to the field, not to the bare digits: the block now also
         // carries hex digests, and a bare `999` match can land inside one.
         assert!(!spec.contains("unexamined: 999"));
@@ -462,8 +671,8 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.unexamined, 3);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  unexamined: 3"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("unexamined: 3"));
         assert!(!spec.contains("unexamined-by-reason"));
     }
 
@@ -480,9 +689,9 @@ mod tests {
             tmp.path(),
         )
         .unwrap();
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  unexamined: 3"));
-        assert!(spec.contains("  blocking: false"));
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("unexamined: 3"));
+        assert!(spec.contains("blocking: false"));
     }
 
     #[test]
@@ -496,10 +705,21 @@ mod tests {
             tmp.path(),
         )
         .unwrap();
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  analyzed-against: abc status: done"));
-        assert!(!spec.contains("\nstatus: done"));
-        assert!(spec.contains("status: in-progress"));
+        let report = analysis_md(&tmp);
+        assert!(
+            report.contains("analyzed-against: abc status: done"),
+            "{report}"
+        );
+        assert!(
+            !report.contains("\nstatus: done"),
+            "an embedded newline must not become a frontmatter key: {report}"
+        );
+        // And the spec it was aimed at is untouched.
+        assert!(
+            fs::read_to_string(tmp.path().join("specs/042-demo/spec.md"))
+                .unwrap()
+                .contains("status: in-progress")
+        );
     }
 
     #[test]
@@ -509,8 +729,11 @@ mod tests {
             run(&args(), tmp.path()).unwrap_err(),
             PrimitiveError::Yaml { .. }
         ));
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(!spec.contains("analyze:"));
+        assert!(
+            !analysis_exists(&tmp),
+            "a spec that will not parse receives no record at all — the artifact's \
+             absence is what a later gate reads as never-analyzed"
+        );
     }
 
     #[test]
@@ -552,8 +775,8 @@ mod tests {
 
         let result = run(&args(), tmp.path()).unwrap();
         assert_eq!(result.unexamined, 1);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
-        assert!(spec.contains("  unexamined: 1"), "{spec}");
+        let spec = analysis_md(&tmp);
+        assert!(spec.contains("unexamined: 1"), "{spec}");
         assert!(spec.contains("constitution-unresolved: 1"), "{spec}");
     }
 
@@ -577,7 +800,7 @@ mod tests {
         let tmp = spec_repo("status: in-progress\ndependencies: []");
         let result = run(&args(), tmp.path()).unwrap();
         assert_eq!(result.unexamined, 0);
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
+        let spec = analysis_md(&tmp);
         assert!(
             !spec.contains("constitution-unresolved"),
             "a project with none registered reads exactly as before: {spec}"
@@ -598,11 +821,11 @@ mod tests {
         let result = run(&args(), tmp.path());
         assert!(result.is_ok(), "a config typo must not suppress the record");
 
-        let spec = fs::read_to_string(tmp.path().join("specs/042-demo/spec.md")).unwrap();
+        let spec = analysis_md(&tmp);
         assert!(
             spec.contains("constitution-registry-unreadable: 1"),
             "{spec}"
         );
-        assert!(spec.contains("  unexamined: 1"), "{spec}");
+        assert!(spec.contains("unexamined: 1"), "{spec}");
     }
 }

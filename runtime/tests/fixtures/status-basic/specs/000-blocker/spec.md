@@ -2,13 +2,6 @@
 status: draft
 dependencies: []
 tags: [foundation]
-review:
-  last-run: null
-  reviewed-against: null
-  must-violations: 0
-  should-violations: 0
-  low-confidence: 0
-  blocking: false
 ---
 
 # 000 — Blocker Fixture

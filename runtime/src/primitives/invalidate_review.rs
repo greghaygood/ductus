@@ -26,7 +26,6 @@
 
 use std::path::Path;
 
-use crate::primitives::write_review::{SpecReviewFm, render_waivers, splice_review_block};
 use crate::primitives::{
     PrimitiveError, Result, read_text, rel_path, split_frontmatter, write_atomic,
 };
@@ -57,57 +56,104 @@ pub fn run(args: &InvalidateReviewArgs, repo: &Path) -> Result<InvalidateReviewR
             feature: args.feature.clone(),
         });
     }
-    let spec_path = feature_dir.join("spec.md");
-    let content = read_text(&spec_path)?;
-    let (fm_text, body) = split_frontmatter(&content, &spec_path)?;
-    let existing: SpecReviewFm =
-        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
-            path: spec_path.clone(),
-            source,
-        })?;
+    // The record is both read and written at `review.md` (spec 057). `spec.md`
+    // is not consulted and not touched: reading the decision from one file
+    // while writing it to another is how an invalidation stops meaning
+    // anything.
+    let review_path = feature_dir.join(crate::primitives::REVIEW_RECORD_FILE);
+    let path = rel_path(&review_path, repo);
+    // An invalidation says the *review* is out of date, not that a recorded
+    // judgement was withdrawn, so waivers are carried across the write.
+    let recorded_waivers: Vec<crate::primitives::write_review::RawWaiverFull> =
+        crate::primitives::read_recorded_waivers(&feature_dir)?;
 
-    let path = rel_path(&spec_path, repo);
-    let Some(review) = existing.review else {
-        // No block at all: the gate already reads this as not-reviewed, and
-        // writing one whose every field is null would add noise, not state.
+    // An absent or unreadable record is already in the state this produces, so
+    // there is nothing to invalidate. Writing a record of nulls over a file
+    // that will not parse would also destroy whatever it still holds.
+    let Some(previous) = crate::primitives::load_review_record(&feature_dir)
+        .as_present()
+        .and_then(|record| record.last_run.clone())
+    else {
         return Ok(InvalidateReviewResult {
             invalidated: false,
             path,
             previous_last_run: None,
         });
     };
-    let Some(previous) = review.last_run else {
-        return Ok(InvalidateReviewResult {
-            invalidated: false,
-            path,
-            previous_last_run: None,
-        });
-    };
 
-    let mut block = String::from("review:\n");
-    block.push_str("  last-run: null\n");
-    block.push_str("  reviewed-against: null\n");
-    block.push_str("  must-violations: 0\n");
-    block.push_str("  should-violations: 0\n");
-    block.push_str("  low-confidence: 0\n");
-    block.push_str("  blocking: false\n");
-    render_waivers(&mut block, &review.waivers);
-    let block = block.trim_end_matches('\n').to_string();
-
-    let new_fm = splice_review_block(fm_text, &block);
-    // Same normalization write-review applies, and for the same reason: the
-    // splice is LF while `body` is carried through as it was read.
-    let updated = super::with_line_ending(
-        &format!("---\n{new_fm}\n---\n{body}"),
-        super::line_ending_of(&content),
-    );
-    write_atomic(&spec_path, &updated)?;
+    invalidate_record_artifact(&feature_dir, &recorded_waivers)?;
 
     Ok(InvalidateReviewResult {
         invalidated: true,
         path,
         previous_last_run: Some(previous),
     })
+}
+
+/// Rewrite `review.md`'s frontmatter with a nulled record, preserving its
+/// waivers and its report body.
+///
+/// An absent artifact is a no-op, on the same reasoning the spec-block path
+/// applies to a missing block: there is no record to invalidate, and writing
+/// one whose every field is null would add noise rather than state.
+fn invalidate_record_artifact(
+    feature_dir: &Path,
+    waivers: &[crate::primitives::write_review::RawWaiverFull],
+) -> Result<()> {
+    const SCALARS: [&str; 14] = [
+        "last-run",
+        "reviewed-against",
+        "diff-base",
+        "must-violations",
+        "should-violations",
+        "low-confidence",
+        "captured-issues",
+        "examined",
+        "scope",
+        "skipped-passes",
+        "reviewed-digest",
+        "reviewed-unreadable",
+        "blocking",
+        "waivers",
+    ];
+
+    let review_path = feature_dir.join(crate::primitives::REVIEW_RECORD_FILE);
+    if !review_path.is_file() {
+        return Ok(());
+    }
+    let content = read_text(&review_path)?;
+    let (fm_text, body) = split_frontmatter(&content, &review_path)?;
+
+    // Keep every key that is not a review scalar — `spec`, `scenario`, and any
+    // adopter addition — so an invalidation narrows the record rather than
+    // rewriting it out from under its owner.
+    let mut kept = String::new();
+    let mut skipping = false;
+    for line in fm_text.lines() {
+        if !line.starts_with([' ', '\t']) {
+            let key = line.split(':').next().unwrap_or("").trim();
+            skipping = SCALARS.contains(&key);
+        }
+        if !skipping {
+            kept.push_str(line);
+            kept.push('\n');
+        }
+    }
+
+    let mut fm = kept;
+    fm.push_str("last-run: null\n");
+    fm.push_str("reviewed-against: null\n");
+    fm.push_str("must-violations: 0\n");
+    fm.push_str("should-violations: 0\n");
+    fm.push_str("low-confidence: 0\n");
+    fm.push_str("blocking: false\n");
+    crate::primitives::write_review::render_waivers_at(&mut fm, waivers, "");
+
+    let updated = super::with_line_ending(
+        &format!("---\n{}\n---\n{body}", fm.trim_end_matches('\n')),
+        super::line_ending_of(&content),
+    );
+    write_atomic(&review_path, &updated)
 }
 
 #[cfg(test)]
@@ -136,12 +182,25 @@ mod tests {
         .unwrap();
     }
 
-    const REVIEWED: &str = "status: done\ndependencies: []\nreview:\n  last-run: 2026-08-01T00:00:00Z\n  reviewed-against: abc123\n  must-violations: 0\n  should-violations: 2\n  low-confidence: 1\n  blocking: false\nnext-criterion: 4\n";
+    const SPEC: &str = "status: done\ndependencies: []\nnext-criterion: 4\n";
+
+    /// The recorded review, where it now lives (spec 057).
+    const RECORD: &str = "---\nspec: 050-alpha\nlast-run: 2026-08-01T00:00:00Z\nreviewed-against: abc123\nmust-violations: 0\nshould-violations: 2\nlow-confidence: 1\nblocking: false\n---\n\n# Review — 050-alpha\n";
+
+    fn seed_reviewed(repo: &Path) {
+        write_spec(repo, "050-alpha", SPEC);
+        fs::write(repo.join("specs/050-alpha/review.md"), RECORD).unwrap();
+    }
+
+    fn review_md(repo: &Path) -> String {
+        fs::read_to_string(repo.join("specs/050-alpha/review.md")).unwrap()
+    }
 
     #[test]
     fn a_recorded_review_is_reset_to_the_un_reviewed_state() {
         let tmp = tempfile::tempdir().unwrap();
-        write_spec(tmp.path(), "050-alpha", REVIEWED);
+        seed_reviewed(tmp.path());
+        let spec_before = fs::read_to_string(tmp.path().join("specs/050-alpha/spec.md")).unwrap();
 
         let result = run(&args("050-alpha"), tmp.path()).unwrap();
 
@@ -150,14 +209,21 @@ mod tests {
             result.previous_last_run.as_deref(),
             Some("2026-08-01T00:00:00Z")
         );
-        let body = fs::read_to_string(tmp.path().join("specs/050-alpha/spec.md")).unwrap();
-        assert!(body.contains("last-run: null"), "{body}");
-        assert!(body.contains("reviewed-against: null"), "{body}");
-        assert!(body.contains("should-violations: 0"), "{body}");
-        assert!(body.contains("blocking: false"), "{body}");
-        // Neighbouring top-level keys survive the splice.
-        assert!(body.contains("status: done"), "{body}");
-        assert!(body.contains("next-criterion: 4"), "{body}");
+        let record = review_md(tmp.path());
+        assert!(record.contains("last-run: null"), "{record}");
+        assert!(record.contains("reviewed-against: null"), "{record}");
+        assert!(record.contains("should-violations: 0"), "{record}");
+        assert!(record.contains("blocking: false"), "{record}");
+        // Keys the record carries that are not review scalars survive, and so
+        // does the report body — an invalidation narrows the record rather
+        // than rewriting the file.
+        assert!(record.contains("spec: 050-alpha"), "{record}");
+        assert!(record.contains("# Review — 050-alpha"), "{record}");
+        // And the spec is not a party to any of it.
+        assert_eq!(
+            fs::read_to_string(tmp.path().join("specs/050-alpha/spec.md")).unwrap(),
+            spec_before
+        );
     }
 
     /// A waiver is an operator's recorded judgement about a finding.
@@ -167,20 +233,25 @@ mod tests {
     #[test]
     fn waivers_survive_the_invalidation() {
         let tmp = tempfile::tempdir().unwrap();
-        write_spec(
-            tmp.path(),
-            "050-alpha",
-            "status: done\ndependencies: []\nreview:\n  last-run: 2026-08-01T00:00:00Z\n  reviewed-against: abc123\n  must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  blocking: false\n  waivers:\n    - rule: BE-INPUT-004\n      file: src/x.rs\n      reason: \"internal-only path, reviewed by hand\"\n      waived-at: 2026-08-01T00:00:00Z\n      waived-by: someone@example.com\n      ticket: PROJ-7\n",
-        );
+        write_spec(tmp.path(), "050-alpha", SPEC);
+        // The record and its waivers both live in `review.md` (spec 057).
+        fs::write(
+            tmp.path().join("specs/050-alpha/review.md"),
+            "---\nspec: 050-alpha\nlast-run: 2026-08-01T00:00:00Z\nreviewed-against: abc123\nmust-violations: 0\nblocking: false\nwaivers:\n  - rule: BE-INPUT-004\n    file: src/x.rs\n    reason: \"internal-only path, reviewed by hand\"\n    waived-at: 2026-08-01T00:00:00Z\n    waived-by: someone@example.com\n    ticket: PROJ-7\n---\n\n# Review — 050-alpha\n",
+        )
+        .unwrap();
 
         assert!(run(&args("050-alpha"), tmp.path()).unwrap().invalidated);
 
-        let body = fs::read_to_string(tmp.path().join("specs/050-alpha/spec.md")).unwrap();
-        assert!(body.contains("last-run: null"), "{body}");
-        assert!(body.contains("rule: BE-INPUT-004"), "{body}");
-        assert!(body.contains("internal-only path"), "{body}");
+        // Both records are nulled, and both keep the judgement.
+        let report = fs::read_to_string(tmp.path().join("specs/050-alpha/review.md")).unwrap();
+        assert!(report.contains("last-run: null"), "{report}");
+        assert!(report.contains("rule: BE-INPUT-004"), "{report}");
+        assert!(report.contains("internal-only path"), "{report}");
         // An adopter-authored extra field is open-schema state, kept verbatim.
-        assert!(body.contains("PROJ-7"), "{body}");
+        assert!(report.contains("PROJ-7"), "{report}");
+        // The report body is not collateral damage of a frontmatter rewrite.
+        assert!(report.contains("# Review — 050-alpha"), "{report}");
     }
 
     /// Converges: the second call is the domain outcome, not an error, so a
@@ -188,7 +259,7 @@ mod tests {
     #[test]
     fn invalidating_twice_converges() {
         let tmp = tempfile::tempdir().unwrap();
-        write_spec(tmp.path(), "050-alpha", REVIEWED);
+        seed_reviewed(tmp.path());
 
         assert!(run(&args("050-alpha"), tmp.path()).unwrap().invalidated);
         let second = run(&args("050-alpha"), tmp.path()).unwrap();

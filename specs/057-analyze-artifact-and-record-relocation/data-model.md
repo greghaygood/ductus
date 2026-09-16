@@ -42,6 +42,7 @@ is never written empty to signal it.
 | `advisory` | u32 | Recorded, never gated on. |
 | `unexamined` | u32 | The field that makes a clean run honest: clean-with-nothing-skipped and clean-with-something-skipped are two states. |
 | `unexamined-by-reason` | map reason → count | |
+| `captured-issues` | integer | Findings this run appended to the inbox. Beside `advisory` because the pair is the point: how many findings the run produced, and how many it actually recorded. |
 | `blocking` | bool | Derived. |
 
 **Notes.** No field is added or removed by the relocation; the record is the one
@@ -60,11 +61,20 @@ A fixed skeleton, rendered whole on every run (AC14), mirroring `review.md`:
 ## Blocking findings
 ## Advisory findings
 ## Unexamined targets
+## Captured issues
 ```
 
-**Notes.** No section carries `- [ ]` items — AC13, checked mechanically. A
-checkbox is what would make this a triage queue, and routing belongs to the
-inbox.
+**Notes.** No section carries `- [ ]` items — AC13, checked mechanically, by
+stripping any checkbox marker a captured bullet arrives with rather than
+trusting the caller not to send one. A checkbox is what would make this a
+triage queue, and routing belongs to the inbox.
+
+`## Captured issues` exists because it is the only section that can carry
+finding *text*. The writer receives per-tier counts plus one list of captured
+inbox bullets, and those bullets record `family — message — path` without
+recording which tier produced them — so they cannot be split across the three
+tier sections, and a body without this section would restate the frontmatter and
+stop there.
 
 ## `Frontmatter` — `specs/{feature}/spec.md`
 

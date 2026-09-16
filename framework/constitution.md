@@ -514,7 +514,7 @@ When a `/groom` pass encounters an item that does not map to any existing spec, 
 
 ### Frontmatter Schema
 
-The frontmatter schema applies to **spec files** (`spec.md`) and **scenario files** (`scenarios/{slug}.md`). Other `ductus` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
+The frontmatter schema applies to **spec files** (`spec.md`), **scenario files** (`scenarios/{slug}.md`), and the two **audit records** below (`review.md`, `analysis.md`), whose frontmatter is required because a pipeline gate reads it. Other `ductus` artifacts (`system.md`, `errors.md`, `events.md`, `inbox.md`, plan files, tasks files, rule files, README files) MAY include frontmatter when a specific consumer benefits, but are not required to.
 
 #### Spec files
 
@@ -532,21 +532,64 @@ The frontmatter schema applies to **spec files** (`spec.md`) and **scenario file
 | --- | --- | --- | --- | --- |
 | `section` | yes | string | parent spec section name (e.g., `"Authentication flow"`) | The section of the parent spec the scenario elaborates. The parent feature is implicit in the file path. |
 
+#### Audit records
+
+Each audit command records its run in the frontmatter of the artifact it writes: `/{project}:review` in `review.md`, `/{project}:analyze` in `analysis.md`. **`spec.md` carries neither record.** A `review:` or `analyze:` block in a spec's frontmatter is a residual from before this schema and is reported as a violation, *not* accepted under the open-schema rule below — one fact, one home, per [§drift-prevention](#drift-prevention).
+
+**The absent file is the never-run state.** A feature with no `review.md` has not been reviewed; one with no `analysis.md` has not been analyzed. Neither artifact is ever written empty to signal a clean run — every run writes its own, so absence carries information rather than ambiguity. An artifact that exists but does not parse is **undeterminable**: a third state, which MUST NOT be collapsed into never-run.
+
+##### Review record — `review.md`
+
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `spec` | yes | string | Feature slug the record belongs to. |
+| `last-run` | yes | ISO-8601 UTC, nullable | When the review ran. Null is permitted only on a record that has never run. |
+| `reviewed-against` | no | string | HEAD sha at the time of the run. **Provenance, never the staleness basis** — the working tree and a commit are the same subject only on a clean tree. |
+| `diff-base` | no | string | The sha the review diffed from. |
+| `must-violations` | yes | integer | Blocking findings. |
+| `should-violations` | yes | integer | Advisory findings. |
+| `low-confidence` | yes | integer | Findings the reviewer flagged as uncertain. |
+| `captured-issues` | no | integer | Observations appended to the inbox by the run. |
+| `examined` | no | integer | Files the review actually read. |
+| `scope` | no | integer | Files the review's scope contained. Distinct from `examined`: equal means fully examined, and less means partially. |
+| `skipped-passes` | no | list of strings | Review dimensions that did not run, by name. |
+| `reviewed-digest` | no | map of path → sha256 | Per-path digest of the review's **durable contracts** as the run read them from disk. Absent means a pre-digest record, which is undeterminable rather than stale. An empty map is distinct: the digest was taken and there were no contracts to digest, which reads as current. |
+| `blocking` | yes | boolean | Derived, not authored. |
+| `waivers` | no | list | Waived findings, each anchored to a `(rule, file)` pair. |
+
+##### Analyze record — `analysis.md`
+
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `spec` | yes | string | Feature slug the record belongs to. |
+| `last-run` | yes | ISO-8601 UTC, nullable | When the analysis ran. |
+| `analyzed-against` | no | string | HEAD sha at the time of the run. Provenance only, on the same reasoning as `reviewed-against`. |
+| `analyzed-digest` | no | map of path → sha256 | Per-path digest of the **analyze subjects** as the run read them from disk, excluding `analysis.md`'s own record — a record written after its subjects are read can never digest itself. Absent is undeterminable. |
+| `analyzed-unreadable` | no | list of strings | Subjects that exist but could not be read. Recorded rather than digested as empty, so a record cannot claim to have covered a file it could not open. |
+| `hard-fail` | yes | integer | Malformed-artifact findings. |
+| `blocking-findings` | yes | integer | Findings in the blocking tier. Named for the tier, to keep it distinct from the derived `blocking` flag. |
+| `advisory` | yes | integer | Recorded and never gated on — the advisory tier's members carry their own published promotion criteria. |
+| `unexamined` | yes | integer | Targets the run could not examine. The field that makes a clean run honest: clean with nothing skipped and clean with something skipped are two different results. |
+| `unexamined-by-reason` | no | map of reason → integer | |
+| `captured-issues` | no | integer | Findings the run appended to the inbox. Recorded beside `advisory` because a run that produced five findings and captured none must not be byte-identical to one that captured all five. |
+| `blocking` | yes | boolean | Derived, not authored. |
+
 #### Open-schema rule
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Examples adopters or future `ductus` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/ductus:analyze` reports unknown fields as informational findings (not errors). Stale fields in done specs (e.g., `title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no findings.
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers — with one exception, stated in **Audit records** above: a `review:` or `analyze:` block in a spec's frontmatter is a residual of the pre-relocation schema and is reported rather than tolerated. The rule admits fields nothing has claimed; it does not re-admit a field this schema has moved. Examples adopters or future `ductus` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/ductus:analyze` reports unknown fields as informational findings (not errors). Stale fields in done specs (e.g., `title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no findings.
 
 ### Validation Severity
 
 `/ductus:analyze` checks frontmatter against this schema with the following severity:
 
-- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; both `section` and the legacy `spec-ref` missing on a scenario.
+- **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; both `section` and the legacy `spec-ref` missing on a scenario; frontmatter block missing or malformed on a `review.md` or `analysis.md` that exists (the artifact's absence is a state, its presence without a parseable record is a defect).
+- **Blocking** — a `review:` or `analyze:` block present in a spec's frontmatter. It is not a hard fail: the spec file itself parses, and under the pre-relocation schema the block was valid. It is not informational either, because the open-schema rule does not cover it and a second copy of a gate-read record is the drift condition, not an unknown field. The remedy is the relocation migration, and the finding names it.
 - **Advisory** — cross-reference checks; body inline links to sibling specs that are not yet in the generator-managed `dependencies` (informational — the next commit's `derive-dependencies` pass will resolve).
 - **Informational** — unknown fields present.
 
 Hard fails block the validation pass. Advisory and informational findings are reported but do not block.
 
-For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules), `/ductus:analyze` adds a fourth tier — **Blocking** — between Hard fail and Advisory. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/analyze.md` for the full per-check severity assignment.
+For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules) — and for the one frontmatter check named above, a record block residual in a spec — `/ductus:analyze` adds a fourth tier, **Blocking**, between Hard fail and Advisory. The residual is the exception that proves the tier's shape rather than breaking it: the spec file is well-formed, so Hard fail would overstate the defect, while the artifact set is inconsistent with itself, which is precisely what Blocking says. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/analyze.md` for the full per-check severity assignment.
 
 <!-- §runtime-boundary -->
 

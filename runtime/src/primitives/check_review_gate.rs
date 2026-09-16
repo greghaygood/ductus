@@ -130,23 +130,26 @@ pub(crate) fn run_with_lint(
         return Ok(blocked);
     }
 
-    // Gate checks 5 and 6: the spec frontmatter `review:` block.
-    let review = match frontmatter.review {
-        Some(review) if review.last_run.is_some() => review,
-        // Absent block or null `last-run`: the spec has never completed a
-        // review.
-        _ => {
-            return Ok(CheckReviewGateResult {
-                passed: false,
-                blocked_by: Some(ReviewGateBlock::NotReviewed),
-                message: Some(format!(
-                    "blocked: spec has not been reviewed — run /{project}:review before completing"
-                )),
-                guidance: None,
-                violations: vec![],
-                cross_spec_impact: vec![],
-            });
+    // Gate checks 5 and 6: the review record, read from `review.md` — the
+    // artifact that owns it (spec 057).
+    //
+    // Three inputs, not two. An absent artifact means no review ran; an
+    // artifact that will not parse means the gate cannot tell. Both block, and
+    // they must not share a message: "run /review" is wrong advice for a spec
+    // whose review may well have happened and whose record is merely damaged.
+    let review = match crate::primitives::load_review_record(&feature_dir) {
+        crate::primitives::RecordLoad::Present(review) if review.last_run.is_some() => review,
+        crate::primitives::RecordLoad::Unreadable(reason) => {
+            return Ok(unreadable_record_block(
+                &rel_dir,
+                &project,
+                RecordKind::Review,
+                &reason,
+            ));
         }
+        // Absent artifact, or a record carrying a null `last-run`: the spec has
+        // never completed a review.
+        _ => return Ok(never_reviewed_block(&project)),
     };
 
     if review.blocking {
@@ -180,8 +183,19 @@ pub(crate) fn run_with_lint(
     // freshness it computes is handed back rather than recomputed for the
     // passing verdict's notice below — the comparison reads and hashes every
     // `.md` under the feature, so doing it twice is real work for one answer.
-    let freshness = match analyze_gate_block(repo, &rel_dir, frontmatter.analyze.as_ref(), &project)
-    {
+    let analyze_record = match crate::primitives::load_analyze_record(&feature_dir) {
+        crate::primitives::RecordLoad::Unreadable(reason) => {
+            return Ok(unreadable_record_block(
+                &rel_dir,
+                &project,
+                RecordKind::Analyze,
+                &reason,
+            ));
+        }
+        crate::primitives::RecordLoad::Present(record) => Some(record),
+        crate::primitives::RecordLoad::Absent => None,
+    };
+    let freshness = match analyze_gate_block(repo, &rel_dir, analyze_record.as_ref(), &project) {
         Err(blocked) => return Ok(blocked),
         Ok(freshness) => freshness,
     };
@@ -501,6 +515,73 @@ fn markdown_lint_block(
 /// *outside* the lifecycle set falls through and the gate runs its checks,
 /// because `validate-frontmatter` owns reporting a bad value and inferring
 /// "probably finished" from an unrecognized status would be the same unearned
+/// The blocked verdict for a spec with no completed review.
+///
+/// Absence of the artifact and a record carrying a null `last-run` are the same
+/// answer — no review has finished — so they share one message. What they must
+/// not share is [`unreadable_record_block`]'s, which is a different claim.
+fn never_reviewed_block(project: &str) -> CheckReviewGateResult {
+    CheckReviewGateResult {
+        passed: false,
+        blocked_by: Some(ReviewGateBlock::NotReviewed),
+        message: Some(format!(
+            "blocked: spec has not been reviewed — run /{project}:review before completing"
+        )),
+        guidance: None,
+        violations: vec![],
+        cross_spec_impact: vec![],
+    }
+}
+
+/// Which record a blocked verdict is about — the two halves differ only in
+/// their nouns.
+#[derive(Clone, Copy)]
+enum RecordKind {
+    Review,
+    Analyze,
+}
+
+/// The blocked verdict for a record artifact that exists but will not parse.
+///
+/// Deliberately not the never-run message. Absence is an answer; a damaged file
+/// is not, and telling an operator to "run /review" for a spec that may well
+/// have been reviewed sends them to redo work on the strength of something the
+/// gate could not read. The parse error travels with it, so the repair is
+/// actionable rather than a guess.
+fn unreadable_record_block(
+    rel_dir: &str,
+    project: &str,
+    kind: RecordKind,
+    reason: &str,
+) -> CheckReviewGateResult {
+    let (file, noun, verb, blocked_by) = match kind {
+        RecordKind::Review => (
+            "review.md",
+            "a review",
+            "review",
+            ReviewGateBlock::RecordUnreadable,
+        ),
+        RecordKind::Analyze => (
+            "analysis.md",
+            "an analysis",
+            "analyze",
+            ReviewGateBlock::AnalyzeRecordUnreadable,
+        ),
+    };
+    CheckReviewGateResult {
+        passed: false,
+        blocked_by: Some(blocked_by),
+        message: Some(format!(
+            "blocked: {rel_dir}/{file} exists but its record could not be read — whether {noun} ran is undeterminable"
+        )),
+        guidance: Some(format!(
+            "Repair the frontmatter in {rel_dir}/{file}, or re-run /{project}:{verb} to rewrite it. Parse error: {reason}"
+        )),
+        violations: vec![],
+        cross_spec_impact: vec![],
+    }
+}
+
 /// conclusion in the other direction.
 fn already_done_block(status: &str, project: &str) -> Option<CheckReviewGateResult> {
     if status != "done" {
@@ -860,9 +941,68 @@ mod tests {
     const NEVER_REVIEWED: &str = "---\nstatus: in-progress\ndependencies: []\nreview:\n  last-run: null\n  reviewed-against: null\n  must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  blocking: false\nanalyze:\n  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc123\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 0\n  blocking: false\n---\n\n# 007 — Gate\n";
     const NO_REVIEW_BLOCK: &str = "---\nstatus: in-progress\ndependencies: []\nanalyze:\n  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc123\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 0\n  blocking: false\n---\n\n# 007 — Gate\n";
 
+    /// Split a fixture's `review:` / `analyze:` blocks out of the spec and
+    /// write each to the artifact that now owns it (spec 057).
+    ///
+    /// The constants above describe *states* — never reviewed, blocking,
+    /// advisory-only — and those states are what the tests assert on. Moving
+    /// them by hand across twenty-odd literals would be twenty-odd chances to
+    /// alter a case while relocating it, so the fixture is relocated
+    /// mechanically instead and each constant keeps saying what it said.
+    fn relocate_records(repo: &Path, spec: &str) -> String {
+        relocate_records_in(&repo.join("specs/007-gate"), spec)
+    }
+
+    fn relocate_records_in(dir: &Path, spec: &str) -> String {
+        let mut spec_out = String::new();
+        let mut blocks: std::collections::BTreeMap<&str, String> =
+            std::collections::BTreeMap::new();
+        let mut current: Option<&str> = None;
+
+        for line in spec.lines() {
+            let indented = line.starts_with([' ', '\t']);
+            if !indented {
+                current = match line.trim_end() {
+                    "review:" => Some("review"),
+                    "analyze:" => Some("analyze"),
+                    _ => None,
+                };
+                if current.is_some() {
+                    continue;
+                }
+            }
+            if let Some(key) = current {
+                if indented {
+                    let entry = blocks.entry(key).or_default();
+                    entry.push_str(line.strip_prefix("  ").unwrap_or(line));
+                    entry.push('\n');
+                    continue;
+                }
+                current = None;
+            }
+            spec_out.push_str(line);
+            spec_out.push('\n');
+        }
+
+        for (key, body) in &blocks {
+            let file = if *key == "review" {
+                "review.md"
+            } else {
+                "analysis.md"
+            };
+            fs::write(
+                dir.join(file),
+                format!("---\nspec: 007-gate\n{body}---\n\n# {key} — 007-gate\n"),
+            )
+            .unwrap();
+        }
+        spec_out
+    }
+
     fn seed(repo: &Path, spec: &str) {
         fs::create_dir_all(repo.join("specs/007-gate")).unwrap();
-        fs::write(repo.join("specs/007-gate/spec.md"), spec).unwrap();
+        let spec = relocate_records(repo, spec);
+        fs::write(repo.join("specs/007-gate/spec.md"), &spec).unwrap();
         // Pin the slash-command namespace so canonical messages are
         // deterministic (the default is the tempdir's random basename).
         fs::write(repo.join(".govern.toml"), "[host]\nproject = \"ductus\"\n").unwrap();
@@ -1739,11 +1879,8 @@ mod tests {
     fn honors_configured_specs_root() {
         let tmp = tempdir().unwrap();
         fs::create_dir_all(tmp.path().join("governance/007-gate")).unwrap();
-        fs::write(
-            tmp.path().join("governance/007-gate/spec.md"),
-            REVIEWED_CLEAN,
-        )
-        .unwrap();
+        let spec = relocate_records_in(&tmp.path().join("governance/007-gate"), REVIEWED_CLEAN);
+        fs::write(tmp.path().join("governance/007-gate/spec.md"), &spec).unwrap();
         fs::write(
             tmp.path().join(".govern.toml"),
             "[host]\nproject = \"ductus\"\n\n[paths]\nspecs-root = \"governance\"\n",
@@ -2121,16 +2258,30 @@ mod tests {
         splice_block_into(&spec, "analyze", &analyze);
     }
 
-    /// Replace one top-level frontmatter block in the spec at `spec`.
+    /// Write one record into the artifact that owns it, de-indenting the
+    /// fixture's nested block form.
+    ///
+    /// Named for what it did before the relocation — the callers still hand it
+    /// a `key:\n  field: …` block, because that is the shape the digest
+    /// builders produce and reshaping them would be a second edit to fixtures
+    /// whose point is the digest, not its indentation.
     fn splice_block_into(spec: &Path, key: &str, block: &str) {
-        let text = fs::read_to_string(spec).unwrap();
-        let (fm_text, body) = split_frontmatter(&text, spec).unwrap();
-        let fm = crate::primitives::write_review::splice_top_level_block(
-            fm_text,
-            key,
-            block.trim_end_matches('\n'),
-        );
-        fs::write(spec, format!("---\n{fm}\n---\n{body}")).unwrap();
+        let dir = spec.parent().unwrap();
+        let file = if key == "review" {
+            "review.md"
+        } else {
+            "analysis.md"
+        };
+        let mut body = String::new();
+        for line in block.lines().skip(1) {
+            body.push_str(line.strip_prefix("  ").unwrap_or(line));
+            body.push('\n');
+        }
+        fs::write(
+            dir.join(file),
+            format!("---\nspec: 007-gate\n{body}---\n\n# {key} — 007-gate\n"),
+        )
+        .unwrap();
     }
 
     /// The hole this check closes: `review → fix → done` used to pass the gate
