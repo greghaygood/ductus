@@ -1,17 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-16T15:57:19Z
-analyzed-against: 10462bae863adc8a890460f9a01eb609cbf01daa
+last-run: 2026-09-16T16:07:42Z
+analyzed-against: 5fa698f7e91067e23e2248a51aca32cd670e6ab6
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 2
 captured-issues: 0
 analyzed-digest:
-  analysis.md: a34846aba5c5e14f1d4d9b042d044c7ee5c4940affa5d70019ff76c972b18fbc
-  data-model.md: df1b5509b214608508e37088ee0cbf160281ed68a7f4e0b0854e1b596e306022
+  data-model.md: 8c153186f422833072ade4f085d44f022200c1d9becb840b929db9d778595746
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 049c88d9cb7f7eee086352b67a3df3a934531eb35c4abb12af133d7f046b2980
+  review.md: 85c9ea09986a572b90217362f28b7c398d87f21f2364d3238dd8fa88ee079a3c
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
