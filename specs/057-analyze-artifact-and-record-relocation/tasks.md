@@ -177,7 +177,7 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 21. Reconcile the version pin and cut the release
 
-- [ ] Audit Family 20 has been red on `main` since `783602c5`: tasks 11-12 bumped `runtime/Cargo.toml` and `runtime/CHANGELOG.md` to 0.50.0 and left the repo-root `version` file at 0.49.8. It is red in the **safe** direction — `/{project}` reads the root file, 0.49.8 is published, so no adopter is halted — but the audit is a hard release gate and will block the tag
+- [x] Audit Family 20 has been red on `main` since `783602c5`: tasks 11-12 bumped `runtime/Cargo.toml` and `runtime/CHANGELOG.md` to 0.50.0 and left the repo-root `version` file at 0.49.8. It is red in the **safe** direction — `/{project}` reads the root file, 0.49.8 is published, so no adopter is halted — but the audit is a hard release gate and will block the tag
 - [ ] Bump the root `version` file to 0.50.0 **and** push `ductus-v0.50.0` in the same sitting: a bumped pin with no tag sends every adopter after assets that do not exist and aborts their run
 - [ ] Do this only after 057, and the specs it reopens (026, 020, 047), are back at `done` — a release is cut from completed work
 - [ ] Run `scripts/audit/run-all.sh` after committing and before tagging, and confirm Family 20 is green; then read every workflow run for that sha, not only the one whose name matches
@@ -197,10 +197,10 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 23. Discharge the 022 obligation the relocation created
 
-- [ ] Task 17's search found 10 lines across 6 of `022-deterministic-runtime`'s **durable contracts** that place the records in `spec.md` frontmatter — `data-model.md` at 750, 752, 759, 787 and 791 (the canonical registry of the gate's check order and the two digest subject sets), and one line each in the scenarios `implement-completion-gate`, `primitive-robustness-hardening`, `review-base-includes-the-transition-commit`, `review-gate-unexaminable-contracts` and `review-runtime-acceleration`
-- [ ] Nothing in 022's `spec.md`, `plan.md` or `tasks.md` is affected — the exposure is entirely in the digested set, which is what prices it
+- [x] Task 17's search found 10 lines across 6 of `022-deterministic-runtime`'s **durable contracts** that place the records in `spec.md` frontmatter — `data-model.md` at 750, 752, 759, 787 and 791 (the canonical registry of the gate's check order and the two digest subject sets), and one line each in the scenarios `implement-completion-gate`, `primitive-robustness-hardening`, `review-base-includes-the-transition-commit`, `review-gate-unexaminable-contracts` and `review-runtime-acceleration`
+- [x] Nothing in 022's `spec.md`, `plan.md` or `tasks.md` is affected — the exposure is entirely in the digested set, which is what prices it
 - [ ] 022 is the durable home for runtime rules (AGENTS.md §Workflow), so these are 057's to correct: reopen 022, fix the claims by tense, and link back here
-- [ ] Price it before starting: every hit is a durable contract, so this costs a reopen **plus a full five-pass re-review**, and AGENTS.md records that a full 022 re-review is the largest single unit in the corpus and has never been spent
-- [ ] Declare `022-deterministic-runtime` in this spec's `cross-spec-impact:` so the pre-done gate holds 057 until 022 links back
+- [x] Price it before starting: every hit is a durable contract, so this costs a reopen **plus a full five-pass re-review**, and AGENTS.md records that a full 022 re-review is the largest single unit in the corpus and has never been spent
+- [x] Declare `022-deterministic-runtime` in this spec's `cross-spec-impact:` so the pre-done gate holds 057 until 022 links back
 
 - **Done when**: No durable contract under 022 places either record in `spec.md` frontmatter, 022's review and analysis are current, it is back at `done` with a back-link to 057, and the `cross-spec-impact:` entry is discharged.
