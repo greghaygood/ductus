@@ -16,6 +16,14 @@ review-block-agreement: compared 54 spec(s) carrying both a review block and a r
 analyze-record: 54 done spec(s) examined; 0 carry a review record and no analyze record …
 ```
 
+*Two siblings now.* `057-analyze-artifact-and-record-relocation` retired Family 31
+(`review-block-agreement`) along with the second copy of the record it
+reconciled, so the middle line is quoted here as it stood when this scenario was
+written. The **argument** it supports is unaffected and is arguably stronger for
+the retirement: the surviving families still emit a coverage line, Family 19
+still did not, and one of the three that shamed it into doing so has since been
+removed for reporting agreement over a subject that could not disagree.
+
 `review-freshness.sh` prints nothing and exits 0. The aggregator is built for that — `run_all`'s `run_check` emits a per-family header only on a non-zero exit — so silence is the designed pass shape. The problem is that silence is *also* the shape of a family that aborted before it examined anything, and `run_check` cannot tell the two apart either: it reads the exit code alone.
 
 That is not a hypothetical failure mode in this repo. [`scripts/audit/sibling-coupling.sh`](../../../scripts/audit/sibling-coupling.sh) used a GNU awk extension, so on every macOS machine the extraction aborted, the family found nothing, and it exited 0 — a release gate that was dead locally and alive in CI. `AGENTS.md` §Design Principles records that as the single most expensive failure mode this repo has produced, and this file's own header cites `QUAL-CLAIM-001` while leaving its own result indistinguishable.
@@ -27,12 +35,12 @@ Observed 2026-09-07 while closing spec 022. The self-audit had to be trusted as 
 **`review-freshness.sh` closes every run with one coverage line on stdout, clean or not.** It names the count it enumerated and the exclusions it applied, in the shape its three siblings already use:
 
 ```text
-review-freshness: examined N spec(s) at status: done — D by reviewed-digest, P by commit-diff proxy; G grandfathered (no review: block); U unresolvable
+review-freshness: examined N spec(s) at status: done — D by reviewed-digest, P by commit-diff proxy; G grandfathered (no review.md); U unresolvable
 ```
 
 The line is a **claim about the subject**, not a finding, so it is written to stdout and does not affect the exit code. `run_check` keeps its current contract — non-zero means findings — and a clean Family 19 keeps producing no findings; what changes is that its output stops being empty.
 
-Grandfathered and unresolvable specs are named separately because they are the two ways a spec can be *in* the corpus and *out* of the comparison, and folding them into the examined count would restate the conflation the line exists to remove. The digest/proxy split is named for a sharper reason, given below: the two arms do not carry the same strength of claim, and a single `examined` count would assert the stronger one over both.
+Grandfathered and unresolvable specs are named separately because they are the two ways a spec can be *in* the corpus and *out* of the comparison, and folding them into the examined count would restate the conflation the line exists to remove. **The grandfather predicate is keyed on the absence of `review.md`, and that spelling is load-bearing rather than cosmetic.** It read *no `review:` block* until `057-analyze-artifact-and-record-relocation` moved the record, which made that predicate true of every spec in the corpus — so the family would have reported every spec grandfathered, examined nothing, and gone **green**, which is this scenario's own subject arriving through the predicate instead of through the exit code. The relocation re-pointed it at the artifact in the same change, and the coverage line is what would have made the failure visible: `examined 0; 54 grandfathered` is not a shape a reader mistakes for a clean gate. The digest/proxy split is named for a sharper reason, given below: the two arms do not carry the same strength of claim, and a single `examined` count would assert the stronger one over both.
 
 ### The comparison has two arms
 
@@ -49,7 +57,7 @@ The proxy arm is not a grandfather clause and is not the runtime's rejected `sha
 ## Edge Cases
 
 - **A repo with no `done` specs.** The line still prints, with `examined 0`. That is the case it most needs to distinguish — zero examined and zero found are the same silence today.
-- **Every spec grandfathered.** `examined 0; G grandfathered` is a materially different claim from `examined 54`, and a reader acting on a clean release gate needs to see which one they got.
+- **Every spec grandfathered.** `examined 0; G grandfathered` is a materially different claim from `examined 54`, and a reader acting on a clean release gate needs to see which one they got. This stopped being hypothetical: 057's record relocation would have produced exactly it had the predicate not been re-pointed at `review.md` in the same change.
 - **The family exits non-zero with findings.** The coverage line still prints, above the findings, so a run that found three stale specs also says how many it looked at.
 - **A shallow clone.** Unresolvable `reviewed-against` is already its own finding, so such a spec is counted under `unresolvable` and is not silently absorbed into `examined`.
 - **A record with a digest and an unresolvable `reviewed-against`.** The digest arm needs no commit, so the spec is examined rather than counted `unresolvable` — the existing finding fires only when the proxy arm is the one that cannot answer.
