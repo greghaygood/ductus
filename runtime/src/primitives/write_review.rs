@@ -778,7 +778,7 @@ fn render_skipped(skipped: &[String]) -> String {
 /// Extracted when the report started carrying the whole record: the report is
 /// rendered before the record is assembled, and computing the surviving set
 /// twice would be two chances to prune differently — the class of divergence
-/// `check-review-agreement` was built to catch.
+/// the retired `check-review-agreement` was built to catch.
 fn surviving_waivers(feature_dir: &Path, args: &WriteReviewArgs) -> Result<Vec<RawWaiverFull>> {
     let recorded: Vec<RawWaiverFull> = crate::primitives::read_recorded_waivers(feature_dir)?;
     Ok(recorded

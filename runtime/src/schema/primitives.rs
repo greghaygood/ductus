@@ -87,8 +87,8 @@ pub struct ReviewBlock {
     pub blocking: bool,
     /// In-scope files the recorded review reported it read. `None` on every
     /// record written before this field existed, and on any run that stated
-    /// nothing — which `check-review-agreement` reports rather than reading as
-    /// zero.
+    /// nothing. `None` and `Some(0)` are different claims and must never be
+    /// collapsed: *did not say* is not *said zero*.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub examined: Option<u32>,
     /// The scope size `write-review` resolved when the record was written —
@@ -546,8 +546,10 @@ pub struct WriteReviewArgs {
     ///
     /// Nothing here proves the passes ran: a caller can overstate this as
     /// easily as omit it, exactly as it can with `unexamined`. What it buys is
-    /// that the claim is explicit and checkable (`check-review-agreement`
-    /// reads it) rather than invisible.
+    /// that the claim is explicit and re-derivable rather than invisible. No
+    /// check reads it — `check-review-agreement` did, and was retired with the
+    /// record's second home (spec 057), so this is read at the completion gate
+    /// by a person.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub examined: Option<u32>,
@@ -690,9 +692,11 @@ pub struct WriteAnalysisArgs {
     /// command *record* them rather than only print them — but the appends
     /// are separate `append-inbox` calls the host makes, so a run that
     /// recorded `advisory: 5` and captured nothing was byte-identical to one
-    /// that captured all five. Nothing could tell them apart: the review side
-    /// has `check-review-agreement` pinning `review.md` to its frontmatter,
-    /// and analyze has no counterpart because it writes no report artifact.
+    /// that captured all five, and nothing could tell them apart. The review
+    /// side once had `check-review-agreement` pinning `review.md` to the
+    /// spec's `review:` block; spec 057 gave each record one home and retired
+    /// that check, and gave analyze a report artifact of its own — so this
+    /// field, not a cross-artifact comparison, is what separates the two.
     ///
     /// Recorded rather than derived, deliberately. Counting inbox bullets
     /// here would make `captured-issues == advisory` look like an invariant
@@ -4174,95 +4178,6 @@ pub struct CheckCommandFlagsResult {
     /// all. Two empty sets compare equal, so without this an extraction
     /// failure returns the payload of a clean run. Empty otherwise — the
     /// common case stays quiet, so its silence means "examined and current".
-    #[serde(default)]
-    pub guidance: String,
-}
-
-// -- check-review-agreement ----------------------------------------------------
-
-/// Args for `check-review-agreement`. Compares each spec's frontmatter
-/// `review:` block against its own `review.md` frontmatter — the same review
-/// recorded twice, with nothing holding the two together until this check.
-/// Maintainer scope: the subject is every spec under the configured spec root
-/// that carries both records.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
-#[serde(rename_all = "kebab-case")]
-pub struct CheckReviewAgreementArgs {}
-
-/// One disagreement between a spec's `review:` block and its `review.md`.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-pub struct ReviewAgreementFinding {
-    /// Feature directory name the finding anchors to.
-    pub feature: String,
-    /// Which check produced it: `field-mismatch`, `blocking-mismatch`, or
-    /// `orphan-waiver`. Kept distinct because the repairs differ.
-    pub kind: String,
-    /// The disagreeing field, keyed by the spec-side name (`last-run`,
-    /// `reviewed-against`, `must-violations`, …). For `orphan-waiver` this is
-    /// the waived rule id; empty for `blocking-mismatch`, which names no
-    /// single field.
-    #[serde(default)]
-    pub field: String,
-    /// The spec-side value, rendered. Empty when the key is absent.
-    #[serde(default)]
-    pub spec_value: String,
-    /// The report-side value, rendered. Empty when the key is absent.
-    #[serde(default)]
-    pub report_value: String,
-    /// Repo-relative path the finding is reported against.
-    pub location: String,
-    /// What is wrong, in the maintainer's terms.
-    pub message: String,
-    /// The repair, in the maintainer's terms.
-    pub fix: String,
-}
-
-/// A spec the check could not compare, recorded so an empty `findings` is
-/// never mistaken for a verified-clean corpus.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-pub struct ReviewAgreementSkip {
-    /// Repo-relative path that went unexamined.
-    pub path: String,
-    /// Why, in the maintainer's terms.
-    pub reason: String,
-}
-
-/// Result for `check-review-agreement`.
-///
-/// `findings` empty with `skipped` empty is **examined and clean**, but only
-/// over the subject `examined` names: the intersection of specs carrying both
-/// a `review:` block and a `review.md`, since those are the only ones that can
-/// disagree. A spec with one record and not the other is a different defect
-/// with a different owner (Family 19 and `check-review-gate`), so it is
-/// counted in `single-sided` rather than silently dropped — two empty sets
-/// compare equal, and a caller needs to tell a small subject from a clean one
-/// (`QUAL-CLAIM-001`).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-pub struct CheckReviewAgreementResult {
-    /// Disagreements, in feature then field order.
-    #[serde(default)]
-    pub findings: Vec<ReviewAgreementFinding>,
-    /// Feature slugs compared — those carrying both records. Sorted.
-    #[serde(default)]
-    pub examined: Vec<String>,
-    /// Feature slugs carrying exactly one of the two records, which this
-    /// check cannot compare and deliberately does not own. Sorted.
-    #[serde(default)]
-    pub single_sided: Vec<String>,
-    /// Specs whose frontmatter could not be parsed on either side.
-    #[serde(default)]
-    pub skipped: Vec<ReviewAgreementSkip>,
-    /// Repo-relative spec root the run enumerated, so a caller can tell an
-    /// genuinely review-free corpus from a wrong working directory.
-    pub specs_root: String,
-    /// Set when the run enumerated specs but found no spec carrying both
-    /// records. Comparing nothing reports agreement, so without this an
-    /// enumeration failure returns the payload of a clean run. Empty
-    /// otherwise — the common case stays quiet, so its silence means
-    /// "examined and current".
     #[serde(default)]
     pub guidance: String,
 }

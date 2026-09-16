@@ -724,7 +724,8 @@ async fn resolve_constitutions_carries_the_description_via_mcp() {
 /// field the wrapper dropped would be invisible to every other test. The
 /// distinction this asserts is the whole point of the field — a record that
 /// never made the claim and one that made it and it was empty are different
-/// facts, and `check-review-agreement` reports them differently.
+/// facts, and collapsing them would make an unread scope indistinguishable
+/// from a read one.
 #[tokio::test]
 async fn write_review_reports_examined_against_a_derived_scope_via_mcp() {
     let tmp = tempfile::tempdir().unwrap();

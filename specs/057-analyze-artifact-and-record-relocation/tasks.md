@@ -118,9 +118,9 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 14. Retire the reconciliation check, reconcile the baseline
 
-- [ ] Delete `check_review_agreement.rs`, its schema types, and `scripts/audit/review-block-agreement.sh`
-- [ ] Point `scripts/audit/analyze-record-backlog.sh` at the relocated record and reconcile `analyze-record-baseline.txt`
-- [ ] Confirm the never-reviewed and never-analyzed cases remain distinguishable through task 6
+- [x] Delete `check_review_agreement.rs`, its schema types, and `scripts/audit/review-block-agreement.sh`
+- [x] Point `scripts/audit/analyze-record-backlog.sh` at the relocated record and reconcile `analyze-record-baseline.txt`
+- [x] Confirm the never-reviewed and never-analyzed cases remain distinguishable through task 6
 
 - **Done when**: `/{project}:audit` passes with Family 31 removed and Family 37 counting the same population it counted before.
 

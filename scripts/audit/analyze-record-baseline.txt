@@ -1,11 +1,16 @@
 # High-water mark for the analyze-record backlog (audit Family 37).
 #
-# The count of `done` specs carrying a `review:` record and no `analyze:` one.
-# It must never be raised without a stated reason: the completion gate has no
-# grandfather clause, so the backlog cannot legitimately grow, and growth
-# means the gate was bypassed.
+# The count of `done` specs carrying a review record (`review.md`) and no
+# analyze record (`analysis.md`). It must never be raised without a stated
+# reason: the completion gate has no grandfather clause, so the backlog cannot
+# legitimately grow, and growth means the gate was bypassed.
 #
 # 54 at introduction (2026-09-05). Drained to 0 on 2026-09-06 — every done
 # spec has been analyzed and carries a record. At zero the ratchet is fully
 # closed: any spec entering this set is a defect, not a legacy.
+#
+# Spec 057 moved both records out of `spec.md` frontmatter into the artifacts
+# that own them. The population is unchanged and so is the mark: the family
+# now reads the artifacts rather than the blocks, and the sweep that relocated
+# them wrote an `analysis.md` for every spec that had an `analyze:` block.
 0

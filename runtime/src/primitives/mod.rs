@@ -23,7 +23,6 @@ pub mod check_command_flags;
 pub mod check_corpus_links;
 pub mod check_orphaned_references;
 pub mod check_promotion_coverage;
-pub mod check_review_agreement;
 pub mod check_review_gate;
 pub mod check_rule_ids;
 pub mod check_step_references;

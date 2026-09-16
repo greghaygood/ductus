@@ -12,18 +12,18 @@ use ductus::primitives;
 use ductus::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
-    CheckPromotionCoverageArgs, CheckReviewAgreementArgs, CheckReviewGateArgs, CheckRuleIdsArgs,
-    CheckStepReferencesArgs, CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs,
-    CreateFeatureArgs, CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs,
-    DeriveBoundaryArgs, DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs,
-    DiffCrossSpecArgs, DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs,
-    FetchArchiveArgs, GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs,
-    MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs,
-    MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
-    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
-    WriteReviewArgs, WriteSessionArgs,
+    CheckPromotionCoverageArgs, CheckReviewGateArgs, CheckRuleIdsArgs, CheckStepReferencesArgs,
+    CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
+    CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
+    DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs, DiffCrossSpecArgs,
+    DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
+    GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
+    MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
+    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RelocateAuditRecordsArgs,
+    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
+    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
+    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -153,8 +153,6 @@ enum Command {
     /// Report flags a command's Flags table documents but its `argument-hint` omits.
     CheckCommandFlags(CheckCommandFlagsArgs),
     CheckStepReferences(CheckStepReferencesArgs),
-    /// Report specs whose frontmatter `review:` block disagrees with their own review.md.
-    CheckReviewAgreement(CheckReviewAgreementArgs),
     /// Report branch-scoped specs still in the tree, with the upstream spec each folds into.
     CheckUnfoldedSpecs(CheckUnfoldedSpecsArgs),
     /// Re-point inbound body links and folds-into fields from a feature directory at its fold target.
@@ -734,9 +732,6 @@ fn main() -> ExitCode {
         }
         Command::CheckStepReferences(args) => {
             emit_result(primitives::check_step_references::run(&args, &repo))
-        }
-        Command::CheckReviewAgreement(args) => {
-            emit_result(primitives::check_review_agreement::run(&args, &repo))
         }
         Command::CheckUnfoldedSpecs(args) => {
             emit_result(primitives::check_unfolded_specs::run(&args, &repo))

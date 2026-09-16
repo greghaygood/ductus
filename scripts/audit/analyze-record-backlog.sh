@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # scripts/audit/analyze-record-backlog.sh — Family 37 of /audit.
 #
-# Every `done` spec that carries a `review:` block and no `analyze:` one — the
+# Every `done` spec that carries a review record and no analyze record — the
 # exact population the `analyze-state-drift` check family grandfathers.
+#
+# Since spec 057 each record lives in the artifact that owns it: the review
+# record in `review.md`, the analyze record in `analysis.md`, and `spec.md`
+# carries neither. **The absent artifact is the never-run state**, so that is
+# what this family counts. An artifact that exists but whose frontmatter does
+# not parse is undeterminable, which is a finding rather than an exemption:
+# collapsing it into never-run would grow the exempt set with a defect.
 #
 # WHY THE EXEMPTION EXISTS, AND WHY IT NEEDS THIS. Spec 047 gave
 # `/{project}:analyze` a durable record so the pipeline's second gate could be
 # enforced; before it, a spec that had passed both gates and one that had
 # passed only the review were byte-identical on disk. Every `done` spec
-# written before that record existed therefore has no `analyze:` block, and
-# the drift family exempts them.
+# written before that record existed therefore has no analyze record, and the
+# drift family exempts them.
 #
 # 046 refused exactly this shape of exemption for scenario questions — "a
 # sanctioned hiding place is worse than the gap it papers over" — and the
@@ -52,9 +59,9 @@
 # that existed when they were completed, and re-litigating that is not what
 # this family is for.
 #
-# THE SUBJECT IS `done` SPECS WITH A `review:` BLOCK. A `done` spec with
-# *neither* block predates `/{project}:review` too and is already grandfathered
-# by that family; it is counted separately and reported as such rather than
+# THE SUBJECT IS `done` SPECS WITH A `review.md`. A `done` spec with *neither*
+# artifact predates `/{project}:review` too and is already grandfathered by
+# that family; it is counted separately and reported as such rather than
 # folded in, because the two populations drain through different commands and
 # a single number would hide which.
 #
@@ -96,22 +103,28 @@ import os, sys
 
 root = os.environ["SPECS_ROOT"]
 
-def top_level_keys(path):
-    """Unindented `key:` names in the frontmatter block, or None if unreadable."""
+def record_state(path):
+    """Whether an audit artifact carries a record: absent / present / unreadable.
+
+    Three states, never two. The artifact being **absent** is the never-run
+    signal the constitution names, so it is the grandfathered population this
+    family counts. An artifact that exists and whose frontmatter does not
+    parse is **undeterminable** — a real gap in what this run could see, and
+    folding it into never-run would grow the exempt set with a defect.
+    """
     try:
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().splitlines()
+    except FileNotFoundError:
+        return "absent"
     except OSError:
-        return None
+        return "unreadable"
     if not lines or lines[0].strip() != "---":
-        return None
-    keys = []
+        return "unreadable"
     for line in lines[1:]:
         if line.strip() == "---":
-            return keys
-        if line and not line[:1].isspace() and ":" in line:
-            keys.append(line.split(":", 1)[0].strip())
-    return None
+            return "present"
+    return "unreadable"
 
 examined = 0
 never_reviewed = 0
@@ -125,20 +138,21 @@ for row in sys.stdin:
     slug, status = parts[0], parts[1]
     if status != "done":
         continue
-    path = os.path.join(root, slug, "spec.md")
-    keys = top_level_keys(path)
-    if keys is None:
-        print("unreadable\t%s\t" % path)
+    review = record_state(os.path.join(root, slug, "review.md"))
+    analysis = record_state(os.path.join(root, slug, "analysis.md"))
+    if "unreadable" in (review, analysis):
+        which = "review.md" if review == "unreadable" else "analysis.md"
+        print("unreadable\t%s\t" % os.path.join(root, slug, which))
         continue
     examined += 1
-    if "analyze" in keys:
+    if analysis == "present":
         continue
-    if "review" not in keys:
+    if review == "absent":
         # Predates the review record too; already grandfathered there, and it
         # drains through a different command. Counted, never merged.
         never_reviewed += 1
         continue
-    print("backlog\t%s\t%s" % (path, slug))
+    print("backlog\t%s\t%s" % (os.path.join(root, slug, "spec.md"), slug))
 print("counts\t%d\t%d" % (examined, never_reviewed))
 ')"
 
@@ -155,8 +169,8 @@ while IFS=$'\t' read -r kind f1 f2; do
       ;;
     unreadable)
       emit "$f1" \
-        "done spec could not be read — its analyze record was not examined" \
-        "resolve the read failure; an unexaminable spec must not be counted as clean"
+        "audit artifact exists but carries no readable frontmatter record — this spec was not examined" \
+        "repair the artifact or re-run the command that writes it; undeterminable is not the never-run state and must not join the exempt set"
       ;;
     counts)
       examined="$f1"
@@ -214,6 +228,6 @@ fi
 # The counts are the guard, and here they are also the point: the whole
 # justification for grandfathering is that the exempt set is visible and
 # bounded, which is a claim only a number can carry.
-echo "analyze-record: ${examined} done spec(s) examined; ${backlog} carry a review record and no analyze record (the grandfathered backlog, baseline ${baseline:-unreadable}); ${never_reviewed} predate the review record too and drain through that command instead" >&2
+echo "analyze-record: ${examined} done spec(s) examined; ${backlog} carry a review.md and no analysis.md (the grandfathered backlog, baseline ${baseline:-unreadable}); ${never_reviewed} have neither and drain through the review command instead" >&2
 
 exit "$drift"

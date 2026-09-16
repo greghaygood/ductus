@@ -123,7 +123,6 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__ductus__check-corpus-links`
    - `mcp__ductus__check-orphaned-references`
    - `mcp__ductus__check-command-flags`
-   - `mcp__ductus__check-review-agreement`
    - `mcp__ductus__derive-dependencies`
    - `mcp__ductus__derive-references`
    - `mcp__ductus__check-unfolded-specs`

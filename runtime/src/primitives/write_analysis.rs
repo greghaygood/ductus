@@ -460,9 +460,9 @@ mod tests {
         // produced, `captured-issues` how many it landed in the inbox. Before
         // this field a run that recorded `advisory: 3` and captured nothing
         // was byte-identical to one that captured all three, and nothing
-        // could tell them apart — the review side has
-        // `check-review-agreement`, and analyze has no counterpart because it
-        // writes no report artifact to compare against.
+        // could tell them apart. The cross-artifact comparison that once
+        // covered the review side is retired (spec 057), so this field is the
+        // only thing that separates them.
         let tmp = spec_repo("status: in-progress\ndependencies: []");
         let mut a = args();
         a.advisory = 3;
