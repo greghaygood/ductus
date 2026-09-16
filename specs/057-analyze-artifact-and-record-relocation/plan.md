@@ -315,6 +315,27 @@ null` — never-reviewed and never-analyzed, stated rather than implied. The
 completion gate reads them correctly and will demand both; nothing needs
 repairing first.
 
+**The migration stales every recorded analyze digest, and the first measurement
+of that mis-attributed it.** The digest is a per-path hash of what an analysis
+read, and the sweep rewrites `review.md` — one of its subjects — in every spec
+that had a review record. Measured after this repo's own sweep: **50 of 54**
+`done` specs mismatch on `review.md`, which is this change's doing. All 54 also
+mismatch on `spec.md`, and none of *that* is this change: a spec's completing
+`set-status` rewrites `spec.md` after its analysis was recorded, so every `done`
+spec has been stale on that path since long before the relocation. Proven rather
+than reasoned — re-hashing a spec's `spec.md` with `status: in-progress`
+restored reproduces the recorded digest byte for byte, so the completion flip is
+the entire difference. The first pass over this measured *54 of 54 stale* and
+credited it all to the migration, which is the coarse-measurement failure
+§grounding names: the number was right and the attribution was not.
+
+Nothing is blocked. `check-review-gate` returns early on a `done` spec and no
+audit family reads analyze freshness, so the stale digests are latent, truthful
+and self-healing on the next reopen. Backfilling them is rejected on 047's AC11
+reasoning — it would assert a run nothing on disk substantiates. Recorded in
+`framework/migrations/audit-record-relocate.md` so an adopter meets a priced
+expectation rather than a surprise.
+
 ## Trade-offs
 
 **Rejected: a dual-read deprecation window.** Reading the old location when the
