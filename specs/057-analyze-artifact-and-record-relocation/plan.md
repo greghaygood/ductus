@@ -228,6 +228,33 @@ loud rather than silent.
 backslash line-continuations inside string literals into runs of spaces — check
 any multi-line user-facing message after formatting.
 
+**Tasks 18, 19 and 23 need a restarted session, and this is now proven rather
+than predicted.** The MCP server still exposes `check-review-agreement`, which
+task 14 deleted — so the server is running a binary older than this spec's
+runtime work, and `write-review` / `write-analysis` called through it would
+write **pre-relocation** records: the spec-block form, into `spec.md`. That is
+the stale-*write* case `AGENTS.md` §Gotchas names as the worst one, because it
+persists on disk and a later gate trusts it. Every remaining discharge task
+re-runs those two commands, so all three wait on a restart. `cargo build
+--release` is already done; only the session is stale.
+
+**Four `cross-spec-impact:` entries, not two, and the prices differ.** The plan
+declared 047 and 020. Implementation added two more, each discovered by a check
+rather than by reading: **026** (task 14 deleted Family 31, which 026's AC22
+and a scenario specify) and **022** (task 17's sweep found 10 lines across 6
+durable contracts). Price them by destination before spending them: 047 and 026
+and 022 all have hits in `scenarios/*.md` or `data-model.md`, so each costs a
+reopen **plus a full five-pass re-review**; 020's hits are in `spec.md`,
+`plan.md` and `data-model.md`, so it costs the re-review too. 022 is the
+largest single unit in the corpus and that pass has never been spent.
+
+**Audit Family 20 has been red on `main` since `783602c5`.** Tasks 11-12 bumped
+`runtime/Cargo.toml` and `runtime/CHANGELOG.md` to 0.50.0 and left the repo-root
+`version` file at 0.49.8. It is red in the *safe* direction — `/ductus` reads
+the root file and 0.49.8 is published, so no adopter is halted — but the audit
+is a hard release gate. Task 21 reconciles it **with** the tag, in one sitting:
+a bumped pin with no tag is an outage, not a deferred release.
+
 **One issue was captured to the inbox rather than fixed here:**
 `validate-frontmatter` emits `severity: "blocking"` for every finding including
 ones the constitution classes as Hard fail. Out of this spec's scope; it routes
