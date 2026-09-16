@@ -260,6 +260,61 @@ a bumped pin with no tag is an outage, not a deferred release.
 ones the constitution classes as Hard fail. Out of this spec's scope; it routes
 through `/{project}:groom`.
 
+## Resuming from here
+
+Tasks 1-16, 20 and 22 are complete and committed; task 17's search has run and
+its confirmation has not. What remains is task 17's second half plus four
+discharge tasks, and `tasks.md` carries each one's steps. This section is the
+part `tasks.md` cannot hold: the order, the mechanics, and the two things a
+fresh session would otherwise measure again.
+
+**Do the discharges before the release, and 057's own gates last.** Tasks 18,
+19 and 23 each reopen a sibling spec; task 17's confirmation can only pass once
+all three have landed, because the surviving hits *are* those specs; 057's own
+`/{project}:review` and `/{project}:analyze` come after that, since both read a
+corpus those tasks are still editing; and task 21 — the version pin and the tag
+— is last of all, because a release is cut from completed work.
+
+**The reopen mechanic is `set-status`, not `/{project}:amend`.** Each discharge
+edits artifacts to reflect a decision already made here, with no new input to
+classify, which is the case §spec-lifecycle sends to the status primitive
+directly. `set-status --feature <slug> --from done --to in-progress`, make the
+edits, re-run both audit commands, then `--from in-progress --to done`. The
+guard is on both ends deliberately: a transition computed from a stale read
+fails loudly instead of overwriting what is actually on disk.
+
+**Every one of the four costs a full re-review, and that is not obvious from
+the diff.** Each spec's hits land in `scenarios/*.md` or `data-model.md` — the
+only two files `write_review.rs` digests — so the reopen stales
+`reviewed-digest` and `check-review-gate` answers `review-stale` rather than
+`analyze-stale`. Do not price these as prose fixes. 022 is the largest single
+unit in the corpus and that pass has never been spent; `AGENTS.md` §Workflow
+carries the standing judgement about it.
+
+**Reopening 020 does not redden `mechanical_sweep_parity`.** `AGENTS.md`
+asserted it did; that claim was disproved and corrected on 2026-09-16, with the
+three derivations recorded in the entry itself. Do not route around it.
+
+**Task 17's confirmation is a classifier, not a grep, and the allow-list is the
+substance of it.** The pre-relocation shape is a record block addressed as
+`spec.md` frontmatter — match either spelling of the block, or a dotted
+accessor (`review.last-run`, `analyze.blocking`, `review.waivers`), within ~140
+characters of `spec.md` / "spec frontmatter" / "the spec", in both orders.
+Four families of hit are **correct and must survive**, so the confirmation is
+that nothing outside them remains: this spec's own artifacts and
+`runtime/CHANGELOG.md`; the migration entry and procedure, whose subject *is*
+the move; the constitution's declaration that a residual block is a violation,
+and `validate-frontmatter` implementing it; and past-tense accounts — the
+`analyze_subjects` doc comments, `check_review_gate`'s fixture helper, and the
+CI template comment naming what the step used to skip on. Classify every new
+hit by **tense**, which is the test the whole sweep used.
+
+**057 carries null records of its own.** The corpus sweep relocated this spec's
+template block, so `review.md` and `analysis.md` exist here with `last-run:
+null` — never-reviewed and never-analyzed, stated rather than implied. The
+completion gate reads them correctly and will demand both; nothing needs
+repairing first.
+
 ## Trade-offs
 
 **Rejected: a dual-read deprecation window.** Reading the old location when the
