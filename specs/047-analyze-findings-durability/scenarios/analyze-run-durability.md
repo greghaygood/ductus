@@ -25,9 +25,23 @@ The shape is the one this project keeps meeting: a check that did not run is ind
 
 `/{project}:analyze` records its own run in an `analyze:` frontmatter block, and `/{project}:implement`'s pre-done gate reads it.
 
+> **The record's home changed; nothing else in this section did.**
+> `057-analyze-artifact-and-record-relocation` moved it out of `spec.md` and
+> made it the frontmatter of `analysis.md` — flat keys, not a nested `analyze:`
+> block, and the gate reads it there. Every field below, the write-on-every-run
+> rule, the two deliberate differences from the review record, the gate's block
+> reasons and the drift family are all unchanged, so the section is annotated
+> once here rather than re-pointed sentence by sentence. Two things the move
+> *added*: the **file's** absence is now the never-analyzed state, which is a
+> sharper signal than a missing key in a file that exists for other reasons;
+> and an `analysis.md` that exists but carries no parseable record is a third
+> state, **undeterminable**, which the gate must not collapse into never-run.
+
 **The record.** Written on **every** run — clean, dirty, or empty-scope — because the record's whole purpose is that its *absence* means something. A run that declined to write one when it found nothing would be indistinguishable from a run that never happened, which is the defect restated one level in.
 
 ```yaml
+# As 047 delivered it — a block in `spec.md` frontmatter. Since 057 the same
+# fields are `analysis.md`'s own frontmatter, unnested and with a `spec:` key.
 analyze:
   last-run: 2026-09-05T19:00:00Z
   analyzed-against: <HEAD sha>
