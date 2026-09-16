@@ -1,15 +1,17 @@
 ---
 spec: 044-relocate-constitution-under-govern-directory
-reviewed-at: 2026-09-13T13:26:22Z
-reviewed-against: b421c51e6f629b5abedd4ac249cc2f0bd48963c0
 diff-base: b421c51e6f629b5abedd4ac249cc2f0bd48963c0
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:26:22Z
+reviewed-against: b421c51e6f629b5abedd4ac249cc2f0bd48963c0
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 9
 scope: 15
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 044-relocate-constitution-under-govern-directory

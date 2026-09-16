@@ -1,15 +1,18 @@
 ---
 spec: 033-rule-surface-setting
-reviewed-at: 2026-09-13T13:55:00Z
-reviewed-against: 6fe820ee7a0443b14f7dc9b7bf6995063ebee2ce
 diff-base: 6fe820ee7a0443b14f7dc9b7bf6995063ebee2ce
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:55:00Z
+reviewed-against: 6fe820ee7a0443b14f7dc9b7bf6995063ebee2ce
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 6
 scope: 6
-skipped-passes: []
+reviewed-digest:
+  scenarios/degenerate-surfaces-config.md: 784f190fe471163f83966d39a6467480bda2de9f498cfd43e56b206ec14a4cb9
+blocking: false
 ---
 
 # Review — 033-rule-surface-setting

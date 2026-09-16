@@ -1,15 +1,17 @@
 ---
 spec: 015-tarball-fetch
-reviewed-at: 2026-09-13T13:12:55Z
-reviewed-against: 74ae1723556897c5ea696d612a7b6c2c064793f3
 diff-base: 74ae1723556897c5ea696d612a7b6c2c064793f3
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:12:55Z
+reviewed-against: 74ae1723556897c5ea696d612a7b6c2c064793f3
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 1
 scope: 1
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 015-tarball-fetch

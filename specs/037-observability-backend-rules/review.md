@@ -1,15 +1,17 @@
 ---
 spec: 037-observability-backend-rules
-reviewed-at: 2026-09-13T12:42:21Z
-reviewed-against: e9b511ff8e22bef2bc45926e45b6c63a05405402
 diff-base: e9b511ff8e22bef2bc45926e45b6c63a05405402
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T12:42:21Z
+reviewed-against: e9b511ff8e22bef2bc45926e45b6c63a05405402
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 2
 scope: 2
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 037-observability-backend-rules

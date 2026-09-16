@@ -1,30 +1,7 @@
 ---
 status: done
 dependencies: [020-code-review]
-review:
-  last-run: 2026-09-13T13:15:24Z
-  reviewed-against: cab970412a37cef25d192915d56786d4f964f054
-  must-violations: 0
-  should-violations: 0
-  low-confidence: 0
-  examined: 3
-  scope: 7
-  reviewed-digest: {}
-  blocking: false
 next-criterion: 12
-analyze:
-  last-run: 2026-09-13T13:15:47Z
-  analyzed-against: e600d326130e4d77f7b4f1a64faa54d817df201f
-  hard-fail: 0
-  blocking-findings: 0
-  advisory: 0
-  unexamined: 0
-  analyzed-digest:
-    plan.md: 33bbc7993404d6ebd4c3340957322c345a1a28acf946dfe2493e821c9784fc5d
-    review.md: ee894d4824bf3567a12fb4c2e7b3361e019d24d16b196e9b32a19c0fcc1b46e0
-    spec.md: ecb66833a32f128e62b3a375777e2fdbdf298b8247c2550c0d00bd80a0627256
-    tasks.md: 662afd1f16e77ca2256ec3bcb25d7d074219c6f61fe362a56406a4375be68e05
-  blocking: false
 ---
 
 # 021 — Runtime Boundary

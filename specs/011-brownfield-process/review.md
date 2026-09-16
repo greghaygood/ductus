@@ -1,15 +1,17 @@
 ---
 spec: 011-brownfield-process
-reviewed-at: 2026-09-13T13:10:23Z
-reviewed-against: b195ba16754c62ca10f7ee7a79f2b80096595765
 diff-base: b195ba16754c62ca10f7ee7a79f2b80096595765
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:10:23Z
+reviewed-against: b195ba16754c62ca10f7ee7a79f2b80096595765
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 16
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 011-brownfield-process

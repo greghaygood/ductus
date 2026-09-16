@@ -1,15 +1,17 @@
 ---
 spec: 024-rule-loader
-reviewed-at: 2026-09-13T13:23:05Z
-reviewed-against: bbb1f4169533a355263e85fc98d5d62add4bb953
 diff-base: bbb1f4169533a355263e85fc98d5d62add4bb953
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:23:05Z
+reviewed-against: bbb1f4169533a355263e85fc98d5d62add4bb953
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 8
 scope: 11
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 024-rule-loader

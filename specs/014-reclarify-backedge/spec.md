@@ -3,32 +3,7 @@ title: "014-reclarify-backedge — spec"
 status: done
 dependencies: [000-slash-commands, 009-scenario-targeting, 013-text-first-artifacts, 023-govern-refinement]
 tags: [pipeline, commands]
-review:
-  last-run: 2026-09-13T19:01:43Z
-  reviewed-against: 5d8b492c1e2c6a0f3a99f5d1408829efb48c4639
-  must-violations: 0
-  should-violations: 0
-  low-confidence: 0
-  examined: 8
-  scope: 11
-  reviewed-digest:
-    scenarios/reopen-after-informal-edits.md: 969e20fe262affefdceaaa1e3b5ac900f0877d743f456035bc4de5f37cfe1a23
-  blocking: false
 next-criterion: 27
-analyze:
-  last-run: 2026-09-13T19:02:18Z
-  analyzed-against: 460ad4902438ad5772cd2f225c652f6682fa3e3a
-  hard-fail: 0
-  blocking-findings: 0
-  advisory: 0
-  unexamined: 0
-  analyzed-digest:
-    plan.md: 5dcf6a5757263f4d308ec98917e060732f524331228961b5b46e077c7b1c3a94
-    review.md: 5f187de382290c607b4a2f8c1b97e62e38c90d5fd397846edec07320d5ffa550
-    scenarios/reopen-after-informal-edits.md: 969e20fe262affefdceaaa1e3b5ac900f0877d743f456035bc4de5f37cfe1a23
-    spec.md: 366b0b2e61da6a5fb77009104ad0293b16d1572c5dae03c028f4d22d59a6d0e9
-    tasks.md: 2aceba5520966b38e88d85a01fd6128a5612fe266a9697e0ed13ec3c08fec997
-  blocking: false
 ---
 
 # 014 — Re-clarify Back-Edge

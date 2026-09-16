@@ -1,15 +1,18 @@
 ---
 spec: 008-security-rules
-reviewed-at: 2026-09-14T00:39:36Z
-reviewed-against: 5b975cdf437bca79c530c893805560b7d94a5b4f
 diff-base: e6f07be86659fb9782f585dcc28e3d9e359e63e2
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T00:39:36Z
+reviewed-against: 5b975cdf437bca79c530c893805560b7d94a5b4f
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 21
-skipped-passes: []
+reviewed-digest:
+  data-model.md: c56519ec36023061bd87268dfae78612cc2ebb239ae4ac34b2b0abd0838a869d
+blocking: false
 ---
 
 # Review — 008-security-rules

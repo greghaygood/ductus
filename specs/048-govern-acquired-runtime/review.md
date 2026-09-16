@@ -1,15 +1,23 @@
 ---
 spec: 048-govern-acquired-runtime
-reviewed-at: 2026-09-14T23:15:23Z
-reviewed-against: d0bfe956d9db520556693a780e7eb8dba652d606
 diff-base: 22dfdc45e1495dc66e6c97865f7acc92667f331d
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T23:15:23Z
+reviewed-against: d0bfe956d9db520556693a780e7eb8dba652d606
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 24
 scope: 28
-skipped-passes: []
+reviewed-digest:
+  data-model.md: ae0c2b52b863b272d8ab2fbab9b131ec5f7adf55f394bb8d8986488b51bba3c6
+  scenarios/pin-is-readable-when-acquisition-needs-it.md: 561c549b449523fc6723bd5adb2a1a4b9c24b8f7d665aec2e988efcc08b3d158
+  scenarios/release-halves-publish-together.md: 0448ad2cb2df94e5d6b97ce4660345e26619af68d5f05da29d8b8dd8a011306f
+  scenarios/retired-namespace-tools-are-off-limits.md: 0c5984d011f5d35b3685f05bc083e01d9aaa7bac4a31c0949e1d5bcd1f00627b
+  scenarios/state-a-version-checks-the-pin.md: 40a4cbaf5dab4b5ee1127c4e808f70bbd08433415e952011ceb7c419a5e24e23
+  scenarios/state-b-continues-in-session.md: b4d9b7da7ad0d9486268cff26ec375aa64d35a9639a5828a03cdde92da756ddd
+blocking: false
 ---
 
 # Review — 048-govern-acquired-runtime

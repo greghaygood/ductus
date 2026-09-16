@@ -18,6 +18,7 @@ After this migration `spec.md` carries neither block. [Spec 057](../../specs/057
 2. **Run the primitive, one spec at a time.** For each spec directory under the configured spec root (`[paths] specs-root`, default `specs`), invoke `relocate-audit-records` against the feature. The primitive:
    - writes each block as top-level frontmatter on its artifact — `review:` to `review.md`, `analyze:` to `analysis.md`;
    - **merges** into an artifact that already exists rather than refusing, which is the normal case for `review.md` since every pre-migration spec has one, and carries that artifact's existing report body **verbatim**;
+   - folds the pair `reviewed-at` / `last-run` onto `last-run`. They are one instant spelled twice — the block called it `last-run`, `review.md` called it `reviewed-at` — and carrying both forward would preserve the two-names condition inside the artifact that exists to end it. A disagreement across the pair is named under the spelling the artifact used;
    - **names** every key where the block and the artifact disagreed, in `disagreements`, rather than resolving it quietly. The block wins, because it is the copy every gate actually read — but 031 and 041 are why the difference is surfaced instead of smoothed. Report these to the operator;
    - invents no record for a spec that carries no block, because a record of nulls would assert a run that nothing substantiates;
    - removes the blocks from `spec.md`, leaving every other frontmatter key and the entire body untouched.

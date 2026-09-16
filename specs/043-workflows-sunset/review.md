@@ -1,15 +1,17 @@
 ---
 spec: 043-workflows-sunset
-reviewed-at: 2026-09-13T13:25:13Z
-reviewed-against: aca5720738988e6f23e97b44fcda541befc9f6eb
 diff-base: aca5720738988e6f23e97b44fcda541befc9f6eb
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:25:13Z
+reviewed-against: aca5720738988e6f23e97b44fcda541befc9f6eb
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 22
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 043-workflows-sunset

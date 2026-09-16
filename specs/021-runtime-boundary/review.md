@@ -1,15 +1,17 @@
 ---
 spec: 021-runtime-boundary
-reviewed-at: 2026-09-13T13:15:24Z
-reviewed-against: cab970412a37cef25d192915d56786d4f964f054
 diff-base: cab970412a37cef25d192915d56786d4f964f054
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:15:24Z
+reviewed-against: cab970412a37cef25d192915d56786d4f964f054
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 3
 scope: 7
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 021-runtime-boundary

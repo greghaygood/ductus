@@ -1,15 +1,17 @@
 ---
 spec: 025-rule-opt-out
-reviewed-at: 2026-09-13T13:24:13Z
-reviewed-against: fd5bb62ba9931a2794904a5d402e481a97b81013
 diff-base: fd5bb62ba9931a2794904a5d402e481a97b81013
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:24:13Z
+reviewed-against: fd5bb62ba9931a2794904a5d402e481a97b81013
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 5
 scope: 5
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 025-rule-opt-out

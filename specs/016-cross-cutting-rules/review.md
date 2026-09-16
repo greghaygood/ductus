@@ -1,15 +1,18 @@
 ---
 spec: 016-cross-cutting-rules
-reviewed-at: 2026-09-13T12:30:07Z
-reviewed-against: 19a236adfd41281319991094525535ded7586e91
 diff-base: 510eb25cfd96bc5ac2bcc714054c482a2c3cbfe1
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T12:30:07Z
+reviewed-against: 19a236adfd41281319991094525535ded7586e91
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 17
-skipped-passes: []
+reviewed-digest:
+  scenarios/applicable-rules-consistency-check.md: 654067cf29c934cccf9a88046d9aedf9b61728af9c5353037bb45ff4adf7d145
+blocking: false
 ---
 
 # Review — 016-cross-cutting-rules

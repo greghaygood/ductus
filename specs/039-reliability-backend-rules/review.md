@@ -1,15 +1,17 @@
 ---
 spec: 039-reliability-backend-rules
-reviewed-at: 2026-09-13T12:43:39Z
-reviewed-against: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
 diff-base: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T12:43:39Z
+reviewed-against: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 2
 scope: 2
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 039-reliability-backend-rules

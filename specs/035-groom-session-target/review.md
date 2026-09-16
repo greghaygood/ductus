@@ -1,15 +1,19 @@
 ---
 spec: 035-groom-session-target
-reviewed-at: 2026-09-13T17:41:03Z
-reviewed-against: 3141463ab739f72882171628484f41bf797f8aee
 diff-base: 80cdfe2398c8c36ba65b65c34a3722c8e09f0143
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T17:41:03Z
+reviewed-against: 3141463ab739f72882171628484f41bf797f8aee
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 4
 scope: 4
-skipped-passes: []
+reviewed-digest:
+  scenarios/confirmation-names-reopen.md: 62f7f04097775cd8b7e33dc38cb05b47dcbef834e6b4eb54d60bf1bf1ead7829
+  scenarios/reopen-done-spec-on-scenario.md: 5f1b1f7cc9a4fb3d5042d48ef2aae191697ff3821a0170ead1d019460cd6d6b2
+blocking: false
 ---
 
 # Review — 035-groom-session-target

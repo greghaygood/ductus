@@ -1,25 +1,11 @@
 ---
 status: in-progress
 dependencies: [020-code-review, 027-bootstrap-migration-registry, 047-analyze-findings-durability]
-review:
-  last-run: null
-  reviewed-against: null
-  must-violations: 0
-  should-violations: 0
-  low-confidence: 0
-  blocking: false
-analyze:
-  last-run: null
-  analyzed-against: null
-  hard-fail: 0
-  blocking-findings: 0
-  advisory: 0
-  unexamined: 0
-  blocking: false
 next-criterion: 27
 cross-spec-impact:
   - 047-analyze-findings-durability
   - 020-code-review
+  - 026-framework-self-audit
 ---
 
 # 057 — Analyze artifact and record relocation

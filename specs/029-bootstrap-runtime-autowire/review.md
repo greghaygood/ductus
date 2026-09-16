@@ -1,15 +1,21 @@
 ---
 spec: 029-bootstrap-runtime-autowire
-reviewed-at: 2026-09-14T02:24:07Z
-reviewed-against: 6554ab025b820f8fa65de8fe18c20a73d4580b6d
 diff-base: 0d251acc13bb7455c068a3d4e8ddf88224899939
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T02:24:07Z
+reviewed-against: 6554ab025b820f8fa65de8fe18c20a73d4580b6d
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 15
 scope: 17
-skipped-passes: []
+reviewed-digest:
+  scenarios/archive-fetch-direct-codeload.md: 8d72afc1592a147d1326817d6a6c9f97f3ccad2621d99e6d9a918905187cd24f
+  scenarios/project-inputs-asked-once.md: 300da5f046c71060e85aed09ffeb1d1779f09fffa8816e0a4fc375b4dcfb9960
+  scenarios/runtime-probe-parity-audit.md: f03e440661b5aa0e0f0e373fe9be513e6500454009bcfe8e478a80da83fa78e6
+  scenarios/state-a-deterministic-path-forcing.md: dc0389b97152fba961f1b3b115279cb120b9ed3d78c7fc5a43834d45a0939577
+blocking: false
 ---
 
 # Review — 029-bootstrap-runtime-autowire

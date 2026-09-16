@@ -1,15 +1,18 @@
 ---
 spec: 028-antigravity-agent
-reviewed-at: 2026-09-15T14:31:04Z
-reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
 diff-base: 108714e07006a59d5306d33905dd7504efea877b
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-15T14:31:04Z
+reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 17
 scope: 17
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 3183763fc3bb6d5f227ae47b26fe84edbbe2ee89a4f20590f0d65f7a3402c834
+blocking: false
 ---
 
 # Review — 028-antigravity-agent

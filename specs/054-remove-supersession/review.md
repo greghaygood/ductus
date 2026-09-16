@@ -1,15 +1,17 @@
 ---
 spec: 054-remove-supersession
-reviewed-at: 2026-09-13T13:44:25Z
-reviewed-against: 089ba25279c50730340592d9da3b40421ae08279
 diff-base: 089ba25279c50730340592d9da3b40421ae08279
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:44:25Z
+reviewed-against: 089ba25279c50730340592d9da3b40421ae08279
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 11
 scope: 37
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 054-remove-supersession

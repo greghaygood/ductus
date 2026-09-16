@@ -50,8 +50,14 @@ fn repo_root() -> PathBuf {
 }
 
 /// Every `done` spec's `(slug, reviewed-against)`, skipping the grandfathered
-/// ones (no `review:` block) and any whose sha does not resolve — the two
-/// cases both implementations decline to judge.
+/// ones (no `review.md`) and any whose sha does not resolve — the two cases
+/// both implementations decline to judge.
+///
+/// The status comes from `spec.md` and the sha from `review.md`, because spec
+/// 057 moved the record to the artifact that owns it. Reading the retired
+/// `spec.md` block would build an **empty** subject over a migrated corpus,
+/// which this file's own vacuity guard then reports as a check that could not
+/// run — correctly, and that is how the relocation surfaced here.
 fn reviewed_done_specs(root: &Path) -> Vec<(String, String)> {
     let mut out = Vec::new();
     let specs = root.join("specs");
@@ -78,7 +84,16 @@ fn reviewed_done_specs(root: &Path) -> Vec<(String, String)> {
         if !fm.lines().any(|l| l.trim() == "status: done") {
             continue;
         }
-        let Some(base) = fm
+        let Ok(review) = std::fs::read_to_string(dir.join("review.md")) else {
+            continue; // grandfathered: the absent artifact is never-reviewed
+        };
+        let Some(review_fm) = review
+            .strip_prefix("---\n")
+            .and_then(|r| r.split("\n---").next())
+        else {
+            continue;
+        };
+        let Some(base) = review_fm
             .lines()
             .find_map(|l| l.trim().strip_prefix("reviewed-against:"))
             .map(|v| v.trim().trim_matches('"').to_string())

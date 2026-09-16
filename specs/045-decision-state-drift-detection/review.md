@@ -1,15 +1,18 @@
 ---
 spec: 045-decision-state-drift-detection
-reviewed-at: 2026-09-14T02:39:20Z
-reviewed-against: de98121ca2fb53c7a226e5c31463d46c0fff30cc
 diff-base: 877eab5f675d09724a65390ca2ee3c161b8081f9
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T02:39:20Z
+reviewed-against: de98121ca2fb53c7a226e5c31463d46c0fff30cc
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 10
 scope: 19
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 18ef73385daae1bdb2e92eec3bbdb16109ac66c6509cc8d7903e6dd515ee2438
+blocking: false
 ---
 
 # Review — 045-decision-state-drift-detection

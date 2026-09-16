@@ -126,9 +126,9 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 15. Ship the template and sweep this repo's corpus
 
-- [ ] Remove both blocks from `framework/templates/spec/spec.md`
-- [ ] Run the primitive across all spec directories under the spec root
-- [ ] Run the full markdown lint over the result
+- [x] Remove both blocks from `framework/templates/spec/spec.md`
+- [x] Run the primitive across all spec directories under the spec root
+- [x] Run the full markdown lint over the result
 
 - **Done when**: a newly created spec opens with `status` and `dependencies` alone, no `spec.md` in the corpus carries either block, and the lint is clean.
 
@@ -152,5 +152,25 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 - [ ] Record in `047-analyze-findings-durability` that its resolved question is superseded on the record-location half, linking back here
 - [ ] Record in `020-code-review` the change to its CI-gate mechanism, linking back here
+- [ ] Correct 020's `## Frontmatter schema` section in the same reopen — it presents the `review:` block as *spec* frontmatter in a fenced YAML example, which the relocation makes false; the reopen is already being spent, and task 17's sweep reports this hit
 
 - **Done when**: both specs link back to 057, clearing the `cross-spec-impact` entries that would otherwise block `done`.
+
+## 19. Discharge the 026 obligation task 14 created
+
+- [ ] Reopen `026-framework-self-audit` — task 14 deleted Family 31, which its AC22 specifies and its `scenarios/family-31-review-block-agreement.md` is the durable contract for
+- [ ] Delete that scenario: it is obsolete, and §scenarios says an obsolete scenario is deleted rather than marked with a status
+- [ ] Annotate AC22 as superseded, naming 057 and the reason — the family's subject was the intersection of two records of one fact, and there is one record now
+- [ ] Re-run `/{project}:review` and `/{project}:analyze` over 026: deleting a scenario changes a durable contract, so the recorded `reviewed-digest` goes stale and `check-review-gate` will answer `review-stale`
+- [ ] Return 026 to `done`, and confirm it links back to 057 so the `cross-spec-impact:` entry is discharged
+
+- **Done when**: 026 carries no scenario or ticked criterion asserting Family 31 exists, its review and analysis are current, it is back at `done`, and the `026-framework-self-audit` entry in this spec's `cross-spec-impact:` is discharged by the reciprocal back-link.
+
+## 20. Re-point the two remaining corpus readers at the relocated record
+
+- [x] `scripts/audit/review-freshness.sh` (Family 19) reads `review.reviewed-against` from the `spec.md` block and grandfathers a spec by the block's absence — after the sweep that is every spec, so the family goes vacuous exactly as the CI template did
+- [x] `runtime/tests/mechanical_sweep_parity.rs` builds its subject from the same block; with the block gone its subject is empty and its vacuity guard fires, which is the guard working
+- [x] Rewrite both to read `review.md`, pinning the new contract rather than relaxing the guard
+- [x] Surveyed for others: `marker-list-parity.sh` and `template-alignment.sh` match on `analyze.md` the command file, not the record, and the pre-commit hooks read neither — so these two are the whole set
+
+- **Done when**: Family 19 resolves a `reviewed-against` for every done spec and reports its grandfathered count from the absence of `review.md`, and `mechanical_sweep_parity` builds a non-empty subject and passes.

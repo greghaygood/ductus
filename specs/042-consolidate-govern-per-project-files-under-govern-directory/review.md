@@ -1,15 +1,19 @@
 ---
 spec: 042-consolidate-govern-per-project-files-under-govern-directory
-reviewed-at: 2026-09-13T19:35:53Z
-reviewed-against: 8fb42bfedd552a975c88d6c11e4d3acc2cb1a3a9
 diff-base: 322418501529128c0be4d4a44850659ec1637d3a
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T19:35:53Z
+reviewed-against: 8fb42bfedd552a975c88d6c11e4d3acc2cb1a3a9
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 16
 scope: 30
-skipped-passes: []
+reviewed-digest:
+  scenarios/provenance-tags-name-resolved-config-path.md: aef26b78a9e3eab0f62f3947d24b08214c94809f3f77c480c9fb5049fba22296
+  scenarios/runtime-doc-strings-name-active-paths.md: 5799c0f7c23e431c48a83c8d2a4696beded3861629e767b5fc1fa8e67e06c527
+blocking: false
 ---
 
 # Review — 042-consolidate-govern-per-project-files-under-govern-directory

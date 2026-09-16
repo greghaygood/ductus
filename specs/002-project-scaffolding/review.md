@@ -1,15 +1,17 @@
 ---
 spec: 002-project-scaffolding
-reviewed-at: 2026-09-13T12:56:02Z
-reviewed-against: 674925045d17b0843724db970bed4ff6fb457ef8
 diff-base: 674925045d17b0843724db970bed4ff6fb457ef8
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T12:56:02Z
+reviewed-against: 674925045d17b0843724db970bed4ff6fb457ef8
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 3
 scope: 3
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 002-project-scaffolding

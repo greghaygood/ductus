@@ -3,8 +3,9 @@
 #
 # No `done` spec ships with a review that predates its own code.
 #
-# `/{project}:review` records `review.reviewed-against` in the spec
-# frontmatter. Nothing compared it to reality: `check-review-gate` asserts
+# `/{project}:review` records `reviewed-against` in `review.md`'s frontmatter
+# (in the spec's `review:` block before spec 057 relocated the record).
+# Nothing compared it to reality: `check-review-gate` asserts
 # `last-run` is set and `blocking` is false, and `/{project}:analyze`'s
 # `review-state-drift` family asserts the same two things. Both pass for a
 # review recorded against a commit whose code has since changed, so a
@@ -23,7 +24,8 @@
 # from three mutually reinforcing mechanisms rather than one.
 #
 # Method:
-#   19a For each spec at `status: done`, read `review.reviewed-against`.
+#   19a For each spec at `status: done`, read `reviewed-against` from its
+#       `review.md`.
 #   19b Collect the spec's **durable contracts**: `scenarios/*.md` and
 #       `data-model.md`.
 #   19c Emit a finding when any of them changed between `reviewed-against`
@@ -45,9 +47,12 @@
 # is a snapshot, not a constant: it drains as reviews are refreshed.
 #
 # Deliberately NOT a finding:
-#   - A spec with no `review:` block. Grandfathered, matching the rule
-#     `/{project}:analyze` and the shipped CI template already apply — such a
-#     spec predates `/{project}:review`.
+#   - A spec with **no `review.md`**. The absent artifact is the never-run
+#     state (§text-first-artifacts), so this grandfathers the same population
+#     `/{project}:analyze` and the shipped CI template do — a spec predating
+#     `/{project}:review`. Reading the retired `spec.md` block here instead
+#     would grandfather *every* spec in a migrated corpus and take this family
+#     vacuous, which is the defect spec 057 removed from that CI template.
 #   - A spec with no scenarios and no `data-model.md`. It has no durable
 #     contract beyond `spec.md`, so there is nothing this check can compare.
 #   - `tasks.md`, `plan.md`, `review.md`, and `spec.md`. The first is
@@ -152,7 +157,7 @@ def is_durable_contract(rel_within_feature):
 
 
 def recorded_digest(fm):
-    """The `review.reviewed-digest` map, or None when the record carries none.
+    """`review.md`\'s `reviewed-digest` map, or None when the record carries none.
 
     Three states, and the difference between the last two is the whole reason
     the runtime types this field as an `Option`:
@@ -162,7 +167,7 @@ def recorded_digest(fm):
                        reads as *current*, not as unjudgeable.
       * a map       -> the recorded per-path sha256 set.
     """
-    m = re.search(r"^  reviewed-digest:[ \t]*(.*)$", fm, re.M)
+    m = re.search(r"^reviewed-digest:[ \t]*(.*)$", fm, re.M)
     if not m:
         return None
     if m.group(1).strip() == "{}":
@@ -171,7 +176,7 @@ def recorded_digest(fm):
     for line in fm[m.end():].split("\n"):
         if not line.strip():
             continue
-        entry = re.match(r"^    ([^\s:]+):[ \t]*([0-9a-f]{64})[ \t]*$", line)
+        entry = re.match(r"^  ([^\s:]+):[ \t]*([0-9a-f]{64})[ \t]*$", line)
         if not entry:
             break  # dedent or a sibling key ends the map
         digests[entry.group(1)] = entry.group(2)
@@ -395,11 +400,18 @@ for spec_path in sorted(specs_dir.glob("*/spec.md")):
     fm = frontmatter(text)
     if scalar(fm, "status") != "done":
         continue
-    if not re.search(r"^review:", fm, re.M):
+    # The record lives in `review.md` since spec 057, and **the absent file
+    # is the never-reviewed state** — which is what this grandfathers. Reading
+    # the old `spec.md` block here would grandfather every spec in a migrated
+    # corpus and take this family vacuous, the failure the shipped CI template
+    # carried for the same reason.
+    review_path = spec_path.parent / "review.md"
+    if not review_path.is_file():
         grandfathered += 1
         continue  # grandfathered: predates /review
-    base = scalar(fm, "reviewed-against", indent="  ")
-    digest = recorded_digest(fm)
+    review_fm = frontmatter(review_path.read_text(encoding="utf-8"))
+    base = scalar(review_fm, "reviewed-against")
+    digest = recorded_digest(review_fm)
 
     # Whether the sweep exemption can run. It needs two committed trees, so it
     # is available only when `reviewed-against` resolves — on either arm.
@@ -527,7 +539,7 @@ examined = examined_digest + examined_proxy
 print(
     f"review-freshness: examined {examined} spec(s) at status: done — "
     f"{examined_digest} by reviewed-digest, {examined_proxy} by commit-diff proxy; "
-    f"{grandfathered} grandfathered (no review: block); {unresolvable} unresolvable",
+    f"{grandfathered} grandfathered (no review.md); {unresolvable} unresolvable",
     file=sys.stderr,
 )
 for finding in findings:

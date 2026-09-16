@@ -1,15 +1,19 @@
 ---
 spec: 040-configurable-specs-dir
-reviewed-at: 2026-09-14T17:23:24Z
-reviewed-against: 58124bbf3864074c30307e7b8af90462ee07e598
 diff-base: 20c49dc25a44960624dcba76548f5d6b47b28fee
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T17:23:24Z
+reviewed-against: 58124bbf3864074c30307e7b8af90462ee07e598
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 5
 scope: 28
-skipped-passes: []
+reviewed-digest:
+  scenarios/command-prose-resolves-spec-root.md: 17fd7e541aacd73221e37ace61d947f5f1ddd379b852d965b474b7fd6e895e16
+  scenarios/spec-root-rule-stated-once.md: 45cb8e48e512ff64c4a123e2b9f6553321917282db46f7f5626909adfc5e147f
+blocking: false
 ---
 
 # Review — 040-configurable-specs-dir

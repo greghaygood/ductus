@@ -1,15 +1,17 @@
 ---
 spec: 006-bug-workflow
-reviewed-at: 2026-09-13T13:09:21Z
-reviewed-against: 80b817ecc2aaf578e01f7baaa05904c0a2ad2614
 diff-base: 80b817ecc2aaf578e01f7baaa05904c0a2ad2614
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:09:21Z
+reviewed-against: 80b817ecc2aaf578e01f7baaa05904c0a2ad2614
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 10
 scope: 17
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 006-bug-workflow

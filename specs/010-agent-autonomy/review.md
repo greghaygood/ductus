@@ -1,15 +1,18 @@
 ---
 spec: 010-agent-autonomy
-reviewed-at: 2026-09-13T16:22:03Z
-reviewed-against: 76e5aeb5dada16ade73307ce40bbd8d3f65163f7
 diff-base: c39f376f4347ff71424796fea18d23f94c03cf4a
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T16:22:03Z
+reviewed-against: 76e5aeb5dada16ade73307ce40bbd8d3f65163f7
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 21
 scope: 25
-skipped-passes: []
+reviewed-digest:
+  scenarios/implement-offers-the-next-step.md: 1927295a78b92a769f4050d240464aead2d5221c8f36fa3cdbaee05983f301e4
+blocking: false
 ---
 
 # Review — 010-agent-autonomy

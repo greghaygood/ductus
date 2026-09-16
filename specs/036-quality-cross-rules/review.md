@@ -1,15 +1,18 @@
 ---
 spec: 036-quality-cross-rules
-reviewed-at: 2026-09-15T19:06:55Z
-reviewed-against: b40aafc277e1971c6bd1e1b1afbe9403edbab20b
 diff-base: 6cf0f3cc8ba180878a217cbb2666a4a3e37b5b5d
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-15T19:06:55Z
+reviewed-against: b40aafc277e1971c6bd1e1b1afbe9403edbab20b
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 6
 scope: 7
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 225b8ae56e64c177e9d3703ac822cfc324bff3a78d7053a96c3179111aa71e31
+blocking: false
 ---
 
 # Review — 036-quality-cross-rules

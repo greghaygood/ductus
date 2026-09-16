@@ -1,15 +1,19 @@
 ---
 spec: 055-shared-constitution
-reviewed-at: 2026-09-13T21:48:06Z
-reviewed-against: 3c37c3ba5f288f44e296d79679b3f191bb16c395
 diff-base: 3c37c3ba5f288f44e296d79679b3f191bb16c395
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T21:48:06Z
+reviewed-against: 3c37c3ba5f288f44e296d79679b3f191bb16c395
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 5
 scope: 22
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 7d54e3ee75399840c7e55932462ed7580b0e3c1f7c29c0ade4c0d1f00641e158
+  scenarios/a-registered-source-is-named-with-its-description.md: 0150662e0bebc24665b91b0894dce653054754490b00fca6fb5628ff5c730205
+blocking: false
 ---
 
 # Review — 055-shared-constitution

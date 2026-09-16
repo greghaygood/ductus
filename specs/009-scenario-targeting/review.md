@@ -1,15 +1,17 @@
 ---
 spec: 009-scenario-targeting
-reviewed-at: 2026-09-13T13:06:57Z
-reviewed-against: 7339abcc7c12b74f2210031ab67cb3df309d7498
 diff-base: 7339abcc7c12b74f2210031ab67cb3df309d7498
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:06:57Z
+reviewed-against: 7339abcc7c12b74f2210031ab67cb3df309d7498
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 6
 scope: 11
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 009-scenario-targeting

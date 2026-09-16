@@ -1,15 +1,18 @@
 ---
 spec: 019-config-decisions
-reviewed-at: 2026-09-13T20:36:35Z
-reviewed-against: 67f2c20b640c56ad0fcd902d88eba4fe01231145
 diff-base: a116118e2c85c1cd712c03991c6947d741edc19f
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T20:36:35Z
+reviewed-against: 67f2c20b640c56ad0fcd902d88eba4fe01231145
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 4
 scope: 12
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 5dfef4053828f509aeb168d0be6948dfbe6c2cad1d6ac865a3b58822497d23a9
+blocking: false
 ---
 
 # Review — 019-config-decisions

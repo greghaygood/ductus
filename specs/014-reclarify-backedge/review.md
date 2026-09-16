@@ -1,15 +1,18 @@
 ---
 spec: 014-reclarify-backedge
-reviewed-at: 2026-09-13T19:01:43Z
-reviewed-against: 5d8b492c1e2c6a0f3a99f5d1408829efb48c4639
 diff-base: 91bacaeead3c831785cf16f66173e9838ad001fb
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T19:01:43Z
+reviewed-against: 5d8b492c1e2c6a0f3a99f5d1408829efb48c4639
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 8
 scope: 11
-skipped-passes: []
+reviewed-digest:
+  scenarios/reopen-after-informal-edits.md: 969e20fe262affefdceaaa1e3b5ac900f0877d743f456035bc4de5f37cfe1a23
+blocking: false
 ---
 
 # Review — 014-reclarify-backedge

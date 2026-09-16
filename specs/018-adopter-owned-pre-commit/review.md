@@ -1,15 +1,17 @@
 ---
 spec: 018-adopter-owned-pre-commit
-reviewed-at: 2026-09-13T13:14:20Z
-reviewed-against: 91741dfb77a5e46e184257c2313afa9684f2da62
 diff-base: 91741dfb77a5e46e184257c2313afa9684f2da62
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:14:20Z
+reviewed-against: 91741dfb77a5e46e184257c2313afa9684f2da62
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 5
 scope: 7
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 018-adopter-owned-pre-commit

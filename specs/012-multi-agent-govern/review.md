@@ -1,15 +1,19 @@
 ---
 spec: 012-multi-agent-govern
-reviewed-at: 2026-09-13T20:25:31Z
-reviewed-against: a7e7af9221c5fef89849d0b6e847e38518eb013a
 diff-base: a86b5cb2f5891639e42d3d6886de6a794abca884
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T20:25:31Z
+reviewed-against: a7e7af9221c5fef89849d0b6e847e38518eb013a
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 24
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 8ae49e75034c7ccd56250528e2dddb06f0fd2e3f3cb14857a2572531137e74e6
+  scenarios/settings-template-bash-allowlist.md: 86737c4f1200bcc492dbc8c48f01f2fbe5d76ea7db30b504c7d2fc0199e7de36
+blocking: false
 ---
 
 # Review — 012-multi-agent-govern

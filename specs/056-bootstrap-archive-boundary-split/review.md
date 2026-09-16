@@ -1,15 +1,17 @@
 ---
 spec: 056-bootstrap-archive-boundary-split
-reviewed-at: 2026-09-15T13:51:08Z
-reviewed-against: 3d84712f0b5e75afb690c7f81c455be87b076bc6
 diff-base: a345df4dcf16403c81adc189b43e6caa8069455b
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-15T13:51:08Z
+reviewed-against: 3d84712f0b5e75afb690c7f81c455be87b076bc6
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 6
 scope: 7
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 056-bootstrap-archive-boundary-split

@@ -1,15 +1,22 @@
 ---
 spec: 017-derive-dont-ask
-reviewed-at: 2026-09-15T16:27:44Z
-reviewed-against: 23a5fd80c997e2863cafc3caca96155f7f200eef
 diff-base: 36252b40de7ba71c197e1758aa7c8ae5d6875cbb
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-15T16:27:44Z
+reviewed-against: 23a5fd80c997e2863cafc3caca96155f7f200eef
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 56
-skipped-passes: []
+reviewed-digest:
+  data-model.md: d2430c84cd4a126802f4a0d45b7611e0afa957e368a0bac5ec5551c0d199389b
+  scenarios/detect-dependency-cycles.md: 2c426d44ce0a3a3cf5e91160fdf84ac054795737b25979152f70e89fe86005ab
+  scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264
+  scenarios/skip-prose-cross-references.md: 1b5c4bd36e2ca760437d63b948706e5b575ecd450b0779d1d10440cc77d0e086
+  scenarios/tracked-specs-not-worktree.md: ba42aee5fbee0dfed38fce985200b0ba5775ecd03113a81aa792b25a18383829
+blocking: false
 ---
 
 # Review — 017-derive-dont-ask

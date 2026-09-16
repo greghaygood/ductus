@@ -1,15 +1,17 @@
 ---
 spec: 001-system-spec-templates
-reviewed-at: 2026-09-13T12:54:02Z
-reviewed-against: 4ba8a955a5c7a7b843b1bff2d9e188dbd166a712
 diff-base: 4ba8a955a5c7a7b843b1bff2d9e188dbd166a712
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T12:54:02Z
+reviewed-against: 4ba8a955a5c7a7b843b1bff2d9e188dbd166a712
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 3
 scope: 3
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 001-system-spec-templates

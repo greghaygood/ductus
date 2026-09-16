@@ -1,15 +1,18 @@
 ---
 spec: 052-spec-supersession-and-consolidation
-reviewed-at: 2026-09-13T14:34:46Z
-reviewed-against: 8c01d6f58ba65d6218e43301e8a384237fa49c3b
 diff-base: 3f239479e2474111cd55991939343d350960cfd6
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T14:34:46Z
+reviewed-against: 8c01d6f58ba65d6218e43301e8a384237fa49c3b
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 9
 scope: 9
-skipped-passes: []
+reviewed-digest:
+  scenarios/stranded-session-after-removal.md: 4883250ac10f3dfad056127377b33924382c3e8fb5487e212fc1e2ccbb57b0e0
+blocking: false
 ---
 
 # Review — 052-spec-supersession-and-consolidation

@@ -1,15 +1,20 @@
 ---
 spec: 020-code-review
-reviewed-at: 2026-09-14T01:57:59Z
-reviewed-against: fc70afc6db98029dc8ebd35e666be17eed7c1a70
 diff-base: ed2092a85afb3c1da6fa5b393f6afbc7f85e2e15
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T01:57:59Z
+reviewed-against: fc70afc6db98029dc8ebd35e666be17eed7c1a70
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 8
 scope: 15
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 005b900eab99d081cfe9b6c643998cdda2ccb452048c0292e9ffb3097a300766
+  scenarios/review-flag-parsing-is-specified.md: 9f1a3dd82bab2b9622808c31dd2bb00f0c6f403effeb8bb496bb4b329496e9c7
+  scenarios/waiver-expiry.md: 6b7309dd2c803a6fd1ecf5a6a92f8895011d787b334452ce5fb7f73274c77068
+blocking: false
 ---
 
 # Review — 020-code-review

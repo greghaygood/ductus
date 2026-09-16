@@ -160,13 +160,27 @@ fn render_artifact(
             let Some(key) = top_level_key(line) else {
                 continue;
             };
-            if let Some(block_value) = block_keys.get(key) {
+            // A key the block spells differently is the same field, so it is
+            // compared and dropped rather than carried forward beside its
+            // other spelling. See [`LEGACY_ALIASES`].
+            let block_key = legacy_alias(key).unwrap_or(key);
+            if let Some(block_value) = block_keys.get(block_key) {
                 // The block wins, but the difference is named rather than
-                // quietly dropped.
+                // quietly dropped. The disagreement names the key as the
+                // artifact spelled it, so an operator can see which side
+                // carried what.
                 let artifact_value = line.split_once(':').map(|(_, v)| v.trim());
                 if artifact_value.is_some_and(|v| v != block_value.trim()) {
                     disagreements.push(format!("{file}:{key}"));
                 }
+                continue;
+            }
+            if let Some(current) = legacy_alias(key) {
+                // The block carries no value for this field, so the
+                // artifact's is the only one there is — renamed rather than
+                // emitted under a spelling nothing reads any more.
+                let value = line.split_once(':').map_or("", |(_, v)| v.trim());
+                let _ = writeln!(out, "{current}: {value}");
                 continue;
             }
             out.push_str(line);
@@ -196,6 +210,24 @@ fn render_artifact(
         );
     }
     Ok(out)
+}
+
+/// Artifact keys the spec block spelled differently — one field, two names.
+///
+/// `review.md` recorded the review's instant as `reviewed-at` while the
+/// spec's `review:` block called the same instant `last-run`, which is why
+/// the reconciliation check had to key that pair *by meaning rather than by
+/// name* to compare the two at all. The merge folds the pair onto `last-run`
+/// (spec 057, AC12): carrying both forward would preserve the two-names
+/// condition inside the artifact that exists to end it, and a later reader
+/// could not tell which spelling was authoritative.
+const LEGACY_ALIASES: &[(&str, &str)] = &[("reviewed-at", "last-run")];
+
+/// The current spelling of a retired key name, when it has one.
+fn legacy_alias(key: &str) -> Option<&'static str> {
+    LEGACY_ALIASES
+        .iter()
+        .find_map(|(legacy, current)| (key == *legacy).then_some(*current))
 }
 
 /// A top-level frontmatter key, or `None` for an indented or blank line.
@@ -387,10 +419,69 @@ mod tests {
         // the migration's placeholder.
         assert!(review.contains("A real report body."), "{review}");
         assert!(!review.contains("Relocated from the spec"), "{review}");
+        // ...and the retired spelling of the block's `last-run` does not
+        // survive beside it. One instant, one name.
+        assert!(!review.contains("reviewed-at"), "{review}");
 
         let spec = fs::read_to_string(dir.join("spec.md")).unwrap();
         assert!(!spec.contains("review:"), "{spec}");
         assert!(!spec.contains("analyze:"), "{spec}");
+    }
+
+    /// The pair `reviewed-at` / `last-run` is one instant spelled twice, so a
+    /// disagreement across it is named under the key the artifact used.
+    ///
+    /// Without the alias the two spellings never meet: the merge finds no
+    /// `reviewed-at` in the block, carries it forward untouched, and the
+    /// migrated artifact ends up asserting two different instants for one run
+    /// — a worse state than the one the relocation exists to fix.
+    #[test]
+    fn the_retired_timestamp_spelling_is_folded_and_its_disagreement_named() {
+        let tmp = repo(SPEC);
+        let dir = tmp.path().join("specs/001-x");
+        fs::write(
+            dir.join("review.md"),
+            "---\nspec: 001-x\nreviewed-at: 2026-07-04T00:00:00Z\n---\n\n# Review — 001-x\n",
+        )
+        .unwrap();
+
+        let result = run(&args(), tmp.path()).unwrap();
+        let review = fs::read_to_string(dir.join("review.md")).unwrap();
+        assert!(
+            review.contains("last-run: 2026-08-01T00:00:00Z"),
+            "the block wins: {review}"
+        );
+        assert!(!review.contains("reviewed-at"), "{review}");
+        assert!(
+            result
+                .disagreements
+                .contains(&"review.md:reviewed-at".to_string()),
+            "{result:?}"
+        );
+    }
+
+    /// When the block carries no timestamp, the artifact's is the only one
+    /// there is — so it is renamed rather than emitted under a spelling
+    /// nothing reads any more, which would leave the record unparseable.
+    #[test]
+    fn a_retired_spelling_with_no_block_counterpart_is_renamed() {
+        let spec = "---\nstatus: done\ndependencies: []\nreview:\n  must-violations: 0\n  blocking: false\n---\n\n# 001 — X\n";
+        let tmp = repo(spec);
+        let dir = tmp.path().join("specs/001-x");
+        fs::write(
+            dir.join("review.md"),
+            "---\nspec: 001-x\nreviewed-at: 2026-07-04T00:00:00Z\n---\n\n# Review — 001-x\n",
+        )
+        .unwrap();
+
+        let result = run(&args(), tmp.path()).unwrap();
+        let review = fs::read_to_string(dir.join("review.md")).unwrap();
+        assert!(
+            review.contains("last-run: 2026-07-04T00:00:00Z"),
+            "{review}"
+        );
+        assert!(!review.contains("reviewed-at"), "{review}");
+        assert!(result.disagreements.is_empty(), "{result:?}");
     }
 
     /// A disagreement between the two copies is reported, not smoothed.

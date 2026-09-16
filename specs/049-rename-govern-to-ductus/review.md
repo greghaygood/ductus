@@ -1,15 +1,17 @@
 ---
 spec: 049-rename-govern-to-ductus
-reviewed-at: 2026-09-13T13:40:49Z
-reviewed-against: 2266ed4361305b3bdd0b6d8b41c89b6127c05adc
 diff-base: 2266ed4361305b3bdd0b6d8b41c89b6127c05adc
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:40:49Z
+reviewed-against: 2266ed4361305b3bdd0b6d8b41c89b6127c05adc
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 6
 scope: 21
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 049-rename-govern-to-ductus

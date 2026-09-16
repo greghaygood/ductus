@@ -1,15 +1,19 @@
 ---
 spec: 031-agent-mcp-wiring
-reviewed-at: 2026-09-14T01:07:04Z
-reviewed-against: f98ed3ed82b4a430473e3d3484bd8146b2d88ffb
 diff-base: dd8ce2a3d8c4b5df6ba16a6e3791fe75d9062e73
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T01:07:04Z
+reviewed-against: f98ed3ed82b4a430473e3d3484bd8146b2d88ffb
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 8
 scope: 10
-skipped-passes: []
+reviewed-digest:
+  data-model.md: beece633e378d2fb138ce082c8586779d8689fcedc7dbedc4db07162a9c05161
+  scenarios/antigravity-mcp-verification.md: a89235da2c892bceac8befda8f988b829c755778e73eea62ba33e436f9008666
+blocking: false
 ---
 
 # Review — 031-agent-mcp-wiring

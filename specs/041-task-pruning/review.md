@@ -1,15 +1,18 @@
 ---
 spec: 041-task-pruning
-reviewed-at: 2026-09-14T12:40:49Z
-reviewed-against: 5538c5c99b769a1ac2c381166d1af4465c8ef648
 diff-base: 8de657817c5ac0eabc675011e4923da7fce1aa90
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T12:40:49Z
+reviewed-against: 5538c5c99b769a1ac2c381166d1af4465c8ef648
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 8
 scope: 22
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 6fd2f2ac88690e649f39d60fba2c936f844b6699d2eade755547cd966bed7393
+blocking: false
 ---
 
 # Review — 041-task-pruning

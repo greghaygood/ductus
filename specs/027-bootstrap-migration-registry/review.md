@@ -1,15 +1,19 @@
 ---
 spec: 027-bootstrap-migration-registry
-reviewed-at: 2026-09-15T14:30:56Z
-reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
 diff-base: 108714e07006a59d5306d33905dd7504efea877b
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-15T14:30:56Z
+reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 21
 scope: 24
-skipped-passes: []
+reviewed-digest:
+  scenarios/migration-chain-reference-integrity.md: b187024e6ed8fee90fe31be0f2bbcd4786782f8e4395a89c09142f20218f914d
+  scenarios/migrations-apply-once-per-repo.md: 29829288f42c8641dcbad3c58d4431904122d5c429f6ec6e1b7951c205fbeaed
+blocking: false
 ---
 
 # Review — 027-bootstrap-migration-registry

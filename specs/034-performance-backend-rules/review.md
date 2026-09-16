@@ -1,15 +1,17 @@
 ---
 spec: 034-performance-backend-rules
-reviewed-at: 2026-09-13T12:41:39Z
-reviewed-against: 0357294b85a852d24feca4c6289ac528380a4414
 diff-base: 40d0a9fb537d0a9ff35833579358e7efbfff8848
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T12:41:39Z
+reviewed-against: 0357294b85a852d24feca4c6289ac528380a4414
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 3
 scope: 3
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 034-performance-backend-rules

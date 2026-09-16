@@ -1,30 +1,7 @@
 ---
 status: done
 dependencies: [008-security-rules, 016-cross-cutting-rules, 024-rule-loader, 033-rule-surface-setting, 034-performance-backend-rules]
-review:
-  last-run: 2026-09-13T12:43:39Z
-  reviewed-against: a616ed9b2df0b5ce2704c590dc1adca7e7303cc3
-  must-violations: 0
-  should-violations: 0
-  low-confidence: 0
-  examined: 2
-  scope: 2
-  reviewed-digest: {}
-  blocking: false
 next-criterion: 9
-analyze:
-  last-run: 2026-09-13T12:43:56Z
-  analyzed-against: 6ab35f6547ae64707aea295595f8ebdfc787edf5
-  hard-fail: 0
-  blocking-findings: 0
-  advisory: 0
-  unexamined: 0
-  analyzed-digest:
-    plan.md: 805592c4fa3261e5f3f7eb0e82d817f6a54c3040f1e4cdb9e0eea4a748f1bc15
-    review.md: 6dab80f986c75d5f43a5093ac7823fb8a31c27775671c1bea59f07478fc9417a
-    spec.md: b3d13760f185404b8c06ec2a954fcd29d492ca6523d94986121aab6f05c3b2db
-    tasks.md: 2af09522de407cc855798208a067287b5d738a55e442bfeadb4cfcfe88c89219
-  blocking: false
 ---
 
 # 039 — Backend reliability rules

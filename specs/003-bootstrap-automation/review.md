@@ -1,15 +1,18 @@
 ---
 spec: 003-bootstrap-automation
-reviewed-at: 2026-09-15T14:30:50Z
-reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
 diff-base: 108714e07006a59d5306d33905dd7504efea877b
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-15T14:30:50Z
+reviewed-against: dd03f65aed41d190c7f2cf3bcd76f7876123ef62
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 10
 scope: 21
-skipped-passes: []
+reviewed-digest:
+  scenarios/curl-sh-installer.md: 9151c485280487366a82991246b3147164b5c52020d50cc25f309ffb642379da
+blocking: false
 ---
 
 # Review — 003-bootstrap-automation

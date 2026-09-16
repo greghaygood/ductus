@@ -1,15 +1,20 @@
 ---
 spec: 013-text-first-artifacts
-reviewed-at: 2026-09-14T17:38:50Z
-reviewed-against: 7592ef99105fe1590bf69f18663256a810aaedb2
 diff-base: 2501ca9aa6cf358c400014d4b0a88aef5e3d8148
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-14T17:38:50Z
+reviewed-against: 7592ef99105fe1590bf69f18663256a810aaedb2
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 4
 scope: 40
-skipped-passes: []
+reviewed-digest:
+  data-model.md: 468afe039e4b5a3dcf90022109af22bab18b63ed7508aca3cd00cab1a55029b3
+  scenarios/criterion-identifiers.md: 2a6b871e588d7abb6f4ba6bb5a38e81562e30b82c611d2e3f36ba72da86be931
+  scenarios/past-tense-motivation-convention.md: 04b9583c6f2f4d56efa0cd7b544afd9811bd7925121ede083fbed9b6f2cdc1d4
+blocking: false
 ---
 
 # Review — 013-text-first-artifacts

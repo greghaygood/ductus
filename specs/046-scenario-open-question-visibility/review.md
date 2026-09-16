@@ -1,15 +1,17 @@
 ---
 spec: 046-scenario-open-question-visibility
-reviewed-at: 2026-09-13T13:27:44Z
-reviewed-against: 444c51ae9cc16910bae086b071d1919d7e0238d4
 diff-base: 444c51ae9cc16910bae086b071d1919d7e0238d4
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T13:27:44Z
+reviewed-against: 444c51ae9cc16910bae086b071d1919d7e0238d4
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 4
 scope: 14
-skipped-passes: []
+reviewed-digest: {}
+blocking: false
 ---
 
 # Review — 046-scenario-open-question-visibility

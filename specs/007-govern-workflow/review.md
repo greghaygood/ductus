@@ -1,15 +1,18 @@
 ---
 spec: 007-govern-workflow
-reviewed-at: 2026-09-13T18:15:56Z
-reviewed-against: 2e63261d7398ad41b3d6a974749a95ac98ba2466
 diff-base: bd98776290f0e5ed072cf0bb0dce0f5affd340d6
+captured-issues: 0
+skipped-passes: []
+last-run: 2026-09-13T18:15:56Z
+reviewed-against: 2e63261d7398ad41b3d6a974749a95ac98ba2466
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 7
 scope: 25
-skipped-passes: []
+reviewed-digest:
+  scenarios/ductus-self-update-precheck.md: c03909715a9bdd56b2c97a8d9bf89e970d5d8077afa61cb62b8bd3ad8998fbfe
+blocking: false
 ---
 
 # Review — 007-govern-workflow
