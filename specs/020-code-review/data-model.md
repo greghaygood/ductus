@@ -14,8 +14,8 @@ Data structures introduced by [020 — `/ductus:review`](spec.md). Authoritative
 > `examined` and `scope` — so the document designated authoritative contradicted
 > 020's own AC15, and nothing reported it. `057-analyze-artifact-and-record-relocation`
 > merged the two into `review.md` alone. One table remains, below; the schema's
-> canonical declaration is the constitution's §Frontmatter Schema → Audit records,
-> and this table records what `/ductus:review` writes.
+> canonical declaration is [§text-first-artifacts Frontmatter Schema](../../framework/constitution.md#frontmatter-schema) →
+> **Audit records**, and this table records what `/ductus:review` writes.
 
 ## Waiver record
 
@@ -97,8 +97,8 @@ waivers: []                          # omitted entirely when empty
 | `blocking` | boolean | yes | MUST equal `must-violations > 0`. Derived by `write-review`, never accepted from the caller. Read by `/ductus:implement`, `/ductus:analyze`, the CI template. |
 | `waivers` | list of waiver records | no | Omitted entirely when empty. Schema above is open per §text-first-artifacts. |
 
-**Validation severity** (per §text-first-artifacts, and the constitution's
-§Frontmatter Schema → Audit records since 057):
+**Validation severity** (per [§text-first-artifacts Frontmatter Schema](../../framework/constitution.md#frontmatter-schema) →
+**Audit records**, which has declared both records since 057):
 
 - **Hard fail** — a `review.md` that exists but carries no parseable record. The artifact's *absence* is the never-reviewed state and is not a defect; its presence without a readable record is undeterminable, and the two must never render alike.
 - **Blocking** — a `done` spec with `blocking: true` or a missing `last-run`; and a `review:` or `analyze:` block still present in a spec's frontmatter, which the open-schema rule deliberately does not cover.

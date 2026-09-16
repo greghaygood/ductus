@@ -21,7 +21,7 @@ Adds `/ductus:review`, a verb-named slash command that audits implementation cod
 > (`diff-base`, `captured-issues`, `skipped-passes`); the one rename is
 > `reviewed-at` → `last-run`, so the pair that used to be spelled two ways for
 > one instant is spelled once. The schema is now declared in the constitution's
-> §Frontmatter Schema → Audit records, which is canonical for it; this spec's
+> [§text-first-artifacts Frontmatter Schema](../../framework/constitution.md#frontmatter-schema) → **Audit records**, which is canonical for it; this spec's
 > `data-model.md` records the same shape for `review.md` alone and no longer has
 > a second table to keep in agreement.
 >
@@ -199,8 +199,8 @@ deleted outright by 023's lightweight-track sunset.
 **Relocated by 057 — this record is `review.md`'s frontmatter, not the spec's.**
 As 020 delivered it, the block below was added to `spec.md`; the example is kept
 because the field set is what this spec specified, and it is re-rooted rather
-than restated. The canonical declaration is the constitution's §Frontmatter
-Schema → Audit records, which is where the schema ships to adopters; the shape
+than restated. The canonical declaration is
+[§text-first-artifacts Frontmatter Schema](../../framework/constitution.md#frontmatter-schema) → **Audit records**, which is where the schema ships to adopters; the shape
 `/ductus:review` writes is recorded field-by-field in
 [data-model.md](data-model.md).
 
@@ -242,8 +242,8 @@ the underlying finding re-blocks if it's still present elsewhere.
 > drift check reports `Review drift: done spec has unresolved MUST violations —
 > see review.md` and `Review drift: done spec missing review — run
 > /{project}:review`. The live texts are the command sources'
-> (`framework/commands/implement.md` step 5, `framework/commands/analyze.md`
-> §Review state drift), which are canonical for command behavior; the quotes
+> (`framework/commands/implement.md` step 5, and `framework/commands/analyze.md`'s
+> **Review state drift** section), which are canonical for command behavior; the quotes
 > below are annotated rather than restated so this spec keeps the record of what
 > it asked for.
 
