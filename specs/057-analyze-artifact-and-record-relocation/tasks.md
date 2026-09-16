@@ -150,9 +150,9 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 18. Discharge the declared cross-spec obligations
 
-- [ ] Record in `047-analyze-findings-durability` that its resolved question is superseded on the record-location half, linking back here
-- [ ] Record in `020-code-review` the change to its CI-gate mechanism, linking back here
-- [ ] Correct 020's `## Frontmatter schema` section in the same reopen — it presents the `review:` block as *spec* frontmatter in a fenced YAML example, which the relocation makes false; the reopen is already being spent, and task 17's sweep reports this hit
+- [x] Record in `047-analyze-findings-durability` that its resolved question is superseded on the record-location half, linking back here
+- [x] Record in `020-code-review` the change to its CI-gate mechanism, linking back here
+- [x] Correct 020's `## Frontmatter schema` section in the same reopen — it presents the `review:` block as *spec* frontmatter in a fenced YAML example, which the relocation makes false; the reopen is already being spent, and task 17's sweep reports this hit
 
 - **Done when**: both specs link back to 057, clearing the `cross-spec-impact` entries that would otherwise block `done`.
 
@@ -195,6 +195,34 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 - [ ] **Residue found 2026-09-16 re-running the classifier for task 17's confirmation — this task's own Done-when is not yet met.** The first pass swept the three primitives it named and missed nine live claims in surfaces it did not enumerate. Two render to an operator: `mcp/server.rs:794` (`check-review-gate`'s tool description, "then the spec frontmatter review: block") and `main.rs:138` (the matching clap help). Five are doc comments on live behavior: `check_review_gate.rs:260` ("Gate checks 8, 9 and 10 — the spec's `analyze:` block"), `schema/primitives.rs:564` and `:739` (result fields described as the spec whose block "was updated"/"was written"), and `:3167` / `:3194` (the two gate-reason variants). Two are stale because task 9 left `write-review` with **one** write, not two: `write_review.rs:138` and the `malformed_spec_frontmatter_halts_before_any_write` comment at `:1888` both reason about a halt landing "between the two writes". Two more are stale mechanism inside a correct conclusion: `write_review.rs:1199` and `check_review_gate.rs:1623` say recording a review rewrites the spec's `review:` block — it rewrites `review.md`, which is still an analyze subject, so the conclusion stands and the mechanism does not. Correct all nine; leave the allow-listed past-tense accounts (`analyze_subjects.rs` 11/107/405, `check_artifacts.rs:679`, `check_review_gate.rs:944`, `write_review.rs:487`/`:1158`, `validate_frontmatter.rs:218`, `relocate_audit_records.rs:421`, `server.rs:547`, `review-freshness.sh:7`) alone
 
 - **Done when**: No user-facing runtime surface — tool description, CLI help, or emitted message — places either record in `spec.md` frontmatter, and every doc comment that does is either corrected or demonstrably past-tense.
+
+## 24. AC7 is not met: `analysis.md` stales its own record
+
+Found 2026-09-16 recording the task-18 discharges' analyze runs. The
+completion gate answered `analyze-stale` naming `analysis.md` itself,
+immediately after `write-analysis` wrote it.
+
+- [ ] `subject_digest` excises `analysis.md`'s **frontmatter** and digests its **body**, which the same `write-analysis` call rewrites — so any run whose Summary or counts differ from the previous one stales itself, and the operator has to run `/{project}:analyze` twice to converge. Verified both ways on 020: run 1 → `blocked: analysis is stale — 1 artifact(s) changed since it ran: specs/020-code-review/analysis.md`; run 2 → `passed: true`, with the file byte-identical between them
+- [ ] AC7 says the run "does not report itself stale" without qualification, and the doc comment on `subject_digest` states the same intent — "a digest covering it can never match, and every analysis would report itself stale the instant it was recorded". Only the frontmatter half was implemented
+- [ ] Fix by excluding `analysis.md` from the analyze subject set **entirely**, not by excising more of it. It is `/{project}:analyze`'s own output, exactly as `review.md` is `/{project}:review`'s and is excluded wholesale from the *review* digest for the identical stated reason. Nothing reads its body: the one family that reads the file — `analyze-state-drift` — reads the record, which is already excised
+- [ ] Record the rule where it lives: 047's `analyze-record-freshness` §Resolved Questions already argues why `review.md` **is** a subject, and needs the sibling answer for why `analysis.md` is not; 022's `data-model.md` carries the canonical subject-set registry (task 23 reopens it anyway)
+- [ ] Re-record the analyses of every spec whose digest carries an `analysis.md` key after the fix lands — measured 2026-09-16 as exactly the records written since the relocation
+
+- **Done when**: two consecutive `/{project}:analyze` runs over a spec whose findings changed leave the first one current, no recorded digest carries an `analysis.md` key, and both durable contracts state the exclusion and its reason.
+
+## 25. Price the migration's effect on every recorded analyze digest
+
+Measured 2026-09-16 over the whole corpus, by recomputing each done spec's
+subject digest and comparing it to the record: **52 of 52 done specs'
+analyze records are stale**, each on the same three paths — `analysis.md`,
+`review.md` and `spec.md`.
+
+- [ ] Confirm the cause, which is the relocation doing exactly what it was meant to: `analysis.md` did not exist when those records were written so no key was recorded; the sweep rewrote every `review.md` to carry the merged record; and it removed both blocks from every `spec.md`, whose old digest had been taken with the `analyze:` block excised and the `review:` block **included**
+- [ ] Decide and record the disposition. The staleness is truthful — the artifacts did change — and it is latent rather than live: `check-review-gate` returns early on a spec already at `done`, and no audit family checks analyze freshness, so nothing reports it and nothing is blocked. It self-heals on the next analyze run of any spec that is reopened, which is what the task-18 discharges just demonstrated on 020 and 047
+- [ ] State it as a limitation in `plan.md` and in `framework/migrations/audit-record-relocate.md`, so an adopter who reopens a migrated spec meets a priced expectation rather than a surprise. Backfilling the digests is **not** the answer — it would assert a run that nothing on disk substantiates, which is the reasoning 047's AC11 already used to reject backfilling the record itself
+- [ ] Check this against AC10's claim that the migration "leaves `spec.md` with no residual block" — that criterion is met; this is a consequence the spec never claimed either way, which is why it needs stating rather than fixing
+
+- **Done when**: the disposition is recorded in both artifacts with the measurement that priced it, and no criterion asserts a freshness property the migration does not leave true.
 
 ## 23. Discharge the 022 obligation the relocation created
 
