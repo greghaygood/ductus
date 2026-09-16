@@ -225,10 +225,24 @@ jobs:
                   if "last-run" not in record:
                       findings.append((path, "%s carries frontmatter but no %s record (no last-run) — re-run %s" % (artifact, kind, command)))
                       continue
-                  last_run = record["last-run"]
+                  # YAML spells null four ways and an empty value is a fifth.
+                  # Matching only the lowercase form would read a hand-written
+                  # `NULL` as a real timestamp — and a hand-written record is
+                  # exactly the bypass case this step exists to catch.
+                  last_run = record["last-run"].strip().lower()
                   if last_run in ("", "null", "~"):
                       findings.append((path, "done spec has a null %s.last-run — run %s" % (kind, command)))
-                  elif record.get("blocking") == "true":
+                      continue
+                  # `blocking` is required on both records (constitution
+                  # §Frontmatter Schema), and it is the field the whole gate
+                  # turns on. Absent is **not** false: reading it that way
+                  # would pass a record the step could not fully examine with
+                  # the same silence as one it examined and found clean, which
+                  # is QUAL-CLAIM-001 in the gate built to catch hand edits.
+                  blocking = record.get("blocking")
+                  if blocking is None:
+                      findings.append((path, "%s carries a %s record with no blocking field — the gate turns on it, and absent is not false; re-run %s" % (artifact, kind, command)))
+                  elif blocking.strip().lower() == "true":
                       findings.append((path, "done spec has %s.blocking=true — see %s" % (kind, path)))
 
           marks, baseline_error = baselines()
