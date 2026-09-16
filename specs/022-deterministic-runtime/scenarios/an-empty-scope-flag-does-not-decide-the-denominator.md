@@ -50,5 +50,3 @@ The record that produced was `0/0/0`, `scope: 0`, `examined` absent, `blocking: 
   observed in a review run, or any change that gives the record a way to express an
   underivable denominator. Until then the exposure is bounded and stated: the measured,
   live path was the flag, and that is the one this scenario closes.
-
-*None yet.*
