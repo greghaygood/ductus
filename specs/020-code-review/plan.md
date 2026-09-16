@@ -38,13 +38,30 @@ Per AGENTS.md (Workflow): `.ductus/config.toml` is shared adopter-side state, no
 
 ### Frontmatter `review:` block ships in templates
 
+**Reversed by 057: the templates ship no block, and the record is `review.md`'s.**
+The decision below is recorded as taken. Its lazy-population half survives and
+its template half does not: a spec now opens with `status` and `dependencies`
+alone, the record is created on first review by `/ductus:review` writing
+`review.md`, and the never-reviewed state is the **artifact's absence** rather
+than a null inside a block every spec carries. That substitution is what made
+the block's presence a safe thing to remove — and what made keying any check on
+its *absence* unsafe, which is the defect 057 found in the CI template, in audit
+Family 19 and in `mechanical_sweep_parity`.
+
 The block is added to both `framework/templates/spec/spec.md` and `framework/templates/spec/spec-and-plan.md` so every newly-created spec ships with the field shapes pre-populated to safe defaults (`last-run: null`, `must-violations: 0`, `blocking: false`). Existing specs in adopter projects will not have the block until `/ductus:review` runs on them; this is intentional — the field is created lazily on first review, and `/ductus:analyze`'s drift check tolerates `review.last-run: null` until the spec reaches `status: done`.
 
 ### Idempotency invariant is a property of inputs, not state
 
-`review.md` is regenerated wholesale on every run from (code in scope) + (loaded rules) + (spec acceptance criteria + scenarios). The only fields permitted to vary across identical-input runs are `reviewed-at` and `reviewed-against` (timestamp and HEAD SHA). Waivers are part of the input set — they are read from spec frontmatter and produce identical `Waived findings` sections across runs as long as the anchor is intact. This makes the AC-6 idempotency check deterministic for a CI snapshot test.
+`review.md` is regenerated wholesale on every run from (code in scope) + (loaded rules) + (spec acceptance criteria + scenarios). The only fields permitted to vary across identical-input runs are the timestamp and HEAD SHA — `reviewed-at` and `reviewed-against` as planned here, `last-run` and `reviewed-against` since 057 renamed the first. Waivers are part of the input set — they are read from the review record (spec frontmatter as planned, `review.md` since 057) and produce identical `Waived findings` sections across runs as long as the anchor is intact. This makes the AC-6 idempotency check deterministic for a CI snapshot test.
 
 ### CI template stays minimal
+
+**Still minimal; the predicate changed in 057.** The step reads the review record
+from `review.md` and the analyze record from `analysis.md`, and bounds its exempt
+set with a committed high-water mark instead of skipping a spec that carries no
+`review:` block — a skip the relocation made true of every spec, which would have
+left the step green over a whole corpus while checking nothing. The reasoning
+below for *not* invoking `/{project}:review` in CI is unaffected.
 
 `framework/templates/ci/adopter-generators.yml` only checks frontmatter state on `done` specs (`review.blocking: true` or `review.last-run` missing → fail). It does **not** invoke `/ductus:review` itself in CI. Reason: `/ductus:review` is an interactive AI-assisted command; running it in CI would require an AI runtime and a stable API budget. Adopters who want CI-side review run the command locally (or via a pre-merge agent run) and commit the resulting `review.md` and frontmatter. The CI template's job is the bypass-detection backstop, not the primary gate.
 
@@ -59,8 +76,8 @@ Of the 13 acceptance criteria, AC 8's waiver auto-expiry has the subtlest behavi
 | `framework/commands/review.md` | Create | Source for `/ductus:review`, and **the canonical content** — the spec body points at it rather than embedding it. The original plan had this inverted, naming the spec's embedded copy as canonical; that inversion is what produced a 561-line snapshot which then drifted more than half behind, and it was corrected on 2026-09-13 |
 | `framework/commands/implement.md` | Edit | Pre-`done` review gate (halts when `review.blocking: true` or `review.last-run` missing) |
 | `framework/commands/analyze.md` | Edit | Add review-drift check on `done` specs; integrate `--fix` to revert to `in-progress` with notice |
-| `framework/templates/spec/spec.md` | Edit | Add `review:` block to frontmatter schema |
-| `framework/templates/spec/spec-and-plan.md` | Edit | Add `review:` block to frontmatter schema |
+| `framework/templates/spec/spec.md` | Edit | Add `review:` block to frontmatter schema (removed again by 057) |
+| `framework/templates/spec/spec-and-plan.md` | Edit | Add `review:` block to frontmatter schema (the file was deleted by 023's lightweight-track sunset) |
 | `framework/templates/ci/adopter-generators.yml` | Edit | Add a step that fails when any `done` spec has `review.blocking: true` or missing `review.last-run` |
 | `framework/constitution.md` | Edit | Reference the review gate in the pipeline section between `/ductus:implement` and `done` |
 | `README.md` | Edit | Add `/ductus:review` row to Pipeline (advance state) table; add Waivers subsection; update pipeline diagrams |
