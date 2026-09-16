@@ -624,8 +624,8 @@ pub struct WriteReviewResult {
     /// transition, and the row is a notice rather than a gate.
     ///
     /// The working tree is the right reference point *here* because this
-    /// primitive has just written `review.md` and the spec's `review:` block
-    /// while `HEAD` has not moved — a committed-tree comparison would report
+    /// primitive has just written `review.md` — an analyze subject — while
+    /// `HEAD` has not moved, so a committed-tree comparison would report
     /// `current` at the exact moment it stopped being true.
     pub analyze_freshness: RecordFreshness,
 }

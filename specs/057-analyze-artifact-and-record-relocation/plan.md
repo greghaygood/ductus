@@ -71,6 +71,17 @@ covering it could never match." With the record in `analysis.md`, the excision
 moves there and `spec.md` is digested **whole** — the block-surgery path for
 `spec.md` disappears rather than being re-pointed. This is AC7.
 
+**Corrected in flight: moving the excision was not enough, and the exclusion is
+the whole file.** Excising `analysis.md`'s frontmatter left its *body* digested,
+and `write-analysis` rewrites that body in the same call — so any run whose
+Summary or counts differed from the previous one staled itself and converged
+only on a second identical run. Found recording the task 18/19 discharges;
+measured on `020-code-review`. `analysis.md` is now excluded from the analyze
+subject set outright, which is what `review.md` already is for the *review*
+digest, on the identical stated reason: it is the command's own output, and
+nothing reads its body. AC7 then holds unconditionally rather than
+when-the-body-happens-not-to-change. Tracked as task 24.
+
 **The review exclusion stays, and its rationale is annotated as lapsed.**
 `ReviewBlock::reviewed_digest` (`primitives.rs:52-55`) excludes `review.md` and
 `spec.md` because "`write-review` touches both, so counting them would stale

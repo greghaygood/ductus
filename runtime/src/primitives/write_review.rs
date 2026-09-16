@@ -12,10 +12,12 @@
 //! - **buckets** the survivors: findings matched by an applied waiver drop out
 //!   of the counts into Waived findings; a `low`-confidence finding lands in
 //!   Low-confidence regardless of severity; the rest split MUST / SHOULD;
-//! - renders the fixed report skeleton and updates the spec `review:` block
-//!   (`last-run`, `reviewed-against`, `must-violations`, `should-violations`,
-//!   `low-confidence`, `blocking`), pruning any **expired** waiver entries from
-//!   `review.waivers` on the write (per `process-waivers`' contract);
+//! - renders the fixed report skeleton into `review.md` and records the run in
+//!   that same file's frontmatter (`last-run`, `reviewed-against`,
+//!   `must-violations`, `should-violations`, `low-confidence`, `blocking`),
+//!   pruning any **expired** waiver entries from its `waivers` list on the
+//!   write (per `process-waivers`' contract). It wrote a second copy into a
+//!   `review:` block in `spec.md` until spec 057 left the record one home;
 //! - **captures the reviewer's observations** — things the reviewer judged
 //!   real that map to no loaded rule — by appending each to the inbox in this
 //!   same call, so recording an observation *is* capturing it and the report

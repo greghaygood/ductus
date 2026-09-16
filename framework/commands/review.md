@@ -539,9 +539,9 @@ waivers: []
 ```
 
 The timestamp is spelled `last-run`, matching the analyze record. It was
-`reviewed-at` here and `last-run` in the spec block — one instant under two
-names, which the reconciliation check had to key _by meaning rather than by
-name_ to compare at all. With one home the second spelling had nothing left to
+`reviewed-at` here and `last-run` in the spec's `review:` block — one instant
+under two names, back when the record had two homes, which the reconciliation
+check had to key _by meaning rather than by name_ to compare at all. With one home the second spelling had nothing left to
 justify it, and the relocation migration folds the pair.
 
 `reviewed-digest` is the record's description of **what this review read** — a
@@ -849,7 +849,7 @@ disk says what that run examined.
 
 **The row is a notice, not a gate.** `/{project}:review` has no authority over
 the `done` transition and does not acquire one here: `blocking`, the exit code,
-and the spec's `review.blocking` are all unchanged by it. The `next:` line
+and the review record's own `blocking` are all unchanged by it. The `next:` line
 follows for the same reason — it names the command the operator owes, it does
 not withhold anything.
 
