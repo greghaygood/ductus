@@ -257,7 +257,7 @@ fn passing_notices(review: &RecordFreshness, analyze: &RecordFreshness) -> Optio
     }
 }
 
-/// Gate checks 8, 9 and 10 — the spec's `analyze:` block: a completed analysis,
+/// Gate checks 8, 9 and 10 — the analyze record in `analysis.md`: a completed analysis,
 /// whose findings do not hold the spec out of `done`, still describing the
 /// current artifacts.
 ///
@@ -1620,7 +1620,7 @@ mod tests {
 
         let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
         // Asserted on the review reason, not on `passed`: recording a review
-        // rewrites the spec's `review:` block, which is an analyze subject, so
+        // rewrites `review.md`, which is an analyze subject, so
         // this fixture's analyze record is legitimately superseded. `passed`
         // used to stand in for "the review is not stale" and stopped being
         // that the moment a ninth check joined the gate.

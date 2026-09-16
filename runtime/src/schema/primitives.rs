@@ -561,7 +561,12 @@ pub struct WriteReviewArgs {
 pub struct WriteReviewResult {
     /// Repo-relative path of the `review.md` written.
     pub path: String,
-    /// Repo-relative path of the spec file whose `review:` block was updated.
+    /// Repo-relative path of the spec file this run read and validated.
+    ///
+    /// Read, not written: spec 057 left the record one home, so `write-review`
+    /// parses `spec.md`'s frontmatter as a precondition and writes only
+    /// `review.md`. The path is still reported because a caller identifying
+    /// which spec the record belongs to should not have to re-derive it.
     pub spec_path: String,
     /// MUST violations counted (waived findings excluded).
     pub must_violations: u32,
@@ -736,7 +741,11 @@ fn parse_reason_count(raw: &str) -> Result<(String, u32), String> {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteAnalysisResult {
-    /// Repo-relative path of the spec whose `analyze:` block was written.
+    /// Repo-relative path of the spec this run read and validated.
+    ///
+    /// Read, not written, for the reason [`WriteReviewResult::spec_path`]
+    /// gives: the record is `analysis.md`'s frontmatter since spec 057, and
+    /// `spec.md` is parsed only to refuse a spec whose frontmatter does not.
     pub spec_path: String,
     /// `true` when `hard-fail` or `blocking-findings` exceeds zero — the
     /// value `check-review-gate` reads.
@@ -3164,8 +3173,12 @@ pub enum ReviewGateBlock {
     /// category in this enum, not shared code — see
     /// `check_review_gate::cross_spec_impact_block`.
     UndischargedCrossSpecImpact,
-    /// The spec has no completed review: the `review:` block is absent or
-    /// its `last-run` is null.
+    /// The spec has no completed review: `review.md` is absent, or its
+    /// `last-run` is missing or null.
+    ///
+    /// The absent **file** is the never-reviewed state (spec 057). It was a
+    /// missing `review:` block in `spec.md` frontmatter before the record
+    /// moved to the artifact its own command writes.
     NotReviewed,
     /// The record artifact exists but its frontmatter could not be read or
     /// parsed, so whether a review ran is **undeterminable**.
@@ -3180,9 +3193,9 @@ pub enum ReviewGateBlock {
     /// The last review left blocking MUST violations
     /// (`review.blocking: true`).
     MustViolations,
-    /// The review is **stale**: a file the spec's plan declares as its own
-    /// surface changed after `review.reviewed-against`, so the recorded
-    /// verdict describes a diff that no longer exists.
+    /// The review is **stale**: one of the spec's durable contracts changed
+    /// since the record's `reviewed-digest` was taken, so the recorded verdict
+    /// describes a diff that no longer exists.
     ///
     /// Ordered last because it is the weakest claim — the other four say a
     /// review is missing or failing, this one says a passing review is out
@@ -3191,8 +3204,9 @@ pub enum ReviewGateBlock {
     /// shipped three commits of unreviewed runtime change (spec 022 review,
     /// 2026-08-03).
     ReviewStale,
-    /// The spec has no completed analysis: the `analyze:` block is absent or
-    /// its `last-run` is null.
+    /// The spec has no completed analysis: `analysis.md` is absent, or its
+    /// `last-run` is missing or null — the absent file being the never-run
+    /// state since spec 057, as it is for [`Self::NotReviewed`].
     ///
     /// Ordered after every `review:` check because the pipeline is
     /// `review → analyze → done`: a spec that has not been reviewed has not

@@ -35,15 +35,41 @@ use sha2::{Digest, Sha256};
 use crate::primitives::read_text;
 use crate::schema::primitives::{AnalyzeBlock, RecordFreshness};
 
-/// Any `.md` artifact under the feature — the analyze record's subject set.
+/// Any `.md` artifact under the feature except the analyze record itself —
+/// the analyze record's subject set.
 ///
 /// Deliberately wider than `check_review_gate`'s durable contracts, and the
 /// two must not be merged: a review reads *code*, so `review.md` is its output
 /// rather than its input, while an analysis reads *artifacts*, and `review.md`
-/// plus the `review:` block are among the ones its families assert on.
-/// Excluding `review.md` would exempt the single edit that most often
-/// invalidates an analyze record.
+/// is among the ones its families assert on. Excluding `review.md` would
+/// exempt the single edit that most often invalidates an analyze record.
+///
+/// ## `analysis.md` is excluded outright, and excising its frontmatter was not
+/// enough
+///
+/// `/{project}:analyze` writes this file, so it is the command's **output**,
+/// exactly as `review.md` is `/{project}:review`'s and is excluded from
+/// [`is_durable_contract`] for the identical stated reason. Nothing reads its
+/// body: the one family that reads the file at all — `analyze-state-drift` —
+/// reads the record in its frontmatter.
+///
+/// Spec 057 first excluded only that frontmatter, which is the half the record
+/// moved with. That left the **body** digested, and `write-analysis` rewrites
+/// the body in the same call — so any run whose Summary or counts differed from
+/// the previous one digested the pre-write body, wrote a different one, and
+/// reported itself stale. Measured on `020-code-review` on 2026-09-16: the
+/// first run left the gate answering `blocked: analysis is stale — 1
+/// artifact(s) changed since it ran: specs/020-code-review/analysis.md`, and a
+/// second run with identical arguments converged. Two runs to record one
+/// analysis is a false block, and the plan's own note says a gate with false
+/// positives is the one people route around.
+///
+/// The whole-file exclusion makes 057's AC7 unconditionally true rather than
+/// true-when-the-body-happens-not-to-change.
 pub(crate) fn is_analyze_subject(rel_within_feature: &str) -> bool {
+    if rel_within_feature == crate::primitives::ANALYSIS_RECORD_FILE {
+        return false;
+    }
     Path::new(rel_within_feature)
         .extension()
         .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
@@ -152,20 +178,15 @@ pub(crate) fn subject_digest(feature_dir: &Path, is_subject: fn(&str) -> bool) -
         }
         match read_text(entry.path()) {
             Ok(text) => {
-                // The record's own artifact is digested with its frontmatter
-                // excised (spec 057). The exclusion followed the record out of
-                // `spec.md`: this file is written *after* its subjects are
-                // read, so a digest covering it can never match, and every
-                // analysis would report itself stale the instant it was
-                // recorded. `spec.md` is now digested whole — with the block
-                // gone, there is nothing in it to excise.
-                let digested = if rel == crate::primitives::ANALYSIS_RECORD_FILE {
-                    strip_record_frontmatter(&text)
-                } else {
-                    text
-                };
+                // Every subject is digested whole. A record's own artifact is
+                // excluded by the membership predicate rather than partially
+                // excised here: excising only the frontmatter left the body —
+                // which the same call rewrites — inside the digest, so a run
+                // whose report changed staled itself (spec 057, and see
+                // `is_analyze_subject`). `spec.md` is digested whole too, with
+                // the block gone there is nothing in it to excise.
                 let mut hasher = Sha256::new();
-                hasher.update(digested.as_bytes());
+                hasher.update(text.as_bytes());
                 out.digests.insert(rel, hex(&hasher.finalize()));
             }
             Err(_) => out.unreadable.push(rel),
@@ -173,27 +194,6 @@ pub(crate) fn subject_digest(feature_dir: &Path, is_subject: fn(&str) -> bool) -
     }
     out.unreadable.sort();
     out
-}
-
-/// An artifact's body, with its frontmatter dropped entirely.
-///
-/// Simpler than the block surgery this replaces: the record owns the whole
-/// frontmatter of its own file, so excising it needs no YAML parse and cannot
-/// half-succeed. A file with no frontmatter fence is returned unchanged —
-/// there is nothing to strip, and the digest over its bytes is correct.
-fn strip_record_frontmatter(text: &str) -> String {
-    let Some(rest) = text
-        .strip_prefix("---\n")
-        .or_else(|| text.strip_prefix("---\r\n"))
-    else {
-        return text.to_string();
-    };
-    for fence in ["\n---\n", "\n---\r\n"] {
-        if let Some(idx) = rest.find(fence) {
-            return rest[idx + fence.len()..].to_string();
-        }
-    }
-    text.to_string()
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -402,30 +402,43 @@ mod tests {
     /// The exclusion the whole comparison rests on, at its new address: the
     /// record is written after the subjects are read, so a digest covering it
     /// could never match and every run would stale itself. It moved with the
-    /// record — from `spec.md`'s `analyze:` block to `analysis.md`'s own
-    /// frontmatter (spec 057 AC7).
+    /// record — from `spec.md`'s `analyze:` block to `analysis.md` (spec 057
+    /// AC7).
+    ///
+    /// **It covers the whole file, not just the frontmatter**, and this test
+    /// pins that rather than the narrower rule it replaced. `write-analysis`
+    /// rewrites the report body in the same call that writes the record, so
+    /// excising the frontmatter alone left every run whose counts or Summary
+    /// changed digesting a body it was about to replace — reporting itself
+    /// stale, and converging only on a second identical run.
     #[test]
-    fn the_records_own_frontmatter_does_not_change_its_digest() {
+    fn the_record_is_not_a_subject_of_its_own_digest() {
         let tmp = tempdir().unwrap();
         seed(tmp.path(), "");
         fs::write(
             tmp.path().join("analysis.md"),
-            "---\nspec: 001-x\nlast-run: null\n---\n\n# Analysis\n\nSame body.\n",
+            "---\nspec: 001-x\nlast-run: null\n---\n\n# Analysis\n\nOne finding.\n",
         )
         .unwrap();
         let before = subject_digest(tmp.path(), is_analyze_subject);
 
-        // A second run records different counts and a different timestamp.
+        // A second run records different counts, a different timestamp, *and*
+        // a different report body — which is what every run with a changed
+        // result does.
         fs::write(
             tmp.path().join("analysis.md"),
-            "---\nspec: 001-x\nlast-run: 2026-09-07T00:00:00Z\nadvisory: 4\nblocking: false\n---\n\n# Analysis\n\nSame body.\n",
+            "---\nspec: 001-x\nlast-run: 2026-09-07T00:00:00Z\nadvisory: 4\nblocking: false\n---\n\n# Analysis\n\nTwelve findings.\n",
         )
         .unwrap();
         let after = subject_digest(tmp.path(), is_analyze_subject);
 
+        assert!(
+            !before.digests.contains_key("analysis.md"),
+            "the analyze record is its own command's output and must not be a subject"
+        );
         assert_eq!(
-            before.digests["analysis.md"], after.digests["analysis.md"],
-            "a record rewriting its own frontmatter must not stale itself"
+            before.digests, after.digests,
+            "rewriting the record — frontmatter or body — must not stale it"
         );
     }
 
@@ -446,25 +459,28 @@ mod tests {
         assert_ne!(before.digests["spec.md"], after.digests["spec.md"]);
     }
 
-    /// The body still counts — excising the frontmatter must not excise
-    /// everything.
+    /// The exclusion is the record's alone — the *review* record stays a
+    /// subject, body and frontmatter both, because `review.md` is an input to
+    /// an analysis rather than its output. Excluding it would exempt the single
+    /// edit that most often invalidates an analyze record, which is the
+    /// asymmetry `is_analyze_subject` and `is_durable_contract` exist to keep.
     #[test]
-    fn the_records_body_does_change_its_digest() {
+    fn the_review_record_remains_a_subject() {
         let tmp = tempdir().unwrap();
         seed(tmp.path(), "");
         fs::write(
-            tmp.path().join("analysis.md"),
-            "---\nspec: 001-x\n---\n\n# Analysis\n\nOne finding.\n",
+            tmp.path().join("review.md"),
+            "---\nspec: 001-x\nlast-run: null\n---\n\n# Review\n\nOne finding.\n",
         )
         .unwrap();
         let before = subject_digest(tmp.path(), is_analyze_subject);
         fs::write(
-            tmp.path().join("analysis.md"),
-            "---\nspec: 001-x\n---\n\n# Analysis\n\nTwelve findings.\n",
+            tmp.path().join("review.md"),
+            "---\nspec: 001-x\nlast-run: 2026-09-07T00:00:00Z\n---\n\n# Review\n\nTwelve findings.\n",
         )
         .unwrap();
         let after = subject_digest(tmp.path(), is_analyze_subject);
-        assert_ne!(before.digests["analysis.md"], after.digests["analysis.md"]);
+        assert_ne!(before.digests["review.md"], after.digests["review.md"]);
     }
 
     #[test]

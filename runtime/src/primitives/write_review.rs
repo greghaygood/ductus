@@ -132,10 +132,12 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
     let waived_n = u32::try_from(waived.len()).unwrap_or(u32::MAX);
     let blocking = must_n > 0;
 
-    // Read and compute BOTH outputs before performing either write: a
-    // malformed spec (missing frontmatter, YAML parse failure) must halt
-    // before review.md exists, never between the two writes — otherwise
-    // a halt leaves review.md and the spec `review:` block inconsistent.
+    // Read and validate every input before the write: a malformed spec
+    // (missing frontmatter, YAML parse failure) must halt before review.md
+    // exists. The ordering outlived the pair it was written for — spec 057
+    // left one write, so there is no longer an inconsistent in-between state
+    // to reach, and what it now buys is that a malformed spec halts with no
+    // report on disk rather than with a report whose spec cannot be read.
     // The review's durable contracts as this run read them. Taken **before**
     // the writes below, because `write-review` does not touch `scenarios/` or
     // `data-model.md` and must not fold its own output into the record's
@@ -1196,8 +1198,8 @@ mod tests {
     }
 
     /// The whole point of the working-tree reference point. This primitive has
-    /// just rewritten `review.md` and the spec's `review:` block — both analyze
-    /// subjects — so the record it reports on is superseded from this moment.
+    /// just rewritten `review.md`, an analyze subject, so the record it reports
+    /// on is superseded from this moment.
     /// A committed comparison would say `current` until someone committed, and
     /// would then have been wrong retroactively.
     #[test]
@@ -1883,10 +1885,10 @@ mod tests {
     #[test]
     fn malformed_spec_frontmatter_halts_before_any_write() {
         // The spec's frontmatter fails YAML parse. The halt must land
-        // BEFORE the first write: no review.md may exist afterward
-        // (scenario primitive-robustness-hardening — a halt between the
-        // two writes leaves review.md and the spec `review:` block
-        // inconsistent).
+        // BEFORE the write: no review.md may exist afterward (scenario
+        // primitive-robustness-hardening, whose reason was a halt between
+        // the two writes leaving them inconsistent; spec 057 left one write
+        // and the validate-first ordering is what survived).
         let tmp = spec_repo("001-x", "status: in-progress\ndependencies: [unclosed");
         let mut args = base_args("001-x");
         args.findings = vec![finding("SEC-BE-001", "must", "src/a.rs", "1-5", "high")];

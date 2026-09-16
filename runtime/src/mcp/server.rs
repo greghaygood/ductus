@@ -791,7 +791,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "check-review-gate",
-        description = "Evaluate /ductus:implement's pre-done review gate for one feature: the feature directory's markdown lint (via the lint-markdown machinery), then the spec frontmatter review: block. Returns the verdict plus, when blocked, the first failing check (markdown-lint | not-reviewed | must-violations) and the canonical blocked message; a blocked gate is a domain outcome the host halts on, never an error."
+        description = "Evaluate /ductus:implement's pre-done review gate for one feature, in order: whether the spec is already done, the feature directory's markdown lint (via the lint-markdown machinery), unresolved scenario open questions, an undischarged fold, an undischarged cross-spec impact, the review record in review.md, whether that review is still current, the analyze record in analysis.md, and whether that analysis is still current. Neither record lives in spec.md frontmatter (spec 057). Returns the verdict plus, when blocked, the first failing check and the canonical blocked message; a blocked gate is a domain outcome the host halts on, never an error."
     )]
     async fn check_review_gate(
         &self,

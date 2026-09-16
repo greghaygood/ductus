@@ -135,7 +135,7 @@ enum Command {
     CreateFeature(CreateFeatureArgs),
     /// Copy the plan/tasks (and optional data-model) templates into a feature directory.
     CreatePlanArtifacts(CreatePlanArtifactsArgs),
-    /// Evaluate /ductus:implement's pre-done review gate (markdown lint + spec review: block).
+    /// Evaluate /ductus:implement's pre-done review gate (markdown lint, scenario questions, fold and cross-spec obligations, then the review and analyze records in review.md and analysis.md).
     CheckReviewGate(CheckReviewGateArgs),
     /// Append a question bullet to a spec or scenario's ## Open Questions (atomic, with back-edge).
     AppendQuestion(AppendQuestionArgs),
