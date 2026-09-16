@@ -2,7 +2,7 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
-## [0.50.0] — 2026-09-15
+## [0.50.0] — 2026-09-16
 
 ### Added
 
@@ -34,9 +34,21 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
 - **`validate-frontmatter`** reports a `review:` or `analyze:` block still
   present in a spec, at the Blocking tier the constitution now declares for it,
   and hard-fails a record artifact that exists but carries nothing readable.
-- **The analyze staleness digest** excises `analysis.md`'s own frontmatter
-  rather than `spec.md`'s `analyze:` block. `spec.md` is digested whole, so a
-  frontmatter edit there now moves the digest where the old excision hid it.
+- **The analyze staleness digest excludes `analysis.md` outright**, and
+  `spec.md` is digested whole — so a frontmatter edit there now moves the digest
+  where the old block-excision hid it. Moving the excision to `analysis.md`'s
+  frontmatter was the first cut and was **not enough**: `write-analysis` rewrites
+  that file's report *body* in the same call, so any run whose Summary or counts
+  differed from the previous one digested a body it was about to replace and
+  reported itself stale — two runs to record one analysis. The record artifact is
+  its own command's output, exactly as `review.md` is `/{project}:review`'s and is
+  excluded from the review digest for the identical stated reason, and nothing
+  reads its body. `review.md` stays an analyze subject: it is an analysis's input,
+  and excluding it would exempt the edit that most often invalidates the record.
+- **`check-review-gate`'s tool description and CLI help** enumerate the gate's
+  nine checks and name `review.md` and `analysis.md`. Both still described a
+  two-check gate reading a `spec.md` block — the most visible place for a wrong
+  location, since they render to an operator.
 
 ### Removed
 
