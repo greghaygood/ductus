@@ -31,8 +31,8 @@
 //!   a pruned spent task to persist (constitution §tasks-phase — `tasks.md`
 //!   is ephemeral; see [`pruning_evidence`] for the documented heuristic).
 //! - **review-state-drift** (blocking) — reference §"Review state drift
-//!   (blocking)": a `done` spec with `review.last-run` unset, with
-//!   `review.blocking: true`, or with a non-zero `review.should-violations`,
+//!   (blocking)": a `done` spec whose `review.md` record has `last-run`
+//!   unset, `blocking: true`, or a non-zero `should-violations`,
 //!   drifted. The third condition arrived with 045's task 15: §implement-phase
 //!   forbids reaching `done` over an outstanding SHOULD, and the count is what
 //!   states whether one is outstanding. The grandfather rule applies: a `done`
@@ -52,8 +52,9 @@
 //!   gate built to catch exactly that. See [`record_unreadable_artifact`].
 //! - **analyze-state-drift** (blocking) — the counterpart to
 //!   review-state-drift, and it exists because there was no counterpart: a
-//!   `done` spec with `analyze.last-run` unset, or `analyze.blocking: true`,
-//!   drifted. Advisory findings are recorded in the block and deliberately
+//!   `done` spec whose `analysis.md` record has `last-run` unset, or
+//!   `blocking: true`,
+//!   drifted. Advisory findings are recorded and deliberately
 //!   **not** checked here — analyze's advisory tier is made of checks
 //!   introduced advisory with their own published promotion criteria, and
 //!   gating on them would promote all of them at once. The grandfather rule
@@ -675,9 +676,9 @@ fn check_review_drift(
     // the finding is still filed under its original heading.
     //
     // Nothing caught this before, and the reason is worth recording: Family
-    // 31 compares the frontmatter `review:` block against `review.md`, but
-    // one `/{project}:review` run writes both. A fix applied *during* a pass
-    // that never re-runs leaves the two consistently stale and that family
+    // 31 compared the spec's `review:` block against `review.md`, but
+    // one `/{project}:review` run wrote both. A fix applied *during* a pass
+    // that never re-runs left the two consistently stale and that family
     // clean. 023 sat at `done` with `should-violations: 1` while its own
     // report said "Fixed during this pass", and a hand sweep found it, not
     // the tooling (spec 023 review, 2026-08-30).

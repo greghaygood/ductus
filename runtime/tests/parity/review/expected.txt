@@ -11,14 +11,14 @@ Capture recipe (maintainer-only, requires an LLM-driven host):
      boundary at the performReview extension point).
   5. After the run, capture:
      a. The rendered <a-clean-tempdir>/specs/007-review/review.md.
-     b. The post-run spec `review:` frontmatter block from
-        <a-clean-tempdir>/specs/007-review/spec.md.
+     b. That file's own frontmatter record — since spec 057 the record and
+        the report live in one artifact, and spec.md carries neither.
 
 Parity bound for `/ductus:review`:
   - strict-files: `specs/{feature}/review.md` — the rendered report
     skeleton (frontmatter counts, section buckets) must match the
     runtime-driven path exactly.
-  - strict-fields: `review-block` — the spec's `review:` frontmatter
+  - strict-fields: `review-record` — review.md's frontmatter record
     (last-run, must-violations, blocking) must match.
   - semantic-fields: `finding-prose` — per-finding explanations are the
     LLM's; wording may differ between responses without failing the check.

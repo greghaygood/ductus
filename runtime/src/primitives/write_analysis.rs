@@ -1,5 +1,6 @@
-//! `write-analysis` — record that `/ductus:analyze` ran, in the spec's
-//! `analyze:` frontmatter block.
+//! `write-analysis` — record that `/ductus:analyze` ran, by writing
+//! `specs/NNN/analysis.md`: the record in its frontmatter, the findings in a
+//! fixed body skeleton. `spec.md` is not written (spec 057).
 //!
 //! The pipeline is `implement → review → analyze → done`, and until this
 //! primitive existed only half of it left a trace. `check-review-gate` read

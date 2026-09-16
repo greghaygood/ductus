@@ -93,13 +93,13 @@ enum Command {
     DiffCrossSpec(DiffCrossSpecArgs),
     /// Select rule files for /ductus:review (suffix, [rules] surfaces, disabled-rule-files).
     DiscoverRuleFiles(DiscoverRuleFilesArgs),
-    /// Classify a spec's review.waivers against currently-firing findings.
+    /// Classify a spec's recorded waivers in review.md against currently-firing findings.
     ProcessWaivers(ProcessWaiversArgs),
     /// Resolve /ductus:review's diff-base, file scope, and captured issues.
     ComputeReviewScope(ComputeReviewScopeArgs),
-    /// Render specs/NNN/review.md and update the spec `review:` frontmatter block.
+    /// Render specs/NNN/review.md — the report and its record, in one file.
     WriteReview(WriteReviewArgs),
-    /// Record that analyze ran in the spec `analyze:` frontmatter block.
+    /// Record that analyze ran, in specs/NNN/analysis.md.
     WriteAnalysis(WriteAnalysisArgs),
     /// Flip a single subtask checkbox in `tasks.md` (atomic rewrite).
     MarkTask(MarkTaskArgs),

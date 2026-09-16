@@ -1,6 +1,6 @@
 //! `process-waivers` — deterministic per-run waiver processing for `/ductus:review`.
 //!
-//! Reads `review.waivers` from a spec's frontmatter and classifies each entry
+//! Reads the `waivers` list from `review.md`'s frontmatter and classifies each entry
 //! against the currently-firing `(rule, file)` findings:
 //!
 //! - **apply** — the anchored file exists AND the rule still fires there.
@@ -168,8 +168,8 @@ mod tests {
     use crate::schema::primitives::FiredFinding;
     use tempfile::TempDir;
 
-    /// Write `specs/{feature}/spec.md` with the given `review.waivers` YAML
-    /// block (already indented under `waivers:`), and touch each path in
+    /// Write `specs/{feature}/review.md` with the given waivers YAML
+    /// (already indented under `waivers:`), and touch each path in
     /// `existing_files` relative to the repo root.
     fn setup(feature: &str, waivers_yaml: &str, existing_files: &[&str]) -> TempDir {
         let tmp = TempDir::new().unwrap();

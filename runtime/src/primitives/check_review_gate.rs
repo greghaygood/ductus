@@ -6,7 +6,7 @@
 //! directory's markdown lint (through the `lint-markdown` machinery,
 //! replacing the raw `npx markdownlint-cli2` invocation), then unresolved
 //! scenario open questions, then an undischarged `folds-into` fold, then
-//! the spec frontmatter `review:` block, then whether the recorded review
+//! the review record in `review.md`, then whether that recorded review
 //! is still current. The first failing
 //! check wins and produces the canonical `blocked: …` message — with the
 //! adopter's `[host] project` command namespace substituted into the
@@ -179,7 +179,7 @@ pub(crate) fn run_with_lint(
         return Ok(stale);
     }
 
-    // Gate checks 8, 9 and 10: the spec frontmatter `analyze:` block. The
+    // Gate checks 8, 9 and 10: the analyze record in `analysis.md`. The
     // freshness it computes is handed back rather than recomputed for the
     // passing verdict's notice below — the comparison reads and hashes every
     // `.md` under the feature, so doing it twice is real work for one answer.

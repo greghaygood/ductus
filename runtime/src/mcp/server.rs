@@ -609,7 +609,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "process-waivers",
-        description = "Classify a spec's review.waivers against currently-firing findings (apply/expire/retain/dedup). Pass skipped-pass for each dimension not run this pass: on a dimension-restricted run a non-firing waiver is retained (kept in frontmatter), never expired, so a partial run cannot prune a waiver anchored to a skipped dimension."
+        description = "Classify the waivers recorded in a spec's review.md against currently-firing findings (apply/expire/retain/dedup). Pass skipped-pass for each dimension not run this pass: on a dimension-restricted run a non-firing waiver is retained (kept in frontmatter), never expired, so a partial run cannot prune a waiver anchored to a skipped dimension."
     )]
     async fn process_waivers(
         &self,
@@ -635,7 +635,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-review",
-        description = "Render specs/NNN/review.md and update the spec `review:` frontmatter block. Consumes the pass findings as a single array (plus waiver results, scope scalars, and skipped-pass flags), applies the cross-pass dedup (highest-severity-wins on rule-id + file + overlapping range) before counting, buckets survivors into MUST / SHOULD / low-confidence / waived, prunes expired waivers, and emits the 0-findings / blocking:false report for empty scope. Both writes are atomic."
+        description = "Render specs/NNN/review.md — the review report and, in that same file's frontmatter, the record of the run. `spec.md` is not written: each audit record has one home (spec 057). Consumes the pass findings as a single array (plus waiver results, scope scalars, and skipped-pass flags), applies the cross-pass dedup (highest-severity-wins on rule-id + file + overlapping range) before counting, buckets survivors into MUST / SHOULD / low-confidence / waived, prunes expired waivers, and emits the 0-findings / blocking:false report for empty scope. Both writes are atomic."
     )]
     async fn write_review(
         &self,
@@ -648,7 +648,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-analysis",
-        description = "Record that /ductus:analyze ran in the spec's `analyze:` frontmatter block — the durable counterpart to `review:`, and what `check-review-gate` reads to hold a spec out of `done` until the second gate has actually run. Takes the run's hard-fail / blocking / advisory counts plus `unexamined` (the skipped-target count, so a clean record cannot be read as a fully-examined one), sets `blocking` from the two gating tiers, and splices the block without disturbing sibling keys. Refuses a spec whose frontmatter does not parse rather than recording a clean run into it. Atomic."
+        description = "Record that /ductus:analyze ran, by writing specs/NNN/analysis.md — the record in its frontmatter, the findings in a fixed body skeleton. The durable counterpart to review.md, and what `check-review-gate` reads to hold a spec out of `done` until the second gate has actually run. Takes the run's hard-fail / blocking / advisory counts plus `unexamined` (the skipped-target count, so a clean record cannot be read as a fully-examined one), sets `blocking` from the two gating tiers, and splices the block without disturbing sibling keys. Refuses a spec whose frontmatter does not parse rather than recording a clean run into it. Atomic."
     )]
     async fn write_analysis(
         &self,
@@ -871,7 +871,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "invalidate-review",
-        description = "Reset a spec's `review:` frontmatter block to the un-reviewed state — `last-run` and `reviewed-against` nulled, counts zeroed, `blocking` cleared — so the pre-`done` gate demands a fresh review before the spec can complete. The gate's staleness check diffs the spec's durable contracts (scenarios/*.md, data-model.md); spec.md is deliberately outside that set, so a fold-back that routes content into the upstream spec's BODY moves no durable contract and leaves a review that never saw the code the fold brought with it. This is how the fold says what the diff cannot see. Waivers survive verbatim, adopter-authored extra fields included: an invalidation says the review is out of date, not that an operator's recorded judgement about a finding was withdrawn. `invalidated: false` is the domain outcome for a spec that records no current review — already in this state — so a re-run of an interrupted fold converges rather than halting."
+        description = "Reset a spec's review.md record to the un-reviewed state — `last-run` and `reviewed-against` nulled, counts zeroed, `blocking` cleared — so the pre-`done` gate demands a fresh review before the spec can complete. The gate's staleness check diffs the spec's durable contracts (scenarios/*.md, data-model.md); spec.md is deliberately outside that set, so a fold-back that routes content into the upstream spec's BODY moves no durable contract and leaves a review that never saw the code the fold brought with it. This is how the fold says what the diff cannot see. Waivers survive verbatim, adopter-authored extra fields included: an invalidation says the review is out of date, not that an operator's recorded judgement about a finding was withdrawn. `invalidated: false` is the domain outcome for a spec that records no current review — already in this state — so a re-run of an interrupted fold converges rather than halting."
     )]
     async fn invalidate_review(
         &self,

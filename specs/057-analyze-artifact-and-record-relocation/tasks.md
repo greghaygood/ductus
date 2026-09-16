@@ -143,7 +143,7 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 17. Verify the sweep mechanically
 
-- [ ] Search the repository for the pre-relocation shape — a `review:` or `analyze:` block addressed as `spec.md` frontmatter
+- [x] Search the repository for the pre-relocation shape — a `review:` or `analyze:` block addressed as `spec.md` frontmatter
 - [ ] Confirm the only surviving hits are this spec's own Motivation and Resolved Questions
 
 - **Done when**: the search returns no hit outside this spec, so the sweep is verified rather than asserted.
@@ -183,3 +183,24 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 - [ ] Run `scripts/audit/run-all.sh` after committing and before tagging, and confirm Family 20 is green; then read every workflow run for that sha, not only the one whose name matches
 
 - **Done when**: All three version sites read 0.50.0, `scripts/audit/run-all.sh` is green including Family 20, and `ductus-v0.50.0` is pushed and its release workflow has published.
+
+## 22. Sweep the runtime's own user-facing surfaces and doc comments
+
+- [x] Task 17's mechanical search found the relocation's stale claims outside the artifacts task 16 named — which is the case AGENTS.md warns about: a superseded rationale hides best in the diff that falsified it
+- [x] MCP tool descriptions in `runtime/src/mcp/server.rs` for `write-review`, `write-analysis` and `invalidate-review`, and the matching clap help in `runtime/src/main.rs` — these render to an operator, so a wrong location here is the most visible of all
+- [x] Doc comments in `write_review.rs`, `write_analysis.rs`, `check_review_gate.rs`, `check_artifacts.rs`, `process_waivers.rs` and `schema/primitives.rs` that still address the record as a `spec.md` block
+- [x] The three `.github/workflows/*.yml` comments explaining why `fetch-depth: 0` is needed, which name `review.reviewed-against` in the spec
+- [x] `runtime/tests/parity/review/expected.txt`, whose strict-fields contract names a `review-block` in the spec
+- [x] Classify every hit by tense: correct a claim about where the record lives now, keep a past-tense account of the two-homes condition
+
+- **Done when**: No user-facing runtime surface — tool description, CLI help, or emitted message — places either record in `spec.md` frontmatter, and every doc comment that does is either corrected or demonstrably past-tense.
+
+## 23. Discharge the 022 obligation the relocation created
+
+- [ ] Task 17's search found 10 lines across 6 of `022-deterministic-runtime`'s **durable contracts** that place the records in `spec.md` frontmatter — `data-model.md` at 750, 752, 759, 787 and 791 (the canonical registry of the gate's check order and the two digest subject sets), and one line each in the scenarios `implement-completion-gate`, `primitive-robustness-hardening`, `review-base-includes-the-transition-commit`, `review-gate-unexaminable-contracts` and `review-runtime-acceleration`
+- [ ] Nothing in 022's `spec.md`, `plan.md` or `tasks.md` is affected — the exposure is entirely in the digested set, which is what prices it
+- [ ] 022 is the durable home for runtime rules (AGENTS.md §Workflow), so these are 057's to correct: reopen 022, fix the claims by tense, and link back here
+- [ ] Price it before starting: every hit is a durable contract, so this costs a reopen **plus a full five-pass re-review**, and AGENTS.md records that a full 022 re-review is the largest single unit in the corpus and has never been spent
+- [ ] Declare `022-deterministic-runtime` in this spec's `cross-spec-impact:` so the pre-done gate holds 057 until 022 links back
+
+- **Done when**: No durable contract under 022 places either record in `spec.md` frontmatter, 022's review and analysis are current, it is back at `done` with a back-link to 057, and the `cross-spec-impact:` entry is discharged.

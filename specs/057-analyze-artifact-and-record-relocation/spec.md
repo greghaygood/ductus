@@ -6,6 +6,7 @@ cross-spec-impact:
   - 047-analyze-findings-durability
   - 020-code-review
   - 026-framework-self-audit
+  - 022-deterministic-runtime
 ---
 
 # 057 — Analyze artifact and record relocation

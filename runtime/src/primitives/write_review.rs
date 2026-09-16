@@ -1,5 +1,6 @@
-//! `write-review` — render `specs/NNN/review.md` and update the spec's
-//! `review:` frontmatter block for `/ductus:review`.
+//! `write-review` — render `specs/NNN/review.md` for `/ductus:review`: the
+//! report body and, in that same file's frontmatter, the record of the run.
+//! `spec.md` is not written (spec 057).
 //!
 //! Consumes the pass findings as a single `findings` array (the
 //! content-ingestion convention), plus the waiver results from
@@ -51,10 +52,10 @@ use crate::schema::primitives::{
 /// `yaml_string`.
 fn validate_scalar_fields(args: &WriteReviewArgs) -> Result<()> {
     super::validate_no_traversal(&args.feature)?;
-    // Scalar fields spliced verbatim into review.md frontmatter and the
-    // spec.md `review:` block must be single-line: an embedded newline would
-    // inject a top-level frontmatter key (e.g. a spoofed `status:`) into the
-    // spec and corrupt pipeline state. Multi-line prose fields (summary,
+    // Scalar fields spliced verbatim into review.md frontmatter must be
+    // single-line: an embedded newline would inject a top-level frontmatter
+    // key (e.g. a spoofed `blocking:`) into the record and corrupt what every
+    // gate reads from it. Multi-line prose fields (summary,
     // finding bodies, captured issues) are markdown body content and are not
     // screened here. Waiver fields are separately quoted via `yaml_string`.
     let single_line =

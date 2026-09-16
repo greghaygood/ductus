@@ -16,7 +16,7 @@ advances to `done`.
 
 ## Purpose
 
-Quality gate before `done`: audit the feature's implementation against the project's rule files across five dimensions (security, reuse, quality, efficiency, simplicity), record the findings in `specs/NNN/review.md`, and set the spec's `review.blocking` frontmatter so `/ductus:implement`, `/ductus:analyze`, and the CI hook can hold the spec out of `done` while MUST violations stand. Waivers (with recorded justification) are the sanctioned escape.
+Quality gate before `done`: audit the feature's implementation against the project's rule files across five dimensions (security, reuse, quality, efficiency, simplicity), record the findings in `specs/NNN/review.md`, and set `blocking` in that file's own frontmatter record so `/ductus:implement`, `/ductus:analyze`, and the CI hook can hold the spec out of `done` while MUST violations stand. Waivers (with recorded justification) are the sanctioned escape.
 
 ## Context
 

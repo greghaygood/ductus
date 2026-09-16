@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # fetch-depth: 0 — the self-audit's Family 19 (review-freshness) resolves
-      # each spec's `review.reviewed-against` sha against history. A shallow
+      # each spec's `reviewed-against` sha, from its review.md, against history. A shallow
       # clone has none of those commits, so every spec reports "not a commit in
       # this repo" and the gate fails for a reason unrelated to review freshness
       # (observed on gvrn-v0.27.1, which blocked its own publish).

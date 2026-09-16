@@ -65,7 +65,7 @@ pub struct ReviewBlock {
     /// conflating them would report a spec with no scenarios as unjudgeable
     /// forever.
     ///
-    /// The `analyze:` block needs no such wrapper: `spec.md` is always one of
+    /// The analyze record needs no such wrapper: `spec.md` is always one of
     /// its subjects and must exist for this gate to run at all, so an empty
     /// analyze digest cannot occur.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -117,8 +117,8 @@ pub struct ReviewBlock {
     pub skipped_passes: Vec<String>,
 }
 
-/// Parsed `analyze:` frontmatter block — the durable record that
-/// `/ductus:analyze` ran, and what it found.
+/// The analyze record, parsed from `analysis.md`'s frontmatter — the durable
+/// record that `/ductus:analyze` ran, and what it found.
 ///
 /// The counterpart to [`ReviewBlock`], and it exists because there was no
 /// counterpart. `check-review-gate` read the `review:` block, Family 19
@@ -329,7 +329,7 @@ pub struct RelocateAuditRecordsResult {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProcessWaiversArgs {
-    /// Feature directory name whose `spec.md` carries `review.waivers`.
+    /// Feature directory name whose `review.md` carries the recorded `waivers`.
     #[arg(long)]
     pub feature: String,
     /// Currently-firing `(rule, file)` findings from the review passes.
@@ -628,7 +628,7 @@ pub struct WriteReviewResult {
 // -- write-analysis ----------------------------------------------------------
 
 /// Args for `write-analysis` — record that `/ductus:analyze` ran, and what it
-/// found, in the spec's `analyze:` frontmatter block.
+/// found, in `specs/NNN/analysis.md`.
 ///
 /// The narrow, always-on write that makes analyze's own run durable. It is a
 /// deliberate change to that command's read-only contract, and the line the
@@ -3095,7 +3095,7 @@ pub struct CreatePlanArtifactsResult {
 
 /// Args for `check-review-gate`. Evaluates `/ductus:implement`'s pre-done
 /// review gate for one feature: the feature directory's markdown lint,
-/// then the spec frontmatter `review:` block, in the completion gate's
+/// then the review record in `review.md`, in the completion gate's
 /// documented order (first failing check wins).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]

@@ -48,7 +48,7 @@ jobs:
         working-directory: runtime
     steps:
       # fetch-depth: 0 — `tests/mechanical_sweep_parity.rs` resolves every
-      # done spec's `review.reviewed-against` sha and diffs it against HEAD,
+      # done spec's `reviewed-against` sha, from its review.md, and diffs it against HEAD,
       # comparing the Rust staleness rule with /ductus:audit Family 19's. The
       # default single-commit checkout has none of those commits, so the test
       # finds nothing to compare and fails its own vacuity guard rather than
