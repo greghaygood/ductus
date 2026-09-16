@@ -1,17 +1,17 @@
 ---
 spec: 047-analyze-findings-durability
-diff-base: c52596803bfa98e62cf44f524982a6bd231aa8d1
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-14T01:14:10Z
-reviewed-against: 1024110d4661812a811ceb51c5c51e09c75516ef
+last-run: 2026-09-16T12:34:24Z
+reviewed-against: 267070e4bcf15cb354fa20997e1b13d38f2650db
+diff-base: 1f5539dbc98706aa8811c10cc484d59901eea9fa
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 7
-scope: 8
+captured-issues: 0
+examined: 9
+scope: 12
+skipped-passes: []
 reviewed-digest:
-  scenarios/analyze-record-freshness.md: b79ba39909899e6f8662e8882e04b54e66c04cd17febae782af1443cdd05091d
+  scenarios/analyze-record-freshness.md: 4873de36588f18d253409758c41ab5d0b200c1a1655271c64aa5e8d98998a39f
   scenarios/analyze-run-durability.md: 287dacba26b62b8f72ba377b8f07f92063cdd28a351ede9568035dd0fd811046
 blocking: false
 ---
@@ -20,21 +20,15 @@ blocking: false
 
 ## Summary
 
-Re-run 2026-09-13 as the examined/scope backfill pass. The prior record (2026-09-07) predated `ductus-v0.49.0` and carried no `examined`, no `scope` and no `reviewed-digest`, so its `0/0/0` was indistinguishable from a run whose five passes never fired. 0 MUST, 0 SHOULD, 0 low-confidence; not blocking. No waivers: `process-waivers` reports 0 applied, 0 expired, 0 retained.
+Re-review for spec 057's record relocation, which reopened this spec to discharge its `cross-spec-impact:` entry. Five passes over the resolved scope; 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers (`process-waivers` returned empty in every bucket).
 
-**Scope, and what was actually read.** The natural diff base collapsed from 315 modified-since / 315 in scope to **4 / 8** once this pass's correction commit recorded a fresh `in-progress` transition. `--since HEAD` gave 0 / 4 and was declined: it excludes by construction the four files this pass edited. Examined **7 of 8** — every in-scope file was read end to end except one, which is named rather than folded into the numerator:
+**What changed.** 057 moved the analyze record out of `spec.md` frontmatter into `analysis.md`'s, so every claim here that addressed it as a `spec.md` block was false. AC9, AC10, AC12, AC14 and AC15 are annotated in place rather than restated (the 009-AC18 / 046-AC22 disposition), a signpost at the top links back to 057, and `scenarios/analyze-record-freshness.md` — this spec's one durable contract — now names `analysis.md` in its subject set, records that the digest exclusion moved there and `spec.md` is digested whole, and adds the third state 057 introduced: an artifact that exists but carries no parseable record is undeterminable, never never-analyzed.
 
-- `.claude/commands/ductus/analyze.md` is the **generated mirror** of `framework/commands/analyze.md`, which was read in full (399 lines). `scripts/gen-claude-commands.sh` ran in this session and reported all sixteen commands in sync against a clean `git status`, so the mirror is provably identical to a source that was read. Believing it correct and having read it are different claims, and `examined` is only the second.
+**The Resolved Question was reversed, not relocated, and that is recorded as a reversal.** *Should analyze write a per-spec `analysis.md` artifact?* resolved **no**, on the premise that the record could live in `spec.md` while only the findings' content needed a home. 057 retired that premise — two gate-bearing records in one file is the two-homes condition §drift-prevention rejects — so the file follows the record. The annotation states what survives (the inbox stays the durable home for routable findings; 057's AC13 forbids a checkbox anywhere in `analysis.md` *mechanically*, which is what keeps the parallel-triage-surface hazard the question named from arriving with the reversal) and what the reversal cost (a new primitive, a corpus migration, a second file per spec directory) rather than reading the old *no* as merely superseded.
 
-`framework/constitution.md` is counted: it was read in full at session start — 761 lines across four contiguous ranges — as `/{project}:target` step 4 requires.
+**Scope.** `diff-base` 1f5539db, 12 in scope. Examined **9 of 12**, and the three unread are named rather than folded into the numerator: `framework/commands/analyze.md` (402 lines) was read only in its Review-state-drift and analyze-record sections, `framework/constitution.md` (834) only in §Frontmatter Schema and §Validation Severity — both confirmed against the live file where this spec's criteria assert on them, neither read end to end — and `.claude/commands/ductus/analyze.md` is the generated mirror of a source that was not fully read either, so it is doubly uncounted.
 
-**Rule coverage.** All 11 rule files loaded and all 105 IDs enumerated. None has a subject in a scope that is one constitution, one command source, one generated mirror and five spec artifacts, with no code. `QUAL-CLAIM-001` was assessed closely rather than waved past, because this spec's entire subject *is* that rule turned on the pipeline: the analyze record exists so that a run which never happened cannot read as a clean one, `unexamined` is recorded even at zero because "a zero that was computed and a field that was never written are not the same claim", and the `skipped` list keeps `clean` narrow. The command source applies the rule correctly at every point it invokes it, including the restored `No rule files found` advisory. Compliance, not violation.
-
-**Four corrections landed in this pass, three of them in durable contracts.** The largest is §drift-prevention's *a previously-rejected option is adopted*, occurring entirely inside one spec: `scenarios/analyze-run-durability.md` resolved "should the gate also check analyze freshness?" with **not yet**, and its sibling `scenarios/analyze-record-freshness.md` then built exactly that gate — answering the learned-ignored objection by removing its cause, replacing the sha diff with a content comparison against `analyzed-digest`. The freshness scenario cites `022`'s scenario as where the superseded reasoning lives and never mentions the sibling under its own spec carrying the identical decision, so the bullet stood as a live "not yet" over a shipped gate (AC13-AC15, and `check_review_gate.rs`'s `AnalyzeStale`). Two count words went stale alongside it: `check-review-gate` "gains two block reasons" where it carries three, and the review `analyze` row rendered "in all three states" where it renders four — a scenario contradicting itself, since its own Edge Cases describe the fourth. The spec's first Resolved Question rejected an `analysis.md` partly because "analyze findings drive no gate and are read by no command", which this spec's own AC9-AC10 falsified; the decision survives because the gate reads the record's *counts* while the rejected artifact would have held finding *content*.
-
-**Verified rather than assumed, on the two criteria most likely to be taken on trust.** AC12's four-state enumeration was checked against the **rendered** labels in `framework/commands/review.md`, not against the `RecordFreshness` variants, which are named differently (`never-run` / `current` / `stale` / `undeterminable`) — comparing the wrong pair would have manufactured a defect. AC10's "ordered after every `review:` check" was read from `run()`'s control flow rather than from source line order, which puts `ReviewStale` at line 423 *after* `AnalyzeStale` at 376 and reads as a contradiction until you notice those are helper definitions, not call sites. AC11 was checked by running Family 37 directly: 54 done specs examined, backlog **0** against baseline **0**, so the grandfathered set is fully drained and the ratchet closed.
-
-**One in-scope observation that is not this spec's to fix.** `framework/commands/analyze.md`'s §Spec integrity still lists "Acceptance criteria section exists with at least one checkbox item" as blocking and unscoped by status, which is the subject of a standing inbox item carrying an operator decision (2026-09-13) that zero criteria are valid at `draft`. It is a single markdown edit that reopens no spec, but it is that item's work rather than this pass's, and bundling it would make this commit non-uniform across two unrelated concerns.
+**Passes.** The security, reuse and efficiency passes had no subject: the window contains prose artifacts and one YAML workflow template. The quality and simplicity passes carried the weight, against `quality-cross.md`. The one `QUAL-CLAIM-001` candidate in the window — the CI template's audit-record gate treating an absent `blocking` field and an uppercase `NULL` timestamp as clean — is 020's surface, not this spec's; it was found by 020's pass in the same session, fixed at `267070e4`, and is therefore already absent from this scope. `QUAL-GROUND-001` applies to the annotations themselves and was enforced by re-deriving each claim from the runtime rather than from the spec: the subject-set and exclusion wording was checked against `analyze_subjects.rs`, and the undeterminable-vs-absent three-state wording against the constitution's §Frontmatter Schema → Audit records.
 
 ## MUST violations (blocking)
 
