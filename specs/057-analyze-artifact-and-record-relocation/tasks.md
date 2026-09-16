@@ -181,9 +181,9 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 ## 21. Reconcile the version pin and cut the release
 
 - [x] Audit Family 20 has been red on `main` since `783602c5`: tasks 11-12 bumped `runtime/Cargo.toml` and `runtime/CHANGELOG.md` to 0.50.0 and left the repo-root `version` file at 0.49.8. It is red in the **safe** direction — `/{project}` reads the root file, 0.49.8 is published, so no adopter is halted — but the audit is a hard release gate and will block the tag
-- [ ] Bump the root `version` file to 0.50.0 **and** push `ductus-v0.50.0` in the same sitting: a bumped pin with no tag sends every adopter after assets that do not exist and aborts their run
-- [ ] Do this only after 057, and the specs it reopens (026, 020, 047), are back at `done` — a release is cut from completed work
-- [ ] Run `scripts/audit/run-all.sh` after committing and before tagging, and confirm Family 20 is green; then read every workflow run for that sha, not only the one whose name matches
+- [x] Bump the root `version` file to 0.50.0 **and** push `ductus-v0.50.0` in the same sitting: a bumped pin with no tag sends every adopter after assets that do not exist and aborts their run. Done 2026-09-16 — commit `4cb56c05` and the tag at the same sha, pushed minutes apart
+- [x] Do this only after 057, and the specs it reopens (026, 020, 047), are back at `done` — a release is cut from completed work. All four, plus 022, were `done` before the bump commit; `check-review-gate` reported every `cross-spec-impact:` entry discharged first
+- [x] Run `scripts/audit/run-all.sh` after committing and before tagging, and confirm Family 20 is green; then read every workflow run for that sha, not only the one whose name matches. The audit exited **0** with Family 20 green. All four workflows for `4cb56c05` were read, not just the matching one: `framework-checks`, `generators` and `runtime-release` success, `runtime` confirmed after. `runtime-release`'s twenty jobs were read individually rather than off the top-level conclusion — `Publish to crates.io`, `Publish release assets (complete set only)` and all five `Verify the published release is acquirable` legs green — and the release carries all twelve assets (five targets × tarball + sha256, plus the SBOM and its digest)
 
 - **Done when**: All three version sites read 0.50.0, `scripts/audit/run-all.sh` is green including Family 20, and `ductus-v0.50.0` is pushed and its release workflow has published.
 
