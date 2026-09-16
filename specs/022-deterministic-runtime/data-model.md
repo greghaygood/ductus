@@ -354,11 +354,13 @@ Result:
 ```json
 {
   "findings": [
-    { "severity": "blocking", "field": "status", "message": "..." }
+    { "severity": "hard-fail", "field": "status", "message": "..." }
   ],
   "clean": false
 }
 ```
+
+`severity` is the tier the constitution's §text-first-artifacts (Validation Severity) assigns to that finding's **condition** — not a fixed value for the family, which is why the example is `hard-fail` rather than the `blocking` every finding here once carried. Consumers render the tier the finding names rather than mapping the family to one tier; `framework/commands/analyze.md` step 2 states the host side of the same contract (scenario `frontmatter-severity-tiers-on-both-sides`).
 
 ### `resolve-anchor` — verify every `§<anchor>` reference resolves
 

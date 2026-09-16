@@ -2,6 +2,40 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.51.0] — 2026-09-16
+
+### Changed
+
+- **`validate-frontmatter` names the constitution's tier per finding**, rather
+  than one tier for the whole family. Eight findings emitted `blocking` where
+  [§text-first-artifacts](../framework/constitution.md#text-first-artifacts)
+  (Validation Severity) says Hard fail — frontmatter that is not valid YAML,
+  frontmatter that is not a mapping, `status` missing / non-string / outside the
+  allowed set, and `dependencies` missing / not a list / holding a non-string
+  entry. Those now emit `hard-fail`. The five genuinely-Blocking findings are
+  unchanged: the `folds-into` and `cross-spec-impact` shape checks, and a
+  residual `review:`/`analyze:` record block, which the constitution classifies
+  Blocking *precisely* because the spec file itself parses.
+
+  **The consumer moved in the same release**, because either side alone
+  re-flattens the other. `framework/commands/analyze.md` step 2 claimed the
+  primitive emits every finding as `blocking` — untrue since 0.50.0 added two
+  `hard-fail` sites — and told the host to render *all* frontmatter findings in
+  the hard-fail tier, mis-tiering the residual-block finding in the opposite
+  direction from the primitive. The host now renders each finding in the tier
+  the finding names.
+
+  Both tiers already block pipeline advancement, so no spec that validated
+  before fails now; what changes is which report section a finding lands in and
+  how a run's tier counts split.
+
+### Fixed
+
+- **Three operator-facing messages carried runs of 14-18 spaces mid-sentence**,
+  left behind where backslash line-continuations were collapsed:
+  `check-artifacts`' artifact-unreadable finding, and `check-review-gate`'s two
+  cross-spec-impact guidance strings.
+
 ## [0.50.0] — 2026-09-16
 
 ### Added

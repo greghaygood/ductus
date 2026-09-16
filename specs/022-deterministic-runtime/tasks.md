@@ -462,12 +462,12 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 
 ## 120. Frontmatter finding severity is per-finding, on both sides of the boundary
 
-- [ ] Implement the behavior described in `scenarios/frontmatter-severity-tiers-on-both-sides.md`
-- [ ] Move the eight mis-tiered `validate-frontmatter` sites from `blocking` to `hard-fail` — frontmatter not valid YAML, frontmatter not a mapping, `status` out of set / non-string / missing, `dependencies` entry non-string / not a list / missing — leaving the five correctly-`blocking` and two correctly-`hard-fail` sites alone
-- [ ] Rewrite step 2 of `framework/commands/analyze.md`: drop the stale "emits each finding with `severity: blocking`" claim and replace the fixed hard-fail rendering rule with per-finding rendering, pointing at the constitution's Validation Severity subsection rather than restating the assignment
-- [ ] Add the same pointer to 022's `data-model.md` registry entry so the result shape's `severity` is documented as a constitution tier, not an opaque string
-- [ ] Rewrite `missing_status_is_blocking`, `missing_dependencies_is_blocking` and the both-missing test to pin the new contract (renamed and re-asserted against `hard-fail`) rather than deleting or weakening them
-- [ ] Re-check every multi-line user-facing string touched by the pass after `cargo fmt`, and keep `cargo clippy --release --all-targets -- -D warnings` at zero
+- [x] Implement the behavior described in `scenarios/frontmatter-severity-tiers-on-both-sides.md`
+- [x] Move the eight mis-tiered `validate-frontmatter` sites from `blocking` to `hard-fail` — frontmatter not valid YAML, frontmatter not a mapping, `status` out of set / non-string / missing, `dependencies` entry non-string / not a list / missing — leaving the five correctly-`blocking` and two correctly-`hard-fail` sites alone
+- [x] Rewrite step 2 of `framework/commands/analyze.md`: drop the stale "emits each finding with `severity: blocking`" claim and replace the fixed hard-fail rendering rule with per-finding rendering, pointing at the constitution's Validation Severity subsection rather than restating the assignment
+- [x] Add the same pointer to 022's `data-model.md` registry entry so the result shape's `severity` is documented as a constitution tier, not an opaque string
+- [x] Rewrite `missing_status_is_blocking`, `missing_dependencies_is_blocking` and the both-missing test to pin the new contract (renamed and re-asserted against `hard-fail`) rather than deleting or weakening them
+- [x] Re-check every multi-line user-facing string touched by the pass after `cargo fmt`, and keep `cargo clippy --release --all-targets -- -D warnings` at zero
 - [ ] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
 
 - **Done when**: the eight Hard fail conditions emit `hard-fail` and the five Blocking conditions still emit `blocking`; `framework/commands/analyze.md` step 2 instructs the host to render each frontmatter finding in the tier the finding names, with a pointer to §text-first-artifacts rather than a restatement; 022's `data-model.md` carries the same pointer; the three tests that pinned the old contract pin the new one under names that state it; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are both clean; and the runtime version is bumped at all three sites and tagged in the same sitting.

@@ -34,7 +34,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         Ok(v) => v,
         Err(e) => {
             findings.push(FrontmatterFinding {
-                severity: "blocking".into(),
+                severity: "hard-fail".into(),
                 field: String::new(),
                 message: format!("frontmatter is not valid YAML: {e}"),
             });
@@ -54,7 +54,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         YamlValue::Null => &empty_map,
         _ => {
             findings.push(FrontmatterFinding {
-                severity: "blocking".into(),
+                severity: "hard-fail".into(),
                 field: String::new(),
                 message: "frontmatter must be a mapping".into(),
             });
@@ -72,19 +72,19 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         Some(YamlValue::String(s)) => {
             if !ALLOWED_STATUSES.contains(&s.as_str()) {
                 findings.push(FrontmatterFinding {
-                    severity: "blocking".into(),
+                    severity: "hard-fail".into(),
                     field: "status".into(),
                     message: format!("status '{s}' is not one of {}", ALLOWED_STATUSES.join("|")),
                 });
             }
         }
         Some(_) => findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: "hard-fail".into(),
             field: "status".into(),
             message: "status must be a string".into(),
         }),
         None => findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: "hard-fail".into(),
             field: "status".into(),
             message: "status is missing".into(),
         }),
@@ -95,7 +95,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
             for (i, item) in items.iter().enumerate() {
                 if !matches!(item, YamlValue::String(_)) {
                     findings.push(FrontmatterFinding {
-                        severity: "blocking".into(),
+                        severity: "hard-fail".into(),
                         field: format!("dependencies[{i}]"),
                         message: "dependency entry must be a string feature name".into(),
                     });
@@ -103,12 +103,12 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
             }
         }
         Some(_) => findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: "hard-fail".into(),
             field: "dependencies".into(),
             message: "dependencies must be a list".into(),
         }),
         None => findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: "hard-fail".into(),
             field: "dependencies".into(),
             message: "dependencies is missing".into(),
         }),
@@ -508,7 +508,7 @@ mod tests {
     }
 
     #[test]
-    fn missing_status_is_blocking() {
+    fn missing_status_is_hard_fail() {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("spec.md");
         std::fs::write(&path, "---\ndependencies: []\n---\n\n# X\n").unwrap();
@@ -521,13 +521,13 @@ mod tests {
         .unwrap();
         assert!(!result.clean);
         assert_eq!(result.findings.len(), 1);
-        assert_eq!(result.findings[0].severity, "blocking");
+        assert_eq!(result.findings[0].severity, "hard-fail");
         assert_eq!(result.findings[0].field, "status");
         assert_eq!(result.findings[0].message, "status is missing");
     }
 
     #[test]
-    fn missing_dependencies_is_blocking() {
+    fn missing_dependencies_is_hard_fail() {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("spec.md");
         std::fs::write(&path, "---\nstatus: draft\n---\n\n# X\n").unwrap();
@@ -540,13 +540,13 @@ mod tests {
         .unwrap();
         assert!(!result.clean);
         assert_eq!(result.findings.len(), 1);
-        assert_eq!(result.findings[0].severity, "blocking");
+        assert_eq!(result.findings[0].severity, "hard-fail");
         assert_eq!(result.findings[0].field, "dependencies");
         assert_eq!(result.findings[0].message, "dependencies is missing");
     }
 
     #[test]
-    fn empty_frontmatter_reports_both_missing_fields() {
+    fn empty_frontmatter_reports_both_missing_fields_as_hard_fail() {
         // Present-but-empty frontmatter is a validation finding, not a
         // MissingFrontmatter halt (scenario spec-side-parser-hardening).
         let tmp = tempfile::tempdir().unwrap();
@@ -562,7 +562,7 @@ mod tests {
         assert!(!result.clean);
         let fields: Vec<&str> = result.findings.iter().map(|f| f.field.as_str()).collect();
         assert_eq!(fields, vec!["status", "dependencies"]);
-        assert!(result.findings.iter().all(|f| f.severity == "blocking"));
+        assert!(result.findings.iter().all(|f| f.severity == "hard-fail"));
     }
 
     #[test]
