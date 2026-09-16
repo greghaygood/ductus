@@ -292,6 +292,39 @@ pub struct WaiverRef {
     pub reason: String,
 }
 
+/// Args for `relocate-audit-records`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct RelocateAuditRecordsArgs {
+    /// Feature directory whose `spec.md` still carries the record blocks.
+    #[arg(long)]
+    pub feature: String,
+}
+
+/// Result of `relocate-audit-records`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct RelocateAuditRecordsResult {
+    /// Repo-relative path of the spec examined.
+    pub spec_path: String,
+    /// Artifacts written, repo-relative. Empty on a converged spec.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub relocated: Vec<String>,
+    /// Keys where the spec block and the existing artifact disagreed, as
+    /// `file:key`.
+    ///
+    /// The spec block wins — it is the copy every gate actually read — but the
+    /// difference is **named** rather than resolved silently. Specs 031 and 041
+    /// carried `should-violations: 1` in the block while their reports recorded
+    /// `0`; a migration that quietly picked a side would erase the only
+    /// evidence that they had drifted.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub disagreements: Vec<String>,
+    /// Whether `spec.md` was rewritten. `false` on a converged spec, which is
+    /// what makes a re-run over a partially migrated corpus safe.
+    pub changed: bool,
+}
+
 /// Args for `process-waivers`.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]

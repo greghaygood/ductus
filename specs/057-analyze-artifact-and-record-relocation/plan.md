@@ -87,6 +87,21 @@ A new primitive — `relocate-audit-records` — reads a spec's frontmatter, wri
 each record to its owning artifact, and removes both blocks from `spec.md`.
 Idempotent by construction: a spec with no blocks left is a no-op, which is AC20.
 
+**It merges; it does not refuse.** The first implementation treated an existing
+artifact as a conflict and declined to write. A probe against real spec 047
+showed why that is wrong: *every* pre-migration spec already has a `review.md`,
+so refusal was the normal case and the primitive could not migrate the review
+record at all. It now merges the block into the artifact's frontmatter, carrying
+that artifact's existing report body **verbatim** — replacing a real review
+report with a placeholder would destroy the findings the record is being moved
+beside.
+
+**A disagreement is named, never smoothed.** When both copies carry a key with
+different values the spec block wins, because it is the copy every gate actually
+read; the key is reported in the result's `disagreements` list as `file:key`.
+This is the 031/041 shape directly, and a migration that resolved it quietly
+would erase the only evidence the drift ever happened.
+
 `framework/migrations/criterion-label-backfill.md` step 2 is the precedent and
 the argument: its sweep is performed by the primitive "never by hand — 700
 criteria across 49 specs in this repository's own backfill, where a hand edit is
@@ -174,6 +189,8 @@ derive to accept. Waivers change file in task 5 and stay open-schema.
 | `runtime/src/primitives/check_artifacts.rs`, `dashboard.rs`, `read_spec.rs` | Edit | Follow the records to their new homes (AC8) |
 | `framework/migrations.toml` | Edit | One entry, `procedure_file` pointing at the new procedure (AC16) |
 | `framework/migrations/audit-record-relocate.md` | Create | The per-entry procedure, including the adopter CI-file detection (AC16, AC18) |
+| `runtime/src/schema/registry.rs`, `framework/runtime-tools.txt`, `main.rs`, `mcp/server.rs`, `interpreter/mod.rs` | Edit | Primitive registration — three separate parity tests enforce all of them |
+| `runtime/Cargo.toml`, `Cargo.lock`, `runtime/CHANGELOG.md` | Edit | 0.49.8 → 0.50.0; `introduced_in` must name the release that first carries the primitive |
 | `framework/templates/ci/adopter-generators.yml` | Edit | Replace the vacuous grandfather with a baseline bound (AC17) |
 | `framework/templates/spec/spec.md` | Edit | Template ships without the two blocks (AC2, AC25) |
 | `scripts/audit/review-block-agreement.sh` | Delete | Family 31's shell entry point goes with its primitive (AC15) |
@@ -181,6 +198,40 @@ derive to accept. Waivers change file in task 5 and stay open-schema.
 | `framework/commands/{review,analyze,implement,audit,consolidate}.md` | Edit | Both runtime steps and markdown-only references (AC23) |
 | `docs/analyze.md`, `docs/slash-commands.md`, `docs/shared-constitution.md`, `README.md`, `AGENTS.md` | Edit | The documentation sweep (AC22, AC25) |
 | `specs/*/spec.md`, `specs/*/review.md`, `specs/*/analysis.md` | Edit | The 54-spec corpus sweep, performed by the primitive (AC10, AC11) |
+
+## Implementation notes
+
+Recorded during tasks 1-12 so a session resuming this work does not rediscover
+them.
+
+**The write boundary is spec-dir only.** `derive-boundary` returns
+`specs/057-analyze-artifact-and-record-relocation/**` and nothing else, because
+the commit that created the spec directory changed nothing outside it. Every
+remaining task writes outside that boundary, so `/{project}:implement` will
+report an out-of-boundary edit and wait. The grant needed is the **Affected
+Files** table above — `framework/`, `runtime/`, `scripts/audit/`, `docs/`,
+`README.md`, `AGENTS.md`, the per-agent command mirrors, and the spec corpus.
+
+**The MCP server runs the binary from `runtime/target/release/`.** Runtime
+changes are invisible to the ductus tools in the current session until
+`cargo build --release` **and** a session restart. This is harmless while the
+corpus still carries the blocks; it matters before task 15's sweep, which must
+run against the newly built binary.
+
+**Three registration surfaces are parity-tested.** A new primitive needs an
+entry in the clap `Command` enum + dispatch arm, `PRIMITIVE_REGISTRY`, and
+`framework/runtime-tools.txt`. Each has its own failing test, so missing one is
+loud rather than silent.
+
+**CI denies clippy warnings** (`.github/workflows/runtime.yml:180`,
+`clippy --release --all-targets -- -D warnings`), and `cargo fmt` will collapse
+backslash line-continuations inside string literals into runs of spaces — check
+any multi-line user-facing message after formatting.
+
+**One issue was captured to the inbox rather than fixed here:**
+`validate-frontmatter` emits `severity: "blocking"` for every finding including
+ones the constitution classes as Hard fail. Out of this spec's scope; it routes
+through `/{project}:groom`.
 
 ## Trade-offs
 

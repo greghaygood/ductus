@@ -87,21 +87,26 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 11. Add the `relocate-audit-records` primitive
 
-- [ ] Read a spec's frontmatter, write each record to its owning artifact, remove both blocks from `spec.md`
-- [ ] Invent no record for a spec that carries none
-- [ ] Make a spec with no blocks left a no-op
-- [ ] Leave body prose untouched, and halt if a run finds itself changing it
+- [x] Read a spec's frontmatter, write each record to its owning artifact, remove both blocks from `spec.md`
+- [x] Invent no record for a spec that carries none
+- [x] Make a spec with no blocks left a no-op
+- [x] Leave body prose untouched, and halt if a run finds itself changing it
 
 - **Done when**: running the primitive twice over a spec leaves the second run writing nothing, and a partially migrated corpus converges without duplicating or dropping a record.
 
 ## 12. Register the migration
 
-- [ ] Add one `[[migrations]]` entry to `framework/migrations.toml` with `introduced_in` set to the release that first carries the primitive
-- [ ] Write `framework/migrations/audit-record-relocate.md`, invoking the primitive per spec and skipping pinned files with one line naming each
-- [ ] State the §spec-lifecycle case (c) rule: the sweep is a mechanical edit, so a `done` spec stays `done`
-- [ ] Detect an adopter CI file still carrying the block-presence check and tell them to re-copy the template
+- [x] Add one `[[migrations]]` entry to `framework/migrations.toml` with `introduced_in` set to the release that first carries the primitive
+- [x] Write `framework/migrations/audit-record-relocate.md`, invoking the primitive per spec and skipping pinned files with one line naming each
+- [x] State the §spec-lifecycle case (c) rule: the sweep is a mechanical edit, so a `done` spec stays `done`
+- [x] Detect an adopter CI file still carrying the block-presence check and tell them to re-copy the template
 
 - **Done when**: 027's audit family passes against the entry, and a `done` spec swept by the procedure is still `done`.
+
+<!-- Tasks 1-12 are complete. Before task 13, read plan.md's
+     **Implementation notes** — it records the write-boundary grant these tasks
+     need, the release-binary/session-restart loop that task 15's sweep depends
+     on, and the parity tests that guard primitive registration. -->
 
 ## 13. Replace the CI template's vacuous predicate
 

@@ -65,6 +65,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:ductus:read-tasks", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:mark-task", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:mark-criterion", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:ductus:relocate-audit-records", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:set-status", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:derive-boundary", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:discover-rule-files", "permission": { "type": "allow" } }`

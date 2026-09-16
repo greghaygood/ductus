@@ -2,6 +2,48 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.50.0] — 2026-09-15
+
+### Added
+
+- **`relocate-audit-records` — each audit record moves to the artifact that
+  owns it.** The review record lived in two places, `spec.md`'s `review:` block
+  and `review.md`'s own frontmatter, agreeing on seven of nine keys and held
+  together by nothing. They drifted: specs 031 and 041 carried
+  `should-violations: 1` in the block while their reports recorded `0`, for
+  weeks, because every gate reads exactly one of the two files. The analyze
+  record had the opposite problem — no artifact at all, so its per-path digest
+  map sat in spec frontmatter that averaged 37.5 lines across the corpus.
+
+  `review.md` now carries the whole review record and a new `analysis.md`
+  carries the analyze record. This primitive performs the move, per spec:
+  merging the block into an existing artifact (the normal case for `review.md`,
+  which every pre-migration spec has), carrying the existing report body
+  verbatim, and **naming** any key where the two copies disagreed rather than
+  resolving it silently. Idempotent — a converged spec reports
+  `changed: false`, so an interrupted sweep is resumable.
+
+### Changed
+
+- **`Frontmatter` no longer carries `review` or `analyze`.** `read-spec` still
+  returns both, composed at read time from their artifacts, so the interface is
+  unchanged while the storage moved. `check-review-gate` reads each record from
+  its owner and now distinguishes **absent** (no run) from **unreadable** (a
+  damaged record it cannot judge) — telling an operator to re-run a review that
+  may already have happened is a claim the artifact never supplied.
+- **`validate-frontmatter`** reports a `review:` or `analyze:` block still
+  present in a spec, at the Blocking tier the constitution now declares for it,
+  and hard-fails a record artifact that exists but carries nothing readable.
+- **The analyze staleness digest** excises `analysis.md`'s own frontmatter
+  rather than `spec.md`'s `analyze:` block. `spec.md` is digested whole, so a
+  frontmatter edit there now moves the digest where the old excision hid it.
+
+### Removed
+
+- The frontmatter block-splicing machinery — `splice_review_block`,
+  `splice_top_level_block`, and the spec-side record renderers — which existed
+  only to maintain the second copy.
+
 ## [0.49.8] — 2026-09-15
 
 ### Added

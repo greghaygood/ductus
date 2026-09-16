@@ -68,10 +68,10 @@ use crate::schema::primitives::{
     FetchArchiveArgs, GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs,
     MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
-    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
-    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
+    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
+    WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -736,6 +736,7 @@ fn dispatch_primitive(
         "merge-managed-block" => call!(MergeManagedBlockArgs, merge_managed_block),
         "merge-permissions" => call!(MergePermissionsArgs, merge_permissions),
         "migrate-session-file" => call!(MigrateSessionFileArgs, migrate_session_file),
+        "relocate-audit-records" => call!(RelocateAuditRecordsArgs, relocate_audit_records),
         "create-scenario" => call!(CreateScenarioArgs, create_scenario),
         "label-criteria" => call!(LabelCriteriaArgs, label_criteria),
         "create-feature" => call!(CreateFeatureArgs, create_feature),

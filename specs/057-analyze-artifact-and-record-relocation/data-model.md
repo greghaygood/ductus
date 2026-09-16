@@ -76,6 +76,21 @@ recording which tier produced them — so they cannot be split across the three
 tier sections, and a body without this section would restate the frontmatter and
 stop there.
 
+## `relocate-audit-records` result
+
+The migration primitive's report, per spec.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `spec-path` | string | The spec examined, repo-relative. |
+| `relocated` | list of strings | Artifacts written. Empty on a converged spec. |
+| `disagreements` | list of strings | `file:key` for every key where the spec block and an existing artifact carried different values. The block wins; the difference is reported rather than resolved, because it is the only evidence the two copies ever drifted. |
+| `changed` | bool | Whether `spec.md` was rewritten. `false` on a converged spec — what makes a re-run over a partially migrated corpus safe. |
+
+**Notes.** There is no `conflicts` field. An existing artifact is merged into,
+not refused: every pre-migration spec has a `review.md`, so refusal would have
+made the review record unmigratable.
+
 ## `Frontmatter` — `specs/{feature}/spec.md`
 
 | Field | Change |

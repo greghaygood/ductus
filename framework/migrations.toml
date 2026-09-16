@@ -203,3 +203,21 @@ target_paths = [
   ".ductus/scripts/lib/specs-root.sh",
 ]
 procedure_file = "framework/migrations/generator-primitives.md"
+
+[[migrations]]
+id = "audit-record-relocate"
+introduced_in = "0.50.0"
+# No sunset_after. The residual block is reported by `validate-frontmatter` at
+# the Blocking tier for as long as it is present, so an adopter who skips this
+# window does not quietly converge — they get a finding naming this migration.
+# Retiring the entry while that finding still fires would leave them with a
+# defect and no documented remedy.
+summary = "Move each spec's `review:` and `analyze:` frontmatter blocks into the artifacts that own them — review.md and a new analysis.md — so each audit record has one home (spec 057)"
+# Adopter-relative: the sweep rewrites spec files under the configured spec
+# root. Nothing under framework/ is removed by this migration, so it declares
+# no framework/ target path — Family 10b reads those as paths that must no
+# longer exist, and `framework/templates/spec/spec.md` very much still does.
+target_paths = [
+  "specs/*/spec.md",
+]
+procedure_file = "framework/migrations/audit-record-relocate.md"

@@ -77,6 +77,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__ductus__read-tasks`
    - `mcp__ductus__mark-task`
    - `mcp__ductus__mark-criterion`
+   - `mcp__ductus__relocate-audit-records`
    - `mcp__ductus__set-status`
    - `mcp__ductus__derive-boundary`
    - `mcp__ductus__discover-rule-files`

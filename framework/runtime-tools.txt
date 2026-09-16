@@ -23,6 +23,7 @@ read-spec
 read-tasks
 mark-task
 mark-criterion
+relocate-audit-records
 set-status
 derive-boundary
 discover-rule-files

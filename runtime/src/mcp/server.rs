@@ -55,13 +55,14 @@ use crate::schema::primitives::{
     MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergeManagedBlockResult,
     MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
     ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, ReadTasksResult, RemoveInboxItemArgs, RemoveInboxItemResult,
-    ResolveAnchorArgs, ResolveAnchorResult, ResolveConstitutionsArgs, ResolveConstitutionsResult,
-    ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult,
-    RetireFeatureArgs, RetireFeatureResult, RewriteSpecLinksArgs, RewriteSpecLinksResult,
-    RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult, TraverseDepsArgs,
-    TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteAnalysisArgs,
-    WriteAnalysisResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
+    ReadSpecResult, ReadTasksArgs, ReadTasksResult, RelocateAuditRecordsArgs,
+    RelocateAuditRecordsResult, RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs,
+    ResolveAnchorResult, ResolveConstitutionsArgs, ResolveConstitutionsResult, ResolveFeatureArgs,
+    ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult, RetireFeatureArgs,
+    RetireFeatureResult, RewriteSpecLinksArgs, RewriteSpecLinksResult, RunGeneratorArgs,
+    RunGeneratorResult, SetStatusArgs, SetStatusResult, TraverseDepsArgs, TraverseDepsResult,
+    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteAnalysisArgs, WriteAnalysisResult,
+    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -537,6 +538,19 @@ impl GovRuntimeServer {
         params: Parameters<MergePermissionsArgs>,
     ) -> Result<Json<MergePermissionsResult>, String> {
         primitives::merge_permissions::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "relocate-audit-records",
+        description = "Move a spec's `review:` and `analyze:` frontmatter blocks into the artifacts that own them (review.md / analysis.md) and remove them from spec.md \u{2014} the sweep behind spec 057's migration. Idempotent: a spec carrying no block is a no-op reporting `changed: false`, so a re-run over a partially migrated corpus completes the remainder. Never invents a record for a spec that has none, never rewrites body prose (the edit is frontmatter-only, so \u{a7}spec-lifecycle's mechanical-edit rule applies and a `done` spec stays `done`), and never overwrites an artifact that already exists \u{2014} that conflict is reported with both copies left intact, since which record is current is a judgement the primitive cannot date."
+    )]
+    async fn relocate_audit_records(
+        &self,
+        params: Parameters<RelocateAuditRecordsArgs>,
+    ) -> Result<Json<RelocateAuditRecordsResult>, String> {
+        primitives::relocate_audit_records::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

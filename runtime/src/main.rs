@@ -20,10 +20,10 @@ use ductus::schema::primitives::{
     FetchArchiveArgs, GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs,
     MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs,
     MigrateSessionFileArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
-    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
-    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
+    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
+    WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -125,6 +125,8 @@ enum Command {
     MergePermissions(MergePermissionsArgs),
     /// Translate a pre-0.10.0 legacy session JSON into `.ductus/session.toml` and delete the legacy file.
     MigrateSessionFile(MigrateSessionFileArgs),
+    /// Move a spec's review/analyze blocks into the artifacts that own them.
+    RelocateAuditRecords(RelocateAuditRecordsArgs),
     /// Write a new scenarios/{slug}.md file under a feature with frontmatter and body.
     CreateScenario(CreateScenarioArgs),
     /// Assign stable AC{n} labels to a spec's acceptance criteria (idempotent).
@@ -683,6 +685,9 @@ fn main() -> ExitCode {
         }
         Command::MigrateSessionFile(args) => {
             emit_result(primitives::migrate_session_file::run(&args, &repo))
+        }
+        Command::RelocateAuditRecords(args) => {
+            emit_result(primitives::relocate_audit_records::run(&args, &repo))
         }
         Command::CreateScenario(args) => {
             emit_result(primitives::create_scenario::run(&args, &repo))
