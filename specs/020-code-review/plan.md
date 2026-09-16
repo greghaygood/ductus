@@ -8,9 +8,9 @@ Implements [020 — `/ductus:review` code review command with blocking gate](spe
 
 ## Overview
 
-`/ductus:review` ships as a new markdown slash-command file (`framework/commands/review.md`) following the same shape as `/ductus:analyze`, `/ductus:plan`, and the other pipeline commands — no new code, no new runtime. Each invocation is interpreted by the AI agent against the loaded rules. The blocking gate is enforced by three lightweight, mutually reinforcing edits to `framework/commands/implement.md`, `framework/commands/analyze.md`, and `framework/templates/ci/adopter-generators.yml`. Templates and the constitution are updated alongside so newly-created specs ship with the `review:` frontmatter block and the gate is documented in the pipeline section. The scenario file at `scenarios/waiver-expiry.md` captures the subtlest behavior (rule/file-anchored waiver expiry) at the situational tier.
+`/ductus:review` ships as a new markdown slash-command file (`framework/commands/review.md`) following the same shape as `/ductus:analyze`, `/ductus:plan`, and the other pipeline commands — no new code, no new runtime. Each invocation is interpreted by the AI agent against the loaded rules. The blocking gate is enforced by three lightweight, mutually reinforcing edits to `framework/commands/implement.md`, `framework/commands/analyze.md`, and `framework/templates/ci/adopter-generators.yml`. Templates and the constitution are updated alongside so newly-created specs ship with the `review:` frontmatter block and the gate is documented in the pipeline section. (057 removed that block from the template again — see the §Frontmatter `review:` block ships in templates decision below.) The scenario file at `scenarios/waiver-expiry.md` captures the subtlest behavior (rule/file-anchored waiver expiry) at the situational tier.
 
-The clarify pass added three behaviors that this plan must propagate: tech-stack alignment as a hard pre-flight gate (with `.ductus/config.toml [review] tech-stack-verified` opt-out), an empty-scope short-circuit, and cross-pass dedupe. These all live in the embedded `framework/commands/review.md` artifact in the spec; the plan's job is to ensure each shipped file picks them up correctly.
+The clarify pass added three behaviors that this plan must propagate: tech-stack alignment as a hard pre-flight gate (with `.ductus/config.toml [review] tech-stack-verified` opt-out), an empty-scope short-circuit, and cross-pass dedupe. These all live in `framework/commands/review.md`, the canonical source; the plan's job is to ensure each shipped file picks them up correctly. (This sentence said *the embedded artifact in the spec* until 2026-09-13, when that 561-line frozen copy was replaced by a pointer for having drifted more than half behind — the inversion §drift-prevention's canonical-sources rule forbids.)
 
 ## Technical Decisions
 
@@ -23,10 +23,10 @@ The clarify pass added three behaviors that this plan must propagate: tech-stack
 The gate fires in three places — `/ductus:implement` halt, `/ductus:analyze` drift check, CI template — because each closes a different failure window:
 
 - **`/ductus:implement` halt** catches the local case (operator forgot to run `/ductus:review` before completing).
-- **`/ductus:analyze` drift check** catches the desync case (frontmatter says `done` but `review.blocking: true`, or `review.last-run` is missing entirely on a `done` spec).
+- **`/ductus:analyze` drift check** catches the desync case (`spec.md` says `done` but the review record reports `blocking: true`, or its `last-run` is missing entirely on a `done` spec).
 - **CI template** catches the bypass case (someone edited frontmatter directly to set `done` without running either of the above).
 
-Each mechanism is small and reads the same `review:` frontmatter block — adding a fourth would not strengthen the gate and would multiply maintenance.
+Each mechanism is small and reads the same record — the spec's `review:` block as planned here, `review.md`'s frontmatter since 057 — and adding a fourth would not strengthen the gate while multiplying maintenance. That all three read **one** record is what made the relocation a single change rather than three; it is also why the block-presence predicate two of them had grown went vacuous in all of them at once.
 
 ### Tech-stack alignment is an agent judgment, not a parser
 
