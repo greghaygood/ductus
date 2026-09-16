@@ -51,7 +51,10 @@ excluded because the first is ephemeral by construction
 ([§tasks-phase](../../../framework/constitution.md#tasks-phase)) and the second
 churns as Affected Files are revised; `review.md` and `spec.md` because
 `write-review` touches both, so counting them would make every review stale the
-instant it was recorded.
+instant it was recorded. **Spec 057 stopped `write-review` touching `spec.md`**,
+so that half of the reason has lapsed; the exclusion is kept anyway rather than
+re-argued here, because widening it would stale every review on any spec-body
+edit — a behaviour change rather than a relocation.
 
 ## Edge Cases
 

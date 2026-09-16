@@ -8,7 +8,7 @@ section: "Follow-on scenarios"
 
 [050](../../050-constitution/spec.md)'s `a-declared-cross-spec-impact-gates-done` requires that a declared cross-spec obligation gate `done`, and that discharge be provable rather than asserted. This scenario is the runtime half: the frontmatter field, the gate check, and where each sits.
 
-The gate already holds one obligation of this category. `check_review_gate`'s `pending_fold_block` blocks `in-progress → done` whenever `folds-into` is present, and its doc comment states the reasoning the new check inherits verbatim — *"a spec carrying an obligation nobody has discharged is not a candidate for `done`, so whether its review is fresh does not yet matter."* Both checks therefore sit ahead of the `review:` and `analyze:` blocks, for that one reason.
+The gate already holds one obligation of this category. `check_review_gate`'s `pending_fold_block` blocks `in-progress → done` whenever `folds-into` is present, and its doc comment states the reasoning the new check inherits verbatim — *"a spec carrying an obligation nobody has discharged is not a candidate for `done`, so whether its review is fresh does not yet matter."* Both checks therefore sit ahead of the review and analyze record checks, for that one reason.
 
 The resemblance stops at the reasoning, and the question of whether the two should share code has an answer rather than a preference.
 

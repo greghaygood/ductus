@@ -10,13 +10,15 @@ section: "Follow-on scenarios"
 
 The command does both halves in two separate places. Step 16 appends each surviving finding to the inbox; step 17 invokes `write-analysis`, which records how many findings the run *produced* as `advisory`. Nothing held the two against each other. A run that recorded `advisory: 5` and appended nothing was **byte-identical on disk** to one that captured all five — same block, same counts, same `blocking: false`.
 
-The review side is not exposed this way, and the asymmetry is instructive rather than accidental: `write-review` already records `captured-issues`, `compute-review-scope` already *derives* the set from inbox bullets in the diff window, and `check-review-agreement` holds `review.md` against its own frontmatter. Analyze has no counterpart to the last of those, because it writes **no report artifact** for one to compare against — so the record was the only place the information could live, and the information was not in it.
+The review side is not exposed this way, and the asymmetry is instructive rather than accidental: `write-review` already records `captured-issues`, `compute-review-scope` already *derives* the set from inbox bullets in the diff window, and `check-review-agreement` held `review.md` against the spec's `review:` block. Analyze had no counterpart to the last of those, because it wrote **no report artifact** for one to compare against — so the record was the only place the information could live, and the information was not in it.
+
+> **Both halves of that asymmetry are gone, and the field this scenario added is what survived it.** Spec 057 gave analyze a report artifact (`analysis.md`) and retired `check-review-agreement` along with the second copy of the review record it reconciled — so neither command has a cross-artifact comparison now, and `captured-issues` is not a stopgap for a missing one but the only thing on either side that separates *five findings produced, none captured* from *five produced, five captured*. The argument below is unaffected; its premise simply became true of the review side too.
 
 Measured 2026-09-13: every per-spec run reconciled, and the one divergence was a **batch** run (`7963f134`, 50 records totalling `advisory: 21`, touching `inbox.md` not at all) that was deliberate and whose findings later got a durable home. So this is not a report of lost content. It is that the same skip performed carelessly would look exactly the same.
 
 ## Behavior
 
-**`write-analysis` accepts `captured-issues` and records the count** in the `analyze:` block, beside `advisory`. The two numbers together say what the run produced and what it landed, which is what makes a divergence legible.
+**`write-analysis` accepts `captured-issues` and records the count** in the analyze record, beside `advisory` — the spec's `analyze:` block as delivered here, `analysis.md`'s own frontmatter since spec 057. The two numbers together say what the run produced and what it landed, which is what makes a divergence legible.
 
 **They are not required to agree, and forcing them would be a defect.** `append-inbox`'s `dedup-prefix` guard legitimately suppresses a re-append, so a correct re-run against an unchanged repo captures fewer than it found — `advisory: 5` beside `captured-issues: 0` is the **expected** second run, not an error. What the field buys is that the case where they disagree for a *bad* reason is visible rather than invisible.
 

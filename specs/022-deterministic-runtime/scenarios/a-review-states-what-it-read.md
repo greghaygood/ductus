@@ -18,10 +18,10 @@ On 2026-09-12 the gap was exercised rather than theorised. Two reviews were reco
 
 - **`scope` is derived by the primitive**, never accepted as an argument — the same discipline that already derives `blocking`, `reviewed-digest`, `inbox-standing`, and the Unexamined-governance section. It resolves `compute-review-scope` against the run's own `diff-base`, so the number is the scope the review was told to cover rather than whatever that base resolves to later. A caller cannot shrink the subject to match what it happened to read.
 - **`examined` is the caller's claim** about how many in-scope files the passes read. It is the one number only the host knows, exactly as `unexamined` is for `write-analysis`.
-- Both are written to `review.md` frontmatter **and** the spec's `review:` block, so the two records have two sides to compare.
+- Both are written to `review.md`'s frontmatter. As delivered they were written to the spec's `review:` block as well, which is what gave the two records two sides to compare; spec 057 merged the two homes into one, so there is a single record and no comparison to make.
 - An **unstated** `examined` is recorded as absent, never as a computed zero. A claim never made and a claim that came back empty are different facts, and the record says which — the same distinction §grounding draws between *could not examine* and *examined and found nothing*.
 
-`check-review-agreement` (`/{project}:audit` Family 31) reads them:
+`check-review-agreement` (`/{project}:audit` Family 31) read them, until spec 057 retired both with the record's second home:
 
 - `examined-nothing` — `examined: 0` over a `scope` greater than zero. The record states outright that the passes read nothing, so its counts describe nothing.
 - `examined-unstated` — no `examined` on a record that carries a `scope`. Reported distinctly, because the repair differs: one run made an empty claim, the other made none.
@@ -31,8 +31,8 @@ On 2026-09-12 the gap was exercised rather than theorised. Two reviews were reco
 
 ## Edge Cases
 
-- **An empty scope.** `empty_scope` short-circuits the resolution to zero, so the "nothing to review yet" report records `scope: 0`, and `examined: 0` beside it is coherent rather than a finding. Family 31 only fires when `scope` exceeds zero.
-- **A record written before this field existed.** It carries neither `examined` nor `scope`, so Family 31 has no denominator to judge against and stays silent. The exemption is bounded and self-correcting rather than a permanent hole: the next `/{project}:review` of that spec writes a `scope`, and from then on an absent `examined` is reported. This is the same shape as the `analyze-state-drift` grandfather rule, and deliberately not a per-spec date.
+- **An empty scope.** `empty_scope` short-circuits the resolution to zero, so the "nothing to review yet" report records `scope: 0`, and `examined: 0` beside it is coherent rather than a finding. Family 31 fired only when `scope` exceeded zero, and is retired (spec 057); the coherence of `examined: 0` beside `scope: 0` is unchanged and is now a reader's judgement.
+- **A record written before this field existed.** It carries neither `examined` nor `scope`, so Family 31 had no denominator to judge against and stayed silent. The exemption was bounded and self-correcting rather than a permanent hole: the next `/{project}:review` of that spec writes a `scope`, and from then on an absent `examined` was reported. That was the same shape as the `analyze-state-drift` grandfather rule, and deliberately not a per-spec date. **With Family 31 retired (spec 057) nothing reports an absent `examined` at all**, so the exemption's boundedness no longer buys anything — the fields are still recorded and are read at the completion gate by a person.
 - **An unresolvable window.** A spec whose directory has no commit yet has no scope to compute. The resolution yields zero rather than failing the write — the findings the run computed still have to land, for the reason the governance section is rendered rather than propagated.
 
 ## Open Questions

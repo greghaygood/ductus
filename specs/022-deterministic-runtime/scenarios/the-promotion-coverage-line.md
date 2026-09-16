@@ -22,7 +22,7 @@ What makes it worth computing rather than re-deriving by hand is that a hand der
 
 ## Behavior
 
-**New primitive: `check-promotion-coverage`.** Project-scoped — it takes no feature argument, like `check-review-agreement` and `check-orphaned-references`. Arguments, all repo-relative:
+**New primitive: `check-promotion-coverage`.** Project-scoped — it takes no feature argument, like `check-orphaned-references` and `check-unfolded-specs`. Arguments, all repo-relative:
 
 - `rules-file` — the file whose entries are counted (required).
 - `section` — repeatable; the level-2 heading names inside `rules-file` whose top-level bullets are rule-bearing. Required, and there is no default: *which* sections carry rules is a property of the project's own file, and guessing it would make the denominator a claim the primitive is not entitled to.

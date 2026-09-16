@@ -10,7 +10,7 @@ The 2026-07-11 coverage review found ~22 of 100 parsed command steps are determi
 
 - **groom step 8** removes an item from `specs/inbox.md` with a host `Edit` — the only groom write not primitive-backed (the shipped `append-inbox` appends only).
 - **implement steps 7 and 12** re-derive, per task, a `git diff` against the spec dir's first commit filtered to paths outside `specs/{feature}/` (the cross-spec impact); step 12's prose self-declares "no primitive owns this filter yet." The same diff feeds `/ductus:review`'s captured-issues section.
-- **implement step 13** re-states the `review:` block gate branch by hand on every completion attempt, and invokes `npx markdownlint-cli2` directly instead of the existing `lint-markdown` primitive.
+- **implement step 13** re-states the `review:` block gate branch by hand on every completion attempt, and invokes `npx markdownlint-cli2` directly instead of the existing `lint-markdown` primitive. (This records the state as it stood: the branch was replaced by `check-review-gate` below, and the record it read moved from that block to `review.md` in spec 057.)
 - **amend's question route** appends to `## Open Questions` with a normalized-whitespace dedup and a same-write status back-edge, with no primitive (asymmetric with the scenario route's `create-scenario` + `append-task`) — the blocker to de-legacying `amend.md`.
 - **plan.md's** template-copy and existing-artifact detection have no primitive (`create-feature` covers only `spec.md`).
 - **status.md** spends five of its six steps on LLM-side rendering of the `dashboard` payload (preamble, table, counts/callouts, references readout).
@@ -21,7 +21,7 @@ New primitives, each wired at every site per the AGENTS.md six-site rule (schema
 
 - `remove-inbox-item` — dedup-aware removal of one bullet from `specs/inbox.md` (the complement of `append-inbox`, same atomic-write contract); groom step 8 invokes it.
 - `diff-cross-spec` (or a mode on `derive-boundary`) — the `git diff` against the spec dir's first commit filtered to paths outside `specs/{feature}/`, plus the inbox-window additions; implement steps 7/12 and the review captured-issues section invoke it.
-- `check-review-gate` — evaluates the spec `review:` block plus the feature-dir markdown lint into a verdict and the canonical blocked message; implement's completion gate invokes it, replacing both the hand-walked branch and the raw `npx markdownlint-cli2` call (which becomes `lint-markdown`).
+- `check-review-gate` — evaluates the review record plus the feature-dir markdown lint into a verdict and the canonical blocked message (the spec's `review:` block as delivered here, `review.md`'s frontmatter since spec 057); implement's completion gate invokes it, replacing both the hand-walked branch and the raw `npx markdownlint-cli2` call (which becomes `lint-markdown`).
 - `append-question` — appends to `## Open Questions` with normalized-whitespace dedup and the same-write `done|clarified|planned|in-progress → draft` back-edge; amend's question route invokes it.
 - `create-plan-artifacts` — copies the plan/tasks/data-model templates and reports pre-existing files (mirroring `create-feature`, atomic and mode-preserving); plan.md invokes it.
 - `dashboard` gains a rendered-markdown field (preamble + table + counts/callouts + references) the host may restyle, absorbing status.md's rendering steps.

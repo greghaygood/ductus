@@ -10,7 +10,7 @@ section: "Follow-on scenarios"
 
 ## Behavior
 
-The completion gate becomes numbered, parseable steps in `/ductus:implement`'s Instructions: `read-tasks` tallies task completion; the spec's criteria are read via `read-spec`; each criterion's verification stays semantic (the LLM judges whether it is met, marked as an extension seam in the prose) but each passing criterion is flipped with `mark-criterion`; the review gate reads `review.last-run`/`review.blocking` from the spec frontmatter and halts with the documented messages when unset/blocking; the final transition invokes `set-status` (in-progress → done) only after the user-approval gate. The markdown-only reference describes the same order with the same primitives named as fallback prose. `mark-criterion` gains its first real consumer.
+The completion gate becomes numbered, parseable steps in `/ductus:implement`'s Instructions: `read-tasks` tallies task completion; the spec's criteria are read via `read-spec`; each criterion's verification stays semantic (the LLM judges whether it is met, marked as an extension seam in the prose) but each passing criterion is flipped with `mark-criterion`; the review gate reads the record's `last-run` / `blocking` and halts with the documented messages when unset/blocking — from the spec's `review:` frontmatter block as delivered here, from `review.md` since spec 057; the final transition invokes `set-status` (in-progress → done) only after the user-approval gate. The markdown-only reference describes the same order with the same primitives named as fallback prose. `mark-criterion` gains its first real consumer.
 
 ## Edge Cases
 

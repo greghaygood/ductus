@@ -14,9 +14,9 @@ The requirement is 047's: `/{project}:analyze` had no durable record, so `check-
 
 **`write-analysis`** — a new primitive, registered at all five sites (the CLI enum and its dispatch arm, the exec-path match arm, the `#[tool]`, `PRIMITIVE_REGISTRY`, and `framework/runtime-tools.txt`).
 
-It writes the spec's `analyze:` frontmatter block and nothing else, splicing it in without disturbing sibling keys. The splice reuses `write_review`'s region logic rather than copying it: `splice_review_block` was generalized to `splice_top_level_block(fm_text, key, block)` and both callers go through it. Sharing is the point rather than a tidy-up — two copies of "find the top-level key, find where it ends, swap the region" would agree until one met a frontmatter shape the other had not, and the failure mode there is a corrupted `spec.md`, not a wrong answer.
+It writes the spec's `analyze:` frontmatter block and nothing else, splicing it in without disturbing sibling keys. *Spec 057 moved that record to `analysis.md`*, whose frontmatter it now owns outright — so the splice below applies to a file this primitive is the sole writer of, and the corrupted-`spec.md` failure the shared region logic was introduced to prevent is no longer reachable from this side. The field set, the gating column and the no-record-on-unparseable-frontmatter guard are all unchanged, and `spec.md` is still the file that guard reads. The splice reuses `write_review`'s region logic rather than copying it: `splice_review_block` was generalized to `splice_top_level_block(fm_text, key, block)` and both callers go through it. Sharing is the point rather than a tidy-up — two copies of "find the top-level key, find where it ends, swap the region" would agree until one met a frontmatter shape the other had not, and the failure mode there is a corrupted `spec.md`, not a wrong answer.
 
-Field set, and the two entries that are not in `review:`:
+Field set, and the two entries with no counterpart on the review record:
 
 | field | gates? | why |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ Field set, and the two entries that are not in `review:`:
 
 A spec whose frontmatter does not deserialize gets **no** record. The value is parsed and discarded purely for that guard — the analysis would have hard-failed on such a spec, and writing a clean record into it inverts the mechanism.
 
-**`check-review-gate`** gains checks 7 and 8, extracted into `analyze_gate_block` (the function was already at clippy's 100-line ceiling; the existing `pending_fold_block` / `stale_review_block` seams are the pattern). Two new `ReviewGateBlock` variants, `NotAnalyzed` and `AnalyzeFindings`, ordered after every `review:` check.
+**`check-review-gate`** gains checks 7 and 8, extracted into `analyze_gate_block` (the function was already at clippy's 100-line ceiling; the existing `pending_fold_block` / `stale_review_block` seams are the pattern). Two new `ReviewGateBlock` variants, `NotAnalyzed` and `AnalyzeFindings`, ordered after every review-record check.
 
 The primitive keeps its name though it now gates on both commands. Renaming is five registration sites and a breaking MCP change to buy a more accurate noun; the name is documented as historical in `/{project}:implement` instead.
 
@@ -50,7 +50,7 @@ The primitive keeps its name though it now gates on both commands. Renaming is f
 - **A newline in `analyzed-at` or `analyzed-against`.** Flattened to a space, not rejected. `write-review` rejects the equivalent because its fields carry operator prose with intent to preserve; these two are a timestamp and a sha, where a newline is a caller defect with no legitimate reading and only a frontmatter injection to defuse.
 - **A record written while the spec is reopened.** `criterion-path-existence` examines `done` specs only, so a spec mid-back-edge has a smaller skipped set than the same spec at `done` — measured on 022 itself, which reported 2 skipped at `done` and 0 while reopened. The record is honest either way (`analyzed-against` names the sha), but it describes a different subject. Write the record last, after the status is settled; the command's own step order already says so.
 - **CRLF specs.** The whole file is normalized to its own existing line ending after the splice, the same guard `update_spec_review_block` carries and for the same reason: a partially-converted file is the outcome no later reader can tell from a hand-edit.
-- **The gate's fixtures.** Every existing `check-review-gate` test fixture carried a `review:` block and no `analyze:` one, so all of them began failing the moment the check landed — which is the check working. They were given a clean analyze block; the new reasons got their own fixtures, including one asserting that a spec failing *both* gates is told about the review.
+- **The gate's fixtures.** Every existing `check-review-gate` test fixture carried a `review:` block and no `analyze:` one, so all of them began failing the moment the check landed — which is the check working. (Spec 057 re-shaped those fixtures again, splitting both blocks out of the spec into sibling `review.md` and `analysis.md` files; the same fixtures, one file each.) They were given a clean analyze block; the new reasons got their own fixtures, including one asserting that a spec failing *both* gates is told about the review.
 
 ## Resolved Questions
 

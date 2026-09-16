@@ -14,7 +14,7 @@ Nothing is broken today. The gate is invoked at the transition, and the family t
 
 ## Behavior
 
-**`check-review-gate` reports that a spec at `status: done` has no transition to gate.** It reads the spec's status — already in hand, since the frontmatter is parsed for the `review:` and `analyze:` blocks — and when the status is `done` returns a distinct outcome rather than running the checks: the transition this gate exists to authorize has already happened, so every check below it is answering a question nobody asked.
+**`check-review-gate` reports that a spec at `status: done` has no transition to gate.** It reads the spec's status — already in hand, since the spec's frontmatter is parsed before either audit record is loaded from its own artifact (`review.md` and `analysis.md`; both were blocks in this same frontmatter before spec 057) — and when the status is `done` returns a distinct outcome rather than running the checks: the transition this gate exists to authorize has already happened, so every check below it is answering a question nobody asked.
 
 The outcome is **not** `passed: true`. A gate that says "passed" for a spec it did not examine is the `QUAL-CLAIM-001` conflation the rest of this gate is built to avoid, and a caller could read it as authorization to transition a spec that is already there. It is its own variant, naming the state.
 
