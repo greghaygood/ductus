@@ -10,10 +10,21 @@
 #      contributors who never installed the local pre-commit hook
 #      (.githooks/pre-commit, set up by /ductus).
 #
-#   2. Review-blocking gate — every spec at `status: done` must have a
-#      non-null `review.last-run` and `review.blocking: false`. The local
+#   2. Audit-record gate — every spec at `status: done` must carry a review
+#      record in `review.md` and an analyze record in `analysis.md`, each
+#      with a non-null `last-run` and `blocking: false`. The local
 #      `/ductus:implement` halt and `/ductus:analyze` drift check catch this
 #      pre-merge; this step catches bypasses (direct frontmatter edits).
+#
+#      A spec with **no** `review.md` or no `analysis.md` has never been
+#      reviewed or analyzed. That set is exempt but **bounded**: the counts
+#      are held against high-water marks you commit at
+#      `.ductus/audit-record-baseline.txt`, defaulting to zero when the file
+#      is absent. The set cannot legitimately grow — `check-review-gate` has
+#      no grandfather clause, so nothing reaches `done` without both records
+#      — and an unbounded exemption is how the previous version of this step
+#      went vacuous: it skipped any spec whose `spec.md` frontmatter had no
+#      `review:` block, which ductus 0.50.0 made true of every spec.
 #
 # When new adopter-relevant checks are added by future ductus releases, this
 # template gains a step for each. Re-running /ductus updates the template;
@@ -83,52 +94,174 @@ jobs:
             exit 1
           fi
 
-      - name: Review-blocking gate on done specs
-        # Scans every spec.md frontmatter. For
-        # any spec at `status: done` that has a `review:` block, requires
-        # `review.last-run` to be a non-null timestamp and `review.blocking`
-        # to be false. Pre-feature `done` specs without a `review:` block
-        # are grandfathered (no finding) — adopters opt in to retroactive
-        # review by running /ductus:review against the spec, which adds the
-        # block. Catches the bypass case where someone edits frontmatter
-        # directly to set `done` without running /ductus:review.
+      - name: Audit-record gate on done specs
+        # For every spec at `status: done`, reads the review record from
+        # `review.md` and the analyze record from `analysis.md` — the homes
+        # ductus 0.50.0 moved them to — and requires each to carry a non-null
+        # `last-run` and `blocking: false`. Catches the bypass case where
+        # someone edits frontmatter directly to set `done` without running
+        # /ductus:review and /ductus:analyze.
+        #
+        # Each record has three states and they are never collapsed: the
+        # artifact is **absent** (never run), **present** (checked), or
+        # present and **unparseable** (undeterminable, which is a finding —
+        # a file nothing can read must not pass as a file that was read).
+        #
+        # The never-run set is exempt and bounded by committed high-water
+        # marks, in the ratchet form `/ductus:audit`'s analyze-record family
+        # already uses. That bound is the whole point: the predicate this
+        # step used to skip on — no `review:` block in `spec.md` frontmatter
+        # — became true of every spec at the relocation, so the step would
+        # have gone green across a whole corpus while checking nothing.
         env:
           # Passed as an env var rather than interpolated into the script body,
           # so the value is never spliced into shell source.
           SPECS_ROOT: ${{ steps.derive.outputs.specs-root }}
         run: |
           set -euo pipefail
-          root="$SPECS_ROOT"
-          fail=0
-          examined=0
-          while IFS= read -r f; do
-            examined=$((examined + 1))
-            fm=$(awk 'NR==1 && /^---$/{f=1; next} f && /^---$/{exit} f' "$f")
-            status=$(printf '%s\n' "$fm" | sed -n 's/^status: *//p' | head -n1 | tr -d '"')
-            if [ "$status" != "done" ]; then
-              continue
-            fi
-            if ! printf '%s\n' "$fm" | grep -q '^review:'; then
-              # No review: block — pre-feature done spec, grandfathered.
-              continue
-            fi
-            review_block=$(printf '%s\n' "$fm" | awk '/^review:/{flag=1; next} flag && /^[^ \t]/{flag=0} flag')
-            last_run=$(printf '%s\n' "$review_block" | sed -n 's/^[[:space:]]*last-run: *//p' | head -n1 | tr -d '"')
-            blocking=$(printf '%s\n' "$review_block" | sed -n 's/^[[:space:]]*blocking: *//p' | head -n1)
-            if [ -z "$last_run" ] || [ "$last_run" = "null" ]; then
-              echo "::error file=$f::Review-blocking gate: done spec missing or null review.last-run — run /ductus:review"
-              fail=1
-            elif [ "$blocking" = "true" ]; then
-              echo "::error file=$f::Review-blocking gate: review.blocking=true — see $(dirname "$f")/review.md"
-              fail=1
-            fi
-          done < <(find "$root" -maxdepth 2 -name spec.md -type f)
+          python3 - <<'PY'
+          import os
+          import sys
+
+          root = os.environ["SPECS_ROOT"]
+          BASELINE = ".ductus/audit-record-baseline.txt"
+          MARKS = ("review-exempt", "analyze-exempt")
+
+
+          def frontmatter(path):
+              """Top-level scalars of a file's leading `---` block.
+
+              Three results for the three states, deliberately distinct:
+              `None` when the file is absent (never run), a dict when the
+              block parses (present), and the string `"unparseable"` when the
+              file exists without a readable block (undeterminable). Folding
+              the third into the first would let a file nothing can read
+              report as a spec nobody has reviewed yet, which is the softer
+              of the two and the wrong one.
+              """
+              try:
+                  with open(path, encoding="utf-8") as handle:
+                      lines = handle.read().splitlines()
+              except FileNotFoundError:
+                  return None
+              except OSError:
+                  return "unparseable"
+              if not lines or lines[0].strip() != "---":
+                  return "unparseable"
+              out = {}
+              for line in lines[1:]:
+                  if line.strip() == "---":
+                      return out
+                  if line and not line[:1].isspace() and ":" in line:
+                      key, _, value = line.partition(":")
+                      out[key.strip()] = value.strip().strip("\"'")
+              return "unparseable"  # no closing delimiter
+
+
+          def baselines():
+              """The committed high-water marks; zeros when the file is absent.
+
+              Absent means zero rather than unbounded, so a project that never
+              writes the file gets the strict gate. A malformed file is a
+              finding: it is an operator who meant to set a bound, and reading
+              it as zero would fail them on a spec they had accounted for
+              while reading it as unbounded would drop the bound entirely.
+              """
+              marks = dict.fromkeys(MARKS, 0)
+              try:
+                  with open(BASELINE, encoding="utf-8") as handle:
+                      text = handle.read()
+              except FileNotFoundError:
+                  return marks, None
+              except OSError as err:
+                  return marks, "%s could not be read (%s)" % (BASELINE, err)
+              for line in text.splitlines():
+                  line = line.split("#", 1)[0].strip()
+                  if not line or ":" not in line:
+                      continue
+                  key, _, value = line.partition(":")
+                  key = key.strip()
+                  if key not in marks:
+                      continue
+                  value = value.strip()
+                  if not value.isdigit():
+                      return marks, "%s: %s is '%s', not a count" % (BASELINE, key, value)
+                  marks[key] = int(value)
+              return marks, None
+
+
+          findings = []
+          exempt = {mark: [] for mark in MARKS}
+          done = 0
+          examined = 0
+
+          specs = []
+          for entry in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+              spec = os.path.join(root, entry, "spec.md")
+              if os.path.isfile(spec):
+                  specs.append((entry, spec))
+
+          for slug, spec_path in specs:
+              examined += 1
+              spec_fm = frontmatter(spec_path)
+              if spec_fm in (None, "unparseable"):
+                  findings.append((spec_path, "spec.md frontmatter could not be read, so this spec's audit records were never examined — fix the frontmatter"))
+                  continue
+              if spec_fm.get("status") != "done":
+                  continue
+              done += 1
+              for kind, artifact, mark, command in (
+                  ("review", "review.md", "review-exempt", "/ductus:review"),
+                  ("analyze", "analysis.md", "analyze-exempt", "/ductus:analyze"),
+              ):
+                  path = os.path.join(root, slug, artifact)
+                  record = frontmatter(path)
+                  if record is None:
+                      exempt[mark].append(slug)
+                      continue
+                  if record == "unparseable":
+                      findings.append((path, "%s exists but carries no readable frontmatter record — undeterminable is not clean; re-run %s" % (artifact, command)))
+                      continue
+                  if "last-run" not in record:
+                      findings.append((path, "%s carries frontmatter but no %s record (no last-run) — re-run %s" % (artifact, kind, command)))
+                      continue
+                  last_run = record["last-run"]
+                  if last_run in ("", "null", "~"):
+                      findings.append((path, "done spec has a null %s.last-run — run %s" % (kind, command)))
+                  elif record.get("blocking") == "true":
+                      findings.append((path, "done spec has %s.blocking=true — see %s" % (kind, path)))
+
+          marks, baseline_error = baselines()
+          if baseline_error:
+              findings.append((BASELINE, baseline_error + " — the exempt counts could not be held against anything"))
+
+          for mark in MARKS:
+              slugs = exempt[mark]
+              if len(slugs) <= marks[mark]:
+                  continue
+              # The exempt set cannot legitimately grow: the completion gate
+              # has no grandfather clause, so nothing reaches `done` without
+              # both records. Growth means the gate was bypassed.
+              for slug in slugs:
+                  findings.append((
+                      os.path.join(root, slug, "spec.md"),
+                      "done spec has no %s record, and the exempt set (%d) now exceeds its baseline (%d) — the set cannot grow, so the completion gate was bypassed. Re-run the command against %s, or raise %s deliberately (%s: %d) and say why in the commit."
+                      % (mark.split("-")[0], len(slugs), marks[mark], slug, BASELINE, mark, len(slugs)),
+                  ))
+
+          for path, message in findings:
+              print("::error file=%s::Audit-record gate: %s" % (path, message))
+
           # Say what was examined. A gate that enumerated nothing and a gate
           # that examined the corpus and found it clean both used to exit 0,
-          # which is the conflation QUAL-CLAIM-001 names.
-          echo "Review-blocking gate examined $examined spec(s) under '$root'."
-          if [ "$examined" -eq 0 ]; then
-            echo "::error::No spec.md found under '$root' — the gate examined nothing, which is not the same as passing."
-            exit 1
-          fi
-          exit $fail
+          # which is the conflation QUAL-CLAIM-001 names. The exempt counts
+          # are reported on every run, clean included: an exemption nobody
+          # can see is indistinguishable from a check that did not run.
+          print("Audit-record gate examined %d spec(s) under '%s'; %d at done." % (examined, root, done))
+          for mark in MARKS:
+              print("  %s: %d (baseline %d)" % (mark, len(exempt[mark]), marks[mark]))
+          if examined == 0:
+              print("::error::No spec.md found under '%s' — the gate examined nothing, which is not the same as passing." % root)
+              sys.exit(1)
+          sys.exit(1 if findings else 0)
+          PY

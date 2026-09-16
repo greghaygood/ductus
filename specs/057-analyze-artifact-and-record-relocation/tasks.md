@@ -110,9 +110,9 @@ around it; 13-14 the sweeps; 15-16 verification and the declared obligations.
 
 ## 13. Replace the CI template's vacuous predicate
 
-- [ ] Read the record from `review.md` and `analysis.md`
-- [ ] Bound the exempt set with a committed high-water mark, in the form `scripts/audit/analyze-record-backlog.sh` already uses
-- [ ] Remove the block-presence skip
+- [x] Read the record from `review.md` and `analysis.md`
+- [x] Bound the exempt set with a committed high-water mark, in the form `scripts/audit/analyze-record-backlog.sh` already uses
+- [x] Remove the block-presence skip
 
 - **Done when**: no predicate in the step is satisfiable by every spec in a migrated corpus, and the step fails when the exempt set grows.
 
