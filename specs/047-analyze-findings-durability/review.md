@@ -1,18 +1,18 @@
 ---
 spec: 047-analyze-findings-durability
-last-run: 2026-09-16T12:34:24Z
-reviewed-against: 267070e4bcf15cb354fa20997e1b13d38f2650db
-diff-base: 1f5539dbc98706aa8811c10cc484d59901eea9fa
+last-run: 2026-09-16T15:51:43Z
+reviewed-against: 8e238dabc40e0d620c1c2e525832be254296430a
+diff-base: ddfd95edc715fa17c24bb0a8273bf96c4814bb51
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 9
-scope: 12
+examined: 7
+scope: 13
 skipped-passes: []
 reviewed-digest:
   scenarios/analyze-record-freshness.md: 4873de36588f18d253409758c41ab5d0b200c1a1655271c64aa5e8d98998a39f
-  scenarios/analyze-run-durability.md: 287dacba26b62b8f72ba377b8f07f92063cdd28a351ede9568035dd0fd811046
+  scenarios/analyze-run-durability.md: 7719db590c1b78447332523a3725c1d05faa64abb0950d43aedeff50ed3648a2
 blocking: false
 ---
 
@@ -20,15 +20,17 @@ blocking: false
 
 ## Summary
 
-Re-review for spec 057's record relocation, which reopened this spec to discharge its `cross-spec-impact:` entry. Five passes over the resolved scope; 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers (`process-waivers` returned empty in every bucket).
+**Second reopen of this spec for 057, and the reason it was needed is the finding.** The first (task 18) corrected the record-location claims in `spec.md` and in `scenarios/analyze-record-freshness.md`, and closed. Task 19's Family-31 grep then found a live claim in the *other* scenario, `analyze-run-durability.md`, and reading that file for these passes found more. Five passes over the resolved scope; 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers.
 
-**What changed.** 057 moved the analyze record out of `spec.md` frontmatter into `analysis.md`'s, so every claim here that addressed it as a `spec.md` block was false. AC9, AC10, AC12, AC14 and AC15 are annotated in place rather than restated (the 009-AC18 / 046-AC22 disposition), a signpost at the top links back to 057, and `scenarios/analyze-record-freshness.md` — this spec's one durable contract — now names `analysis.md` in its subject set, records that the digest exclusion moved there and `spec.md` is digested whole, and adds the third state 057 introduced: an artifact that exists but carries no parseable record is undeterminable, never never-analyzed.
+**What the first pass missed, and why the instrument could not see it.** Task 17's classifier defines the pre-relocation shape as a record token within ~140 characters of `spec.md`, "spec frontmatter", or "the spec". `analyze-run-durability.md`'s entire Behavior section specifies the record as *"an `analyze:` frontmatter block"* and **names no file** — so the classifier reported nothing, correctly by its own definition, over a durable contract specifying a shape that no longer ships. The same blindness hid its §Resolved Questions entry rejecting an `analysis.md` artifact, which 057 reversed; task 19's grep caught that one only because it happens to mention Family 31. **A classifier tuned for a location cannot find a claim that omits the location**, and that is now recorded on 057's task 17 rather than left as a fact about this session.
 
-**The Resolved Question was reversed, not relocated, and that is recorded as a reversal.** *Should analyze write a per-spec `analysis.md` artifact?* resolved **no**, on the premise that the record could live in `spec.md` while only the findings' content needed a home. 057 retired that premise — two gate-bearing records in one file is the two-homes condition §drift-prevention rejects — so the file follows the record. The annotation states what survives (the inbox stays the durable home for routable findings; 057's AC13 forbids a checkbox anywhere in `analysis.md` *mechanically*, which is what keeps the parallel-triage-surface hazard the question named from arriving with the reversal) and what the reversal cost (a new primitive, a corpus migration, a second file per spec directory) rather than reading the old *no* as merely superseded.
+**The disposition.** The Behavior section is annotated once at its head rather than re-pointed sentence by sentence, because only the home changed — the fields, the write-on-every-run rule, the two deliberate asymmetries with the review record (`advisory` recorded and never gating; `unexamined` having no counterpart at all), the gate's block reasons and the drift family are all unchanged. The annotation records the two things the move added: the **file's** absence is the never-analyzed state, which is a sharper signal than a missing key in a file that exists for other reasons, and a present-but-unparseable `analysis.md` is a third state the gate must not collapse into never-run. The YAML example keeps its block form with a comment saying that is what 047 delivered. The reversed resolved question is annotated with the observation that *one fact per home* — the rule that bullet argued from — is precisely what produced the reversal: the review record already had two homes, and Family 31 was a third copy binding them rather than a fix.
 
-**Scope.** `diff-base` 1f5539db, 12 in scope. Examined **9 of 12**, and the three unread are named rather than folded into the numerator: `framework/commands/analyze.md` (402 lines) was read only in its Review-state-drift and analyze-record sections, `framework/constitution.md` (834) only in §Frontmatter Schema and §Validation Severity — both confirmed against the live file where this spec's criteria assert on them, neither read end to end — and `.claude/commands/ductus/analyze.md` is the generated mirror of a source that was not fully read either, so it is doubly uncounted.
+**Left alone deliberately.** The table at line 15 pairs `/{project}:review` with `write-review` → `review:` block and names Family 31 among what held it fresh. Its surrounding prose is explicitly past tense about the pre-047 state — *"Both gates **were** required; only one **was** recorded … There **was** no field to compare"* — and Family 31 existed then, so it is a correct historical account and rewriting it would record a fiction. Classified by tense, which is the test the whole sweep uses.
 
-**Passes.** The security, reuse and efficiency passes had no subject: the window contains prose artifacts and one YAML workflow template. The quality and simplicity passes carried the weight, against `quality-cross.md`. The one `QUAL-CLAIM-001` candidate in the window — the CI template's audit-record gate treating an absent `blocking` field and an uppercase `NULL` timestamp as clean — is 020's surface, not this spec's; it was found by 020's pass in the same session, fixed at `267070e4`, and is therefore already absent from this scope. `QUAL-GROUND-001` applies to the annotations themselves and was enforced by re-deriving each claim from the runtime rather than from the spec: the subject-set and exclusion wording was checked against `analyze_subjects.rs`, and the undeterminable-vs-absent three-state wording against the constitution's §Frontmatter Schema → Audit records.
+**Scope.** `diff-base` ddfd95ed, 13 in scope. Examined **7 of 13**: this spec's `spec.md`, `tasks.md` and both scenarios, 026's `spec.md` and `family-19-says-what-it-examined.md`, and 057's `tasks.md`. The six unread are named. `framework/constitution.md` was read in §spec-lifecycle, §implement-phase, Frontmatter Schema and Validation Severity — the four regions this spec's criteria and this pass's corrections assert on — and not end to end; the same for `framework/commands/analyze.md` (its capture step, record-writing step and §Review state drift) and `framework/commands/audit.md` (the Family 19 entry). `scripts/audit/README.md` was read at its Family 19 line only. The two `.claude/commands/ductus/*.md` files are generated mirrors of sources that were not fully read either, so they are doubly uncounted. `specs/026-framework-self-audit/scenarios/family-31-review-block-agreement.md` is in scope as a **deletion**; it was read in full immediately before being removed, and is counted under 026's review rather than twice.
+
+**Passes.** Security, reuse and efficiency had no subject — prose corrections and one deletion. Quality, against `quality-cross.md`, is where this pass earned its keep, and the finding it produced is about the *sweep's* instrument rather than about code: an enumeration is a claim (§drift-prevention), and a classifier that cannot fire on a whole class of hit is `QUAL-CLAIM-001` wearing a regex — a clean result from it is evidence about its own pattern and nothing more. That is why this spec needed a second reopen and why the boundary is now written down. Simplicity: the section-level annotation is the smaller edit than re-pointing eleven sentences, and it keeps the record of what 047 delivered intact.
 
 ## MUST violations (blocking)
 

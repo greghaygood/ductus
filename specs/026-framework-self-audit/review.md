@@ -1,15 +1,15 @@
 ---
 spec: 026-framework-self-audit
-diff-base: 6014d53caae11bcba77bc868829234207e49b459
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-15T18:36:19Z
-reviewed-against: 1110d6fc9634a77b5fa09b53f3341beef902cfa7
+last-run: 2026-09-16T15:51:43Z
+reviewed-against: 8e238dabc40e0d620c1c2e525832be254296430a
+diff-base: ddfd95edc715fa17c24bb0a8273bf96c4814bb51
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 18
-scope: 20
+captured-issues: 0
+examined: 6
+scope: 22
+skipped-passes: []
 reviewed-digest:
   scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
   scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
@@ -18,7 +18,7 @@ reviewed-digest:
   scenarios/family-18-marker-list-parity.md: e2f5e57dc51efec37f63fdc419d1c78ae4afb8319bcd41b604a2c22507af6296
   scenarios/family-19-mechanical-sweep-exemption.md: 1aed9678cb90da55fb314f9f8bd26addb3baebdbad04bda48fb11deeb95c4089
   scenarios/family-19-review-freshness.md: 07adf4f5f7f0590e90c043d9254534f10f77fc717fb951bd7dfe2ff42a74d787
-  scenarios/family-19-says-what-it-examined.md: 5bcffd3a32d015c740ee9ca232d86f4cb7d71f251705eb3d9f22cce1198ed1ed
+  scenarios/family-19-says-what-it-examined.md: 2ee343d1295dfc755ea19ae453e5edd61dfb7cdb3d1eecdd46865d54be48621d
   scenarios/family-22-adopter-shell-behavior.md: 2eac3b7db9587dd354168941be8a1816d11a9e6f7fb27ecd8b8f9c9f8f719754
   scenarios/family-23-sweep-target-manifest-parity.md: 9dfa1299cdeb27ad691c66d6e9adeb68187c7c60039576cafd6ba55f29274b38
   scenarios/family-24-rename-sweep-residue.md: 41d6c829f0851a3caab11650d24b7100992667969ee3f21454141b482819e132
@@ -26,7 +26,6 @@ reviewed-digest:
   scenarios/family-26-broken-relative-links.md: 60627b24354610f3e0f819abe7d0603faa9644c27e8cee5163a452804bb94b6c
   scenarios/family-27-done-spec-unchecked-criteria.md: d164ba1fedaababcb88f5a4062b150ae8bd7e017699d7ac6d310292a25489bf9
   scenarios/family-28-audit-family-registry-parity.md: 0d7b15a3c103b50b3aeafa3145941910582c16dbda08148ebd804346da4ae15a
-  scenarios/family-31-review-block-agreement.md: 4f5f35a88a5ceb3668de37b4cf39d01427e813f170398901089b2a52073351b2
   scenarios/family-34-step-reference-integrity.md: 4d24ed6a08c54ae98f135ad108d3b8a7b85f782f5af7edf26c67d92aa509f067
   scenarios/family-35-manifest-destination-links.md: 8e94dce4172e2b326612da806327af31777d99b8c6ce89642c9d10a98dc148b3
   scenarios/family-36-self-url-resolution.md: f5f69dd3e566a0e07ef2825d5843ec76cf18203355c7c7ddff8737673dfadb09
@@ -40,25 +39,19 @@ blocking: false
 
 ## Summary
 
-Five passes over the resolved scope. **`examined: 18` of `scope: 20`**, and the two not counted are named individually rather than folded into the numerator.
+Re-review for spec 057's retirement of audit Family 31, which reopened this spec to discharge 057's `cross-spec-impact:` entry. Five passes over the resolved scope; 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers (`process-waivers` returned empty in every bucket).
 
-**`.claude/commands/ductus/audit.md`** — the generated mirror of `framework/commands/audit.md`, which was read in full. `scripts/gen-claude-commands.sh` was re-run in this pass and reported all 18 command copies regenerated, so there are good grounds to believe it correct; that is confidence, not a read, and `examined` is only the second. **`.github/workflows/markdown-only-pipeline.yml`** — **absent**. It stays in scope because `plan.md` lists it, and its absence is grounded rather than assumed: 026's own §Resolved Questions records that `048-govern-acquired-runtime` removed that workflow and the `/audit` step now runs as `(h) Framework self-audit` in `.github/workflows/framework-checks.yml`.
+**What changed.** 057 merged the review record's two homes into `review.md`, which leaves Family 31 — the check that reconciled them — with an empty subject by construction: its subject was defined as the *intersection* of specs carrying both records. The primitive, its schema types, `scripts/audit/review-block-agreement.sh` and the family's registry entries were removed by 057's task 14. Here that is discharged three ways: a signpost at the top of `spec.md`, AC22 annotated rather than deleted, and `scenarios/family-31-review-block-agreement.md` deleted outright per §scenarios, which says an obsolete scenario is deleted rather than given a status. The worked example the scenario carried is preserved in the AC22 annotation — 031 and 041 both recording `should-violations: 1` in `spec.md` against their own `review.md`'s `0` for weeks, and the hand-moved waiver with no `review.waivers` entry that caused it — because that incident is the argument 057 acted on, and what is genuinely lost is stated with it: nothing now compares `examined` against a non-empty `scope`.
 
-The other 18 were read in full this session, including all eleven rule files `discover-rule-files` reports under `selected`, loaded before the passes ran.
+**Two things task 19 did not name, found by reading rather than by grep.** `scenarios/family-19-says-what-it-examined.md` is a contract on `review-freshness.sh`'s coverage line and still specified `G grandfathered (no review: block)` — the predicate task 20 re-pointed. Corrected to `(no review.md)` and verified character-for-character against the shipped line. The scenario gains what its own subject makes it the right home for: keyed on the block's absence, the relocation would have made that predicate true of every spec, so Family 19 would have examined nothing and exited **green** — this scenario's own failure mode arriving through the predicate rather than the exit code. Its "three siblings" list is annotated rather than rewritten, with the observation that one of the three has since been retired for exactly the fault it shamed Family 19 over. Second, `framework/commands/audit.md`'s Family 19 entry described the check as reading `review.reviewed-against`; corrected with `scripts/audit/README.md`'s matching line, in a separate commit because their subject is the documentation sweep rather than this spec.
 
-**Security.** No source in scope but shell. The change adds six alternatives to a literal-built regex in `rename-sweep-residue.sh`; no input crosses a boundary, nothing is eval'd on user data, and `shellcheck -S warning` is clean over all 55 tracked scripts. The surface-specific rule sets (security-backend/frontend, api-backend, concurrency, observability, reliability, performance, accessibility, configuration-cross) verify design-time commitments this change makes none of — read and found to have no subject here, which is a different statement from checked-and-passed.
+**The registry surfaces were checked rather than assumed.** Family 28 holds `run-all.sh`'s registered set, `audit.md`'s enumerated set and `README.md`'s script list in agreement, and it is green — but a green parity check over three sets that all dropped the family together proves only that they agree. Each was read directly: `run-all.sh` has no `review-block` registration, `audit.md`'s numbered list runs 26, 30, 32-38 with no 31, and `README.md` carries no `review-block-agreement.sh` entry. Family numbers are permanent identifiers and 31 is not reused, matching what Behavior §3 already records for the retired Family 3.
 
-**Quality — `QUAL-CLAIM-001`, the rule this change is most exposed to, since the family *is* a claim-checker.** Three checks. The widened family still reports its examined-file count on stderr and still treats a degenerate scan as a finding rather than a pass, so the property that made it honest is unchanged. The header states its own limit outright: a ditransitive sentence (*"give ductus its due"*) would be a false positive, measured absent across the 584 tracked markdown files as of today. And the correction it carries is of exactly this shape — the family previously exited 0 over 514 files with live residue present, which is a check that could not see what it exists to find, and the record now says so instead of retaining *"exactly the 8 real sites, no others"*.
+**Scope.** `diff-base` ddfd95ed, 22 in scope. Examined **6 of 22**, and the sixteen unread are named rather than folded into the numerator, because most of this scope is the plan's Affected Files list rather than this window's changes. Read in full: this spec's `spec.md`, both of the scenarios above (one of them immediately before deleting it), 047's `analyze-run-durability.md` and `spec.md`, and 057's `tasks.md`. Read only in the regions this review's claims assert on: `framework/commands/audit.md` (the family registry and the Family 19, 26, 30, 32-38 entries), `framework/constitution.md` (§spec-lifecycle, §implement-phase, Frontmatter Schema, Validation Severity) and `scripts/audit/README.md` (the Family 19 entry) — each confirmed against the live file where a claim here rests on it, none read end to end. **Not read at all: nine `scripts/audit/*.sh` files** (`adopter-shell-behavior`, `check-zero`, `cross-doc-consistency`, `introducing-drift`, `manifest-parity`, `placeholder-roundtrip`, `sibling-coupling` beyond its header, `ssot-invariants`, `template-alignment`), the two `.github/workflows/*.yml` files, `runtime/legacy-prose-commands.txt`, and `.claude/commands/ductus/audit.md`, the generated mirror of a source that was not fully read either. None of them changed in this window; that is a reason to expect them clean, not evidence that they are, so they are counted as unexamined.
 
-**Reuse.** The construction count is now stated in five places — script header, scenario, AC17, `framework/commands/audit.md`, `scripts/audit/README.md`. That is the framework's existing shape for all 37 families and Family 28 mechanically holds only the family-number registration, not the descriptions, so the prose copies are held by discipline. The disposition taken was the sweep `AGENTS.md` prescribes for a canonical set: all five were located and updated in one pass, and the task records that as a subtask rather than leaving it to be rediscovered.
+**Passes.** Security, reuse and efficiency had no subject — this window's changes are a file deletion and prose corrections. Quality carried the weight against `quality-cross.md`: the Family-19 coverage-line correction *is* a `QUAL-CLAIM-001` repair, since the contract as written would have been satisfied by a family reporting every spec grandfathered over zero examined. Simplicity: deleting the scenario rather than marking it superseded is the simpler of the two dispositions and the one §scenarios requires; the AC22 annotation carries the content that had to survive it.
 
-**Simplicity.** `POSSESSIVES` is a separate variable rather than six more alternatives inside `FOLLOWERS`. Functionally identical; kept separate because the scenario and both registries now describe *three* constructions and a reader matching prose to code should find three lists.
-
-**Two things the probe found that reading did not, recorded because they are the evidence the widening is calibrated rather than guessed.** Probing the **narrowed** direction — not the widened one — is what caught both: `my` had to be dropped from the possessive class because `README.md` documents adoption as `/ductus my-project`, so the front page puts the name before `my` in correct prose; and the inbox item recording the ninth site had quoted the defect in `*italics*` without the double quotes the family's stripper protects, so the widened run reported the item describing the bug. Neither was predictable by reading the pattern.
-
-**Calibration, re-derived rather than quoted.** `govern its` occurs exactly once at `9da4a7ae^` — the `api-backend.md` site — and `their` / `our` / `your` / `his` / `her` zero times each. The whole closed class ships anyway because the existing lists are grammar-calibrated, not frequency-calibrated: at that same commit three of the seven followers (`whether`, `these`, `those`) and seven of the eight modals had zero instances and are listed regardless. That measurement is what makes adding the plural consistent with precedent rather than speculative.
-
-**Pre-reopen window, measured before the flip because it is not recoverable after it:** base `c1b00ea8`, **81 modified-since / 93 in scope at 52,446 bytes**. Post-reopen: **8 / 20 at 4,234 bytes** on `6014d53c`, a 12x byte reduction, both legs inline.
+**One judgement recorded because it decided what was not done.** Family 7 (sibling-spec coupling) went red during this work, naming 057 against 020, 047 and 026 as bundling candidates. Its subject is pairs of **non-`done`** specs, so the finding is an artifact of three specs being reopened at once and clears when they close. It was not suppressed with the `Why split from …` contract the family provides: the pairing is a scheduling coincidence, and recording a split rationale for it would put a permanent suppression in the corpus for a transient state.
 
 ## MUST violations (blocking)
 
