@@ -2,6 +2,47 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.52.0] — 2026-09-17
+
+### Fixed
+
+- **A review finding whose severity was not exactly `must` was silently filed
+  as a SHOULD.** `write-review` bucketed findings with the severity test last
+  in an `if`/`else` chain whose `else` was the catch-all, so a typo, or a
+  value borrowed from the analyze vocabulary, landed in the SHOULD bucket;
+  `blocking` was then written `false` and the spec passed
+  `check-review-gate`'s MUST check. `finding_rank` shared the same test, so a
+  misspelled MUST also lost cross-pass dedup to a correctly-spelled SHOULD
+  and the weaker copy survived.
+
+  The reachable path was never a source typo: `severity` arrives from the
+  `performReview` extension point, written freehand by an LLM into JSON on
+  every review run. An unvalidated permissive default sat directly on the
+  path that gates `done`.
+
+### Changed
+
+- **Severity is a closed set, not a string.** The three vocabularies are now
+  bound as three types in `schema/severity.rs`: review (`must`, `should`),
+  analyze (`hard-fail`, `blocking`, `advisory`, `informational`) and the
+  `assessSpecQuality` rule tier (`must`, `should`, `info`, and `""` as a
+  named `Unspecified` state). They stay separate deliberately — one merged
+  enum would make the cross-vocabulary error representable in the type
+  introduced to forbid it.
+
+  An unrecognized value is **rejected**, never defaulted, naming the
+  extension point, the vocabulary, the offending value and the legal set:
+  `schema-mismatch in`performReview`: unrecognized review severity
+  "mandatory" — expected one of: must, should`. Bucketing is a `match` over
+  the closed set, so there is no catch-all arm left for a bad value to reach
+  and adding a tier is a compile error rather than a silent demotion.
+
+  **Case-insensitivity is preserved** — `MUST` was accepted before and still
+  is, since that is the spelling the rule files use; strictness targets
+  unrecognized values, not capitalization. Serialization is unchanged, so
+  every `review.md` and `analysis.md` is byte-identical across the change and
+  no consumer's parsing moves.
+
 ## [0.51.0] — 2026-09-16
 
 ### Changed
