@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-16T16:07:42Z
-analyzed-against: 5fa698f7e91067e23e2248a51aca32cd670e6ab6
+last-run: 2026-09-17T01:49:11Z
+analyzed-against: 85c3688bf024ad6b3ed1a78dd13eed87eca7e07d
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 2
+unexamined: 0
 captured-issues: 0
 analyzed-digest:
-  data-model.md: 8c153186f422833072ade4f085d44f022200c1d9becb840b929db9d778595746
+  data-model.md: cb1bb817853941cfbc08a2d8b820fe61b88eb90df59aa4d266997faf41a95c07
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 85c9ea09986a572b90217362f28b7c398d87f21f2364d3238dd8fa88ee079a3c
+  review.md: caa6d9f0983126f3c0a02cd88c34c86b07753e88d437379f3a32a66d2d2d7620
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -49,6 +49,7 @@ analyzed-digest:
   scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
   scenarios/fetch-archive-dns-rebinding.md: 39482bed2a531d36dce770c9c20ae3848ba254da0d02ee51d5c6feabe7967031
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
+  scenarios/frontmatter-severity-tiers-on-both-sides.md: c8b6d454ddb4476f57de9c4f8c5f53ad11d948ea5a4e3a7ac4b2bbe0d3d2a5e3
   scenarios/govern-bootstrap.md: 090bdd6076d1118b15f59c806b49bfd37037fb2b60ecdd33d01580018ca7b770
   scenarios/groom-command-acceleration.md: 59a13672e9f2936610d37d086cba0e34f3342958c513233ac252a4c83d7b85f2
   scenarios/host-protocol-conformance.md: 13c3a2d89eedf4f79e66c9d4e8e97a9b7361e6fd1fa340a76c46730c28e4d542
@@ -111,9 +112,7 @@ analyzed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: 52a3795c93e1bbd5e10aed6eba2a914d07f7a09763ee9eea3922057d6d3e202b
-  tasks.md: 5892715d87284ac323bead6a63b6cf5e216fb6b344e3f94a6df1c090fae3153d
-unexamined-by-reason:
-  not-a-live-claim: 2
+  tasks.md: b1c5019030b64c059a6449c639f29323eb8ffae32231130f48cfba157866731a
 blocking: false
 ---
 
@@ -121,7 +120,7 @@ blocking: false
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
 
 ## Hard failures
 
@@ -137,7 +136,7 @@ blocking: false
 
 ## Unexamined targets
 
-- not-a-live-claim: 2
+*None — every target was examined.*
 
 ## Captured issues
 

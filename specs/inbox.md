@@ -36,3 +36,5 @@
         specs/008-security-rules/spec.md): `- [ ] {Rule ID}: {artifact} does not address — {summary}`.
 
      When an item is migrated, remove it from this list. -->
+
+- [ ] convention: the analyze/artifact severity vocabulary is a stringly-typed contract with no binding — `severity` is a bare `String` on `FrontmatterFinding`, `ArtifactFinding` and `ReviewFinding`, and the tiers are spelled as inline literals across at least `validate_frontmatter.rs` and `check_artifacts.rs`, so nothing catches a typo like `hard_fail` or an unrecognized tier. This is the mechanism that let eight sites carry the wrong tier undetected until spec 022 task 120 fixed them by hand (QUAL-GROUND-001 in shape, CFG-CONST-001 in remedy). Pre-existing and cross-cutting — the fix spans the primitive library's finding types and the host prose that renders them, so it is spec-sized rather than a task-120 cleanup. — `runtime/src/schema/primitives.rs` (captured during review of 022-deterministic-runtime)

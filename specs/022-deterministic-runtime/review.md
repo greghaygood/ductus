@@ -1,17 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-16T16:06:53Z
-reviewed-against: f31e83063c111fad72c93d9cc2d1737eb7943aa6
-diff-base: 2a4779c0104d26c62f75acceb311ee61c8e822cd
+last-run: 2026-09-17T01:48:38Z
+reviewed-against: 85c3688bf024ad6b3ed1a78dd13eed87eca7e07d
+diff-base: 6096200bf94a94f0a97e1333b0a9cf8f3622d85d
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 2
-scope: 36
+examined: 16
+scope: 41
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 8c153186f422833072ade4f085d44f022200c1d9becb840b929db9d778595746
+  data-model.md: cb1bb817853941cfbc08a2d8b820fe61b88eb90df59aa4d266997faf41a95c07
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -50,6 +50,7 @@ reviewed-digest:
   scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
   scenarios/fetch-archive-dns-rebinding.md: 39482bed2a531d36dce770c9c20ae3848ba254da0d02ee51d5c6feabe7967031
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
+  scenarios/frontmatter-severity-tiers-on-both-sides.md: c8b6d454ddb4476f57de9c4f8c5f53ad11d948ea5a4e3a7ac4b2bbe0d3d2a5e3
   scenarios/govern-bootstrap.md: 090bdd6076d1118b15f59c806b49bfd37037fb2b60ecdd33d01580018ca7b770
   scenarios/groom-command-acceleration.md: 59a13672e9f2936610d37d086cba0e34f3342958c513233ac252a4c83d7b85f2
   scenarios/host-protocol-conformance.md: 13c3a2d89eedf4f79e66c9d4e8e97a9b7361e6fd1fa340a76c46730c28e4d542
@@ -118,17 +119,7 @@ blocking: false
 
 ## Summary
 
-Second recording for spec 057, following a **code** change rather than a prose one. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. The scenario pass — all 17 touched scenarios read end to end — is the preceding review at `c7326f31`; this one covers a narrower window and says so rather than inheriting that numerator.
-
-**What changed.** Recording the analyses for the task 18/19 discharges surfaced that 057's AC7 was half-met: `subject_digest` excised `analysis.md`'s frontmatter and digested its body, which the same `write-analysis` call rewrites, so any run whose report changed staled itself. `analysis.md` is now excluded from the analyze subject set outright — it is that command's own output, exactly as `review.md` is `/{project}:review`'s and is excluded from the review digest for the identical stated reason. This spec's `data-model.md` is the canonical registry of both subject sets, so its table and its digest paragraph carry the correction with the measurement that forced it.
-
-**The runtime change is in scope here and was reviewed as code, not as a diff summary.** `analyze_subjects.rs` gains the exclusion in the membership predicate and loses `strip_record_frontmatter` and the partial-excision branch in `subject_digest` — dead once the predicate excludes the only file that reached it, and removed rather than left for clippy to eventually notice. Two tests pinned the old contract and were **rewritten to pin the new one** rather than deleted: `the_records_body_does_change_its_digest` pinned the defect itself and is now `the_review_record_remains_a_subject`, holding the asymmetry that matters — an analysis's *input* stays a subject while its *output* does not. The same commit lands task 22's nine missed surfaces, two of them operator-facing (`check-review-gate`'s MCP description and clap help, both still describing a two-check gate reading a `spec.md` block).
-
-**Verification is stated with its limits.** `cargo test --release --locked` is green across all 20 test binaries, `cargo fmt --check` clean, and `clippy --release --all-targets --locked -- -D warnings` at zero. A tempdir probe of the end-to-end path was attempted and **did not prove anything** — its fixture failed the gate's markdown lint, which runs ahead of the analyze checks, so the run never reached the staleness comparison. That is recorded rather than quietly dropped: the evidence for the fix is the unit test, and the end-to-end observation comes when 057 records its own analysis.
-
-**Scope.** `diff-base` 2a4779c0, 36 in scope, examined **2** — `047`'s `spec.md` and `analyze-record-freshness.md`, read in full. The number is low because most of this scope is directory rows from the plan's Affected Files (`runtime/src/primitives/`, `schema/`, `mcp/`, `parser/`, `interpreter/`, `runtime/tests/` and its three subtrees), and a directory cannot be examined — the files under them that this change touched were read and edited, but they do not map to a scope row and are not counted as one. Read in regions only, uncounted: `data-model.md`'s digest and gate-order sections, `spec.md`'s signpost and AC22/AC27/AC30, `main.rs` and `mcp/server.rs` at the two corrected lines. Not read: the seven `framework/commands/*.md`, `framework/bootstrap/ductus.md`, `README.md`, the three workflows, `CHANGELOG.md`, `Cargo.toml`/`Cargo.lock`, `runtime-tools.txt`, `legacy-prose-commands.txt`, `lint-procedure-parseability.sh`, and this spec's `plan.md` and `tasks.md`.
-
-**Passes.** Security: none reachable — the change narrows a file-membership predicate. Reuse: the exclusion reuses `ANALYSIS_RECORD_FILE` rather than a second literal, and deleting `strip_record_frontmatter` removes a helper with one call site. Quality, against `quality-cross.md`: the defect fixed here is `QUAL-CLAIM-001`'s neighbour — not a clean result overstating what it examined, but a stale verdict over a subject that could not have changed — and the two rewritten tests are what keep the fix from regressing. Efficiency: one fewer file hashed per digest. Simplicity: a membership rule replaces a content transformation, which is the smaller thing to state and the smaller thing to get wrong.
+0 MUST violation(s), 0 SHOULD violation(s), 0 low-confidence finding(s). blocking: no.
 
 ## MUST violations (blocking)
 
@@ -152,7 +143,7 @@ Second recording for spec 057, following a **code** change rather than a prose o
 
 ## Observations
 
-*None.*
+- convention: the analyze/artifact severity vocabulary is a stringly-typed contract with no binding — `severity` is a bare `String` on `FrontmatterFinding`, `ArtifactFinding` and `ReviewFinding`, and the tiers are spelled as inline literals across at least `validate_frontmatter.rs` and `check_artifacts.rs`, so nothing catches a typo like `hard_fail` or an unrecognized tier. This is the mechanism that let eight sites carry the wrong tier undetected until spec 022 task 120 fixed them by hand (QUAL-GROUND-001 in shape, CFG-CONST-001 in remedy). Pre-existing and cross-cutting — the fix spans the primitive library's finding types and the host prose that renders them, so it is spec-sized rather than a task-120 cleanup. — `runtime/src/schema/primitives.rs`
 
 ## Skipped passes
 
