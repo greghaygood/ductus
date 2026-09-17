@@ -1,17 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-17T01:48:38Z
-reviewed-against: 85c3688bf024ad6b3ed1a78dd13eed87eca7e07d
-diff-base: 6096200bf94a94f0a97e1333b0a9cf8f3622d85d
+last-run: 2026-09-17T02:15:24Z
+reviewed-against: f4d398294ab28638cbd0d282f64dd25319fda411
+diff-base: 563759a4c69ca75562a173759b78acd449e8b573
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 16
-scope: 41
+examined: 13
+scope: 44
 skipped-passes: []
 reviewed-digest:
-  data-model.md: cb1bb817853941cfbc08a2d8b820fe61b88eb90df59aa4d266997faf41a95c07
+  data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -89,6 +89,7 @@ reviewed-digest:
   scenarios/scaffolding-primitives.md: e004025fdbac0d7a85a3d802ea2ec006109ff18619982f4d4eca7d95fff32a2b
   scenarios/scenario-open-question-signal.md: bd9e127f09f6aa34417ee912f71a05f0205607b28c799944017a196943b7e129
   scenarios/scenario-question-parser-fix.md: bdcaf5f9bb7d0ff795d6e3a6a5045a79afc63b55d8ce4b3331f807c337bf2ada
+  scenarios/severity-is-a-closed-set-not-a-string.md: 45be56aee78248f76087357bcbd807f21515e208e7e6ee5ab8865a924b2bb5d5
   scenarios/sibling-link-grammar-is-the-shared-one.md: 65ea624281555aa380f258eacf7dc7d697964f357b2176e1f2bf0bea610dcf0c
   scenarios/sibling-symlink-trust-boundary.md: 1137bf72ad7abafd46ce49b0a8aaea14cf8d025bfc19ae076591455d683bfc89
   scenarios/skipscanner-inline-code-exemption.md: ab402c94a437b19b1b9bdd5a58ad3303d6bb67e9822041520522e3a066c43ab5
@@ -119,7 +120,17 @@ blocking: false
 
 ## Summary
 
-0 MUST violation(s), 0 SHOULD violation(s), 0 low-confidence finding(s). blocking: no.
+Five passes over task 121's change — the severity closed-set binding — across the 13 files it touched, of a 44-entry scope whose remainder is plan-affected directories untouched in this window.
+
+No MUST or SHOULD violations, and no observations: the one finding this pass produced was raised by its own reuse pass against `severity.rs` (`ALL` hand-maintained beside the variants it restated, so a new tier could quote an incomplete legal set in every rejection message) and was fixed in `f4d39829` before this record was written, rather than recorded as outstanding.
+
+Security: the change moves in the safe direction — it adds validation at a trust boundary, rejecting unrecognized LLM-supplied severity values that previously resolved to the permissive tier. No unwrap or expect reaches production code; the one `expect` is in a `#[cfg(test)]` helper.
+
+Quality: the defect's root — an `else` catch-all reached by any non-`must` severity, writing `blocking: false` past the gate — is removed by construction rather than guarded, since the bucketing is now a `match` over a closed set with no catch-all arm. Proven by probe through `exec review`, the real extension-point path, in four directions including the cross-vocabulary case. Records stay byte-identical: every parity golden and exec fixture passes untouched.
+
+Reuse: the three vocabularies share one macro for their whole string surface, so `ALL`, `as_str`, `FromStr`, `Display` and `Deserialize` cannot disagree. They stay three types rather than one enum deliberately — merging would make the cross-vocabulary error representable in the type introduced to forbid it.
+
+Efficiency and simplicity: no loops, queries, or allocation added; the types are `Copy`. A test asserting `ALL`'s length against the variant count was considered and rejected as redundant — omission is already a compile error in `as_str`'s match.
 
 ## MUST violations (blocking)
 
@@ -143,7 +154,7 @@ blocking: false
 
 ## Observations
 
-- convention: the analyze/artifact severity vocabulary is a stringly-typed contract with no binding — `severity` is a bare `String` on `FrontmatterFinding`, `ArtifactFinding` and `ReviewFinding`, and the tiers are spelled as inline literals across at least `validate_frontmatter.rs` and `check_artifacts.rs`, so nothing catches a typo like `hard_fail` or an unrecognized tier. This is the mechanism that let eight sites carry the wrong tier undetected until spec 022 task 120 fixed them by hand (QUAL-GROUND-001 in shape, CFG-CONST-001 in remedy). Pre-existing and cross-cutting — the fix spans the primitive library's finding types and the host prose that renders them, so it is spec-sized rather than a task-120 cleanup. — `runtime/src/schema/primitives.rs`
+*None.*
 
 ## Skipped passes
 
