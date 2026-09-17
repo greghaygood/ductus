@@ -471,3 +471,18 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
 
 - **Done when**: the eight Hard fail conditions emit `hard-fail` and the five Blocking conditions still emit `blocking`; `framework/commands/analyze.md` step 2 instructs the host to render each frontmatter finding in the tier the finding names, with a pointer to §text-first-artifacts rather than a restatement; 022's `data-model.md` carries the same pointer; the three tests that pinned the old contract pin the new one under names that state it; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are both clean; and the runtime version is bumped at all three sites and tagged in the same sitting.
+
+## 121. Severity is a closed set, not a string
+
+- [ ] Implement the behavior described in `scenarios/severity-is-a-closed-set-not-a-string.md`
+- [ ] Bind the two vocabularies as separate types — review (`must`/`should`) and analyze (`hard-fail`/`blocking`/`advisory`/`informational`) — serializing to the strings they carry today so `review.md` and `analysis.md` stay byte-identical and no consumer's parsing moves
+- [ ] Make an out-of-set value a deserialization **error** naming the value and the field, never a default — the defect is not that a bad value exists but that it currently resolves to the permissive tier
+- [ ] Remove `write_review`'s `else`-is-`should` catch-all (`:118-128`) and `finding_rank`'s matching string test (`:402`) by branching on the bound value, so a non-`must` severity can no longer silently write `blocking: false` past `check-review-gate`
+- [ ] Replace the inline literals at every site — 16 in `check_artifacts.rs`, 15 in `validate_frontmatter.rs`, 3 in `schema/extensions.rs`, 2 in `schema/primitives.rs`
+- [ ] Decide and state the case-insensitivity contract: both current comparisons use `eq_ignore_ascii_case`, so preserving or narrowing it is a decision to record rather than fall into
+- [ ] Sweep the corpus for any existing `review.md` / `analysis.md` carrying an out-of-set severity before landing, so a loud failure surfaces here rather than at a later gate
+- [ ] Record the two closed sets in 022's `data-model.md`, pointing at §text-first-artifacts for the analyze tiers' meaning rather than restating the assignment
+- [ ] Prove the permissive-default fix by probe in both directions: a well-formed `must` still blocks, and a mis-spelled severity is now rejected rather than filed as a SHOULD
+- [ ] Release **after** the gates, not with the implementation commit: review → analyze → 022 back to `done`, then bump the three version sites and push `ductus-v<version>` in the same sitting
+
+- **Done when**: the review and analyze severity vocabularies are each a bound closed set that serializes unchanged; an out-of-set value fails deserialization loudly with the value named rather than defaulting; `write_review`'s bucketing and `finding_rank` no longer contain a string-comparison catch-all, so a non-`must` severity cannot write `blocking: false`; every inline literal is replaced; the case-insensitivity contract is stated; the corpus is swept for out-of-set records; `data-model.md` registers both sets with a pointer to §text-first-artifacts; both directions are proven by probe; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are clean; and the release is cut only after 022 returns to `done`.
