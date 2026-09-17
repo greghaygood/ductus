@@ -117,6 +117,7 @@ use crate::schema::primitives::{
     ArtifactFinding, CheckArtifactsArgs, CheckArtifactsResult, ReadSpecArgs, ReadSpecResult,
     ReadTasksArgs, SkippedTarget, Task,
 };
+use crate::schema::severity::AnalyzeSeverity;
 use crate::schema::status::COMPATIBLE_STATUSES;
 
 /// Execute the `check-artifacts` primitive against the given repo root.
@@ -258,7 +259,7 @@ fn check_completeness(
         if !feature_dir.join(file).is_file() {
             findings.push(ArtifactFinding {
                 family: "artifact-completeness".into(),
-                severity: "blocking".into(),
+                severity: AnalyzeSeverity::Blocking,
                 message: format!("{file} is required at status '{status}' but does not exist"),
                 path: format!("{root}/{feature}/{file}"),
             });
@@ -278,7 +279,7 @@ fn check_task_consistency(findings: &mut Vec<ArtifactFinding>, tasks: &[Task], t
             {
                 findings.push(ArtifactFinding {
                     family: "task-consistency".into(),
-                    severity: "blocking".into(),
+                    severity: AnalyzeSeverity::Blocking,
                     message: format!(
                         "task numbering is not strictly increasing: task {number} follows task {previous}"
                     ),
@@ -290,7 +291,7 @@ fn check_task_consistency(findings: &mut Vec<ArtifactFinding>, tasks: &[Task], t
         if task.done_when.is_none() {
             findings.push(ArtifactFinding {
                 family: "task-consistency".into(),
-                severity: "blocking".into(),
+                severity: AnalyzeSeverity::Blocking,
                 message: format!(
                     "task {} ({}) has no Done when clause",
                     task.number, task.heading
@@ -384,7 +385,7 @@ fn check_scenario_consistency(
         };
         findings.push(ArtifactFinding {
             family: "scenario-consistency".into(),
-            severity: "advisory".into(),
+            severity: AnalyzeSeverity::Advisory,
             message,
             path: format!("{root}/{feature}/scenarios/{slug}.md"),
         });
@@ -545,7 +546,7 @@ fn record_unreadable_artifact(
     if status == "done" {
         findings.push(ArtifactFinding {
             family: family.into(),
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             message: format!(
                 "unreadable artifact: {path} could not be read, so this check never examined it — a done spec cannot rest on an analysis that could not read its own subject"
             ),
@@ -608,7 +609,7 @@ fn check_analyze_drift(
     if analyze.last_run.is_none() {
         findings.push(ArtifactFinding {
             family: "analyze-state-drift".into(),
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             message: "analyze drift: done spec missing analysis (analyze.last-run unset) — \
                       run the analyze command"
                 .into(),
@@ -618,7 +619,7 @@ fn check_analyze_drift(
     if analyze.blocking {
         findings.push(ArtifactFinding {
             family: "analyze-state-drift".into(),
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             message: format!(
                 "analyze drift: done spec has {} hard-fail and {} blocking analyze finding(s) \
                  (analyze.blocking true) — resolve them and re-run the analyze command",
@@ -651,7 +652,7 @@ fn check_review_drift(
     if review.last_run.is_none() {
         findings.push(ArtifactFinding {
             family: "review-state-drift".into(),
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             message: "review drift: done spec missing review (review.last-run unset) — \
                       run the review command"
                 .into(),
@@ -661,7 +662,7 @@ fn check_review_drift(
     if review.blocking {
         findings.push(ArtifactFinding {
             family: "review-state-drift".into(),
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             message: "review drift: done spec has unresolved MUST violations \
                       (review.blocking true) — see review.md"
                 .into(),
@@ -691,7 +692,7 @@ fn check_review_drift(
     if review.should_violations > 0 {
         findings.push(ArtifactFinding {
             family: "review-state-drift".into(),
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             message: format!(
                 "review drift: done spec has {} outstanding SHOULD violation(s) — fix each, or \
                  move it under review.md's Waived findings with its rationale, then re-run the \
@@ -752,13 +753,13 @@ fn check_scenario_open_questions(
     }
     let scenarios = read_spec::scenario_names(&questions);
     let severity = if status == "done" {
-        "blocking"
+        AnalyzeSeverity::Blocking
     } else {
-        "advisory"
+        AnalyzeSeverity::Advisory
     };
     findings.push(ArtifactFinding {
         family: "scenario-open-questions".into(),
-        severity: severity.into(),
+        severity,
         message: format!(
             "{} unresolved open question(s) in scenario(s) {} — a spec is not complete while its scenarios carry questions",
             questions.len(),
@@ -967,7 +968,7 @@ fn evaluate(
     let desc = description.unwrap_or_default();
     findings.push(ArtifactFinding {
         family: "link-adjacent-drift".into(),
-        severity: "advisory".into(),
+        severity: AnalyzeSeverity::Advisory,
         message: format!(
             "line {}: prose asserting {tells} is contradicted by its link target \
              {target_rel}, which {desc}",
@@ -1316,7 +1317,7 @@ fn check_criterion_path_existence(
             }
             findings.push(ArtifactFinding {
                 family: "criterion-path-existence".into(),
-                severity: "advisory".into(),
+                severity: AnalyzeSeverity::Advisory,
                 message: format!(
                     "acceptance criterion names `{candidate}`, which no longer resolves: \
                      \"{}\"",
@@ -1573,7 +1574,7 @@ fn check_criterion_labels(
         if !seen.insert(*label) && reported.insert(*label) {
             findings.push(ArtifactFinding {
                 family: "criterion-labels".into(),
-                severity: "advisory".into(),
+                severity: AnalyzeSeverity::Advisory,
                 message: format!(
                     "duplicate acceptance-criterion label AC{label} — a label addresses \
                      exactly one criterion, so an ambiguous one cannot be resolved"
@@ -1596,7 +1597,7 @@ fn check_criterion_labels(
     match &counter {
         StoredCounter::Malformed(value) => findings.push(ArtifactFinding {
             family: "criterion-labels".into(),
-            severity: "advisory".into(),
+            severity: AnalyzeSeverity::Advisory,
             message: format!(
                 "next-criterion is `{value}`, which is not a positive integer — the \
                  labelling pass refuses a spec with a corrupted counter rather than \
@@ -1610,7 +1611,7 @@ fn check_criterion_labels(
             {
                 findings.push(ArtifactFinding {
                     family: "criterion-labels".into(),
-                    severity: "advisory".into(),
+                    severity: AnalyzeSeverity::Advisory,
                     message: format!(
                         "next-criterion {next} is at or below AC{max_label}, the highest \
                          label in the body — the next assignment would reissue a label \
@@ -1631,7 +1632,7 @@ fn check_criterion_labels(
         if criterion.label.is_none() {
             findings.push(ArtifactFinding {
                 family: "criterion-labels".into(),
-                severity: "advisory".into(),
+                severity: AnalyzeSeverity::Advisory,
                 message: format!(
                     "acceptance criterion {index} carries no AC label in a spec that has \
                      been labelled — run the labelling pass: \"{}\"",
@@ -1976,7 +1977,7 @@ mod tests {
             .collect();
         assert_eq!(numbering.len(), 1);
         assert_eq!(numbering[0].family, "task-consistency");
-        assert_eq!(numbering[0].severity, "blocking");
+        assert_eq!(numbering[0].severity, AnalyzeSeverity::Blocking);
         assert_eq!(numbering[0].path, "specs/042-demo/tasks.md");
         assert!(numbering[0].message.contains("task 1 follows task 2"));
     }
@@ -2530,7 +2531,7 @@ mod tests {
         let found = drift(&result);
         assert_eq!(found.len(), 1, "{:?}", result.findings);
         // AC7: advisory, never blocking.
-        assert_eq!(found[0].severity, "advisory");
+        assert_eq!(found[0].severity, AnalyzeSeverity::Advisory);
         // AC4: the citing file and line, the target, and the contradicting state.
         assert_eq!(found[0].path, "specs/042-demo/plan.md");
         let message = &found[0].message;
@@ -2711,7 +2712,9 @@ mod tests {
         let blocking: Vec<_> = result
             .findings
             .iter()
-            .filter(|f| f.severity == "blocking" && f.message.contains("unreadable artifact"))
+            .filter(|f| {
+                f.severity == AnalyzeSeverity::Blocking && f.message.contains("unreadable artifact")
+            })
             .collect();
         assert!(!blocking.is_empty(), "{:?}", result.findings);
         assert!(
@@ -2910,7 +2913,7 @@ mod tests {
                 .findings
                 .iter()
                 .filter(|f| f.family == "link-adjacent-drift")
-                .all(|f| f.severity == "advisory"),
+                .all(|f| f.severity == AnalyzeSeverity::Advisory),
             "{:?}",
             result.findings
         );
@@ -3107,7 +3110,7 @@ mod tests {
             found[1].message
         );
         // AC7: advisory, and anchored on the citing spec.
-        assert_eq!(found[0].severity, "advisory");
+        assert_eq!(found[0].severity, AnalyzeSeverity::Advisory);
         assert_eq!(found[0].path, "specs/042-demo/spec.md");
         // The criterion text is carried so the reader sees which contract broke.
         assert!(found[0].message.contains("Registry equivalence"));
@@ -3416,7 +3419,7 @@ mod tests {
         let result = run(&args(), tmp.path()).unwrap();
         let found = label_findings(&result);
         assert_eq!(found.len(), 1, "{:?}", result.findings);
-        assert_eq!(found[0].severity, "advisory");
+        assert_eq!(found[0].severity, AnalyzeSeverity::Advisory);
         assert_eq!(found[0].path, "specs/042-demo/spec.md");
         assert!(found[0].message.contains("duplicate"), "{:?}", found[0]);
         assert!(found[0].message.contains("AC2"), "{:?}", found[0]);

@@ -139,6 +139,30 @@ Older tiers are never removed by a primitive — the bootstrap migration is the 
 
 Each primitive has a typed args struct (the CLI subcommand's `clap` derive shape) and a typed result struct. Below is the canonical JSON shape for each; the CLI surface translates command-line flags into the args; the MCP surface uses the same JSON via `rmcp` tool calls.
 
+### Severity tiers — three closed sets, not one
+
+The field is spelled `severity` on five shapes, and the sets behind it are **three distinct vocabularies** rather than one. They live in `runtime/src/schema/severity.rs`, the same single-source-of-truth shape `status.rs` has for the lifecycle set:
+
+| Vocabulary | Values | Carried by |
+| --- | --- | --- |
+| Review | `must`, `should` | `ReviewFinding` |
+| Analyze | `hard-fail`, `blocking`, `advisory`, `informational` | `FrontmatterFinding`, `ArtifactFinding` |
+| Rule | `must`, `should`, `info`, `""` | `AssessSpecQualityRule`, `AssessSpecQualityFinding` |
+
+Which condition earns which **analyze** tier is the constitution's to state, not this document's — see §text-first-artifacts (Validation Severity), and `framework/commands/analyze.md` step 2 for the host's per-finding rendering rule. This table registers the *sets*, not the assignment.
+
+They are three types deliberately. A single merged enum would make the cross-vocabulary error — an analyze tier emitted into a review finding — representable in the type introduced to forbid it.
+
+**An unrecognized value is rejected, never defaulted.** This is the load-bearing half. `write-review` previously bucketed with the severity test last in an `if`/`else` chain whose `else` was the catch-all, so any string that was not exactly `must` filed as a SHOULD, `blocking` was written `false`, and the spec passed `check-review-gate`'s MUST check. `severity` arrives from the `performReview` extension point — written freehand by an LLM into JSON on every review run — so the reachable failure was never a source typo. The bucketing is now a `match` over the closed set, which has no catch-all arm and makes adding a tier a compile error rather than a silent demotion.
+
+Rejection names the extension point, the vocabulary, the offending value and the legal set:
+
+```text
+schema-mismatch in `performReview`: unrecognized review severity "mandatory" — expected one of: must, should
+```
+
+**Case-insensitivity is preserved and serialization is canonical lower-case.** Both comparisons this replaced used `eq_ignore_ascii_case`, so `MUST` was accepted before and is accepted after; narrowing would have turned a working review run into a halted one over a case difference that carries no ambiguity, for the spelling the rule files themselves use. Strictness targets unrecognized values, not capitalization. Because serialization is unchanged, every shipped `review.md` and `analysis.md` is byte-identical across the change (scenario `severity-is-a-closed-set-not-a-string`).
+
 ### `read-spec` — parse spec frontmatter and body sections
 
 Args:

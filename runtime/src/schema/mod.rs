@@ -16,11 +16,13 @@
 //!   the configurable spec-root directory name (spec 040), and the
 //!   three-tier `CONFIG_CHAIN` / `SESSION_CHAIN` resolution ladders themselves.
 //!
-//! Two constant registries also live here as the single source of truth for
-//! their respective closed sets: [`registry`] (primitive names) and `status`
-//! (spec lifecycle statuses). `status` is crate-internal; `registry` is public
-//! because `main.rs` is a separate crate and its CLI-parity test has to name
-//! the canonical set — see that module's docs.
+//! Three registries also live here as the single source of truth for their
+//! respective closed sets: [`registry`] (primitive names), `status` (spec
+//! lifecycle statuses), and [`severity`] (the three finding-tier
+//! vocabularies). `status` is crate-internal; `registry` is public because
+//! `main.rs` is a separate crate and its CLI-parity test has to name the
+//! canonical set — see that module's docs — and `severity` is public because
+//! its types appear in the public finding shapes.
 
 pub mod constitutions;
 pub mod extensions;
@@ -30,4 +32,5 @@ pub mod procedure;
 pub mod protocol;
 pub mod registry;
 pub mod services;
+pub mod severity;
 pub(crate) mod status;

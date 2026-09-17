@@ -14,6 +14,7 @@ use crate::primitives::{
 use crate::schema::primitives::{
     FrontmatterFinding, ValidateFrontmatterArgs, ValidateFrontmatterResult,
 };
+use crate::schema::severity::AnalyzeSeverity;
 use crate::schema::status::ALLOWED_STATUSES;
 
 /// Execute the `validate-frontmatter` primitive.
@@ -34,7 +35,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         Ok(v) => v,
         Err(e) => {
             findings.push(FrontmatterFinding {
-                severity: "hard-fail".into(),
+                severity: AnalyzeSeverity::HardFail,
                 field: String::new(),
                 message: format!("frontmatter is not valid YAML: {e}"),
             });
@@ -54,7 +55,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         YamlValue::Null => &empty_map,
         _ => {
             findings.push(FrontmatterFinding {
-                severity: "hard-fail".into(),
+                severity: AnalyzeSeverity::HardFail,
                 field: String::new(),
                 message: "frontmatter must be a mapping".into(),
             });
@@ -72,19 +73,19 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
         Some(YamlValue::String(s)) => {
             if !ALLOWED_STATUSES.contains(&s.as_str()) {
                 findings.push(FrontmatterFinding {
-                    severity: "hard-fail".into(),
+                    severity: AnalyzeSeverity::HardFail,
                     field: "status".into(),
                     message: format!("status '{s}' is not one of {}", ALLOWED_STATUSES.join("|")),
                 });
             }
         }
         Some(_) => findings.push(FrontmatterFinding {
-            severity: "hard-fail".into(),
+            severity: AnalyzeSeverity::HardFail,
             field: "status".into(),
             message: "status must be a string".into(),
         }),
         None => findings.push(FrontmatterFinding {
-            severity: "hard-fail".into(),
+            severity: AnalyzeSeverity::HardFail,
             field: "status".into(),
             message: "status is missing".into(),
         }),
@@ -95,7 +96,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
             for (i, item) in items.iter().enumerate() {
                 if !matches!(item, YamlValue::String(_)) {
                     findings.push(FrontmatterFinding {
-                        severity: "hard-fail".into(),
+                        severity: AnalyzeSeverity::HardFail,
                         field: format!("dependencies[{i}]"),
                         message: "dependency entry must be a string feature name".into(),
                     });
@@ -103,12 +104,12 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
             }
         }
         Some(_) => findings.push(FrontmatterFinding {
-            severity: "hard-fail".into(),
+            severity: AnalyzeSeverity::HardFail,
             field: "dependencies".into(),
             message: "dependencies must be a list".into(),
         }),
         None => findings.push(FrontmatterFinding {
-            severity: "hard-fail".into(),
+            severity: AnalyzeSeverity::HardFail,
             field: "dependencies".into(),
             message: "dependencies is missing".into(),
         }),
@@ -158,7 +159,7 @@ pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontm
 fn validate_folds_into(folds_into: &YamlValue, findings: &mut Vec<FrontmatterFinding>) {
     let YamlValue::String(target) = folds_into else {
         findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             field: "folds-into".into(),
             message: "folds-into must be a string feature name".into(),
         });
@@ -169,7 +170,7 @@ fn validate_folds_into(folds_into: &YamlValue, findings: &mut Vec<FrontmatterFin
         Some(FeatureForm::Sequential { .. })
     ) {
         findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             field: "folds-into".into(),
             message: format!(
                 "folds-into {target:?} is not a sequential feature name (NNN-slug); a \
@@ -198,7 +199,7 @@ fn validate_folds_into(folds_into: &YamlValue, findings: &mut Vec<FrontmatterFin
 fn validate_cross_spec_impact(impact: &YamlValue, findings: &mut Vec<FrontmatterFinding>) {
     let YamlValue::Sequence(entries) = impact else {
         findings.push(FrontmatterFinding {
-            severity: "blocking".into(),
+            severity: AnalyzeSeverity::Blocking,
             field: "cross-spec-impact".into(),
             message: "cross-spec-impact must be a list of feature names".into(),
         });
@@ -207,7 +208,7 @@ fn validate_cross_spec_impact(impact: &YamlValue, findings: &mut Vec<Frontmatter
     for entry in entries {
         if !matches!(entry, YamlValue::String(_)) {
             findings.push(FrontmatterFinding {
-                severity: "blocking".into(),
+                severity: AnalyzeSeverity::Blocking,
                 field: "cross-spec-impact".into(),
                 message: "cross-spec-impact entry must be a string feature name".into(),
             });
@@ -239,7 +240,7 @@ fn validate_no_residual_records(
                 "analysis.md"
             };
             findings.push(FrontmatterFinding {
-                severity: "blocking".into(),
+                severity: AnalyzeSeverity::Blocking,
                 field: key.into(),
                 message: format!(
                     "`{key}:` no longer belongs in spec frontmatter — the record lives in {home}. Run the record-relocation migration to move it."
@@ -261,14 +262,14 @@ fn validate_record_artifacts(dir: &Path, findings: &mut Vec<FrontmatterFinding>)
 
     if let RecordLoad::Unreadable(reason) = crate::primitives::load_review_record(dir) {
         findings.push(FrontmatterFinding {
-            severity: "hard-fail".into(),
+            severity: AnalyzeSeverity::HardFail,
             field: "review.md".into(),
             message: format!("review.md exists but carries no readable record: {reason}"),
         });
     }
     if let RecordLoad::Unreadable(reason) = crate::primitives::load_analyze_record(dir) {
         findings.push(FrontmatterFinding {
-            severity: "hard-fail".into(),
+            severity: AnalyzeSeverity::HardFail,
             field: "analysis.md".into(),
             message: format!("analysis.md exists but carries no readable record: {reason}"),
         });
@@ -328,7 +329,7 @@ mod tests {
             findings_for("status: draft\ndependencies: []\ncross-spec-impact: 050-constitution\n");
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].field, "cross-spec-impact");
-        assert_eq!(findings[0].severity, "blocking");
+        assert_eq!(findings[0].severity, AnalyzeSeverity::Blocking);
     }
 
     #[test]
@@ -353,7 +354,7 @@ mod tests {
                 .iter()
                 .find(|f| f.field == key)
                 .unwrap_or_else(|| panic!("no finding for residual {key}: {findings:?}"));
-            assert_eq!(found.severity, "blocking");
+            assert_eq!(found.severity, AnalyzeSeverity::Blocking);
             assert!(
                 found.message.contains("no longer belongs"),
                 "{}",
@@ -423,7 +424,7 @@ mod tests {
                 .iter()
                 .find(|f| f.field == field)
                 .unwrap_or_else(|| panic!("no finding for {field}: {:?}", result.findings));
-            assert_eq!(found.severity, "hard-fail");
+            assert_eq!(found.severity, AnalyzeSeverity::HardFail);
             assert!(
                 found.message.contains("carries no readable record"),
                 "{}",
@@ -464,7 +465,7 @@ mod tests {
         let findings = findings_for("status: draft\ndependencies: []\nfolds-into: 5678.1-other\n");
         assert_eq!(findings.len(), 1, "got {findings:?}");
         assert_eq!(findings[0].field, "folds-into");
-        assert_eq!(findings[0].severity, "blocking");
+        assert_eq!(findings[0].severity, AnalyzeSeverity::Blocking);
     }
 
     #[test]
@@ -521,7 +522,7 @@ mod tests {
         .unwrap();
         assert!(!result.clean);
         assert_eq!(result.findings.len(), 1);
-        assert_eq!(result.findings[0].severity, "hard-fail");
+        assert_eq!(result.findings[0].severity, AnalyzeSeverity::HardFail);
         assert_eq!(result.findings[0].field, "status");
         assert_eq!(result.findings[0].message, "status is missing");
     }
@@ -540,7 +541,7 @@ mod tests {
         .unwrap();
         assert!(!result.clean);
         assert_eq!(result.findings.len(), 1);
-        assert_eq!(result.findings[0].severity, "hard-fail");
+        assert_eq!(result.findings[0].severity, AnalyzeSeverity::HardFail);
         assert_eq!(result.findings[0].field, "dependencies");
         assert_eq!(result.findings[0].message, "dependencies is missing");
     }
@@ -562,7 +563,12 @@ mod tests {
         assert!(!result.clean);
         let fields: Vec<&str> = result.findings.iter().map(|f| f.field.as_str()).collect();
         assert_eq!(fields, vec!["status", "dependencies"]);
-        assert!(result.findings.iter().all(|f| f.severity == "hard-fail"));
+        assert!(
+            result
+                .findings
+                .iter()
+                .all(|f| f.severity == AnalyzeSeverity::HardFail)
+        );
     }
 
     #[test]

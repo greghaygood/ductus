@@ -18,6 +18,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::schema::severity::RuleSeverity;
+
 // -- assessSpecQuality -------------------------------------------------------
 
 /// Verification request for one rule.
@@ -28,8 +30,9 @@ pub struct AssessSpecQualityRule {
     pub id: String,
     /// Verification phrase from the rule's definition.
     pub verification: String,
-    /// Severity tier ("must", "should", "info").
-    pub severity: String,
+    /// Obligation level of the rule being assessed. `Unspecified` (the empty
+    /// string on the wire) is the state where the step prose named no tier.
+    pub severity: RuleSeverity,
 }
 
 /// Request payload for `assessSpecQuality`.
@@ -59,7 +62,7 @@ pub struct FindingLocation {
 #[serde(rename_all = "kebab-case")]
 pub struct AssessSpecQualityFinding {
     /// Severity tier echoed from the rule.
-    pub severity: String,
+    pub severity: RuleSeverity,
     /// Rule ID the finding belongs to.
     pub rule_id: String,
     /// Where the finding applies in the spec.
@@ -796,7 +799,7 @@ mod tests {
             rule: AssessSpecQualityRule {
                 id: "QUAL-CLARITY-001".into(),
                 verification: "Acceptance criteria are concrete and testable".into(),
-                severity: "must".into(),
+                severity: crate::schema::severity::RuleSeverity::Must,
             },
         };
         let value: serde_json::Value = serde_json::to_value(&request).unwrap();
@@ -810,7 +813,7 @@ mod tests {
         let response = AssessSpecQualityResponse {
             passed: false,
             finding: Some(AssessSpecQualityFinding {
-                severity: "must".into(),
+                severity: crate::schema::severity::RuleSeverity::Must,
                 rule_id: "QUAL-CLARITY-001".into(),
                 location: FindingLocation {
                     section: "Acceptance Criteria".into(),
@@ -1241,11 +1244,15 @@ mod tests {
         let response = PerformReviewResponse {
             findings: vec![ReviewFinding {
                 rule: "SEC-BE-014".into(),
-                severity: "must".into(),
+                severity: crate::schema::severity::ReviewSeverity::Must,
                 file: "runtime/src/main.rs".into(),
                 line_range: "1-1".into(),
                 confidence: "high".into(),
-                ..ReviewFinding::default()
+                summary: String::new(),
+                finding: String::new(),
+                rule_text: String::new(),
+                auto_fixable: false,
+                suggested_fix: String::new(),
             }],
             observations: vec![crate::schema::primitives::ReviewObservation {
                 text: "perf: config re-read per call".into(),

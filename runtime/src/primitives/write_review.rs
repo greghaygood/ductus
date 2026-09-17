@@ -44,6 +44,7 @@ use crate::schema::primitives::{
     ConstitutionOutcome, RecordFreshness, ReviewFinding, ReviewObservation, WriteReviewArgs,
     WriteReviewResult,
 };
+use crate::schema::severity::ReviewSeverity;
 /// Reject any scalar field that would inject document structure.
 ///
 /// Scalars are spliced verbatim into `review.md` frontmatter and the spec's
@@ -121,10 +122,19 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
             waived.push(finding);
         } else if finding.confidence.eq_ignore_ascii_case("low") {
             low.push(finding);
-        } else if finding.severity.eq_ignore_ascii_case("must") {
-            must.push(finding);
         } else {
-            should.push(finding);
+            // Exhaustive by construction, and that is the point. This was an
+            // `else` arm reached by any severity that was not exactly `must`,
+            // so a typo, or a value borrowed from the analyze vocabulary,
+            // filed silently as a SHOULD and wrote `blocking: false` past
+            // `check-review-gate`. A match over the closed set has no such
+            // arm: an unrecognized value can no longer be constructed, and
+            // adding a tier is a compile error here rather than a silent
+            // demotion (spec 022 `severity-is-a-closed-set-not-a-string`).
+            match finding.severity {
+                ReviewSeverity::Must => must.push(finding),
+                ReviewSeverity::Should => should.push(finding),
+            }
         }
     }
 
@@ -399,7 +409,7 @@ fn dedup_findings(findings: &[ReviewFinding]) -> Vec<ReviewFinding> {
 /// Rank a finding for dedup: severity dominates (`must` > `should`), ties break
 /// on confidence (`high` > `low`).
 fn finding_rank(finding: &ReviewFinding) -> u8 {
-    let severity = u8::from(finding.severity.eq_ignore_ascii_case("must")) * 2;
+    let severity = u8::from(finding.severity.is_blocking()) * 2;
     let confidence = u8::from(!finding.confidence.eq_ignore_ascii_case("low"));
     severity + confidence
 }
@@ -988,7 +998,9 @@ mod tests {
     ) -> ReviewFinding {
         ReviewFinding {
             rule: rule.into(),
-            severity: severity.into(),
+            severity: severity
+                .parse()
+                .expect("test severity must be a legal review tier"),
             file: file.into(),
             line_range: range.into(),
             confidence: confidence.into(),

@@ -12,6 +12,8 @@ use std::collections::BTreeMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::schema::severity::{AnalyzeSeverity, ReviewSeverity};
+
 // -- read-spec ---------------------------------------------------------------
 
 /// Args for `read-spec`.
@@ -408,13 +410,17 @@ pub struct ComputeReviewScopeResult {
 /// (`summary` / `finding` / `rule-text` / `auto-fixable` / `suggested-fix`)
 /// populate the per-finding block in `review.md` and default to empty so a
 /// minimal finding still deserializes.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct ReviewFinding {
     /// Rule ID (e.g., "SEC-BE-014").
     pub rule: String,
-    /// Severity tier: `must` or `should`.
-    pub severity: String,
+    /// Severity tier. A closed set, so an unrecognized value is rejected at
+    /// deserialization rather than filed as the permissive tier — this field
+    /// arrives from the `performReview` extension point, and the bucketing it
+    /// feeds decides `blocking`. `Default` is deliberately not derived on
+    /// this struct: there is no meaningful default severity.
+    pub severity: ReviewSeverity,
     /// Repo-relative file path the finding anchors to.
     pub file: String,
     /// Line range within the file (e.g., "42-55" or "42"); empty means the
@@ -1309,8 +1315,11 @@ pub struct CheckStuckResult {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct FrontmatterFinding {
-    /// Severity tier.
-    pub severity: String,
+    /// Severity tier the constitution assigns to this finding's *condition*
+    /// (§text-first-artifacts, Validation Severity) — not a fixed value for
+    /// the family. See `framework/commands/analyze.md` step 2 for the host's
+    /// per-finding rendering rule.
+    pub severity: AnalyzeSeverity,
     /// Field path that failed validation (may be empty for cross-field issues).
     pub field: String,
     /// Human-readable description.
@@ -3666,7 +3675,7 @@ pub struct ArtifactFinding {
     /// `advisory` (scenario consistency, scenario open questions below
     /// `done`, link-adjacent drift, criterion path existence, and criterion
     /// labels reciprocity).
-    pub severity: String,
+    pub severity: AnalyzeSeverity,
     /// Human-readable description of the finding.
     pub message: String,
     /// Repo-relative path of the artifact the finding anchors to.
@@ -4704,7 +4713,7 @@ mod tests {
         assert_eq!(round_trip(&args), args);
         let result = ValidateFrontmatterResult {
             findings: vec![FrontmatterFinding {
-                severity: "blocking".into(),
+                severity: crate::schema::severity::AnalyzeSeverity::Blocking,
                 field: "status".into(),
                 message: "unknown status".into(),
             }],
@@ -5614,7 +5623,7 @@ mod tests {
             status: "planned".into(),
             findings: vec![ArtifactFinding {
                 family: "artifact-completeness".into(),
-                severity: "blocking".into(),
+                severity: crate::schema::severity::AnalyzeSeverity::Blocking,
                 message: "plan.md is required at status 'planned' but does not exist".into(),
                 path: "specs/022-deterministic-runtime/plan.md".into(),
             }],

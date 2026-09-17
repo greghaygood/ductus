@@ -44,6 +44,7 @@ use crate::schema::extensions::{
     VerifyCriterion, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
 };
 use crate::schema::primitives::ReadTasksArgs;
+use crate::schema::severity::RuleSeverity;
 
 /// Errors that abort payload construction. The interpreter surfaces these
 /// as structured `error` envelopes (e.g.,
@@ -856,16 +857,19 @@ fn read_repo_file(repo: &Path, rel: &str) -> Option<String> {
 }
 
 /// Map the step prose's rule-tier phrase to the request severity:
-/// `MUST-tier` → `must`, `SHOULD-tier` → `should`, `INFO-tier` → `info`
-/// (case-insensitive). Empty when the prose names no tier.
-fn severity_from_step_prose(prose: &str) -> String {
+/// `MUST-tier` → `Must`, `SHOULD-tier` → `Should`, `INFO-tier` → `Info`
+/// (case-insensitive). [`RuleSeverity::Unspecified`] — the empty string on
+/// the wire — when the prose names no tier, which is a named state rather
+/// than an absent one so it cannot be confused with a value that failed to
+/// parse.
+fn severity_from_step_prose(prose: &str) -> RuleSeverity {
     let lower = prose.to_lowercase();
-    for tier in ["must", "should", "info"] {
-        if lower.contains(&format!("{tier}-tier")) {
-            return tier.to_string();
+    for tier in [RuleSeverity::Must, RuleSeverity::Should, RuleSeverity::Info] {
+        if lower.contains(&format!("{}-tier", tier.as_str())) {
+            return tier;
         }
     }
-    String::new()
+    RuleSeverity::Unspecified
 }
 
 /// Resolve the rule an `assessSpecQuality` request assesses. Preference
@@ -877,7 +881,7 @@ fn severity_from_step_prose(prose: &str) -> String {
 fn resolve_assessed_rule(
     context: &Map<String, Value>,
     repo: &Path,
-    severity: String,
+    severity: RuleSeverity,
 ) -> AssessSpecQualityRule {
     let cited: Vec<String> = context
         .get("citations")
