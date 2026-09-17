@@ -84,18 +84,6 @@ pub enum ReviewSeverity {
 }
 
 impl ReviewSeverity {
-    /// The legal set, in severity order, for messages and tests.
-    pub const ALL: &'static [&'static str] = &["must", "should"];
-
-    /// Canonical wire form.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Must => "must",
-            Self::Should => "should",
-        }
-    }
-
     /// Whether this tier blocks a spec from reaching `done`.
     ///
     /// The bucketing predicate, expressed once on the type rather than as an
@@ -129,21 +117,6 @@ pub enum AnalyzeSeverity {
 }
 
 impl AnalyzeSeverity {
-    /// The legal set, in severity order, for messages and tests.
-    pub const ALL: &'static [&'static str] =
-        &["hard-fail", "blocking", "advisory", "informational"];
-
-    /// Canonical wire form.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::HardFail => "hard-fail",
-            Self::Blocking => "blocking",
-            Self::Advisory => "advisory",
-            Self::Informational => "informational",
-        }
-    }
-
     /// Whether this tier prevents pipeline advancement. `HardFail` and
     /// `Blocking` both do — the distinction between them is what is wrong,
     /// not whether it gates.
@@ -176,25 +149,33 @@ pub enum RuleSeverity {
     Unspecified,
 }
 
-impl RuleSeverity {
-    /// The legal set, in severity order, for messages and tests. The empty
-    /// string is included because it is a legal wire value, not an absence.
-    pub const ALL: &'static [&'static str] = &["must", "should", "info", ""];
-
-    /// Canonical wire form.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Must => "must",
-            Self::Should => "should",
-            Self::Info => "info",
-            Self::Unspecified => "",
-        }
-    }
-}
-
+/// Generate a tier's whole string surface from **one** list of
+/// `(variant, wire)` pairs.
+///
+/// `ALL`, `as_str`, `FromStr`, `Display` and `Deserialize` all derive from the
+/// same list, so the legal set a rejection message quotes cannot drift from
+/// the set `FromStr` actually accepts. Hand-maintaining `ALL` beside the
+/// variants was the obvious first cut and is exactly the duplication this
+/// module exists to remove one level down — a constant list restating what
+/// the type already knows. Omitting a variant from the list is a compile
+/// error in `as_str`'s match rather than a silently incomplete message.
 macro_rules! tier_conversions {
     ($ty:ty, $vocabulary:literal, [$(($variant:path, $wire:literal)),+ $(,)?]) => {
+        impl $ty {
+            /// The legal set, in severity order — the same list `FromStr`
+            /// accepts and rejection messages quote.
+            pub const ALL: &'static [&'static str] = &[$($wire),+];
+
+            /// Canonical wire form. Always the lower-case spelling, whatever
+            /// case was accepted on the way in.
+            #[must_use]
+            pub const fn as_str(self) -> &'static str {
+                match self {
+                    $($variant => $wire),+
+                }
+            }
+        }
+
         impl FromStr for $ty {
             type Err = String;
 
