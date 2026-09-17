@@ -468,6 +468,6 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Add the same pointer to 022's `data-model.md` registry entry so the result shape's `severity` is documented as a constitution tier, not an opaque string
 - [x] Rewrite `missing_status_is_blocking`, `missing_dependencies_is_blocking` and the both-missing test to pin the new contract (renamed and re-asserted against `hard-fail`) rather than deleting or weakening them
 - [x] Re-check every multi-line user-facing string touched by the pass after `cargo fmt`, and keep `cargo clippy --release --all-targets -- -D warnings` at zero
-- [ ] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
+- [x] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
 
 - **Done when**: the eight Hard fail conditions emit `hard-fail` and the five Blocking conditions still emit `blocking`; `framework/commands/analyze.md` step 2 instructs the host to render each frontmatter finding in the tier the finding names, with a pointer to §text-first-artifacts rather than a restatement; 022's `data-model.md` carries the same pointer; the three tests that pinned the old contract pin the new one under names that state it; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are both clean; and the runtime version is bumped at all three sites and tagged in the same sitting.
