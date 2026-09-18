@@ -1,7 +1,7 @@
 ---
 status: in-progress
 dependencies: [013-text-first-artifacts, 022-deterministic-runtime, 046-scenario-open-question-visibility]
-next-criterion: 19
+next-criterion: 20
 ---
 
 # 045 — Decision-state drift detection
@@ -114,6 +114,7 @@ Both ship as `check-artifacts` families on the runtime path, with the markdown-o
 - [x] AC16: `/{project}:analyze` emits an advisory finding for each filesystem path named in a `done` spec's acceptance criterion that no longer resolves, reading inside inline code spans
 - [x] AC17: The path-existence check is scoped to `## Acceptance Criteria` and does not scan body prose, so a correct historical mention of a deleted path produces no finding
 - [x] AC18: The path-existence check reproduces the originating case: 026's AC5 naming `framework/workflows/registry.json` and `scripts/audit/registry-equivalence.sh` after `531e3ea` and `3ff65445` deleted them
+- [x] AC19: A criterion asserting a path was never created is exempted whole and its paths recorded as `not-a-live-claim`, matched clause-scoped so that a negator in a different clause leaves a live delivery claim flagged
 
 ## Open Questions
 
