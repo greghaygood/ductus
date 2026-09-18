@@ -151,3 +151,10 @@ Tasks 3–10 are authored as scenarios under [022 — Deterministic Runtime](../
 - [x] Prove it fires on the state that got past everything, and stays silent on a spec still in flight, which is allowed to carry one
 
 - **Done when**: a `done` spec carrying a non-zero SHOULD count is reported as blocking by `check-artifacts`, a spec at any other status carrying one is not, the message names both dispositions, and the corpus reports zero.
+
+## 16. Record the negated-creation exemption group in the canonical data-model
+
+- [x] Add `### A criterion asserting a path was never created` after the live-claim section, stating why the group is a predicate rather than a fifteenth phrase, its two closed word lists, and the three rules that keep it from collapsing into `was created`
+- [x] Keep the section outside the live-claim table so Family 18's 18a derivation and all three spelled-out counts stay exactly as they are
+
+- **Done when**: the canonical data-model carries the sixth exemption group with its own table; the fourteen-phrase table and every count above it are unchanged; and `/ductus:audit` Family 18 derives the new vocabulary from it.

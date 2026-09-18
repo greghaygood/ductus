@@ -486,3 +486,16 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Release **after** the gates, not with the implementation commit: review → analyze → 022 back to `done`, then bump the three version sites and push `ductus-v<version>` in the same sitting
 
 - **Done when**: the review and analyze severity vocabularies are each a bound closed set that serializes unchanged; an out-of-set value fails deserialization loudly with the value named rather than defaulting; `write_review`'s bucketing and `finding_rank` no longer contain a string-comparison catch-all, so a non-`must` severity cannot write `blocking: false`; every inline literal is replaced; the case-insensitivity contract is stated; the corpus is swept for out-of-set records; `data-model.md` registers both sets with a pointer to §text-first-artifacts; both directions are proven by probe; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are clean; and the release is cut only after 022 returns to `done`.
+
+## 122. A criterion asserting a path was never created is not a live claim
+
+- [x] Implement the behavior described in `scenarios/criterion-negated-creation-phrasing.md`
+- [x] Carry the sixth exemption group as a clause-scoped predicate (`asserts_negated_creation`), not a fifteenth phrase — `was created` as a flat marker would exempt positive delivery claims and blind the family
+- [x] Split clauses on `;`, `,` and a period *followed by a space*; a bare `.` cuts `server/.git/` and `master.key` between the negator and its verb, which is how the first draft failed to exempt the criterion it was written for
+- [x] Match negators and creation verbs as whole words, and require the negator to precede the verb, so ``X was created and not modified since`` stays a live claim
+- [x] Record the group in `specs/045-decision-state-drift-detection/data-model.md` (canonical) and restate it in `framework/commands/analyze.md`, which adopters cannot replace with a pointer
+- [x] Prove it by probe in both directions against a fixture reproducing the reported criterion — the shipped binary flags, the patched binary records all three paths as `not-a-live-claim`
+- [x] Bind the predicate vocabulary across all three restatements in `/ductus:audit` Family 18 (026 task 23, extended rather than re-opened — `append-task` deduplicates on the scenario slug and named the owning task), so the sixth group cannot drift the way the first five could
+- [ ] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
+
+- **Done when**: a criterion asserting a path was never created is exempted whole and its paths recorded as `not-a-live-claim`; the predicate is clause-scoped, word-matched and order-sensitive, with tests pinning each; the phrase count stays fourteen and Family 18 18a–18d are untouched; 045 data-model and `analyze.md` both carry the group; both directions are proven by probe; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are clean; and the release is cut only after 022 returns to `done`.

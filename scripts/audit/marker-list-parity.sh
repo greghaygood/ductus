@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # scripts/audit/marker-list-parity.sh — Family 18 of /audit.
 #
-# Binds the `criterion-path-existence` non-assertion marker list to its
-# canonical source, so the three restatements cannot drift from it.
+# Binds the `criterion-path-existence` non-assertion marker list — and the
+# negated-creation predicate's word lists beside it — to their canonical
+# source, so the three restatements of each cannot drift from it.
 #
 # The list decides when an acceptance criterion is *not* claiming its paths
 # are present — a deletion, a rename, a migration subject, an adopter-scoped
@@ -35,6 +36,11 @@
 #   18c Parse `analyze.md`'s restatement and compare as a set.
 #   18d Compare the spelled-out counts in both markdown restatements against
 #       the derived size.
+#   18e Do 18a-18c again for the negated-creation predicate's vocabulary —
+#       the sixth exemption group, which is a clause-scoped predicate rather
+#       than a phrase, and so carries two closed word lists of its own in the
+#       same three places. No count arm: its prose states no count, which is
+#       deliberate (a count that is never written cannot go stale).
 #
 # Table convention: a phrase whose trailing space is significant is written
 # `` `text` + space `` in markdown, because a trailing space inside an inline
@@ -43,7 +49,10 @@
 #
 # Deliberately NOT a finding:
 #   - Group names or row ordering. The check is on the phrase *set*; the
-#     grouping is editorial and readers, not code, consume it.
+#     grouping is editorial and readers, not code, consume it. 18e compares
+#     the predicate's two word lists as one union for the same reason: a
+#     negator swapped into the verb row is not a drift mode anyone has, while
+#     a word dropped from either list is, and the union catches that.
 #   - The 022 scenario's phrase-free prose. It states counts and group names
 #     only, and its count is covered by 18d.
 #
@@ -269,6 +278,120 @@ for path, label, pattern in (
              f"states '{stated}' markers but the canonical table lists "
              f"{len(canonical_set)} ({expected_word})",
              f"change '{stated}' to '{expected_word}'")
+
+# --- 18e: the negated-creation predicate's vocabulary -----------------------
+#
+# The sixth exemption group is a predicate, not a phrase — its negator and its
+# verb are separated by the noun between them, so no fixed phrase spans the
+# construction. It therefore carries two closed word lists instead of a table
+# row, in the same three places, with the same consequence if one drifts.
+
+predicate = re.search(
+    r"### A criterion asserting a path was never created\n(.*?)(?=\n### |\n## |\Z)",
+    text,
+    re.S,
+)
+canonical_words = []
+if predicate:
+    for line in predicate.group(1).splitlines():
+        if not line.startswith("|"):
+            continue
+        cols = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cols) < 2 or cols[0] in ("Role", "---") or set(cols[0]) <= {"-", " "}:
+            continue
+        canonical_words.extend(spans(cols[1]))
+
+if not canonical_words:
+    # Fail closed, exactly as 18a does: a derivation that yields nothing must
+    # never read as agreement.
+    emit(
+        "specs/045-decision-state-drift-detection/data-model.md",
+        "derived zero words from the table under '### A criterion asserting a "
+        "path was never created' — the derivation is broken or the section "
+        "moved, so this arm would pass while checking nothing",
+        "restore the table, or update the derivation in "
+        "scripts/audit/marker-list-parity.sh to match its new shape",
+    )
+else:
+    canonical_words_set = set(canonical_words)
+
+    rust_words = set()
+    for name in ("CREATION_NEGATORS", "CREATION_VERBS"):
+        found = re.search(rf"const {name}: \[&str; (\d+)\] = \[(.*?)\];", rs, re.S)
+        if not found:
+            emit(
+                "runtime/src/primitives/check_artifacts.rs",
+                f"could not locate the `{name}` declaration",
+                f"keep the `const {name}: [&str; N] = [ … ];` shape, "
+                "or update scripts/audit/marker-list-parity.sh",
+            )
+            continue
+        body = "\n".join(
+            line
+            for line in found.group(2).splitlines()
+            if not line.strip().startswith("//")
+        )
+        literals = re.findall(r'"((?:[^"\\]|\\.)*)"', body)
+        if int(found.group(1)) != len(literals):
+            emit(
+                "runtime/src/primitives/check_artifacts.rs",
+                f"`{name}` declares length {found.group(1)} but holds "
+                f"{len(literals)} literals",
+                f"set the declared length to {len(literals)}",
+            )
+        rust_words.update(literals)
+
+    bullet = re.search(
+        r"A criterion asserting a path was never created is exempted the same way[^\n]*",
+        analyze,
+    )
+    analyze_words = set()
+    if not bullet:
+        emit(
+            "framework/commands/analyze.md",
+            "could not locate the negated-creation restatement",
+            "keep the 'A criterion asserting a path was never created is "
+            "exempted the same way' bullet, or update the audit",
+        )
+    else:
+        # Same structural filter as 18c: only parenthesised groups that are
+        # entirely comma-separated code spans count, which separates the two
+        # word lists from every prose parenthetical around them.
+        for group in re.findall(r"\(((?:[^()`]|`[^`]*`)*)\)", bullet.group(0)):
+            parts = [p.strip() for p in group.split(",")]
+            if not parts or not all(
+                re.fullmatch(r"`[^`]+`(\s*\+ space)?", p) for p in parts
+            ):
+                continue
+            analyze_words.update(spans(group))
+
+    for label, got, fix in (
+        (
+            "runtime/src/primitives/check_artifacts.rs",
+            rust_words,
+            "reconcile CREATION_NEGATORS / CREATION_VERBS against the table in "
+            "specs/045-decision-state-drift-detection/data-model.md",
+        ),
+        (
+            "framework/commands/analyze.md",
+            analyze_words,
+            "reconcile the negated-creation bullet against "
+            "specs/045-decision-state-drift-detection/data-model.md — adopters "
+            "have no copy of it, so this restatement is their only view",
+        ),
+    ):
+        if not got:
+            continue
+        missing = canonical_words_set - got
+        extra = got - canonical_words_set
+        if missing:
+            emit(label,
+                 "canonical negated-creation word(s) absent: "
+                 + ", ".join(repr(w) for w in sorted(missing)), fix)
+        if extra:
+            emit(label,
+                 "negated-creation word(s) the canonical table does not list: "
+                 + ", ".join(repr(w) for w in sorted(extra)), fix)
 
 if findings:
     print("\n".join(findings))

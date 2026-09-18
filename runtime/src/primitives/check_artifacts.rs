@@ -1360,6 +1360,13 @@ fn check_criterion_path_existence(
 /// endpoints together. Erring toward silence matches how the rest of this
 /// family already errs (code-spans only, `root-absent`). The groups are five,
 /// not four, since the migration-subject group was added.
+///
+/// A sixth group exists and is deliberately **not** in this list: a criterion
+/// asserting a path was *never created*. Its negator and its verb are split by
+/// the noun between them, so no fixed phrase spans the construction, and the
+/// phrase that would (`was created`) exempts positive delivery claims too.
+/// [`asserts_negated_creation`] carries it as a clause-scoped predicate
+/// instead — same inversion, one tense earlier.
 const NON_ASSERTION_MARKERS: [&str; 14] = [
     // `deleted` subsumes the former `is deleted` / `are deleted` pair. The
     // narrower forms missed the past-tense-agent phrasing a criterion reaches
@@ -1452,15 +1459,85 @@ pub(crate) fn ships_to_adopter(destinations: &BTreeSet<String>, candidate: &str)
     destinations.iter().any(|d| d.starts_with(&prefix))
 }
 
+/// The clause-scoped vocabulary behind [`asserts_negated_creation`]. Both
+/// lists are closed, matched as whole words, and framework-fixed for the same
+/// reason [`NON_ASSERTION_MARKERS`] is: a per-project vocabulary would make
+/// the family's promotion threshold measure configuration rather than drift.
+const CREATION_NEGATORS: [&str; 4] = ["no", "not", "never", "without"];
+/// Companion of [`CREATION_NEGATORS`]; see [`asserts_negated_creation`].
+const CREATION_VERBS: [&str; 3] = ["created", "added", "introduced"];
+
+/// `true` when the criterion asserts a path was **never brought into
+/// existence** — the deletion group's inversion, one tense earlier. Such a
+/// criterion is *satisfied* by its path failing to resolve, exactly as
+/// `X is deleted` is, so flagging it is equally backwards.
+///
+/// This is a predicate rather than a sixth entry in [`NON_ASSERTION_MARKERS`],
+/// and the reason is the construction rather than the vocabulary. The negator
+/// is separated from the verb by the noun it negates — ``no nested
+/// `server/.git/` repository was created`` — so no fixed phrase spans them,
+/// while the phrase that *would* match every such criterion (`was created`)
+/// exempts positive delivery claims too and blinds the family. That is
+/// strictly worse than the false positive it fixes.
+///
+/// Three rules keep the predicate from collapsing into that phrase:
+///
+/// - **Clause-scoped.** A bare `no` elsewhere in the criterion must not exempt
+///   a creation claim in another clause — ``…`scripts/gen-spec-deps.sh` was
+///   added by this spec; no further generators are needed`` is a live claim
+///   about a path that must still resolve.
+/// - **Word-matched.** `not` hides as a substring inside `cannot` and `note`,
+///   `no` inside `nano`; the negator has to be the whole word.
+/// - **Ordered.** The negator must precede the verb. English negates a verb
+///   from in front of it (`no X was created`, `was never added`, `without a
+///   lock file being created`), so a negator *after* the verb belongs to
+///   something else: ``was created and not modified since`` is a delivery
+///   claim carrying a trailing qualifier.
+fn asserts_negated_creation(lowered: &str) -> bool {
+    clauses(lowered).any(|clause| {
+        let words: Vec<&str> = clause
+            .split(|c: char| !c.is_ascii_alphanumeric())
+            .filter(|word| !word.is_empty())
+            .collect();
+        let negator = words.iter().position(|w| CREATION_NEGATORS.contains(w));
+        let verb = words.iter().rposition(|w| CREATION_VERBS.contains(w));
+        matches!((negator, verb), (Some(n), Some(v)) if n < v)
+    })
+}
+
+/// A criterion's clauses: split on `;`, `,`, and a sentence-ending `. `.
+///
+/// The period test is **a period followed by a space**, never the bare
+/// character, and that is what makes clause splitting usable in a family whose
+/// whole subject is paths. A bare `.` splitter cuts `server/.git/` and
+/// `master.key` in half, stranding a negator in one fragment and its verb in
+/// the next — which is exactly how the first draft of this predicate failed to
+/// exempt the criterion it was written for. A criterion-final period needs no
+/// split, and `e.g.` never reaches here: it is a marker, so the criterion is
+/// already exempt.
+///
+/// Over-splitting errs toward *flagging* — a negated-creation clause
+/// interrupted by a comma (`no repository, nor its index, was created`) stays
+/// a finding. That is the safe direction for a predicate whose failure mode is
+/// blinding the family, and it is the one place this family deliberately does
+/// not err toward silence.
+fn clauses(text: &str) -> impl Iterator<Item = &str> {
+    text.split([';', ',']).flat_map(|part| part.split(". "))
+}
+
 /// `true` when the criterion claims its paths are present — i.e. it carries
-/// none of [`NON_ASSERTION_MARKERS`]. Matching is ASCII-case-insensitive over
-/// the whole criterion, code spans included: a marker is prose, and a criterion
-/// that carries one anywhere is describing a transition throughout.
+/// none of [`NON_ASSERTION_MARKERS`] and does not assert that a path was never
+/// created. Marker matching is ASCII-case-insensitive over the whole
+/// criterion, code spans included: a marker is prose, and a criterion that
+/// carries one anywhere is describing a transition throughout.
+/// [`asserts_negated_creation`] is the one clause-scoped half, for the reason
+/// its own docs give.
 fn is_live_assertion(text: &str) -> bool {
     let lowered = text.to_ascii_lowercase();
     !NON_ASSERTION_MARKERS
         .iter()
         .any(|marker| lowered.contains(marker))
+        && !asserts_negated_creation(&lowered)
 }
 
 /// Candidate filesystem paths named inside `text`'s inline code spans, in
@@ -3245,6 +3322,19 @@ mod tests {
             "- [x] Commands reference `.govern.session.toml` for session state (was `.claude/gov-session.json` pre-0.10.0).\n",
             // Migration subject (043) — manifest data naming what to remove:
             "- [x] `framework/migrations.toml` carries an entry whose target paths cover `framework/workflows/`.\n",
+            // Scenario criterion-negated-creation-phrasing — the sixth group,
+            // carried by a clause-scoped predicate rather than a phrase. The
+            // first is the reported adopter criterion verbatim: its negator
+            // and verb are split by the noun between them, and the path it
+            // asserts was never created carries a `.` that a naive clause
+            // splitter cuts in half.
+            "- [x] AC13: `server/.gitignore` exists (Rails-generated) and `server/config/master.key` is git-ignored and not committed; no nested `server/.git/` repository was created.\n",
+            // Negator adjacent to the verb, past tense:
+            "- [x] `framework/workflows/registry.json` was never created, and nothing references it.\n",
+            // Negator adjacent to the verb, present participle:
+            "- [x] The run completes without a `.ductus/lock` file being created.\n",
+            // A creation verb other than `created`:
+            "- [x] No `scripts/lint-ductus-toml.sh` was added by this spec.\n",
         ] {
             let tmp = tempdir().unwrap();
             seed_with_criteria(tmp.path(), "done", criterion);
@@ -3283,6 +3373,53 @@ mod tests {
         fs::create_dir_all(tmp.path().join("scripts")).unwrap();
         let result = run(&args(), tmp.path()).unwrap();
         assert_eq!(path_findings(&result).len(), 1, "{:?}", result.findings);
+    }
+
+    #[test]
+    fn a_negator_outside_the_creation_clause_still_flags() {
+        // The guard on the negated-creation predicate, and the reason it is
+        // clause-scoped rather than criterion-scoped: `no` and `not` are
+        // common in criteria prose, so matching them anywhere in the criterion
+        // would exempt the delivery claim sitting in a different clause — the
+        // over-exemption that makes a blinded family worse than a false
+        // positive. Each case names a path that does not resolve.
+        for criterion in [
+            // Negator in a later clause than the creation verb:
+            "- [x] `scripts/gen-spec-deps.sh` was added by this spec; no further generators are needed.\n",
+            // Negator in the same clause but *after* the verb — a delivery
+            // claim carrying a trailing qualifier, not a negated creation.
+            "- [x] `scripts/gen-spec-deps.sh` was created and not modified since.\n",
+            // A creation verb with no negator anywhere.
+            "- [x] `scripts/gen-spec-deps.sh` was introduced by this spec.\n",
+        ] {
+            let tmp = tempdir().unwrap();
+            seed_with_criteria(tmp.path(), "done", criterion);
+            fs::create_dir_all(tmp.path().join("scripts")).unwrap();
+            let result = run(&args(), tmp.path()).unwrap();
+            assert_eq!(
+                path_findings(&result).len(),
+                1,
+                "a live claim must still flag: {criterion} -> {:?}",
+                result.findings
+            );
+        }
+    }
+
+    #[test]
+    fn a_dotted_path_does_not_split_the_clause_that_negates_its_creation() {
+        // The regression this predicate's first draft had: splitting clauses
+        // on a bare `.` cuts `server/.git/` between the negator and the verb,
+        // so the criterion that motivated the whole change went on flagging.
+        // Asserted at the predicate rather than through `run`, because the
+        // failure is invisible once the criterion is exempted by other means.
+        let ac13 = "ac13: `server/.gitignore` exists (rails-generated) and \
+                    `server/config/master.key` is git-ignored and not committed; \
+                    no nested `server/.git/` repository was created.";
+        assert!(
+            asserts_negated_creation(ac13),
+            "the negator and its verb share a clause: {ac13}"
+        );
+        assert!(!is_live_assertion(ac13));
     }
 
     #[test]

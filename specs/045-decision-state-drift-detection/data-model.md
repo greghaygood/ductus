@@ -138,6 +138,31 @@ Worked example — 026's AC5 (AC18), after `531e3ea` and `3ff65445` deleted both
 
 Rejected by the grammar, and why each exclusion is load-bearing in this repo: `/{project}:analyze` (leading `/`, `{`, `:`), `https://example.com/x` (`:`), `runtime/src/primitives/mod.rs:841` (`:`), `specs/*/spec.md` (`*`), `--exclude=a/b` (leading `-`), `scenarios/` (no internal separator), `scripts/…` (non-ASCII), `specs/NNN-feature/review.md` (`NNN`).
 
+### A criterion asserting a path was never created
+
+The list above is phrase-shaped, and one construction cannot be written as a phrase: a criterion asserting that a path was **never brought into existence**. In ``no nested `server/.git/` repository was created`` the negator is separated from its verb by the noun it negates, so no fixed phrase spans them — and the phrase that *would* span every such criterion, `was created`, exempts positive delivery claims too (``the migration file `db/migrate/…` was created``). Blinding the family is strictly worse than the false positive it fixes, so this group is a **predicate** rather than a sixth row above.
+
+A criterion is exempted whole — the same whole-criterion exemption, recorded under the same `not-a-live-claim` reason — when one of its clauses carries a negator **before** a creation verb:
+
+| Role | Words |
+| --- | --- |
+| negator | `no`, `not`, `never`, `without` |
+| creation verb | `created`, `added`, `introduced` |
+
+Both lists are closed and framework-fixed for the reason the phrase list is: a per-project vocabulary would make the promotion threshold measure configuration rather than drift. They carry no spelled-out count, deliberately — the counts above exist because the prose states one, and prose that states no count cannot drift from it. The sets themselves are bound across all three restatements by `/{project}:audit` Family 18.
+
+Three rules keep the predicate from collapsing into the over-exempting phrase, and each is load-bearing rather than defensive:
+
+- **Clause-scoped.** `no` and `not` are common in criteria prose, so matching them anywhere in the criterion would exempt a delivery claim sitting in a different clause. ``…`scripts/gen-spec-deps.sh` was added by this spec; no further generators are needed`` is a live claim about a path that must still resolve.
+- **Word-matched, not substring-matched.** `not` hides inside `cannot` and `note`, `no` inside `nano`. This is the `adopter` trap one list up, in the other direction.
+- **Ordered.** The negator must precede the verb. English negates a verb from in front of it — `no X was created`, `was never added`, `without a lock file being created` — so a negator *after* the verb belongs to something else: ``X was created and not modified since`` is a delivery claim carrying a trailing qualifier, and still flags.
+
+Clauses split on `;`, `,`, and a period **followed by a space**. The period test is the half that has to be stated, because this is a family whose whole subject is paths: a bare `.` splitter cuts `server/.git/` and `master.key` in half, stranding a negator in one fragment and its verb in the next. A first draft of this predicate split on the bare character and therefore did not exempt the criterion it was written for — the failure was silent, because the predicate returned a confident `false`. A criterion-final period needs no split, and `e.g.` never reaches the predicate: it is a marker, so the criterion is already exempt.
+
+Over-splitting errs toward **flagging**, not toward silence: a negated-creation clause interrupted by a comma (`no repository, nor its index, was created`) stays a finding. That is the one place this family deliberately inverts its own error direction, because the failure mode being guarded against is a blinded check rather than a noisy one.
+
+This is the deletion group's inversion, one tense earlier. `X is deleted` is satisfied precisely because `X` is gone; ``no `X` was created`` is satisfied precisely because `X` was never there.
+
 ## Measured precision (2026-08-03)
 
 Across all 47 specs, after the live-claim exemption landed:

@@ -51,6 +51,17 @@ nothing.
 - **18c** parses the shipped restatement in `analyze.md` and compares both ways.
 - **18d** compares the spelled-out count word in all three markdown restatements
   against the derived size.
+- **18e** repeats 18a–18c for the **negated-creation predicate's vocabulary**,
+  added by 022's
+  [criterion-negated-creation-phrasing](../../022-deterministic-runtime/scenarios/criterion-negated-creation-phrasing.md).
+  That group is a clause-scoped predicate rather than a phrase, so it carries
+  two closed word lists — negators and creation verbs — in the same three
+  load-bearing places, with the same consequence if one drifts. Derived from
+  its own table in 045's data-model, compared against the `CREATION_NEGATORS` /
+  `CREATION_VERBS` constants (declared lengths included) and against
+  `analyze.md`'s bullet, both ways, fail-closed on an empty derivation. **No
+  count arm**: that prose deliberately states no count, and a count that is
+  never written cannot go stale.
 
 Two parsing conventions are load-bearing and documented in the script:
 
@@ -68,12 +79,19 @@ Verified against five injected drift modes: a marker dropped from the Rust
 array (caught, with the length mismatch reported alongside), a marker added to
 the canonical table only (caught in all three consumers plus all three counts),
 the canonical heading renamed (caught as the fail-closed empty derivation), a
-stale count word, and the restored baseline (exit 0).
+stale count word, and the restored baseline (exit 0). 18e was verified the same
+way against its own three: a word dropped from `CREATION_VERBS` (caught, with
+the stale declared length reported alongside), a word added to `analyze.md`
+alone, and the predicate's canonical section renamed (the fail-closed empty
+derivation again), plus the restored baseline.
 
 ## Edge Cases
 
 - **Group names and row order are not checked.** The contract is the phrase
-  *set*; grouping is editorial and read by people, not code.
+  *set*; grouping is editorial and read by people, not code. 18e compares its
+  two word lists as a single union for the same reason — a negator swapped into
+  the verb row is not a drift mode anyone has, while a word dropped from either
+  list is, and the union catches that.
 - **The 022 scenario carries no phrases**, only a count and group names. Only
   its count is checked (18d) — asserting phrases against a document that
   deliberately omits them would force a restatement this family exists to avoid.

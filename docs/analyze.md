@@ -131,7 +131,7 @@ Two classes live in the set, and they call for opposite responses:
 
 | Reason | Class | What it means |
 | --- | --- | --- |
-| `not-a-live-claim` | Excluded by construction | The acceptance criterion asserts the path is *gone* (`deleted`, `renamed from`, `if it exists`, …), so its absence confirms the criterion rather than contradicting it |
+| `not-a-live-claim` | Excluded by construction | The acceptance criterion asserts the path is *gone* (`deleted`, `renamed from`, `if it exists`, …) or that it was never created (`no X was created`, `was never added`), so its absence confirms the criterion rather than contradicting it |
 | `ships-to-adopter` | Excluded by construction | A **Shared Files** manifest destination — a path this project ships into an adopter's checkout, where it does resolve |
 | `root-absent` | Excluded by construction | The candidate path's own top-level segment does not exist here, so nothing beneath it is provable either way |
 | `target-missing` | Could not be read | A sibling link's target does not resolve to a file |
