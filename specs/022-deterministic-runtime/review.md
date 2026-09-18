@@ -1,15 +1,15 @@
 ---
 spec: 022-deterministic-runtime
 scenario: criterion-negated-creation-phrasing
-last-run: 2026-09-18T00:19:13Z
-reviewed-against: 7340a41d16af2b90fec56ff362c5a2da3952a9c9
+last-run: 2026-09-18T00:22:57Z
+reviewed-against: 69e0d164b11ab8cb4a550dd23b926d8265631a65
 diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
 examined: 13
-scope: 47
+scope: 51
 skipped-passes: []
 reviewed-digest:
   data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
@@ -41,7 +41,7 @@ reviewed-digest:
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
-  scenarios/criterion-negated-creation-phrasing.md: b5221275021c5ce764c300fe7a9b10fe0ff051afa9b99ebd0489b76e35f9bd86
+  scenarios/criterion-negated-creation-phrasing.md: 6c6e67594b22bafbdadf79658c57f6abf1a590b5304556a5fa05c9efb63af266
   scenarios/criterion-non-assertion-phrasings.md: 9509f4ef1affca714b18825cad5870d7d8edbf6c8f8beb2f81fcb81363456e83
   scenarios/criterion-path-existence-family.md: 8721bee74ec7d0e1bc8aa30efefcac70d0da6fcc489b1c5893c571558b63ace7
   scenarios/dashboard-primitive.md: 6fca09779d8eedf9a791ccfe87b5d63a0bfb427eff6ac41545fde8509ba49e7d
@@ -124,9 +124,11 @@ blocking: false
 
 Five passes over the sixth exemption group: a clause-scoped predicate for a criterion asserting a path was never created, its canonical record in 045, its adopter-facing restatement, and Family 18's 18e arm binding the three. **0 MUST, 0 SHOULD outstanding.**
 
-Two findings were surfaced by these passes and fixed in `a0036cbd`, before this record: 18e skipped a consumer whose derivation came back empty, which is a silent pass in the exact shape the family exists to refuse, and the predicate allocated a Vec per clause to compare the first negator's index against the last verb's, where one pass carrying a boolean says the same thing. Both are verified — the fail-closed arm by reformatting `analyze.md`'s bullet so its groups no longer parse while the bullet survives, and the predicate by the suite plus the reproduction probe.
+**Re-recorded at the same verdict.** The first record was written before a one-clause grounding fix to `criterion-negated-creation-phrasing.md` — attributing the reporting repo's finding count to the report rather than stating it as a measurement taken here — which staled its own `reviewed-digest`. Family 19 caught it at the release gate. The passes below covered the edited file; nothing in their conclusions moved. The lesson is ordering: land every durable-contract edit before the record that digests it.
 
-**Security** — nothing reached. The change adds no I/O, no path resolution and no process execution; it reads criterion text the primitive already held and returns a bool. **Reuse** — no clause splitter existed in the runtime to delegate to (checked); the Rust string-literal parser 18b and 18e would each have carried is now one helper. **Efficiency** — the predicate is one allocation-free pass over a criterion's words, short-circuiting on the first match. **Simplicity** — the exemption stays whole-criterion, and the clause scoping decides only whether one further exemption applies, so nothing previously suppressed changes. **Quality** — each of the three rules that keep the predicate from collapsing into `was created` is pinned by a test, including the counter-case where a negator and a creation verb sit in different clauses.
+Three findings were surfaced by these passes and fixed in `a0036cbd`, before the first record: 18e skipped a consumer whose derivation came back empty, which is a silent pass in the exact shape the family exists to refuse; 18b and 18e each carried a copy of the Rust string-literal parser; and the predicate allocated a Vec per clause to compare the first negator's index against the last verb's, where one pass carrying a boolean says the same thing. The fail-closed arm is verified by reformatting `analyze.md`'s bullet so its groups no longer parse while the bullet survives; the predicate by the suite plus the reproduction probe.
+
+**Security** — nothing reached. The change adds no I/O, no path resolution and no process execution; it reads criterion text the primitive already held and returns a bool. **Reuse** — no clause splitter existed in the runtime to delegate to (checked). **Efficiency** — the predicate is one allocation-free pass over a criterion's words, short-circuiting on the first match. **Simplicity** — the exemption stays whole-criterion, and the clause scoping decides only whether one further exemption applies, so nothing previously suppressed changes. **Quality** — each of the three rules that keep the predicate from collapsing into `was created` is pinned by a test, including the counter-case where a negator and a creation verb sit in different clauses.
 
 **What these passes read: 13 of 47 in-scope files** — the runtime change, the three restatements, the audit family and its README entry, and the six spec artifacts carrying the contract. **Not read, and named rather than folded into the numerator:** the CI workflows, `README.md`, `framework/bootstrap/ductus.md`, the other command sources, the `runtime/src/{interpreter,mcp,parser,schema}` and `runtime/tests` subtrees, 022's `plan.md` and `data-model.md`, and 022's other 99 scenarios. None is touched by this change, and none was re-read; this is a scoped review of one scenario, not a pass over 022's contracts.
 

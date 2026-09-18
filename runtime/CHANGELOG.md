@@ -2,6 +2,40 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.52.1] — 2026-09-18
+
+### Fixed
+
+- **`criterion-path-existence` flagged a criterion asserting that a path was
+  never created.** The `not-a-live-claim` exemption covered a path that
+  existed and was *removed* — `deleted`, `no longer exists`, `is renamed to`
+  and eleven more — but had no member for one asserting a path had **never
+  been brought into existence**. A `done` spec's criterion reading ``…no
+  nested `server/.git/` repository was created`` was reported as naming a path
+  that no longer resolves, which is the finding exactly backwards: the
+  criterion is satisfied *because* the path does not resolve.
+
+  It could not be fixed by appending to the phrase list. Matching is a flat
+  substring test over the whole criterion, so `was created` — the only phrase
+  spanning every criterion of this shape — would have exempted positive
+  delivery claims too (``the migration file `db/migrate/…` was created``) and
+  blinded the family, which is strictly worse than the false positive. The
+  narrower `was never created` does not over-exempt but misses the reported
+  word order, where the negator is separated from its verb by the noun it
+  negates.
+
+  A sixth exemption group now carries the construction as a clause-scoped
+  predicate: a criterion is exempted whole when one of its clauses holds a
+  negator (`no`, `not`, `never`, `without`) **before** a creation verb
+  (`created`, `added`, `introduced`), matched as whole words. Clauses split on
+  `;`, `,` and a period *followed by a space* — never the bare character,
+  which would cut `server/.git/` and `master.key` between the negator and the
+  verb. Both word lists are closed and framework-fixed, like the phrases, and
+  `/ductus:audit` Family 18 now binds them across all three restatements.
+
+  Precision only: no criterion that was previously exempted becomes a finding,
+  and the phrase count is unchanged at fourteen.
+
 ## [0.52.0] — 2026-09-17
 
 ### Fixed

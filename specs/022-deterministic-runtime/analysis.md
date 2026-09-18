@@ -1,7 +1,7 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-18T00:20:54Z
-analyzed-against: 9167ce7bf81d3175af0d04b514b8dca6c1a267db
+last-run: 2026-09-18T00:22:57Z
+analyzed-against: 69e0d164b11ab8cb4a550dd23b926d8265631a65
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
@@ -10,7 +10,7 @@ captured-issues: 0
 analyzed-digest:
   data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 9ad93197124e7fe94792dad126358a04b784b493823d870988ce66b0513f3e3a
+  review.md: d0f8d20e17936c359df474a6665c1f7b808f3704b7d4c0875bc73325e70d54b9
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
