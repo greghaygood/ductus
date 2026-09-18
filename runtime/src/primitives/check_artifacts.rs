@@ -1495,13 +1495,15 @@ const CREATION_VERBS: [&str; 3] = ["created", "added", "introduced"];
 ///   claim carrying a trailing qualifier.
 fn asserts_negated_creation(lowered: &str) -> bool {
     clauses(lowered).any(|clause| {
-        let words: Vec<&str> = clause
-            .split(|c: char| !c.is_ascii_alphanumeric())
-            .filter(|word| !word.is_empty())
-            .collect();
-        let negator = words.iter().position(|w| CREATION_NEGATORS.contains(w));
-        let verb = words.iter().rposition(|w| CREATION_VERBS.contains(w));
-        matches!((negator, verb), (Some(n), Some(v)) if n < v)
+        let mut negated = false;
+        for word in clause.split(|c: char| !c.is_ascii_alphanumeric()) {
+            if CREATION_NEGATORS.contains(&word) {
+                negated = true;
+            } else if negated && CREATION_VERBS.contains(&word) {
+                return true;
+            }
+        }
+        false
     })
 }
 

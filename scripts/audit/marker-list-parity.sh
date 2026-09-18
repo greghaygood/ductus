@@ -111,6 +111,18 @@ def spans(cell):
     return out
 
 
+def rust_literals(body):
+    """String literals in a Rust array body, comment lines stripped first.
+
+    Stripping is what keeps a phrase quoted in a `//` comment from being read
+    as an entry. Shared by 18b and 18e, which parse the same array shape.
+    """
+    uncommented = "\n".join(
+        line for line in body.splitlines() if not line.strip().startswith("//")
+    )
+    return re.findall(r'"((?:[^"\\]|\\.)*)"', uncommented)
+
+
 # --- 18a: derive from the canonical table -----------------------------------
 
 text = open(canon_md, encoding="utf-8").read()
@@ -167,12 +179,7 @@ if not decl:
     )
 else:
     declared_len = int(decl.group(1))
-    # Strip comment lines before reading literals so a phrase quoted in a
-    # `//` comment is never mistaken for an array entry.
-    body = "\n".join(
-        line for line in decl.group(2).splitlines() if not line.strip().startswith("//")
-    )
-    rust = re.findall(r'"((?:[^"\\]|\\.)*)"', body)
+    rust = rust_literals(decl.group(2))
     rust_set = set(rust)
     if declared_len != len(rust):
         emit(
@@ -326,12 +333,7 @@ else:
                 "or update scripts/audit/marker-list-parity.sh",
             )
             continue
-        body = "\n".join(
-            line
-            for line in found.group(2).splitlines()
-            if not line.strip().startswith("//")
-        )
-        literals = re.findall(r'"((?:[^"\\]|\\.)*)"', body)
+        literals = rust_literals(found.group(2))
         if int(found.group(1)) != len(literals):
             emit(
                 "runtime/src/primitives/check_artifacts.rs",
@@ -381,6 +383,13 @@ else:
         ),
     ):
         if not got:
+            # Fail closed, the same direction 18a takes. A restatement that
+            # still exists but no longer parses is exactly the shape that
+            # would otherwise read as agreement.
+            emit(label,
+                 "parsed zero negated-creation words from this restatement — "
+                 "it is missing or no longer matches the shape the audit reads",
+                 fix)
             continue
         missing = canonical_words_set - got
         extra = got - canonical_words_set
