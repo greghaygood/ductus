@@ -1,21 +1,20 @@
 ---
 spec: 026-framework-self-audit
-last-run: 2026-09-16T15:52:43Z
-analyzed-against: da615a74fb3e5de32ab794946d87230c570a0e8e
+last-run: 2026-09-18T00:20:54Z
+analyzed-against: 9167ce7bf81d3175af0d04b514b8dca6c1a267db
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 14
 captured-issues: 0
 analyzed-digest:
-  analysis.md: c90cd373acc0b9cc258913076bd1c1aef06998252431e1952332c0921c3de07d
   plan.md: 9c4dc8504682605f915315025b7fa65a6dc7418bdd53dcf969871e1e35b045b3
-  review.md: 146fd32409452082a969b034dfd3fd8799b768c1c7e717fb768a56d531d52440
+  review.md: 946fadc30d6f8cc6a8cd91c0e853febe5cd999b6a7eb5815955fbd76a6bcd0e2
   scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
   scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
   scenarios/family-10-migration-coverage.md: 8684e643e4ea938cbeeed6d1342aef27efc84a7bf7559b111b6a12cacacfa02b
   scenarios/family-17-contract-binding.md: 1ab3dfbc5c53ca5ab082b587a299b1951c8dd3c3e29148db5ed3a5df50903faf
-  scenarios/family-18-marker-list-parity.md: e2f5e57dc51efec37f63fdc419d1c78ae4afb8319bcd41b604a2c22507af6296
+  scenarios/family-18-marker-list-parity.md: 8d48555ad2ec2a7983bfa8dac24c6edf9dcbc051037ae6b00c9ec5e26f767e4d
   scenarios/family-19-mechanical-sweep-exemption.md: 1aed9678cb90da55fb314f9f8bd26addb3baebdbad04bda48fb11deeb95c4089
   scenarios/family-19-review-freshness.md: 07adf4f5f7f0590e90c043d9254534f10f77fc717fb951bd7dfe2ff42a74d787
   scenarios/family-19-says-what-it-examined.md: 2ee343d1295dfc755ea19ae453e5edd61dfb7cdb3d1eecdd46865d54be48621d
@@ -32,8 +31,8 @@ analyzed-digest:
   scenarios/host-namespace-parity.md: 05714fe6b728391f699ed7328e1aea252a48259ae489fa9c06e0d0609dc1d376
   scenarios/link-check-consolidation.md: f838133a535aa090e09d7f82903facc4dff8cc822c1dec5c22f9b4d1e17a5049
   scenarios/readme-command-parity.md: 3788aa1103dba1860af8cb9950a6425ed33e4a24498f825fcd980e0c9bb7f8bc
-  spec.md: 0ec33d54bbe8255e3d26ed49639d87a80052250c5c83962a1dc18fb12fcdec50
-  tasks.md: 139112314b2de5b674945260a7c84d17d5826a0995417343700bfa44d30224b2
+  spec.md: e2d891148dcdcfb386bdf39501c9dae3ea0e039145e910a1dbe9ac67fed74ee3
+  tasks.md: 3b9b37e455b2e6ec40b3d6f991f1d491f5c061e1ffcf42d21f152098157c9a15
 unexamined-by-reason:
   not-a-live-claim: 14
 blocking: false

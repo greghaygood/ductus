@@ -1,17 +1,18 @@
 ---
 spec: 045-decision-state-drift-detection
-last-run: 2026-09-14T02:40:43Z
-analyzed-against: fce54541279920b0a3c030cf5118061d60d58541
+last-run: 2026-09-18T00:20:54Z
+analyzed-against: 9167ce7bf81d3175af0d04b514b8dca6c1a267db
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 2
+captured-issues: 0
 analyzed-digest:
-  data-model.md: 18ef73385daae1bdb2e92eec3bbdb16109ac66c6509cc8d7903e6dd515ee2438
+  data-model.md: c2d0f42b02c5bbd6f6d35932f68cc0a41534defd0ea3484aa7e3c073564564bc
   plan.md: 56070003e45b56df0445724231de46056edc782ccdfc3132f81576e955251d4d
-  review.md: b8bc5d09927c836009c1a5d1986b78f2bf0f1b0940555e97b461ded31e20ec2d
-  spec.md: 5d3049798a67dc33046bcb1c537f2672c29787b621b491ffe9f34da8c5abe95e
-  tasks.md: 7dde1af3d629770b9cf05eca06706271825deb24b6e3e308e51e743cd281ea1c
+  review.md: 375df9002c6ca69a9f3206193b992a6f7aa4aef00c653986b0513c03eefab23f
+  spec.md: 76b5e81a657455e57104ff644195bc39b85a19385b265f2c30489ab1d00dca8a
+  tasks.md: 8b46078bdad8d7f1d9d0823451246d232c0be79926c3411bc6b9223d3ce8d8bf
 unexamined-by-reason:
   not-a-live-claim: 2
 blocking: false
@@ -21,4 +22,24 @@ blocking: false
 
 ## Summary
 
-Relocated from the spec's frontmatter by the record-relocation migration. The counts above are the recorded run's; this report body begins at the next run.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+
+## Hard failures
+
+*None.*
+
+## Blocking findings
+
+*None.*
+
+## Advisory findings
+
+*None.*
+
+## Unexamined targets
+
+- not-a-live-claim: 2
+
+## Captured issues
+
+*None.*

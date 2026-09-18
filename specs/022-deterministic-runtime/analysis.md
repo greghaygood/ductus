@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-17T02:15:40Z
-analyzed-against: f4d398294ab28638cbd0d282f64dd25319fda411
+last-run: 2026-09-18T00:20:54Z
+analyzed-against: 9167ce7bf81d3175af0d04b514b8dca6c1a267db
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 0
+unexamined: 2
 captured-issues: 0
 analyzed-digest:
   data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: a415a4ad98735e7d1739e807e8443b2fa320716dd9c8ea3f6f677407ddd9d97f
+  review.md: 9ad93197124e7fe94792dad126358a04b784b493823d870988ce66b0513f3e3a
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -39,8 +39,9 @@ analyzed-digest:
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
+  scenarios/criterion-negated-creation-phrasing.md: 6c6e67594b22bafbdadf79658c57f6abf1a590b5304556a5fa05c9efb63af266
   scenarios/criterion-non-assertion-phrasings.md: 9509f4ef1affca714b18825cad5870d7d8edbf6c8f8beb2f81fcb81363456e83
-  scenarios/criterion-path-existence-family.md: 90be23f6f7a0182d9cee0b1aac53f960c4f66c1f6b7fe666852eaa1b5076f905
+  scenarios/criterion-path-existence-family.md: 8721bee74ec7d0e1bc8aa30efefcac70d0da6fcc489b1c5893c571558b63ace7
   scenarios/dashboard-primitive.md: 6fca09779d8eedf9a791ccfe87b5d63a0bfb427eff6ac41545fde8509ba49e7d
   scenarios/derive-boundary-uncommitted-spec-dir.md: ca28aaef13416801e00bc40d9d58da09c7a513b237bb659597e1efc91a0aaef5
   scenarios/derive-references-unstaged-drift-is-reported.md: 358d0b1eb96d338a4dee7ee026382bd9011599407d408d5921e564ec4862d846
@@ -112,8 +113,10 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: 52a3795c93e1bbd5e10aed6eba2a914d07f7a09763ee9eea3922057d6d3e202b
-  tasks.md: 6209c7812570b164c7bf8857552633291ed8aac8cc9971cda4956edc139d678e
+  spec.md: 22f81c709736fe15a2ec56e728c1716bc9565db3130f341323bbcd42b87299fc
+  tasks.md: cbc45c533bf15332be05061f2723d0208ee0406861ea5caa978924906d55dd37
+unexamined-by-reason:
+  not-a-live-claim: 2
 blocking: false
 ---
 
@@ -121,7 +124,7 @@ blocking: false
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
 
 ## Hard failures
 
@@ -137,7 +140,7 @@ blocking: false
 
 ## Unexamined targets
 
-*None — every target was examined.*
+- not-a-live-claim: 2
 
 ## Captured issues
 
