@@ -106,6 +106,33 @@ restatement only, the canonical section renamed) plus the restored baseline.
   one union, matching `18a`–`18c`'s stance that the contract is the set and the
   grouping is editorial. A negator swapped into the verb row is not a drift
   mode anyone has; a word dropped from either list is, and the union catches it.
+- **Measured across this repo's corpus, both binaries: 0 findings before, 0
+  findings after.** No true positive is lost and none is gained; the fix is
+  precision-only here. What moves is the skipped set — `not-a-live-claim`
+  109 → 118, `ships-to-adopter` 12 → 9, `root-absent` unchanged at 19 — because
+  an exempted criterion records *every* path it names, including ones that
+  resolve and were previously recorded nowhere.
+- **The over-exemption rate is real and is stated rather than implied: 14
+  criteria across 55 specs newly match, and 4 of them match for a reason other
+  than a path's creation.** 012's AC11 (`is **not** the canonical set — later
+  specs added the rule files`), 022's own AC27 (`never held against a violation
+  introduced after it closed`), 025's AC9 (`NOT retro-added to spec 019`) and
+  051's AC14 (`No branch-scoped state is persisted … a branch that created
+  branch-scoped specs`) each put a negator ahead of a creation verb inside one
+  clause while negating something that is not a path coming into existence.
+  None costs a finding today — their paths are `ships-to-adopter`, resolve, or
+  are not path candidates at all — but each is a criterion whose live paths now
+  go unchecked if they later disappear. This is the same whole-criterion
+  silence the phrase groups already accept, at a measured rate rather than an
+  assumed one.
+- **Splitting on the em dash as well was considered and rejected.** It would
+  move 2 of those 4 (012's AC11 and 051's AC14) and leaves the other 2, whose
+  negator and verb genuinely share a clause — telling those apart needs
+  semantic judgment, which
+  [§runtime-boundary](../../../framework/constitution.md#runtime-boundary)
+  places at an extension point. For a change worth zero findings it also moves
+  the splitter toward `;`-plus-em-dash, which is the clause rule 045 measured
+  and rejected below. The residual rate is accepted and recorded instead.
 - **This is not the clause-scoped design 045 measured and rejected.** 045
   §Resolved Questions rejected checking a removal-phrased criterion by
   *inverting* the assertion, and the implementation it built was also
