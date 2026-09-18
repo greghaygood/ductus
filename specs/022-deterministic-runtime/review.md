@@ -1,14 +1,15 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-17T02:15:24Z
-reviewed-against: f4d398294ab28638cbd0d282f64dd25319fda411
-diff-base: 563759a4c69ca75562a173759b78acd449e8b573
+scenario: criterion-negated-creation-phrasing
+last-run: 2026-09-18T00:19:13Z
+reviewed-against: 7340a41d16af2b90fec56ff362c5a2da3952a9c9
+diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
 examined: 13
-scope: 44
+scope: 47
 skipped-passes: []
 reviewed-digest:
   data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
@@ -40,8 +41,9 @@ reviewed-digest:
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
+  scenarios/criterion-negated-creation-phrasing.md: b5221275021c5ce764c300fe7a9b10fe0ff051afa9b99ebd0489b76e35f9bd86
   scenarios/criterion-non-assertion-phrasings.md: 9509f4ef1affca714b18825cad5870d7d8edbf6c8f8beb2f81fcb81363456e83
-  scenarios/criterion-path-existence-family.md: 90be23f6f7a0182d9cee0b1aac53f960c4f66c1f6b7fe666852eaa1b5076f905
+  scenarios/criterion-path-existence-family.md: 8721bee74ec7d0e1bc8aa30efefcac70d0da6fcc489b1c5893c571558b63ace7
   scenarios/dashboard-primitive.md: 6fca09779d8eedf9a791ccfe87b5d63a0bfb427eff6ac41545fde8509ba49e7d
   scenarios/derive-boundary-uncommitted-spec-dir.md: ca28aaef13416801e00bc40d9d58da09c7a513b237bb659597e1efc91a0aaef5
   scenarios/derive-references-unstaged-drift-is-reported.md: 358d0b1eb96d338a4dee7ee026382bd9011599407d408d5921e564ec4862d846
@@ -120,17 +122,13 @@ blocking: false
 
 ## Summary
 
-Five passes over task 121's change — the severity closed-set binding — across the 13 files it touched, of a 44-entry scope whose remainder is plan-affected directories untouched in this window.
+Five passes over the sixth exemption group: a clause-scoped predicate for a criterion asserting a path was never created, its canonical record in 045, its adopter-facing restatement, and Family 18's 18e arm binding the three. **0 MUST, 0 SHOULD outstanding.**
 
-No MUST or SHOULD violations, and no observations: the one finding this pass produced was raised by its own reuse pass against `severity.rs` (`ALL` hand-maintained beside the variants it restated, so a new tier could quote an incomplete legal set in every rejection message) and was fixed in `f4d39829` before this record was written, rather than recorded as outstanding.
+Two findings were surfaced by these passes and fixed in `a0036cbd`, before this record: 18e skipped a consumer whose derivation came back empty, which is a silent pass in the exact shape the family exists to refuse, and the predicate allocated a Vec per clause to compare the first negator's index against the last verb's, where one pass carrying a boolean says the same thing. Both are verified — the fail-closed arm by reformatting `analyze.md`'s bullet so its groups no longer parse while the bullet survives, and the predicate by the suite plus the reproduction probe.
 
-Security: the change moves in the safe direction — it adds validation at a trust boundary, rejecting unrecognized LLM-supplied severity values that previously resolved to the permissive tier. No unwrap or expect reaches production code; the one `expect` is in a `#[cfg(test)]` helper.
+**Security** — nothing reached. The change adds no I/O, no path resolution and no process execution; it reads criterion text the primitive already held and returns a bool. **Reuse** — no clause splitter existed in the runtime to delegate to (checked); the Rust string-literal parser 18b and 18e would each have carried is now one helper. **Efficiency** — the predicate is one allocation-free pass over a criterion's words, short-circuiting on the first match. **Simplicity** — the exemption stays whole-criterion, and the clause scoping decides only whether one further exemption applies, so nothing previously suppressed changes. **Quality** — each of the three rules that keep the predicate from collapsing into `was created` is pinned by a test, including the counter-case where a negator and a creation verb sit in different clauses.
 
-Quality: the defect's root — an `else` catch-all reached by any non-`must` severity, writing `blocking: false` past the gate — is removed by construction rather than guarded, since the bucketing is now a `match` over a closed set with no catch-all arm. Proven by probe through `exec review`, the real extension-point path, in four directions including the cross-vocabulary case. Records stay byte-identical: every parity golden and exec fixture passes untouched.
-
-Reuse: the three vocabularies share one macro for their whole string surface, so `ALL`, `as_str`, `FromStr`, `Display` and `Deserialize` cannot disagree. They stay three types rather than one enum deliberately — merging would make the cross-vocabulary error representable in the type introduced to forbid it.
-
-Efficiency and simplicity: no loops, queries, or allocation added; the types are `Copy`. A test asserting `ALL`'s length against the variant count was considered and rejected as redundant — omission is already a compile error in `as_str`'s match.
+**What these passes read: 13 of 47 in-scope files** — the runtime change, the three restatements, the audit family and its README entry, and the six spec artifacts carrying the contract. **Not read, and named rather than folded into the numerator:** the CI workflows, `README.md`, `framework/bootstrap/ductus.md`, the other command sources, the `runtime/src/{interpreter,mcp,parser,schema}` and `runtime/tests` subtrees, 022's `plan.md` and `data-model.md`, and 022's other 99 scenarios. None is touched by this change, and none was re-read; this is a scoped review of one scenario, not a pass over 022's contracts.
 
 ## MUST violations (blocking)
 

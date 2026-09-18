@@ -1,21 +1,22 @@
 ---
 spec: 026-framework-self-audit
-last-run: 2026-09-16T15:51:43Z
-reviewed-against: 8e238dabc40e0d620c1c2e525832be254296430a
-diff-base: ddfd95edc715fa17c24bb0a8273bf96c4814bb51
+scenario: family-18-marker-list-parity
+last-run: 2026-09-18T00:19:27Z
+reviewed-against: 7340a41d16af2b90fec56ff362c5a2da3952a9c9
+diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 6
-scope: 22
+examined: 13
+scope: 30
 skipped-passes: []
 reviewed-digest:
   scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
   scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
   scenarios/family-10-migration-coverage.md: 8684e643e4ea938cbeeed6d1342aef27efc84a7bf7559b111b6a12cacacfa02b
   scenarios/family-17-contract-binding.md: 1ab3dfbc5c53ca5ab082b587a299b1951c8dd3c3e29148db5ed3a5df50903faf
-  scenarios/family-18-marker-list-parity.md: e2f5e57dc51efec37f63fdc419d1c78ae4afb8319bcd41b604a2c22507af6296
+  scenarios/family-18-marker-list-parity.md: 8d48555ad2ec2a7983bfa8dac24c6edf9dcbc051037ae6b00c9ec5e26f767e4d
   scenarios/family-19-mechanical-sweep-exemption.md: 1aed9678cb90da55fb314f9f8bd26addb3baebdbad04bda48fb11deeb95c4089
   scenarios/family-19-review-freshness.md: 07adf4f5f7f0590e90c043d9254534f10f77fc717fb951bd7dfe2ff42a74d787
   scenarios/family-19-says-what-it-examined.md: 2ee343d1295dfc755ea19ae453e5edd61dfb7cdb3d1eecdd46865d54be48621d
@@ -39,19 +40,13 @@ blocking: false
 
 ## Summary
 
-Re-review for spec 057's retirement of audit Family 31, which reopened this spec to discharge 057's `cross-spec-impact:` entry. Five passes over the resolved scope; 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers (`process-waivers` returned empty in every bucket).
+Five passes over Family 18's new `18e` arm, which binds the negated-creation predicate's two word lists across the same three restatements 18a-18c bind the phrase list. **0 MUST, 0 SHOULD outstanding.**
 
-**What changed.** 057 merged the review record's two homes into `review.md`, which leaves Family 31 — the check that reconciled them — with an empty subject by construction: its subject was defined as the *intersection* of specs carrying both records. The primitive, its schema types, `scripts/audit/review-block-agreement.sh` and the family's registry entries were removed by 057's task 14. Here that is discharged three ways: a signpost at the top of `spec.md`, AC22 annotated rather than deleted, and `scenarios/family-31-review-block-agreement.md` deleted outright per §scenarios, which says an obsolete scenario is deleted rather than given a status. The worked example the scenario carried is preserved in the AC22 annotation — 031 and 041 both recording `should-violations: 1` in `spec.md` against their own `review.md`'s `0` for weeks, and the hand-moved waiver with no `review.waivers` entry that caused it — because that incident is the argument 057 acted on, and what is genuinely lost is stated with it: nothing now compares `examined` against a non-empty `scope`.
+One finding was surfaced by these passes and fixed in `a0036cbd`, before this record: 18e skipped a consumer whose derivation came back empty. That is a silent pass in precisely the shape this family exists to refuse — a restatement that still exists but no longer parses reads as agreement — and it is the fail-open 18a was written to avoid. It now emits, and the arm is proven by reformatting `analyze.md`'s bullet so its groups no longer parse while the bullet itself survives.
 
-**Two things task 19 did not name, found by reading rather than by grep.** `scenarios/family-19-says-what-it-examined.md` is a contract on `review-freshness.sh`'s coverage line and still specified `G grandfathered (no review: block)` — the predicate task 20 re-pointed. Corrected to `(no review.md)` and verified character-for-character against the shipped line. The scenario gains what its own subject makes it the right home for: keyed on the block's absence, the relocation would have made that predicate true of every spec, so Family 19 would have examined nothing and exited **green** — this scenario's own failure mode arriving through the predicate rather than the exit code. Its "three siblings" list is annotated rather than rewritten, with the observation that one of the three has since been retired for exactly the fault it shamed Family 19 over. Second, `framework/commands/audit.md`'s Family 19 entry described the check as reading `review.reviewed-against`; corrected with `scripts/audit/README.md`'s matching line, in a separate commit because their subject is the documentation sweep rather than this spec.
+**Grounding** — an exit code is not evidence a check ran, so 18e was verified by injected drift in four directions, not by the clean baseline: a word dropped from `CREATION_VERBS` (caught, with the stale declared length reported alongside), a word added to `analyze.md` alone, the canonical section renamed (the fail-closed empty derivation), and the unparseable-but-present restatement above. The restored baseline exits 0. **Reuse** — 18b and 18e parsed the same Rust array shape with a copy of the literal regex each; that is now one `rust_literals` helper. **Simplicity** — 18e reuses 18c's structural filter (only parenthesised groups that are entirely comma-separated code spans) rather than inventing a second convention, and compares the two word lists as one union, matching 18a-18c's stated position that the contract is the set and the grouping is editorial. **Security** — read-only, no writes outside the contract, unchanged. **Quality** — deliberately no count arm: the predicate's prose states no count, and that choice is recorded in the script, the scenario and the README rather than left implicit.
 
-**The registry surfaces were checked rather than assumed.** Family 28 holds `run-all.sh`'s registered set, `audit.md`'s enumerated set and `README.md`'s script list in agreement, and it is green — but a green parity check over three sets that all dropped the family together proves only that they agree. Each was read directly: `run-all.sh` has no `review-block` registration, `audit.md`'s numbered list runs 26, 30, 32-38 with no 31, and `README.md` carries no `review-block-agreement.sh` entry. Family numbers are permanent identifiers and 31 is not reused, matching what Behavior §3 already records for the retired Family 3.
-
-**Scope.** `diff-base` ddfd95ed, 22 in scope. Examined **6 of 22**, and the sixteen unread are named rather than folded into the numerator, because most of this scope is the plan's Affected Files list rather than this window's changes. Read in full: this spec's `spec.md`, both of the scenarios above (one of them immediately before deleting it), 047's `analyze-run-durability.md` and `spec.md`, and 057's `tasks.md`. Read only in the regions this review's claims assert on: `framework/commands/audit.md` (the family registry and the Family 19, 26, 30, 32-38 entries), `framework/constitution.md` (§spec-lifecycle, §implement-phase, Frontmatter Schema, Validation Severity) and `scripts/audit/README.md` (the Family 19 entry) — each confirmed against the live file where a claim here rests on it, none read end to end. **Not read at all: nine `scripts/audit/*.sh` files** (`adopter-shell-behavior`, `check-zero`, `cross-doc-consistency`, `introducing-drift`, `manifest-parity`, `placeholder-roundtrip`, `sibling-coupling` beyond its header, `ssot-invariants`, `template-alignment`), the two `.github/workflows/*.yml` files, `runtime/legacy-prose-commands.txt`, and `.claude/commands/ductus/audit.md`, the generated mirror of a source that was not fully read either. None of them changed in this window; that is a reason to expect them clean, not evidence that they are, so they are counted as unexamined.
-
-**Passes.** Security, reuse and efficiency had no subject — this window's changes are a file deletion and prose corrections. Quality carried the weight against `quality-cross.md`: the Family-19 coverage-line correction *is* a `QUAL-CLAIM-001` repair, since the contract as written would have been satisfied by a family reporting every spec grandfathered over zero examined. Simplicity: deleting the scenario rather than marking it superseded is the simpler of the two dispositions and the one §scenarios requires; the AC22 annotation carries the content that had to survive it.
-
-**One judgement recorded because it decided what was not done.** Family 7 (sibling-spec coupling) went red during this work, naming 057 against 020, 047 and 026 as bundling candidates. Its subject is pairs of **non-`done`** specs, so the finding is an artifact of three specs being reopened at once and clears when they close. It was not suppressed with the `Why split from …` contract the family provides: the pairing is a scheduling coincidence, and recording a split rationale for it would put a permanent suppression in the corpus for a transient state.
+**What these passes read: 13 of 30 in-scope files** — the audit family and its README entry, the runtime constants it binds, the three restatements, and the spec artifacts carrying the contract. **Not read:** the other family scripts under `scripts/audit/`, `run-all.sh`, `framework/commands/audit.md`, 026's `spec.md`, `plan.md` and its other scenarios, and the CI workflows. This change adds one arm to one family and touches none of them.
 
 ## MUST violations (blocking)
 

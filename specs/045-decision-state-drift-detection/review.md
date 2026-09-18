@@ -1,17 +1,17 @@
 ---
 spec: 045-decision-state-drift-detection
-diff-base: 877eab5f675d09724a65390ca2ee3c161b8081f9
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-14T02:39:20Z
-reviewed-against: de98121ca2fb53c7a226e5c31463d46c0fff30cc
+last-run: 2026-09-18T00:19:20Z
+reviewed-against: 7340a41d16af2b90fec56ff362c5a2da3952a9c9
+diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 10
-scope: 19
+captured-issues: 0
+examined: 13
+scope: 26
+skipped-passes: []
 reviewed-digest:
-  data-model.md: 18ef73385daae1bdb2e92eec3bbdb16109ac66c6509cc8d7903e6dd515ee2438
+  data-model.md: c2d0f42b02c5bbd6f6d35932f68cc0a41534defd0ea3484aa7e3c073564564bc
 blocking: false
 ---
 
@@ -19,17 +19,13 @@ blocking: false
 
 ## Summary
 
-Backfill pass over a review record written before `ductus-v0.49.0`: it carried no `examined`, no `scope` and no `reviewed-digest`, so freshness read as undeterminable and a run that skipped its passes would have been byte-identical to one that did not. All five passes ran against the resolved scope. No MUST, SHOULD or low-confidence findings.
+Five passes over the sixth exemption group this spec's `criterion-path-existence` family gained: a criterion asserting a path was never created is exempted whole, recorded as `not-a-live-claim`, and stated as AC19. **0 MUST, 0 SHOULD outstanding.**
 
-**Scope and base.** Both bases were measured after this pass's own correction commit and recorded before choosing. The natural base `877eab5f` resolves 5 modified-since / 19 in scope against a plan affecting 17; `--since HEAD` (`de98121c`) gives 0 / 17. The natural base was taken because it covers the five files this pass edited, which HEAD excludes by construction. The pre-reopen natural base was `c27a08f4` at 397 / 402 over a 96,366-byte payload; the reopen collapsed it to 1,997 bytes, so both legs returned inline and the base was chosen on the merits rather than on which one was readable.
+The finding this fixes was reported from an adopter running 0.52.0 and is exactly backwards in the sense this spec's data-model already names: the path is absent, which is precisely what the criterion asserts. It could not be a fifteenth phrase — matching is a flat `contains`, so `was created` would exempt positive delivery claims and blind the family, while `was never created` misses the reported word order. Both directions are proven by probe against a fixture reproducing the criterion.
 
-**examined 10 of 19.** Read in full: this spec's `spec.md`, `plan.md` and `data-model.md`; `framework/commands/analyze.md`; `framework/constitution.md`; `runtime/Cargo.toml`; and 022's four scenarios carrying this spec's runtime work. Named rather than counted, each with what was relied on instead: `.claude/commands/ductus/analyze.md` is a generated mirror of a source read in full, and the generator re-ran in this pass reporting all 16 command copies in sync; `runtime/src/primitives/check_artifacts.rs` was read across its module header and the whole of both 045 families with their helpers, but not its test module at lines 1631-3518; `runtime/src/primitives/mod.rs` was read at `split_blocks` and `MarkdownBlock` only, `runtime/src/schema/primitives.rs` at `SkippedTarget` and `ArtifactFinding` only, and `runtime/src/mcp/server.rs` at the `check-artifacts` tool description only; `specs/022-deterministic-runtime/data-model.md` was read at its `check-artifacts` section only; and `runtime/CHANGELOG.md`, 022's `spec.md` and 022's `tasks.md` were not opened at all.
+**Grounding** — the recorded decision at `spec.md:124` rejects checking a removal-phrased criterion by *inverting* it, and the implementation it rejected was also clause-scoped. Verified that this is not that decision re-adopted: there the clause scoping decided attribution, which is the semantic judgment §runtime-boundary places at an extension point; here it decides only whether one further exemption applies, the exemption stays whole-criterion, and the fourteen phrases are still matched across the whole criterion — so an appended annotation suppresses exactly what it suppressed before, and the six findings that returned under the rejected design cannot return under this one. The distinction is recorded in the scenario rather than left for a reader to re-derive. **Security / efficiency** — nothing reached; the predicate is one allocation-free pass over a criterion's words. **Reuse** — the canonical table stays the single source; `analyze.md` restates it because adopters have no copy, and 18e now binds the two. **Simplicity** — this is a precision fix only: no criterion that was silently exempted becomes a finding. **Quality** — AC19 states the clause scoping, which is the half that could regress silently.
 
-**Corrections this pass made**, committed in `de98121c` ahead of this review so the digest covers them. The canonical `data-model.md` called its `SkippedTarget` reason set closed at six where the runtime emits seven — the missing `not-a-live-claim` being the one this spec's own analyze record counts, and the one `analyze.md` and 022's registry both already carried, making the canonical copy the outlier. `ArtifactFinding` was cited at `primitives.rs:2189` against a declaration that sits at `:3430`. A `§Behavior` reference named no document on its own line, so it read as a claim about the constitution. AC18, the Motivation table and the data-model's worked example each attributed both of the originating case's deletions to `531e3ea`, which deleted only `framework/workflows/registry.json`; `scripts/audit/registry-equivalence.sh` went in `3ff65445`. `plan.md` restated the path grammar in four bullets where the canonical table has six, and now points at it. And `analyze.md` gained the third `review-state-drift` condition that task 15 shipped and never documented — the omission that had left that section's own closing paragraph referring to a count no bullet introduced.
-
-**Verified rather than assumed.** The six tells, their classes and their order match `TELLS` exactly; the fourteen non-assertion phrases match `NON_ASSERTION_MARKERS`; the path grammar matches `is_path_like` clause for clause; all four exempt contexts are implemented, the blockquote in `split_blocks` and the code span in `contains_outside_code`; AC18's fixture pins both paths in their present-tense form; and AC10's shared promotion criterion is present in `analyze.md`. Reuse and simplicity are sound by design rather than by accident — `inline_code_spans` is promoted once and shared by both families, criteria come from `read-spec` rather than a second section walker, `list_scenario_files` supplies the scanned set, and `SkipScanner` is deliberately left alone so the four task parsers that share it do not change how they read a quoted line. Efficiency likewise: the adopter-destination manifest is read once per feature rather than per candidate.
-
-One thing examined and judged not a finding: the path grammar admits a parent-directory segment, since `is_path_like` rejects a leading `/` but not a `..` component, so a candidate could reach `repo.join` above the repo root. The operation there is `exists` alone and never an open, the sibling family guards the case that does open files through lexical containment plus a symlink test, and a sweep of every backticked span in every spec's acceptance criteria found zero such candidates.
+**What these passes read: 13 of 26 in-scope files** — the runtime change, the three restatements, the audit family, and the spec artifacts carrying the contract. **Not read:** `framework/constitution.md` beyond §recommendations and a targeted sweep for marker-list claims (it carries none), `runtime/CHANGELOG.md`, `runtime/Cargo.toml`, `runtime/src/mcp/server.rs`, `runtime/src/primitives/mod.rs`, `runtime/src/schema/primitives.rs`, 022's `data-model.md`, `spec.md` and three sibling scenarios, and 026's `spec.md`. None is touched by this change.
 
 ## MUST violations (blocking)
 
@@ -53,7 +49,7 @@ One thing examined and judged not a finding: the path grammar admits a parent-di
 
 ## Observations
 
-- convention: 022's `check-artifacts` registry has fallen behind shipped behaviour in three measured places, and the runtime's own module doc in a fourth. `specs/022-deterministic-runtime/data-model.md:1011` says *Eight families* where nine ship, and `analyze-state-drift` (added by 047) appears nowhere in that file — 0 occurrences. The same line glosses `review-state-drift` as two conditions where three ship; the third is the non-zero `should-violations` check 045's task 15 added, which this pass documented in `analyze.md`. And `specs/022-deterministic-runtime/scenarios/criterion-path-existence-family.md`'s final Edge Case still says in the present tense that an adopter-layout path whose top-level segment also exists here *still flags*, which `ships_to_adopter` (landed in `6e37efa5`, under 022 itself) changed to a `ships-to-adopter` skip. `runtime/src/primitives/check_artifacts.rs`'s module doc carries the same two-condition `review-state-drift` gloss, and quotes 045's AC18 with the single-commit attribution this pass corrected. Cost, which is what sets the disposition: the first three are one 022 reopen, and the scenario is a durable contract, so they oblige a full five-pass re-review of the corpus's largest spec — standing operator decision (a) keeps that out of this pass, and the campaign item already records a full 022 re-review as its own unit. The fourth is a `runtime/` doc-comment edit and therefore carries a version bump and a `ductus-v<version>` tag. — `specs/022-deterministic-runtime/data-model.md:1011`
+*None.*
 
 ## Skipped passes
 
