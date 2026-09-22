@@ -201,9 +201,22 @@ non-interactive leg): a `/{project}-…` command resolves from `.pi/prompts/`, t
 round-trips against `runtime/target/release/ductus`, and `ductus exec` resolves the
 `.pi/prompts/` candidate via the session's `cli-config-dir = .pi`.
 
-> **Smoke-test record (2026-09-20, task 13):** {pending — command invoked, tools
-> observed, call round-tripped, exec resolution; any deviation from expected with its
-> resolution.}
+> **Smoke-test record (2026-09-20, task 11):** all four evidence points held.
+> (1) The bridge load is clean: `pi --approve -p … --no-session` in the framework repo
+> (pointer at `.ductus/bin/ductus` → `runtime/target/release/ductus`, session
+> `cli-config-dir = .pi`) completes normally — the extension registers at load without
+> crashing pi. (2) Tool registration proven by live call: prompting the model to call
+> `ductus__read-spec` returned the real spec JSON (frontmatter status `planned`, all 16
+> ACs) — the tool was on the model's menu, the call crossed the bridge to the runtime's
+> MCP server, and the server's own schema produced the result. (3) `ductus exec`
+> resolves the pi candidate: in an adopter-shaped scratch repo (`.pi/prompts/{project}-status.md`,
+> session `cli-config-dir = .pi`), `ductus exec status` dispatched the `dashboard`
+> primitive instead of failing with `command file not found`. (4) The framework repo's
+> own exec uses the framework-local fallback first (correct dogfood behavior — the
+> interpreter's `locate_command_file` tries `framework/commands/…` first). One
+> implementation fix fell out of the probe: the bridge's repo-root resolution must walk
+> up from the working directory to the `.ductus/` marker rather than trust `__dirname`
+> under jiti (pi's loader), which resolved the root one level short in the first attempt.
 
 ## Affected Files
 

@@ -98,8 +98,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 11. In-repo smoke test with the real pi binary
 
-- [ ] With the task-9 surface committed: run `pi` non-interactively in this repo (`--approve`), invoking a `/{project}-…` prompt-template command and observing: the command resolves from `.pi/prompts/`, the `ductus__*` tools are registered from `.pi/extensions/ductus.ts`, a live tool call round-trips (e.g., a read-only primitive), and `ductus exec <command>` resolves the `.pi/prompts/` candidate through the session's `cli-config-dir = .pi`
-- [ ] Record the result in plan §D9 (the smoke-test-record placeholder), deviations included with their resolution
+- [x] With the task-9 surface committed: run `pi` non-interactively in this repo (`--approve`), invoking a `/{project}-…` prompt-template command and observing: the command resolves from `.pi/prompts/`, the `ductus__*` tools are registered from `.pi/extensions/ductus.ts`, a live tool call round-trips (e.g., a read-only primitive), and `ductus exec <command>` resolves the `.pi/prompts/` candidate through the session's `cli-config-dir = .pi`
+- [x] Record the result in plan §D9 (the smoke-test-record placeholder), deviations included with their resolution
 
 - **Done when**: plan §D9 carries the recorded result with no unresolved deviation — AC14's evidence.
 
