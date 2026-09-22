@@ -36,3 +36,5 @@
         specs/008-security-rules/spec.md): `- [ ] {Rule ID}: {artifact} does not address — {summary}`.
 
      When an item is migrated, remove it from this list. -->
+
+- [ ] criterion-path-existence ships-to-adopter set misses per-agent scaffold paths (058's pi AC1/AC3 flagged advisory against a dogfooded tree): 032 avoids the same finding only because .opencode/ isn't dogfooded here — the Shared Files destination set (adopter_destinations in check_artifacts.rs) excludes .pi/prompts/ductus.md and .pi/settings.json, which /ductus writes at adoption but no generator materializes in this tree. Fix options: extend adopter_destinations to the per-agent scaffold paths, or annotate install-destination criteria as ships-to-adopter. Recorded from 058's analyze 2026-09-22 (advisory 3, unexamined 2 root-absent).
