@@ -20,9 +20,10 @@
 //! behavior (`.claude` and the repo directory basename).
 //!
 //! The two callsites resolve the installed command file via
-//! [`Host::command_file_candidates`], which covers both flat-namespaced
-//! layouts: `claude-style`'s `commands/` (Claude, Auggie) and `opencode`'s
-//! singular `command/`.
+//! [`Host::command_file_candidates`], which covers the three flat-namespaced
+//! layouts: `claude-style`'s `commands/` (Claude, Auggie), `opencode`'s
+//! singular `command/`, and `pi`'s flat project-hyphenated `prompts/`
+//! (spec 058 — `.pi/prompts/{project}-{name}.md`).
 
 use std::path::Path;
 
@@ -139,22 +140,26 @@ impl Host {
     }
 
     /// Repo-relative paths where an installed slash-command file named
-    /// `command_name` may live, in resolution order. Covers the two
+    /// `command_name` may live, in resolution order. Covers the three
     /// flat-namespaced command layouts the runtime knows about:
     ///
     /// - `claude-style` (Claude Code, Auggie) — `{dir}/commands/{project}/<name>.md`
     /// - `opencode` — `{dir}/command/{project}/<name>.md` (singular `command/`)
+    /// - `pi` — `{dir}/prompts/{project}-<name>.md` (flat project-hyphenated
+    ///   prompt templates; spec 058)
     ///
     /// Each adopter installs into exactly one of these (selected by the
     /// agent's registry `layout`), and the directory names are agent-specific
-    /// via `cli_config_dir` (`.claude` / `.augment` vs `.opencode`), so the
-    /// two candidates never both exist — trying both lets the runtime resolve
-    /// any supported layout without knowing which agent wrote the file. The
-    /// plural form is tried first, so existing claude-style adopters resolve
-    /// exactly as before.
+    /// via `cli_config_dir` (`.claude` / `.augment` / `.opencode` / `.pi`), so
+    /// the candidates never more than one exist per layout — trying all three
+    /// lets the runtime resolve any supported layout without knowing which
+    /// agent wrote the file. The plural form is tried first, then the
+    /// singular, so existing claude-style and opencode adopters resolve
+    /// exactly as before; the pi shape is appended last, keeping both
+    /// pre-existing candidates' relative order untouched (spec 058).
     #[must_use]
     pub fn command_file_candidates(&self, command_name: &str) -> Vec<String> {
-        ["commands", "command"]
+        let mut candidates = ["commands", "command"]
             .iter()
             .map(|subdir| {
                 format!(
@@ -162,7 +167,12 @@ impl Host {
                     self.cli_config_dir, self.project
                 )
             })
-            .collect()
+            .collect::<Vec<_>>();
+        candidates.push(format!(
+            "{}/prompts/{}-{command_name}.md",
+            self.cli_config_dir, self.project
+        ));
+        candidates
     }
 
     fn defaults(repo: &Path) -> Self {
@@ -329,8 +339,39 @@ mod tests {
             vec![
                 ".opencode/commands/acme/specify.md".to_owned(),
                 ".opencode/command/acme/specify.md".to_owned(),
+                ".opencode/prompts/acme-specify.md".to_owned(),
             ],
-            "plural (claude-style) tried first, then singular (opencode)"
+            "plural (claude-style) tried first, then singular (opencode), then the pi flat shape appended last"
+        );
+    }
+
+    #[test]
+    fn command_file_candidates_pi_shape_from_session_cli_config_dir() {
+        let repo = tmp_repo("ductus-pi-fixture");
+        std::fs::create_dir_all(repo.path().join(".ductus")).unwrap();
+        std::fs::write(
+            repo.path().join(".ductus/session.toml"),
+            "cli-config-dir = \".pi\"\n",
+        )
+        .unwrap();
+        let host = Host::load(repo.path());
+        assert_eq!(host.cli_config_dir, ".pi");
+        // The project falls back to the repo directory basename, so the pi
+        // candidate names the flat project-hyphenated prompt-template form.
+        let project = repo
+            .path()
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap()
+            .to_owned();
+        assert_eq!(
+            host.command_file_candidates("specify"),
+            vec![
+                format!(".pi/commands/{project}/specify.md"),
+                format!(".pi/command/{project}/specify.md"),
+                format!(".pi/prompts/{project}-specify.md"),
+            ],
+            "pi session identity resolves the flat prompts/ candidate last"
         );
     }
 

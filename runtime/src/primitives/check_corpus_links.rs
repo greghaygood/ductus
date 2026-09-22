@@ -56,7 +56,9 @@ pub fn run(args: &CheckCorpusLinksArgs, repo: &Path) -> Result<CheckCorpusLinksR
     };
 
     // The generated command copies live under the *host's* config dir, which
-    // varies by agent (`.claude`, `.augment`, `.agents`, `.opencode`).
+    // varies by agent (`.claude`, `.augment`, `.agents`, `.opencode`, `.pi` —
+    // pi's generated copies sit in `.pi/prompts/`, still under the `.pi/`
+    // prefix, so the exclusion covers it without a layout branch).
     // Resolved rather than hardcoded: a literal `.claude/` here would examine
     // every other host's generated copies and report their links — which are
     // broken by construction — as defects an adopter cannot fix.

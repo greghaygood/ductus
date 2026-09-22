@@ -135,6 +135,16 @@ The two files the runtime reads out of the per-project directory resolve through
 
 Older tiers are never removed by a primitive — the bootstrap migration is the sole cutover. See the [`project-directory-resolution-chain`](scenarios/project-directory-resolution-chain.md) scenario.
 
+### Command-file candidates — `Host::command_file_candidates`
+
+`Host::command_file_candidates` (runtime/src/host.rs) is the single place the runtime derives the repo-relative paths where an installed slash-command file may live, in resolution order, at `ductus exec` time and in the `writeCode` payload. It covers the three flat-namespaced layouts:
+
+1. `{cli-config-dir}/commands/{project}/{command_name}.md` — `claude-style` (Claude Code, Auggie), tried first;
+2. `{cli-config-dir}/command/{project}/{command_name}.md` — `opencode` (singular `command/`);
+3. `{cli-config-dir}/prompts/{project}-{command_name}.md` — `pi` (flat project-hyphenated prompt templates, [058](../058-pi-host-support/spec.md)), **appended last**.
+
+Each adopter installs into exactly one layout, selected by the agent's registry `layout`; the `cli-config-dir` recorded in the gitignored session file is the real selector, and the candidate order is belt-and-braces — walking all three lets the runtime resolve any supported layout without knowing which agent wrote the file. The two pre-existing candidates keep their relative order exactly, so every pre-pi adopter resolves identically. Both resolution callsites (`main::run_exec`, `interpreter::payload::locate_command_file`) consume the candidate list unchanged. See the [`the-pi-command-candidate`](scenarios/the-pi-command-candidate.md) scenario.
+
 ## Primitive request/response schemas
 
 Each primitive has a typed args struct (the CLI subcommand's `clap` derive shape) and a typed result struct. Below is the canonical JSON shape for each; the CLI surface translates command-line flags into the args; the MCP surface uses the same JSON via `rmcp` tool calls.

@@ -2671,7 +2671,7 @@ pub struct WriteSessionArgs {
     #[arg(long)]
     pub scenario_path: Option<String>,
     /// Optional per-contributor agent config-dir name (`.claude`, `.augment`,
-    /// `.opencode`, `.agents`). Written to the gitignored session file by
+    /// `.opencode`, `.agents`, `.pi`). Written to the gitignored session file by
     /// `/ductus` so a teammate's agent choice never lands in committed
     /// config. Read back by `crate::host::Host`. On a target write it is
     /// preserved from the existing file unless supplied here.
