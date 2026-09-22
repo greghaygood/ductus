@@ -73,10 +73,13 @@ Schema objects from `tools/list`. Before the bridge is written, a two-tool probe
 object, run under `pi -e`) settles whether the plain object passes through or a
 typebox wrap is required. Either path keeps the schema data server-sourced.
 
-> **D2a — Probe outcome** (recorded at implementation time): {outcome pending — the
-> two-tool probe runs before the bridge is written (task 3) and lands here with its
-> result: plain JSON-Schema object accepted by `registerTool`, or typebox wrap
-> required; either way the schema data is server-sourced.}
+> **D2a — Probe outcome (2026-09-20, task 3):** resolved by reading the living source
+> rather than a model round-trip — pi 0.86.1's `registerTool`
+> (`dist/core/extensions/loader.js:220-230`) validates only that `parameters` is a
+> non-array object, and `dist/core/tools/tool-definition-wrapper.js` passes it
+> through verbatim into the model-bound AgentTool. **Plain JSON-Schema objects are
+> accepted directly — no typebox wrap needed**; the bridge passes the server's
+> `inputSchema` through as-is (server-sourced schema data, the D2 property).
 
 ### D3 — One runtime change: the third command-file candidate
 

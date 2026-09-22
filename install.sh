@@ -9,6 +9,7 @@
 #   ... | sh -s -- auggie
 #   ... | sh -s -- antigravity   # 'agy' (the Antigravity CLI name) also works
 #   ... | sh -s -- opencode
+#   ... | sh -s -- pi
 #
 # Pick the source (default: the latest release), in any position beside the agent:
 #   ... | sh -s -- claude --ref=main             # main, ahead of any release
@@ -458,8 +459,19 @@ JSON
 JSON
     fi
     ;;
+  pi)
+    dest=".pi/prompts/ductus.md"
+    mkdir -p .pi/prompts
+    cp "$tmp" "$dest"
+    # No settings seed: Pi has no permission-gating settings (verified, spec 058
+    # §Verified Pi Layout — the model runs tool calls without a host permission
+    # prompt), so there is nothing to pre-authorize for the first /ductus run.
+    # The one Pi prerequisite is project trust — prompt templates under .pi/
+    # load only after the project is trusted, which pi itself prompts for on the
+    # first interactive start (or --approve on a non-interactive run).
+    ;;
   *)
-    echo "ductus: unknown agent '$agent' (expected: claude, auggie, antigravity, agy, or opencode)" >&2
+    echo "ductus: unknown agent '$agent' (expected: claude, auggie, antigravity, agy, opencode, or pi)" >&2
     exit 1
     ;;
 esac
