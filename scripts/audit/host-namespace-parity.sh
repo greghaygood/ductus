@@ -9,7 +9,8 @@
 # directory basename when the key is absent. Every runtime-rendered
 # next-action string ("Run /{project}:target …") is built from that value.
 # The slash commands themselves live in `{cli-config-dir}/commands/<ns>/`
-# (or `command/<ns>/` for opencode's singular layout).
+# (or `command/<ns>/` for opencode's singular layout, or the flat
+# `{config_dir}/prompts/{project}-*.md` prompt templates for pi, spec 058).
 #
 # Nothing compared the two. A repo whose `[host]` block is missing — or
 # whose `project` disagrees with the installed directory — renders
@@ -27,7 +28,8 @@
 #       the repo directory basename.
 #   17b Collect the installed namespace directories under every agent
 #       config dir present in the repo, trying both the plural
-#       `commands/` and singular `command/` layouts.
+#       `commands/` and singular `command/` layouts, plus the pi
+#       `{project}-*.md` flat prompt-template prefix shape.
 #   17c Emit a finding for each agent config dir that has installed
 #       namespaces but none matching the effective one.
 #
@@ -176,6 +178,20 @@ for cli_dir in "${CLI_DIRS[@]}"; do
       [ -d "$ns_path" ] || continue
       installed+=("$(basename "$ns_path")")
     done
+  done
+  # Third layout: pi's flat project-hyphenated prompt templates
+  # (`{config_dir}/prompts/{project}-{name}.md`, spec 058). There is no
+  # namespace directory — the `{project}-` prefix of the flat filenames IS
+  # the namespace. A `{project}-*.md` file (or the `ductus` self-install's
+  # `{project}.md`… which is actually `ductus.md`, the one un-hyphenated
+  # install) counts as the namespace being installed.
+  for prompt_file in "$cli_dir/prompts/"*.md; do
+    [ -f "$prompt_file" ] || continue
+    base="$(basename "$prompt_file" .md)"
+    case "$base" in
+      "$project"-*) installed+=("$project") ;;
+      "$project")    installed+=("$project") ;;
+    esac
   done
 
   # Nothing installed under this agent dir — nothing to compare.

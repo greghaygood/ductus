@@ -67,10 +67,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Audit families 14 / 15 / 17 learn the pi shape
 
-- [ ] Family 14 (`installer-registry-parity.sh`): `pi → {config_dir}/prompts/ductus.md` layout branch; the settings-seed parity check asserts the pi arm writes no settings file (absence assertion, per plan §D5)
-- [ ] Family 15 (`runtime-probe-parity.sh`): pi skipped by name on stderr; header states the bound
-- [ ] Family 17 (`host-namespace-parity.sh`): `.pi/prompts/{ns}-*.md` recognized as an installed namespace
-- [ ] `scripts/audit/README.md`: the three family descriptions updated to carry the pi shapes
+- [x] Family 14 (`installer-registry-parity.sh`): `pi → {config_dir}/prompts/ductus.md` layout branch; the settings-seed parity check asserts the pi arm writes no settings file (absence assertion, per plan §D5)
+- [x] Family 15 (`runtime-probe-parity.sh`): pi skipped by name on stderr; header states the bound
+- [x] Family 17 (`host-namespace-parity.sh`): `.pi/prompts/{ns}-*.md` recognized as an installed namespace
+- [x] `scripts/audit/README.md`: the three family descriptions updated to carry the pi shapes
 
 - **Done when**: all three families pass over this repo's pi surface (task 10's dogfood), each family's stderr/behavior matches its README description, and the families' own test suite (if any) is green.
 
