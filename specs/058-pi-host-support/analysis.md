@@ -1,7 +1,7 @@
 ---
 spec: 058-pi-host-support
-last-run: 2026-09-22T03:55:39Z
-analyzed-against: 8812246a65fcb1a0f149d20f3a772988a8a6bff3
+last-run: 2026-09-22T03:59:48Z
+analyzed-against: 341e22ba357a0329f2f0ad70a0fe305ecc97098d
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
@@ -9,9 +9,9 @@ unexamined: 0
 captured-issues: 0
 analyzed-digest:
   plan.md: c3e398efaca3e29c05f592f2934d2177544ef29e70b20ce69b52b2a7794272fd
-  review.md: 48c59b89eaf60dc82f96f1c2aa4a3cad45d1a45f0c46ccfc5db8c8d7a5375847
+  review.md: 1c58c775a0ebf8a4665edd9b0aae95163a7af5ece927931ab677e833ceee7bd3
   spec.md: ad9b113a247c3a58018682393c59cc5aa5645098d1ce932c634a7e134d07dda1
-  tasks.md: 3d88e50342f39372706406451cb4020896465e1e9ccc69989b9f3806033e7ae2
+  tasks.md: 8238fa1ed41699e50906ea715fd51af22b0e7cebd436eb00d7cb90ec9922a810
 blocking: false
 ---
 
