@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 029-bootstrap-runtime-autowire, 031-agent-mcp-wiring, 056-bootstrap-archive-boundary-split]
 next-criterion: 17
 ---
@@ -188,21 +188,21 @@ mechanism; nothing in the pipeline depends on either.
 
 ## Acceptance Criteria
 
-- [ ] AC1: `install.sh` carries a `pi` arm that writes `.pi/prompts/ductus.md` verbatim, writes **no** settings file (stated in-arm), and the unknown-agent error line names `pi`
-- [ ] AC2: The Agent Registry row `pi` / `Pi` / `.pi` / layout `pi` is present, with an empty `settings_template` (no permission-gating surface) and a `rules_file_note` stating Pi reads `AGENTS.md` natively
-- [ ] AC3: The §Derived values table carries a `pi` column: command/skill path `.pi/prompts/{project}-<name>.md`, invocation `/{project}-<name>`, `ductus` install path `.pi/prompts/ductus.md`, settings file `.pi/settings.json` (Permission Setup a documented no-op), native rules file `AGENTS.md`, slash-command cleanup glob `{project}-*.md` in `.pi/prompts`
-- [ ] AC4: The §MCP registration table carries the `pi` row — target `.pi/extensions/ductus.ts` (the bridge from the staging archive), scope `project-local` (gitignored), mechanism `write-file` — and the State-B / MCP-wiring prose branches on Pi without writing any MCP config file
-- [ ] AC5: The bootstrap's Pi-layout scaffolding section installs the sixteen command rows plus the configure row verbatim to `.pi/prompts/{project}-<name>.md` (with `{project}` / `{cli-config-dir}` substitution), installs `framework/bootstrap/pi/ductus-bridge.ts` to `.pi/extensions/ductus.ts` with no substitution, adds `.pi/` to the framework-managed `.gitignore` block, and the completion message carries the Pi trust reminder
-- [ ] AC6: `framework/bootstrap/pi/ductus-bridge.ts` exists with zero npm dependencies: lazy spawn of `.ductus/bin/ductus mcp`, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `tools/list` / `tools/call`), `pi.registerTool` for every server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through, respawn on exit, and a missing-pointer/binary error envelope that names the file and points at `/ductus` (no markdown fallback)
-- [ ] AC7: `framework/bootstrap/configure/pi.md` verifies `.pi/extensions/ductus.ts` against the upstream bridge source (overwrite on divergence) and reports the no-permission-settings and trust facts; `gen-configure-mcp.sh`'s header names the Pi exclusion
-- [ ] AC8: `Host::command_file_candidates` yields `{cli-config-dir}/prompts/{project}-{name}.md` as the **last** candidate, with a runtime test whose session file records `cli-config-dir = .pi`, and the two pre-existing candidate shapes keep their order (pre-existing host tests pass unmodified)
-- [ ] AC9: [022-deterministic-runtime](../022-deterministic-runtime/spec.md) carries the scenario for the third candidate shape back-linking this spec, and its `data-model.md` records the candidate in the result-shape registry
-- [ ] AC10: Family 14 passes with the Pi row: the `pi → {config_dir}/prompts/ductus.md` branch resolves, and the settings-seed parity check asserts the Pi arm writes no settings file; Family 15 skips Pi by name on stderr; Family 17 recognizes `.pi/prompts/{ns}-*.md` as an installed namespace
-- [ ] AC11: `gen-claude-commands.sh` emits `.pi/prompts/ductus-*.md` and `--check` covers it; the framework repo's `.pi/prompts/` dogfooded copy is committed with the matching `.gitignore` line
-- [ ] AC12: Constitution §runtime-host-integration names Pi's tool spelling in full — `ductus__<verb>-<noun>` via the project's `.pi/extensions/ductus.ts` bridge, with the no-built-in-MCP note keeping the runtime's MCP server the single source for names and schemas
-- [ ] AC13: `README.md` names Pi in the agent list, accepts `pi` in the per-agent install section, and the invocation-paragraph names `/{project}-<name>` for Pi
-- [ ] AC14: A real `pi` run in a trusted project resolves a `/{project}-…` command from `.pi/prompts/`, registers the `ductus__*` tools, round-trips a live tool call, and `ductus exec` resolves the `.pi/prompts/` candidate — result recorded in this spec's plan as verification evidence
-- [ ] AC15: `framework/bootstrap/govern.md` remains byte-identical to `framework/bootstrap/ductus.md` (Family 21)
+- [x] AC1: `install.sh` carries a `pi` arm that writes `.pi/prompts/ductus.md` verbatim, writes **no** settings file (stated in-arm), and the unknown-agent error line names `pi`
+- [x] AC2: The Agent Registry row `pi` / `Pi` / `.pi` / layout `pi` is present, with an empty `settings_template` (no permission-gating surface) and a `rules_file_note` stating Pi reads `AGENTS.md` natively
+- [x] AC3: The §Derived values table carries a `pi` column: command/skill path `.pi/prompts/{project}-<name>.md`, invocation `/{project}-<name>`, `ductus` install path `.pi/prompts/ductus.md`, settings file `.pi/settings.json` (Permission Setup a documented no-op), native rules file `AGENTS.md`, slash-command cleanup glob `{project}-*.md` in `.pi/prompts`
+- [x] AC4: The §MCP registration table carries the `pi` row — target `.pi/extensions/ductus.ts` (the bridge from the staging archive), scope `project-local` (gitignored), mechanism `write-file` — and the State-B / MCP-wiring prose branches on Pi without writing any MCP config file
+- [x] AC5: The bootstrap's Pi-layout scaffolding section installs the sixteen command rows plus the configure row verbatim to `.pi/prompts/{project}-<name>.md` (with `{project}` / `{cli-config-dir}` substitution), installs `framework/bootstrap/pi/ductus-bridge.ts` to `.pi/extensions/ductus.ts` with no substitution, adds `.pi/` to the framework-managed `.gitignore` block, and the completion message carries the Pi trust reminder
+- [x] AC6: `framework/bootstrap/pi/ductus-bridge.ts` exists with zero npm dependencies: lazy spawn of `.ductus/bin/ductus mcp`, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `tools/list` / `tools/call`), `pi.registerTool` for every server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through, respawn on exit, and a missing-pointer/binary error envelope that names the file and points at `/ductus` (no markdown fallback)
+- [x] AC7: `framework/bootstrap/configure/pi.md` verifies `.pi/extensions/ductus.ts` against the upstream bridge source (overwrite on divergence) and reports the no-permission-settings and trust facts; `gen-configure-mcp.sh`'s header names the Pi exclusion
+- [x] AC8: `Host::command_file_candidates` yields `{cli-config-dir}/prompts/{project}-{name}.md` as the **last** candidate, with a runtime test whose session file records `cli-config-dir = .pi`, and the two pre-existing candidate shapes keep their order (pre-existing host tests pass unmodified)
+- [x] AC9: [022-deterministic-runtime](../022-deterministic-runtime/spec.md) carries the scenario for the third candidate shape back-linking this spec, and its `data-model.md` records the candidate in the result-shape registry
+- [x] AC10: Family 14 passes with the Pi row: the `pi → {config_dir}/prompts/ductus.md` branch resolves, and the settings-seed parity check asserts the Pi arm writes no settings file; Family 15 skips Pi by name on stderr; Family 17 recognizes `.pi/prompts/{ns}-*.md` as an installed namespace
+- [x] AC11: `gen-claude-commands.sh` emits `.pi/prompts/ductus-*.md` and `--check` covers it; the framework repo's `.pi/prompts/` dogfooded copy is committed with the matching `.gitignore` line
+- [x] AC12: Constitution §runtime-host-integration names Pi's tool spelling in full — `ductus__<verb>-<noun>` via the project's `.pi/extensions/ductus.ts` bridge, with the no-built-in-MCP note keeping the runtime's MCP server the single source for names and schemas
+- [x] AC13: `README.md` names Pi in the agent list, accepts `pi` in the per-agent install section, and the invocation-paragraph names `/{project}-<name>` for Pi
+- [x] AC14: A real `pi` run in a trusted project resolves a `/{project}-…` command from `.pi/prompts/`, registers the `ductus__*` tools, round-trips a live tool call, and `ductus exec` resolves the `.pi/prompts/` candidate — result recorded in this spec's plan as verification evidence
+- [x] AC15: `framework/bootstrap/govern.md` remains byte-identical to `framework/bootstrap/ductus.md` (Family 21)
 - [ ] AC16: The version sites (`version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md`) agree on the next minor and the matching `ductus-v<minor>` tag exists (the release is part of this spec's completion gate, not a deferral)
 
 ## Resolved Questions
