@@ -38,6 +38,18 @@ DEST="$ROOT/.claude/commands/ductus"
 PROJECT="ductus"
 CONFIG_DIR=".claude"
 
+# Pi pass (spec 058): the same command set as flat project-hyphenated
+# prompt templates under .pi/prompts/, plus the verbatim bridge extension.
+# Discovery is flat and filename-keyed, so the `{project}-{name}` prefix is
+# what keeps the shared prompts/ directory collision-free.
+PI_SRC="$ROOT/framework/bootstrap/configure/pi.md"
+PI_DEST="$ROOT/.pi/prompts"
+PI_EXT_DEST="$ROOT/.pi/extensions/ductus.ts"
+PI_BRIDGE_SRC="$ROOT/framework/bootstrap/pi/ductus-bridge.ts"
+
+PI_PROJECT="$PROJECT"
+PI_CONFIG_DIR=".pi"
+
 substitute() {
   sed -e "s/{project}/$PROJECT/g" -e "s|{cli-config-dir}|$CONFIG_DIR|g"
 }
@@ -58,6 +70,22 @@ if [ "$check_mode" -eq 1 ]; then
   substitute < "$CONFIGURE_SRC" > "$tmpdir/configure.md"
   expected+=("configure.md")
 
+  # Pi pass: flat `{project}-{name}` prompt templates in a pi tempdir, plus
+  # the bridge. The prompt-template body carries the same substitutions as
+  # the claude copy (with {cli-config-dir} -> .pi); the bridge is verbatim.
+  pitmp="$tmpdir/pi"
+  mkdir -p "$pitmp"
+  pidi_expected=()
+  for src in "$SRC"/*.md; do
+    name="$(basename "$src")"
+    substitute < "$src" > "$pitmp/$PI_PROJECT-$name"
+    pidi_expected+=("$PI_PROJECT-$name")
+  done
+  substitute < "$PI_SRC" > "$pitmp/$PI_PROJECT-configure.md"
+  pidi_expected+=("$PI_PROJECT-configure.md")
+  tmp_bridge="$pitmp/ductus.ts"
+  cp "$PI_BRIDGE_SRC" "$tmp_bridge"
+
   drift=0
   # Compare every expected file against DEST.
   for name in "${expected[@]}"; do
@@ -74,6 +102,27 @@ if [ "$check_mode" -eq 1 ]; then
       drift=1
     fi
   done
+  # Compare pi prompt templates against the pi destination.
+  for name in "${pidi_expected[@]}"; do
+    src_path="$pitmp/$name"
+    dest_path="$PI_DEST/$name"
+    if [ ! -f "$dest_path" ]; then
+      echo "missing in $PI_DEST: $name"
+      drift=1
+      continue
+    fi
+    if ! diff -q "$src_path" "$dest_path" >/dev/null 2>&1; then
+      echo "drift in $name:"
+      diff -u "$dest_path" "$src_path" || true
+      drift=1
+    fi
+  done
+  # Compare the pi bridge extension (verbatim).
+  if ! diff -q "$tmp_bridge" "$PI_EXT_DEST" >/dev/null 2>&1; then
+    echo "drift in $PI_EXT_DEST:"
+    diff -u "$PI_EXT_DEST" "$tmp_bridge" || true
+    drift=1
+  fi
   # Detect orphans — files in DEST that no longer have a source.
   for existing in "$DEST"/*.md; do
     name="$(basename "$existing")"
@@ -86,6 +135,25 @@ if [ "$check_mode" -eq 1 ]; then
       drift=1
     fi
   done
+  # Detect orphans in the pi prompts directory — files matching the
+  # `{project}-*.md` namespace that no longer have a source. Foreign prompt
+  # templates (outside the `{project}-` namespace) are never touched: the
+  # flat directory is shared, and the default `*.md` glob would delete the
+  # adopter's own files (spec 058 D1).
+  if [ -d "$PI_DEST" ]; then
+    for existing in "$PI_DEST"/"$PI_PROJECT"-*.md; do
+      [ -f "$existing" ] || continue
+      name="$(basename "$existing")"
+      keep=0
+      for e in "${pidi_expected[@]}"; do
+        if [ "$name" = "$e" ]; then keep=1; break; fi
+      done
+      if [ "$keep" -eq 0 ]; then
+        echo "orphan in $PI_DEST (no source): $name"
+        drift=1
+      fi
+    done
+  fi
   exit "$drift"
 fi
 
@@ -103,6 +171,18 @@ done
 substitute < "$CONFIGURE_SRC" > "$DEST/configure.md"
 expected+=("configure.md")
 
+# Pi pass (write mode): flat `{project}-{name}` prompt templates + the bridge.
+mkdir -p "$PI_DEST" "$(dirname "$PI_EXT_DEST")"
+pi_expected=()
+for src in "$SRC"/*.md; do
+  name="$(basename "$src")"
+  substitute < "$src" > "$PI_DEST/$PI_PROJECT-$name"
+  pi_expected+=("$PI_PROJECT-$name")
+done
+substitute < "$PI_SRC" > "$PI_DEST/$PI_PROJECT-configure.md"
+pi_expected+=("$PI_PROJECT-configure.md")
+cp "$PI_BRIDGE_SRC" "$PI_EXT_DEST"
+
 # Prune any .md files in DEST that are no longer in the expected set.
 for existing in "$DEST"/*.md; do
   name="$(basename "$existing")"
@@ -116,4 +196,20 @@ for existing in "$DEST"/*.md; do
   fi
 done
 
+# Prune pi prompt templates whose `{project}-{name}` is no longer expected.
+# Scoped to the `{project}-*.md` namespace: foreign templates are never touched.
+for existing in "$PI_DEST"/"$PI_PROJECT"-*.md; do
+  [ -f "$existing" ] || continue
+  name="$(basename "$existing")"
+  keep=0
+  for e in "${pi_expected[@]}"; do
+    if [ "$name" = "$e" ]; then keep=1; break; fi
+  done
+  if [ "$keep" -eq 0 ]; then
+    rm -- "$existing"
+    echo "Removed obsolete (pi): $name"
+  fi
+done
+
 echo "Regenerated $(ls "$DEST"/*.md | wc -l | tr -d ' ') files in $DEST/"
+echo "Regenerated $(ls "$PI_DEST"/"$PI_PROJECT"-*.md | wc -l | tr -d ' ') files in $PI_DEST/"

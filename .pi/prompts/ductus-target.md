@@ -1,0 +1,72 @@
+---
+description: Set the working feature (and optionally scenario) for this session.
+argument-hint: "[feature[/scenario] | --clear]"
+parity:
+  strict-files:
+    - ".govern.session.toml"
+---
+
+# Target
+
+Set the working feature (and optionally scenario) for this session.
+
+## Purpose
+
+Establishes which feature spec all subsequent `/ductus:*` commands operate on. Optionally targets a specific scenario within the feature for scenario-aware commands. Must be run before any pipeline command. Remains active for the session unless changed by running `/ductus:target` again.
+
+## Scope Boundaries
+
+- Read `.ductus/constitution.md` once per session, plus each shared-constitution document `resolve-constitutions` reports as `loaded` (spec 055) — those documents only, never anything else in a registered checkout, and never a registered checkout's own config (registration is not transitive). Also read the targeted feature's `spec.md` frontmatter and open-question count. `read-spec` also returns the feature's scenario open questions (a separate field; it reads `scenarios/*.md` to derive them), which step 9 reports. Read a targeted scenario file directly only when one is specified.
+- Do NOT read plan files, tasks, source code, test files, or unrelated specs' bodies.
+- Do NOT modify any spec, plan, scenario, or source file. The only file written is the session file (`.ductus/session.toml`). Status transitions belong to the pipeline commands (`/ductus:clarify`, `/ductus:plan`, `/ductus:implement`) and to `/ductus:amend` (the documented back-edges: `clarified|planned|in-progress → draft` on a new question, and `done → in-progress` on a new scenario).
+- Reference: §spec-lifecycle, §scenarios, §concurrent-features, §text-first-artifacts.
+
+## Instructions
+
+> **For agent runtimes**: the Invoke steps below call the MCP tools of the ductus runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. Before the server is registered — the window between acquisition and the restart that loads it — walk the same prose using the host file-reading tools (Read, Edit, Write).
+
+<!-- audit:ignore-promotion -->
+1. When the invocation has no argument (whitespace or empty), read the session file — the newest of `.ductus/session.toml`, `.govern/session.toml`, or the legacy root `.govern.session.toml` that exists (the parity strict-files frontmatter above names the legacy path, matching the legacy-layout parity fixtures) — to display the current target. If the file is empty or absent, report no target set; otherwise display the feature name and status, the scenario detail when one is targeted (scenario name, the section field or legacy spec-ref field, and the context summary), and the artifacts list. Then stop — the steps below only apply when a feature argument is supplied. Treat `0`, `00`, or any other non-whitespace string as a valid feature identifier.
+
+<!-- audit:ignore-promotion -->
+2. When the invocation argument is exactly `--clear`, clear the session target through the write-session primitive's clear mode: it removes the target block (feature / path / scenario / scenario-path / set-at) while preserving any cli-config-dir (the per-contributor agent identity written by `/ductus`) so `ductus exec` keeps resolving command files. On the markdown-only path, reach the same reset state by hand: if the session file records a cli-config-dir, rewrite it to contain only that key via the tempfile + rename pattern; otherwise delete the file. Either way no `feature` remains, so the dashboard's documented "session file → session-target: null" reset state holds. Emit `Session cleared. Run /ductus:target to set a new target.` and stop — the steps below only apply when a feature argument is supplied. `--clear` combined with a feature argument or a scenario suffix halts with `/ductus:target: --clear cannot be combined with a feature argument` (no session mutation). When the session file is already absent, this is a no-op that still emits the confirmation line.
+
+3. Parse the argument: when the value contains a slash, split into a feature-part and a scenario-slug; otherwise treat the value as a feature-part with no scenario. Invoke `resolve-feature` with the feature-part as the identifier — it scans the configured specs root and matches by exact directory name, feature number (zero-padded or not), or unique case-insensitive partial slug, returning the directory name, path, and status. Ambiguity and no-match are domain outcomes the host mediates: on `ambiguous`, list the returned candidates and ask the user to choose; on `not-found`, report the feature does not exist and list available features (the `not-found` result carries no candidate list — enumerate them from the dashboard payload's `specs[].slug`, or a specs-directory listing on the markdown-only path).
+
+4. Invoke `resolve-constitutions` to resolve the project's registered shared constitutions (spec 055), then load `.ductus/constitution.md` **and** every document the result lists under `loaded` — once per session, so every subsequent command inherits all of them with no per-command step. Reading the documents themselves stays a host responsibility; the primitive resolves which files exist, not what they say. Load them after the framework constitution, in the order returned; §governance-precedence is where the order between them is stated, and where the fact that nothing enforces it is stated too. Report the loaded sources by alias, and report every entry in `skipped` by alias **with its reason**. Each report carries the entry's `description` when it has one, collapsed to a single line by the primitive — an alias is a config key someone chose, often a bare org name, and it says nothing about what the document governs, while attributability is the whole point of naming the source. An entry with no description reports exactly as it did before, so a project that never writes one sees no change. The descriptions render on `skipped` entries too: the value comes from the config rather than the checkout, so it is available precisely when the document is not, which is the case where it helps most. The reasons: `not-checked-out` (no checkout at that path) and `no-constitution-document` (a checkout that holds no `constitution.md`) are different operator mistakes and must not be collapsed into one message. A skipped entry is **unexamined, never folded into a clean result** — the session is running under fewer rules than the project's config declares, and saying so is the whole point of surfacing it. Empty `loaded` with empty `skipped` means none are registered: report nothing, so a project without the feature reads exactly as it did before. A **malformed entry is not a `skipped` record**: the primitive halts, naming the offending alias and field, per `framework/bootstrap/ductus.md` §Validating the registry — surface that message and stop, and never let a halt render as the empty-registry case, which reports nothing and would turn the project's own config error into silence. Aliases appearing in `duplicate-paths` name the same checkout — warn and read the document once. Report each alias's description in that warning as well: two aliases on one checkout may carry different descriptions, and those are what let an operator see which registration is the redundant one.
+
+5. Invoke `derive-dependencies` as a safety net. It is report-only unless `--write` is passed, so this step never rewrites anything. When it reports drift, the `dependencies:` frontmatter is stale from uncommitted body edits — surface that and recommend committing (the pre-commit hook syncs it) or running `ductus derive-dependencies --write` manually. Do **not** pass `--write` from `/ductus:target`: this command writes only the session file (see Scope Boundaries), while a writing run rewrites `dependencies:` across every spec. On the markdown-only path, run `ductus derive-dependencies` by hand and surface the drift the same way.
+
+6. Invoke `read-spec` against the resolved feature to load frontmatter, sections, and the open-question count from the body. The frontmatter status is normally one of draft, clarified, planned, in-progress, or done — `read-spec` returns it verbatim, and `/ductus:analyze` (through its frontmatter-validation step) owns flagging an out-of-set value.
+
+7. When a scenario was provided, invoke `resolve-feature` again with the scenario slug as the scenario argument: the result's scenario block reports the scenario file's path, whether it exists, and its section frontmatter field (falling back to the legacy spec-ref field for pre-017 scenarios). Capture the context summary from the scenario body with host file tools — the summary is not a primitive result. When the scenario does not exist, the two reasons are **not the same outcome and must not render alike** (§design-principles): `resolve-feature` reports `exists: false` for both, so the host distinguishes them by whether the feature has a `scenarios/` directory at all. With **no `scenarios/` directory**, report `No scenarios exist for this feature. Run /ductus:amend to create one.` — listing "available scenarios" there renders an empty list, which reads as *your slug did not match one of these* when the truth is *there are none*. With the **directory present but no matching file**, list the available scenarios and ask the user to choose (host-mediated domain outcome).
+
+8. Invoke `write-session` with the feature slug as the feature argument, the repo-relative spec directory — under the configured `[paths] specs-root` (default `specs`; spec 040) — as the path argument, and the scenario slug plus its file path as the scenario and scenario-path arguments when one is targeted (omit both to clear any previously set scenario). This is a *target write*: the primitive sets feature/path/(scenario) and stamps a fresh set-at while **preserving** any cli-config-dir already in the file (the per-contributor agent identity written by `/ductus`), at `.ductus/session.toml` (repo root; gitignored; same path for every adopter regardless of AI CLI or project name), and applies tempfile + rename atomic-write semantics. On the markdown-only path (no runtime on `PATH`), the host first reads any existing `.ductus/session.toml` to capture its cli-config-dir, then writes the TOML directly — top-level keys feature, path, optional scenario, optional scenario-path, set-at (ISO 8601 UTC), then the preserved cli-config-dir (when present) — through the same tempfile + rename pattern.
+
+<!-- audit:ignore-promotion -->
+9. Display the resolved target: feature name and current status, scenario detail when present, the artifacts list (which of spec.md, plan.md, tasks.md, and data-model.md exist), the dependency status from step 5, the open-question count, the outstanding scenario questions per **Scenario open questions** below, and the next pipeline step per the Status → next action table below.
+
+## Scenario open questions
+
+`read-spec` (step 6) returns scenario open questions as a field separate from the spec body's open-question count, each entry tagged with its source scenario. Report them whenever the count is non-zero, **including when no scenario is targeted** — a contributor who targets the feature is exactly the one who cannot otherwise see them.
+
+- Display the total and name every scenario carrying questions, in the order `read-spec` returns them (the shared scenario-file listing's case-insensitive filename order). List them **all**, with no cap: a truncated list reads as "these are the ones that need attention" while hiding others.
+- Recommend no specific scenario. Nothing mechanical can rank them — question count is not importance, and one wire-contract decision outweighs three cosmetic ones. The recommended *action* is singular (scenario-targeted clarification); which scenario to target is the contributor's choice. This mirrors the unmatched-slug path in step 7, which lists the available scenarios and asks the user to choose.
+- The recommended next step for a feature with outstanding scenario questions is `/ductus:clarify` (scenario-targeted) rather than `/ductus:implement` — see the Status → next action table's override below.
+- A question deferred rather than undecided ("not now; revisit when X lands") is resolved *with a condition* and belongs in the scenario's `## Resolved Questions` with its trigger recorded; only `## Open Questions` entries count. See [046 — Scenario open-question visibility](https://github.com/stonean/ductus/blob/main/specs/046-scenario-open-question-visibility/spec.md).
+
+The scenario-targeted path (step 7) is unchanged: when a scenario is targeted, its own detail and open-question count are displayed as before.
+
+## Status → next action
+
+| Status | Open Questions | Next pipeline step |
+| --- | --- | --- |
+| draft | any | /ductus:clarify |
+| clarified | 0 | /ductus:plan |
+| planned | 0 | /ductus:implement |
+| in-progress | 0 | /ductus:implement |
+| done | any | confirm complete; run /ductus:amend to record a scenario and reopen |
+
+When the status is clarified, planned, or in-progress AND the open-question count is at least one, the next step is `/ductus:clarify` (recovery). This state usually arises from a manual frontmatter edit; the normal back-edge via `/ductus:amend` keeps status and open-question presence in sync.
+
+When the feature has one or more **scenario** open questions, the next step is `/ductus:clarify` (scenario-targeted) — at any status, including `done`, since a spec is not complete while its scenarios carry questions (§spec-lifecycle). Recovery takes precedence when both apply: spec-body questions at `clarified` or later are the more upstream defect, and clearing them reverts the spec to `draft` with the scenario questions still there to resolve afterward. The scenario questions are still reported in either case.
