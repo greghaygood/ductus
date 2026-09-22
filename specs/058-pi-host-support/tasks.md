@@ -23,9 +23,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Probe pi's `registerTool` schema acceptance
 
-- [ ] Throwaway two-tool probe in `/tmp`: a minimal pi extension registering one tool whose `parameters` is a plain JSON-Schema object (no typebox), run under `pi -e` + non-interactive run; observe whether pi accepts the schema and exposes the tool to the model
-- [ ] If the plain object is rejected: confirm the typebox wrap path (import from pi's extension-available `typebox`) accepts the same server-sourced schema
-- [ ] Record the outcome in plan §D2a (the probe-result placeholder), with the observed pi version
+- [x] Throwaway two-tool probe in `/tmp`: a minimal pi extension registering one tool whose `parameters` is a plain JSON-Schema object (no typebox), run under `pi -e` + non-interactive run; observe whether pi accepts the schema and exposes the tool to the model
+- [x] If the plain object is rejected: confirm the typebox wrap path (import from pi's extension-available `typebox`) accepts the same server-sourced schema
+- [x] Record the outcome in plan §D2a (the probe-result placeholder), with the observed pi version
 
 - **Done when**: plan §D2a states which of the two paths the bridge takes, grounded in the observed probe output — not in a guess.
 
@@ -33,33 +33,33 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Author the bridge extension
 
-- [ ] Create `framework/bootstrap/pi/ductus-bridge.ts` per plan §D2: lazy spawn of `.ductus/bin/ductus mcp`, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `tools/list` / `tools/call`), `pi.registerTool` per server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through (via the path §D2a settled), respawn on exit, missing-pointer/binary error envelope naming the file and pointing at `/ductus`, one-time load notice — zero npm dependencies
-- [ ] Lint/parse check: the file is loadable TypeScript (no build step; `node --check`-equivalent or the smoke test's load itself is the proof)
+- [x] Create `framework/bootstrap/pi/ductus-bridge.ts` per plan §D2: lazy spawn of `.ductus/bin/ductus mcp`, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `tools/list` / `tools/call`), `pi.registerTool` per server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through (via the path §D2a settled), respawn on exit, missing-pointer/binary error envelope naming the file and pointing at `/ductus`, one-time load notice — zero npm dependencies
+- [x] Lint/parse check: the file is loadable TypeScript (no build step; `node --check`-equivalent or the smoke test's load itself is the proof)
 
 - **Done when**: the file exists, imports nothing beyond pi's extension API surface, and every §D2 behavior is present in the source.
 
 ## 5. Author `configure/pi.md` and state the generator bound
 
-- [ ] Create `framework/bootstrap/configure/pi.md` per plan §D4: verify `.pi/extensions/ductus.ts` against the upstream bridge (overwrite on divergence), report the no-permission-settings fact and the trust requirement
-- [ ] `scripts/gen-configure-mcp.sh`: header names the pi exclusion with its reason (MCP-permission blocks only; pi has none)
+- [x] Create `framework/bootstrap/configure/pi.md` per plan §D4: verify `.pi/extensions/ductus.ts` against the upstream bridge (overwrite on divergence), report the no-permission-settings fact and the trust requirement
+- [x] `scripts/gen-configure-mcp.sh`: header names the pi exclusion with its reason (MCP-permission blocks only; pi has none)
 
 - **Done when**: `configure/pi.md` is a well-formed command source (frontmatter + procedure), the generator still passes its existing tests, and its header states the pi exclusion.
 
 ## 6. Bootstrap prose: registry, derived values, MCP registration, Pi layout
 
-- [ ] `framework/bootstrap/ductus.md`: Agent Registry `pi` row (plan §D6); §Derived values `pi` column; §MCP registration `pi` row (target `.pi/extensions/ductus.ts`, scope `project-local` (gitignored), mechanism `write-file`) + the mechanism-note prose
-- [ ] `### Pi layout` scaffolding section: the sixteen command rows + configure row → `.pi/prompts/{project}-<name>.md` (standard substitutions), the bridge row → `.pi/extensions/ductus.ts` (no substitution), the `.pi/` gitignore-block line, the completion-message trust reminder
-- [ ] §Permission Setup pi no-op branch; State B / §MCP wiring pi target naming; `ductus` self-install / Self-update / Post-Write Integrity / Placeholder Substitution / step-1 / step-7 enumerations gain the pi paths (all verbatim byte-compare)
-- [ ] `framework/bootstrap/ductus-procedure.md` (archive half): next-steps invocation list, pinned-divergent install-path row, Directory Creation gain the pi shapes
-- [ ] `cp framework/bootstrap/ductus.md framework/bootstrap/govern.md` (Family 21 byte-identity)
+- [x] `framework/bootstrap/ductus.md`: Agent Registry `pi` row (plan §D6); §Derived values `pi` column; §MCP registration `pi` row (target `.pi/extensions/ductus.ts`, scope `project-local` (gitignored), mechanism `write-file`) + the mechanism-note prose
+- [x] `### Pi layout` scaffolding section: the sixteen command rows + configure row → `.pi/prompts/{project}-<name>.md` (standard substitutions), the bridge row → `.pi/extensions/ductus.ts` (no substitution), the `.pi/` gitignore-block line, the completion-message trust reminder
+- [x] §Permission Setup pi no-op branch; State B / §MCP wiring pi target naming; `ductus` self-install / Self-update / Post-Write Integrity / Placeholder Substitution / step-1 / step-7 enumerations gain the pi paths (all verbatim byte-compare)
+- [x] `framework/bootstrap/ductus-procedure.md` (archive half): next-steps invocation list, pinned-divergent install-path row, Directory Creation gain the pi shapes
+- [x] `cp framework/bootstrap/ductus.md framework/bootstrap/govern.md` (Family 21 byte-identity)
 
 - **Done when**: every layout-keyed section in both bootstrap files carries a `pi` branch consistent with §Derived values, `cmp framework/bootstrap/ductus.md framework/bootstrap/govern.md` is silent, and a derived-value walk (command/skill path, invocation, install path, settings file, permission shape, native rules file, cleanup glob) returns the plan §D6 values for `pi`.
 
 ## 7. `install.sh` pi arm
 
-- [ ] `pi)` arm: `dest=".pi/prompts/ductus.md"`, verbatim copy, **no settings seed** (stated in-arm with the rationale: pi has no permission-gating settings)
-- [ ] Usage comment and the unknown-agent error line name `pi`
-- [ ] Smoke-run the arm in a `/tmp` scratch repo: it installs the bootstrap file and writes nothing else
+- [x] `pi)` arm: `dest=".pi/prompts/ductus.md"`, verbatim copy, **no settings seed** (stated in-arm with the rationale: pi has no permission-gating settings)
+- [x] Usage comment and the unknown-agent error line name `pi`
+- [x] Smoke-run the arm in a `/tmp` scratch repo: it installs the bootstrap file and writes nothing else
 
 - **Done when**: `sh install.sh -s pi` in the scratch repo yields exactly `.pi/prompts/ductus.md` byte-identical to the payload and no settings file.
 
