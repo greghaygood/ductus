@@ -76,9 +76,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Generator second pass and the dogfooded pi surface
 
-- [ ] `scripts/gen-claude-commands.sh`: second output pass — flat `.pi/prompts/ductus-<name>.md` (`{project}` → `ductus`, `{cli-config-dir}` → `.pi`) for every `framework/commands/*.md` + the `configure/pi.md` row, plus the verbatim bridge copy to `.pi/extensions/ductus.ts`; `--check` covers both (the prune loop's `expected` list gains the pi files — no hand-maintained orphans)
-- [ ] `.gitignore`: `.pi/*` with negations for `.pi/prompts/` and `.pi/extensions/ductus.ts`, mirroring the `.claude/*` / `!.claude/commands/` convention
-- [ ] Run the generator and commit the generated `.pi/` surface
+- [x] `scripts/gen-claude-commands.sh`: second output pass — flat `.pi/prompts/ductus-<name>.md` (`{project}` → `ductus`, `{cli-config-dir}` → `.pi`) for every `framework/commands/*.md` + the `configure/pi.md` row, plus the verbatim bridge copy to `.pi/extensions/ductus.ts`; `--check` covers both (the prune loop's `expected` list gains the pi files — no hand-maintained orphans)
+- [x] `.gitignore`: `.pi/*` with negations for `.pi/prompts/` and `.pi/extensions/ductus.ts`, mirroring the `.claude/*` / `!.claude/commands/` convention
+- [x] Run the generator and commit the generated `.pi/` surface
 
 - **Done when**: `scripts/gen-claude-commands.sh --check` passes, `.pi/prompts/` carries the full command set byte-consistent with the sources, and `git status` shows the committed dogfood surface with nothing pi-related untracked.
 
@@ -86,11 +86,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. Constitution, README, AGENTS.md, docs
 
-- [ ] `framework/constitution.md` §runtime-host-integration: the pi spelling in full (plan §D7) — `ductus__<verb>-<noun>` via the project's `.pi/extensions/ductus.ts` bridge; no built-in MCP; the server stays the single source for names and schemas
-- [ ] `README.md`: agent list gains Pi; §Installing (per agent) accepts `pi`; the invocation paragraph names `/{project}-<name>` for Pi
-- [ ] `AGENTS.md`: the live registry enumeration updates to five agents across four layouts; one new entry records the bridge architecture (never "fix" pi by registering an MCP server; keep the bridge dependency-free)
-- [ ] `docs/slash-commands.md` (and any `framework/commands/help.md` agent-shape claim): audited; pi added where agents or invocation forms are enumerated
-- [ ] Anti-claim sweep: grep the changed set for "registers MCP"-shaped and namespace-directory claims about pi (the spec §D7 anti-claim)
+- [x] `framework/constitution.md` §runtime-host-integration: the pi spelling in full (plan §D7) — `ductus__<verb>-<noun>` via the project's `.pi/extensions/ductus.ts` bridge; no built-in MCP; the server stays the single source for names and schemas
+- [x] `README.md`: agent list gains Pi; §Installing (per agent) accepts `pi`; the invocation paragraph names `/{project}-<name>` for Pi
+- [x] `AGENTS.md`: the live registry enumeration updates to five agents across four layouts; one new entry records the bridge architecture (never "fix" pi by registering an MCP server; keep the bridge dependency-free)
+- [x] `docs/slash-commands.md` (and any `framework/commands/help.md` agent-shape claim): audited; pi added where agents or invocation forms are enumerated
+- [x] Anti-claim sweep: grep the changed set for "registers MCP"-shaped and namespace-directory claims about pi (the spec §D7 anti-claim)
 
 - **Done when**: a grep for the pi shapes over `README.md`, `docs/`, `AGENTS.md`, `framework/constitution.md` shows the new spellings present and no stale four-agent enumeration survives in a live-claim position.
 
