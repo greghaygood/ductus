@@ -1,14 +1,14 @@
 ---
 spec: 058-pi-host-support
-last-run: 2026-09-22T03:58:58Z
-reviewed-against: f627e76665b8350af38f13f033ce19bb5cd5a574
-diff-base: 7a4a07dea3874e900809ec53c3c09451d70dd7c9
+last-run: 2026-09-22T04:13:57Z
+reviewed-against: e7b0197938d8fff9798853dcf436bb4f0a6ca93e
+diff-base: 8c37637a82aa12a0eaf1955e12f47b8d46d689c0
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 26
-scope: 25
+examined: 27
+scope: 24
 skipped-passes: []
 reviewed-digest: {}
 blocking: false
@@ -18,7 +18,7 @@ blocking: false
 
 ## Summary
 
-Re-reviewed at the release HEAD f627e766, covering the 0.53.0 bump in scope: the version sites agree (version, runtime/Cargo.toml, runtime/CHANGELOG entry), the lockfile refreshed via the mandated single --offline build, and the release binary rebuilt at 0.53.0. The five passes over the 26-file scope stand as recorded in the prior run (7a4a07de); this refresh adds exactly the release commit to the reviewed set. 0/0/0.
+Re-reviewed at the link-exclusion fix HEAD e7b01979. The fifth pass over the fix: check-corpus-links now excludes a set (session cli-config-dir + committed .claude/) rather than one directory — a pi dogfood identity no longer un-excludes the committed Claude copy's broken-by-construction links. Verified: build clean, 20/20 test binaries, run-all rc=0, check-corpus-links broken: 0. All 26 prior-scope files plus the fixed source re-read. 0/0/0.
 
 ## MUST violations (blocking)
 
