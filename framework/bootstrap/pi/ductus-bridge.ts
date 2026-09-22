@@ -27,7 +27,8 @@
  */
 
 import { spawn } from "node:child_process";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, join } from "node:path";
+import { existsSync } from "node:fs";
 
 /** The MCP protocol version the rmcp-based runtime serves (2025-03-26). */
 const MCP_PROTOCOL_VERSION = "2025-03-26";
@@ -198,10 +199,22 @@ class DuctusServer {
   }
 }
 
-/** Repo root: the extension lives at `<root>/.pi/extensions/ductus.ts`, two
- *  directories up. Falls back to the process working directory only when the
- *  file-based anchor is unavailable (atypical loaders). */
+/** Repo root: the directory containing `.ductus/` *and* `.pi/`. The
+ *  extension file anchor works on most loaders (`<root>/.pi/extensions/`,
+ *  two directories up), but pi loads extensions through jiti where the file
+ *  path and `__dirname` are not guaranteed to align — so the working
+ *  directory (pi starts in the repo root) is walked upward for the `.ductus/`
+ *  marker instead, which is the same anchor /ductus itself uses. Falls back
+ *  to the process cwd when no marker is found (the pointer will then be
+ *  reported missing by the error envelope, naming the actual path). */
 function projectRoot(): string {
+  let dir = resolve(process.cwd());
+  while (true) {
+    if (existsSync(join(dir, ".ductus"))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
   try {
     if (typeof __dirname !== "undefined") {
       return resolve(dirname(__dirname), "..", "..");
