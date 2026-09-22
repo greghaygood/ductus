@@ -6,18 +6,18 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Add the third command-file candidate
 
-- [ ] `runtime/src/host.rs`: append `{cli-config-dir}/prompts/{project}-{name}.md` as the **last** entry of `Host::command_file_candidates`, after the plural and singular shapes (plan §D3)
-- [ ] Unit test: a session fixture recording `cli-config-dir = .pi` yields the candidate list ending in the pi shape; the two pre-existing candidate tests pass unmodified
-- [ ] `write-session` doc comment: the `cli-config-dir` enumeration gains `.pi` (doc sync, no behavior)
+- [x] `runtime/src/host.rs`: append `{cli-config-dir}/prompts/{project}-{name}.md` as the **last** entry of `Host::command_file_candidates`, after the plural and singular shapes (plan §D3)
+- [x] Unit test: a session fixture recording `cli-config-dir = .pi` yields the candidate list ending in the pi shape; the two pre-existing candidate tests pass unmodified
+- [x] `write-session` doc comment: the `cli-config-dir` enumeration gains `.pi` (doc sync, no behavior)
 
 - **Done when**: `cargo test --release --locked` is green with the new fixture test, the candidate order assertion holds, and the pre-existing tests are byte-unchanged.
 
 ## 2. Open the 022 back-edge and record the candidate
 
-- [ ] `set-status` 022 `done → in-progress`
-- [ ] Create `specs/022-deterministic-runtime/scenarios/the-pi-command-candidate.md` (via `create-scenario`), back-linking 058 per §cross-spec-impact, stating the third candidate shape and the append-last order rule
-- [ ] Append the matching task to 022's `tasks.md` (scenario→task mapping family stays clean)
-- [ ] 022's `data-model.md`: record the third candidate shape in the command-resolution contract
+- [x] `set-status` 022 `done → in-progress`
+- [x] Create `specs/022-deterministic-runtime/scenarios/the-pi-command-candidate.md` (via `create-scenario`), back-linking 058 per §cross-spec-impact, stating the third candidate shape and the append-last order rule
+- [x] Append the matching task to 022's `tasks.md` (scenario→task mapping family stays clean)
+- [x] 022's `data-model.md`: record the third candidate shape in the command-resolution contract
 
 - **Done when**: 022 is `in-progress`, the scenario and task exist and cross-reference each other, and the data-model carries the candidate.
 
