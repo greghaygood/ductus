@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 029-bootstrap-runtime-autowire, 031-agent-mcp-wiring, 056-bootstrap-archive-boundary-split]
 next-criterion: 17
 ---
@@ -203,7 +203,7 @@ mechanism; nothing in the pipeline depends on either.
 - [x] AC13: `README.md` names Pi in the agent list, accepts `pi` in the per-agent install section, and the invocation-paragraph names `/{project}-<name>` for Pi
 - [x] AC14: A real `pi` run in a trusted project resolves a `/{project}-…` command from `.pi/prompts/`, registers the `ductus__*` tools, round-trips a live tool call, and `ductus exec` resolves the `.pi/prompts/` candidate — result recorded in this spec's plan as verification evidence
 - [x] AC15: `framework/bootstrap/govern.md` remains byte-identical to `framework/bootstrap/ductus.md` (Family 21)
-- [ ] AC16: The version sites (`version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md`) agree on the next minor and the matching `ductus-v<minor>` tag exists (the release is part of this spec's completion gate, not a deferral)
+- [x] AC16: The version sites (`version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md`) agree on the next minor and the matching `ductus-v<minor>` tag exists (the release is part of this spec's completion gate, not a deferral)
 
 ## Resolved Questions
 

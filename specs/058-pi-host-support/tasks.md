@@ -105,14 +105,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 12. Reviews and analysis: 022 first, then 058
 
-- [ ] 022: `/{project}:review` (five passes over its changed-since window; the standing truthful-`examined` disposition if the window is too large) and `/{project}:analyze`; all task blocks checked; `done` transition
-- [ ] 058: every AC verified against the tree (AC14 via §D9's record), `/{project}:review` and `/{project}:analyze`; `done` transition
+- [x] 022: `/{project}:review` (five passes over its changed-since window; the standing truthful-`examined` disposition if the window is too large) and `/{project}:analyze`; all task blocks checked; `done` transition
+- [x] 058: every AC verified against the tree (AC14 via §D9's record), `/{project}:review` and `/{project}:analyze`; `done` transition
 
 - **Done when**: both specs are `done` with current, non-blocking reviews and current analyses, and `check-review-gate` passes for both.
 
 ## 13. Release: `0.53.0` and `ductus-v0.53.0`
 
-- [ ] Bump all three version sites to `0.53.0` (root `version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md` with the entry: "pi host: `Host::command_file_candidates` gains the `.pi/prompts/{project}-{name}.md` candidate" + the pi layout summary)
+- [x] Bump all three version sites to `0.53.0` (root `version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md` with the entry: "pi host: `Host::command_file_candidates` gains the `.pi/prompts/{project}-{name}.md` candidate" + the pi layout summary)
 - [ ] One `cargo build --release --offline` to refresh `Cargo.lock`, then confirm `--locked` succeeds
 - [ ] Commit the version bump; `/{project}:review` 058 at that HEAD (the review covers the release commit); commit the review
 - [ ] `scripts/audit/run-all.sh` **after** the commit; on green, `git tag ductus-v0.53.0` at the release commit and push the tag
