@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-18T00:29:09Z
-analyzed-against: 489c11459f2d790c18aa1c823845b60d07efe883
+last-run: 2026-09-22T03:53:40Z
+analyzed-against: 4fba90e37ec02e44174d4d2757508f1d7fbd68e0
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 2
+unexamined: 0
 captured-issues: 0
 analyzed-digest:
-  data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
+  data-model.md: 13e08e1ea88ce33f3c6a08fa7b52e51805a644dbcf2bcff157bd3c39ae5cf387
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: e1aeff8f452b39e134dae5b6dd0cfc402d40d9ce4427ddcef692d722b92f81cd
+  review.md: f92028d1785f4d3d6c1061b63b8e6441d0591dbcbe1ce0d31cd396eab8a84ead
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -101,6 +101,7 @@ analyzed-digest:
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
   scenarios/the-cross-spec-impact-gate.md: 73f85422945ba170b5ba5394fddff078026684693de49e06874574b53ea67eb0
   scenarios/the-inbox-row.md: 58d356dddec37f5a770fc51e85668351999b9f701aa6d43631a0aecf411d1edd
+  scenarios/the-pi-command-candidate.md: e3cd61103a9839a45d0fa047c4bcbd06708faf2e448133f0f93cdc6f802bb767
   scenarios/the-promotion-coverage-line.md: 9de217ea4ee337bae7f793914c0e703d085091064d186a1d1a776782f4edb55e
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
@@ -113,10 +114,8 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: 22f81c709736fe15a2ec56e728c1716bc9565db3130f341323bbcd42b87299fc
-  tasks.md: 5c4079f6e3c27ce62fc64b1e70b9785b3794620e252fe50fa259f77cbf82f1ff
-unexamined-by-reason:
-  not-a-live-claim: 2
+  spec.md: 52a3795c93e1bbd5e10aed6eba2a914d07f7a09763ee9eea3922057d6d3e202b
+  tasks.md: fdc244c93569e21c1ea08f494ad6eefda84494cfcd1c614248c58997a536d5be
 blocking: false
 ---
 
@@ -124,7 +123,7 @@ blocking: false
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
 
 ## Hard failures
 
@@ -140,7 +139,7 @@ blocking: false
 
 ## Unexamined targets
 
-- not-a-live-claim: 2
+*None — every target was examined.*
 
 ## Captured issues
 
