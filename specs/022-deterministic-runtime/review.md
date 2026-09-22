@@ -1,18 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-scenario: criterion-negated-creation-phrasing
-last-run: 2026-09-18T00:29:00Z
-reviewed-against: f3908206d777b95ef1efdd8f8f96c5cf6afb5a3c
-diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
+last-run: 2026-09-22T03:52:56Z
+reviewed-against: 09a11469727367604eafee8a5ad2ec6c35ab42b2
+diff-base: 5f6e33f8875c63e6a4414bebcd3bff42550151ac
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 captured-issues: 0
-examined: 13
-scope: 53
+examined: 8
+scope: 75
 skipped-passes: []
 reviewed-digest:
-  data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
+  data-model.md: 13e08e1ea88ce33f3c6a08fa7b52e51805a644dbcf2bcff157bd3c39ae5cf387
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -103,6 +102,7 @@ reviewed-digest:
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
   scenarios/the-cross-spec-impact-gate.md: 73f85422945ba170b5ba5394fddff078026684693de49e06874574b53ea67eb0
   scenarios/the-inbox-row.md: 58d356dddec37f5a770fc51e85668351999b9f701aa6d43631a0aecf411d1edd
+  scenarios/the-pi-command-candidate.md: e3cd61103a9839a45d0fa047c4bcbd06708faf2e448133f0f93cdc6f802bb767
   scenarios/the-promotion-coverage-line.md: 9de217ea4ee337bae7f793914c0e703d085091064d186a1d1a776782f4edb55e
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
@@ -122,15 +122,7 @@ blocking: false
 
 ## Summary
 
-Five passes over the sixth exemption group — a clause-scoped predicate for a criterion asserting a path was never created, its canonical record in 045, its adopter-facing restatement, and Family 18's 18e arm binding the three — re-run over the measurement this pass demanded. **0 MUST, 0 SHOULD outstanding.**
-
-**Grounding is what this pass added.** The scenario claimed a precision fix from the *shape* of the change, which is inference presented as analysis. Measured instead, both binaries over all 55 specs: **0 `criterion-path-existence` findings before, 0 after** — no true positive lost, none gained. The skipped set moves (`not-a-live-claim` 109 → 118, `ships-to-adopter` 12 → 9, `root-absent` unchanged) because an exempted criterion records every path it names, including ones that resolve and were previously recorded nowhere. **14 criteria newly match the predicate and 4 match for a reason other than a path's creation** — 012 AC11, this spec's own AC27, 025 AC9, 051 AC14, each putting a negator ahead of a creation verb inside one clause while negating something that is not a path coming into existence. None costs a finding today; each is a criterion whose live paths go unchecked if they later disappear. That rate is now stated in the scenario rather than implied, which is the difference between the record this spec's own contracts demand and a claim about a shape.
-
-Three findings were surfaced by earlier passes and fixed in `a0036cbd`: 18e skipped a consumer whose derivation came back empty, a silent pass in the exact shape the family exists to refuse; 18b and 18e each carried a copy of the Rust string-literal parser; and the predicate allocated a Vec per clause where one pass carrying a boolean says the same thing.
-
-**Security** — nothing reached; no I/O, no path resolution, no process execution added. **Reuse** — no clause splitter existed to delegate to. **Efficiency** — one allocation-free pass over a criterion's words, short-circuiting on the first match. **Simplicity** — the em-dash refinement was measured before being rejected: it moves 2 of the 4 over-exemptions, cannot reach the other 2 without semantic judgment §runtime-boundary places at an extension point, and for zero findings it would move the splitter toward the clause rule 045 measured and rejected. **Quality** — each of the three rules keeping the predicate from collapsing into `was created` is pinned by a test, including the cross-clause counter-case.
-
-**What these passes read: 13 of 47 in-scope files** — the runtime change, the three restatements, the audit family and its README entry, and the six spec artifacts carrying the contract. **Not read, and named rather than folded into the numerator:** the CI workflows, `README.md`, `framework/bootstrap/ductus.md`, the other command sources, the `runtime/src/{interpreter,mcp,parser,schema}` and `runtime/tests` subtrees, 022's `plan.md` and `data-model.md`, and 022's other 99 scenarios. This is a scoped review of one scenario, not a pass over 022's contracts.
+Feature-targeted revisit of the pi-command-candidate delta (058 back-edge). The eight examined files: data-model.md (the new Command-file candidates subsection), scenarios/the-pi-command-candidate.md (in full), tasks.md (task 123 block), spec.md (frontmatter status), runtime/src/host.rs (command_file_candidates + new test), runtime/src/interpreter/payload.rs (locate_command_file), runtime/src/schema/primitives.rs (write-session cli-config-dir doc), runtime/src/primitives/check_corpus_links.rs (generated-copies comment). This is not the first full five-pass review of 022: 67 of 75 in-scope files were not re-read this session — the runtime's pre-existing primitives, the other 94 scenarios, and the rest of the data-model — which stand as they were when the prior review (criterion-negated-creation-phrasing, f3908206) recorded them. Findings across the five passes over this delta: 0/0/0.
 
 ## MUST violations (blocking)
 
