@@ -39,8 +39,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Review, analyze, done
 
-- [ ] `/{project}:review` (verify the parameterization against the ACs; confirm no fetch site regressed to a hardcoded fork or a second default)
-- [ ] `/{project}:analyze` (check-artifacts clean; dependencies current)
-- [ ] Transition to `done`
+- [x] `/{project}:review` (verify the parameterization against the ACs; confirm no fetch site regressed to a hardcoded fork or a second default)
+- [x] `/{project}:analyze` (check-artifacts clean; dependencies current)
+- [x] Transition to `done`
 
 - **Done when**: the spec is `done` with current review and analyze records, and 059's ACs are verified against the shipped text.
