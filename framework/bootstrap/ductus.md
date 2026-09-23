@@ -207,12 +207,12 @@ Settle the run's one source before anything fetches from it. **One run, one sour
 3. **Resolve `latest`.** When the source is `latest`, read GitHub's latest release — never a draft or a prerelease — from the redirect, without following it:
 
    ```text
-   curl -sSI https://github.com/stonean/ductus/releases/latest
+   curl -sSI https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/latest
    ```
 
    The tag is the last path segment of the `Location` header (`location` over HTTP/2) after `/releases/tag/`. A response carrying no `Location`, or one whose target has no `/releases/tag/` segment, halts; so does a tag outside the `ductus-v<MAJOR>.<MINOR>.<PATCH>` grammar. Neither falls back to `main`: a fallback would put the run on exactly the unreleased state the default exists to avoid, and would read identically to a successful resolution.
 
-   > Halt: `could not resolve the latest release from https://github.com/stonean/ductus/releases/latest — {what came back: the status line and the Location value, or "no Location header"}. /ductus does not fall back to main; pass --ref=main or --ref=<tag> to choose a source explicitly.`
+   > Halt: `could not resolve the latest release from https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/latest — {what came back: the status line and the Location value, or "no Location header"}. /ductus does not fall back to main; pass --ref=main or --ref=<tag> to choose a source explicitly.`
 
    The REST API's `releases/latest` means the same thing but is limited to 60 unauthenticated calls an hour, and the highest `ductus-v*` tag can name a tag whose release, and so whose runtime assets, does not exist yet. The redirect has neither problem (spec 061, Resolved Questions).
 
@@ -227,23 +227,23 @@ Settle the run's one source before anything fetches from it. **One run, one sour
 5. **Fetch the pin at the ref.** One SemVer line, no `v` prefix:
 
    ```text
-   curl -fsSL https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/version -o {tempdir}/version
+   curl -fsSL https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/{raw-ref}/version -o {tempdir}/version
    ```
 
    This fetch is also the existence check for a named or recorded tag, so a tag costs no extra request: every release at or above the floor carries a `version` file, so an HTTP 404 on a tag means the tag does not exist.
 
-   > Halt (404 on a named or recorded tag): `tag {tag} does not exist — https://raw.githubusercontent.com/stonean/ductus/{tag}/version returned 404.`
+   > Halt (404 on a named or recorded tag): `tag {tag} does not exist — https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/{tag}/version returned 404.`
 
    Any other failure, or a file that is **absent or unparseable**, halts naming the URL: guessing a version or falling through to another source silently installs a runtime the framework was never tested against.
 
-   > Halt: `could not read the runtime version pin from https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/version — /ductus cannot state which runtime this framework revision requires.`
+   > Halt: `could not read the runtime version pin from https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/{raw-ref}/version — /ductus cannot state which runtime this framework revision requires.`
 
    The file's one line is `{pin}` for the rest of the run. It is fetched here rather than read out of the framework archive because acquisition runs in pre-flight, long before **Archive fetch and extract**, and State B is the first-run state by definition, so the pin must never depend on the archive.
 
 6. **Check the migration floor** — on a tag only, and only when `[migrations] last_applied` is set. Migrations run forward only (§Pre-run Migrations), so moving below one the project has applied would lay that release's pre-migration files over the migrated layout. `last_applied` holds a migration **id**, and the registry mapping ids to `introduced_in` ships in the archive, which pre-flight has not fetched, so read the tag's registry:
 
    ```text
-   curl -fsSL https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/framework/migrations.toml -o {tempdir}/migrations.toml.ref
+   curl -fsSL https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/{raw-ref}/framework/migrations.toml -o {tempdir}/migrations.toml.ref
    ```
 
    - **The id is an entry there**: the tag knows the migration, so it is not older than it. Pass.
@@ -357,7 +357,7 @@ When `.ductus/config.toml` has a `[runtime]` `path` key, the project has taken r
 
 1. **Read the pin.** `{pin}` is the line **Source resolution** step 5 fetched into `{tempdir}/version` and validated; nothing is fetched here. Reading it from the framework archive is what this step once specified, and it halted every greenfield adoption: State B is the first-run state by definition, so the pin was never on disk when this step needed it. A one-line file keeps pre-flight's small-fetch-or-no-fetch property intact — it is the archive's multi-hundred-KB cost this phase avoids, not a `curl`.
 
-   The pin and the framework tree arrive in separate fetches, and they agree because both name the ref **Source resolution** settled. A tag does not move between them. `main` can: a push landing between the two fetches is the sole divergence on that source, it is bounded by one run, and the next `/ductus` re-acquires against the newer pin — acquisition is idempotent and re-probes the store. That exposure is what `--ref=main` opts into.
+   The pin and the framework tree arrive in separate fetches, and they agree because both name the ref **Source resolution** settled — and both honor `$DUCTUS_REPO` (spec 059): when unset or empty the canonical `stonean/ductus` is fetched byte-identically, and set to another owner/repo (e.g. `DUCTUS_REPO=myfork/ductus`) the whole adoption stays on one origin. A tag does not move between them. `main` can: a push landing between the two fetches is the sole divergence on that source, it is bounded by one run, and the next `/ductus` re-acquires against the newer pin — acquisition is idempotent and re-probes the store. That exposure is what `--ref=main` opts into.
 
 2. **Probe the store for idempotency.** Execute `{store-path}` and read its reported version.
    - Reports `{pin}` ⇒ **already current**. Perform no download and leave the binary byte-unchanged. Continue to the pointer.
@@ -379,9 +379,9 @@ When `.ductus/config.toml` has a `[runtime]` `path` key, the project has taken r
 4. **Fetch the archive and its sidecar** from the release, into `{tempdir}`:
 
    ```text
-   curl -fsSL https://github.com/stonean/ductus/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz \
+   curl -fsSL "https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz" \
      -o {tempdir}/ductus-{triple}.tar.gz
-   curl -fsSL https://github.com/stonean/ductus/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz.sha256 \
+   curl -fsSL "https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz.sha256" \
      -o {tempdir}/ductus-{triple}.tar.gz.sha256
    ```
 
@@ -406,7 +406,7 @@ The error names the exact store path and the release URL, so an adopter behind a
 
 > Halt: `could not acquire the ductus runtime {pin} for {triple}: {reason}.`
 > `Place the binary at {store-path} and re-run, or set [runtime] path in .ductus/config.toml to a binary you supply.`
-> `Release: https://github.com/stonean/ductus/releases/tag/ductus-v{pin}`
+> `Release: https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/tag/ductus-v{pin}`
 
 **The home directory is unwritable, absent, or on a read-only mount** — some CI containers and locked-down images. Halt with the same shape, naming the store path and the `[runtime]` key, since supplying a binary from a writable location is exactly the escape hatch for this case.
 
@@ -477,7 +477,7 @@ Verify the running session's `ductus.md` instructions are current.
 Issue exactly one `curl` against `raw.githubusercontent.com` for the upstream bootstrap file, at the ref **Source resolution** settled:
 
 ```text
-curl -fsSL https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/framework/bootstrap/ductus.md \
+curl -fsSL "https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/{raw-ref}/framework/bootstrap/ductus.md" \
   -o {tempdir}/ductus.md.upstream
 ```
 
@@ -685,11 +685,11 @@ This section runs only after the **Pre-flight Phase** passes — that is, once *
 Issue exactly one `curl` against GitHub's archive host, at the ref **Source resolution** settled, downloading into the temp directory established during the pre-flight phase:
 
 ```text
-curl -fsSL https://codeload.github.com/stonean/ductus/tar.gz/{archive-ref} \
+curl -fsSL "https://codeload.github.com/${DUCTUS_REPO:-stonean/ductus}/tar.gz/{archive-ref}" \
   -o {tempdir}/framework.tar.gz
 ```
 
-This is the direct `codeload.github.com` endpoint — the target that `https://github.com/stonean/ductus/archive/{archive-ref}.tar.gz` 302-redirects to. Fetch it directly: the redirect form lands the command on a **new host mid-flight**, which some hosts (e.g. Antigravity) gate with a permission prompt even when a `curl` allow is pre-granted, because the grant matched the original host, not the redirect target. The direct URL has no redirect, so the bootstrap seed's `curl` pre-grant (`command(curl)` / `Bash(curl *)` / the Auggie `^curl` regex matcher) actually covers it.
+This is the direct `codeload.github.com` endpoint — the target that `https://github.com/${DUCTUS_REPO:-stonean/ductus}/archive/{archive-ref}.tar.gz` 302-redirects to. Fetch it directly: the redirect form lands the command on a **new host mid-flight**, which some hosts (e.g. Antigravity) gate with a permission prompt even when a `curl` allow is pre-granted, because the grant matched the original host, not the redirect target. The direct URL has no redirect, so the bootstrap seed's `curl` pre-grant (`command(curl)` / `Bash(curl *)` / the Auggie `^curl` regex matcher) actually covers it.
 
 After fetching:
 

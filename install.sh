@@ -25,10 +25,17 @@
 # the choice; a plain /ductus uses the latest release. Spec 061 is the contract.
 #
 # The script is idempotent — re-run it any time to refresh the bootstrap file.
+# Source repository (spec 059): the raw bootstrap URL's owner/repo. When
+# DUCTUS_REPO is unset or empty, the canonical stonean/ductus is fetched — the
+# pre-059 behavior, byte for byte. Set it to another owner/repo to adopt or
+# test ductus from a fork (e.g. DUCTUS_REPO=myfork/ductus); /ductus itself
+# honors the same variable for its subsequent fetches (version pin, archive,
+# runtime release, self-update), so the whole adoption stays on one origin.
 set -eu
 
-REPO_RAW="https://raw.githubusercontent.com/stonean/ductus"
-LATEST_URL="https://github.com/stonean/ductus/releases/latest"
+repo="${DUCTUS_REPO:-stonean/ductus}"
+REPO_RAW="https://raw.githubusercontent.com/$repo"
+LATEST_URL="https://github.com/$repo/releases/latest"
 
 # The first release whose bootstrap honors --ref. Every earlier release's
 # bootstrap fetches from main whatever ref it is given, so a tag below this
