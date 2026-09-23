@@ -14,9 +14,17 @@
 # The script is idempotent — re-run it any time to refresh the bootstrap file.
 # ductus is live-on-main: the bootstrap (and everything /ductus fetches) tracks
 # main, so there is no release-pinning knob.
+#
+# Source repository (spec 059): the raw bootstrap URL's owner/repo. When
+# DUCTUS_REPO is unset or empty, the canonical stonean/ductus is fetched — the
+# pre-059 behavior, byte for byte. Set it to another owner/repo to adopt or
+# test ductus from a fork (e.g. DUCTUS_REPO=myfork/ductus); /ductus itself
+# honors the same variable for its subsequent fetches (version pin, archive,
+# runtime release, self-update), so the whole adoption stays on one origin.
 set -eu
 
-RAW="https://raw.githubusercontent.com/stonean/ductus/main/framework/bootstrap/ductus.md"
+repo="${DUCTUS_REPO:-stonean/ductus}"
+RAW="https://raw.githubusercontent.com/$repo/main/framework/bootstrap/ductus.md"
 
 # Resolve the target agent: the optional positional argument, defaulting to claude.
 agent="${1:-claude}"

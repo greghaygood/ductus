@@ -275,14 +275,16 @@ When `.ductus/config.toml` has a `[runtime]` `path` key, the project has taken r
 1. **Fetch and read the pin.** One SemVer line, no `v` prefix, fetched into the `{tempdir}` the **Pre-flight Phase** created:
 
    ```text
-   curl -fsSL https://raw.githubusercontent.com/stonean/ductus/main/version -o {tempdir}/version
+   curl -fsSL "https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/main/version" -o {tempdir}/version
    ```
 
    It is fetched here rather than read out of the framework archive because acquisition runs in **pre-flight**, and the archive is not fetched until **Archive fetch and extract**, hundreds of lines later. Reading it from the archive is what this step used to specify, and it halted every greenfield adoption: State B is the first-run state by definition, so the pin was never on disk when this step needed it. A one-line file keeps pre-flight's small-fetch-or-no-fetch property intact — it is the archive's multi-hundred-KB cost this phase avoids, not a `curl`.
 
-   The pin and the framework tree now arrive in two fetches rather than one, so they agree only because both name `main`. A push landing between them is the sole divergence, it is bounded by one run, and the next `/ductus` re-acquires against the newer pin — acquisition is idempotent and re-probes the store. If the fetch fails, or the file is **absent or unparseable**, halt naming it: guessing a version or falling through to "latest" silently installs a runtime the framework was never tested against.
+   The repository component of this fetch — and of the archive, runtime-release, and self-update fetches — honors `$DUCTUS_REPO` (spec 059): when the variable is unset or empty the canonical `stonean/ductus` is fetched, byte-identical to the pre-059 behavior; set it to another owner/repo (e.g. `DUCTUS_REPO=myfork/ductus`) to adopt or test `ductus` from a fork, and the whole adoption stays on one origin.
 
-   > Halt: `could not read the runtime version pin from https://raw.githubusercontent.com/stonean/ductus/main/version — /ductus cannot state which runtime this framework revision requires.`
+   The pin and the framework tree now arrive in two fetches rather than one, so they agree only because both name `main` (or the same fork's `main`). A push landing between them is the sole divergence, it is bounded by one run, and the next `/ductus` re-acquires against the newer pin — acquisition is idempotent and re-probes the store. If the fetch fails, or the file is **absent or unparseable**, halt naming it: guessing a version or falling through to "latest" silently installs a runtime the framework was never tested against.
+
+   > Halt: `could not read the runtime version pin from https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/main/version — /ductus cannot state which runtime this framework revision requires.`
 
 2. **Probe the store for idempotency.** Execute `{store-path}` and read its reported version.
    - Reports `{pin}` ⇒ **already current**. Perform no download and leave the binary byte-unchanged. Continue to the pointer.
@@ -304,9 +306,9 @@ When `.ductus/config.toml` has a `[runtime]` `path` key, the project has taken r
 4. **Fetch the archive and its sidecar** from the release, into `{tempdir}`:
 
    ```text
-   curl -fsSL https://github.com/stonean/ductus/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz \
+   curl -fsSL "https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz" \
      -o {tempdir}/ductus-{triple}.tar.gz
-   curl -fsSL https://github.com/stonean/ductus/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz.sha256 \
+   curl -fsSL "https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz.sha256" \
      -o {tempdir}/ductus-{triple}.tar.gz.sha256
    ```
 
@@ -331,7 +333,7 @@ The error names the exact store path and the release URL, so an adopter behind a
 
 > Halt: `could not acquire the ductus runtime {pin} for {triple}: {reason}.`
 > `Place the binary at {store-path} and re-run, or set [runtime] path in .ductus/config.toml to a binary you supply.`
-> `Release: https://github.com/stonean/ductus/releases/tag/ductus-v{pin}`
+> `Release: https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/tag/ductus-v{pin}`
 
 **The home directory is unwritable, absent, or on a read-only mount** — some CI containers and locked-down images. Halt with the same shape, naming the store path and the `[runtime]` key, since supplying a binary from a writable location is exactly the escape hatch for this case.
 
@@ -388,7 +390,7 @@ Verify the running session's `ductus.md` instructions are current.
 Issue exactly one `curl` against `raw.githubusercontent.com` for the upstream bootstrap file:
 
 ```text
-curl -fsSL https://raw.githubusercontent.com/stonean/ductus/main/framework/bootstrap/ductus.md \
+curl -fsSL "https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/main/framework/bootstrap/ductus.md" \
   -o {tempdir}/ductus.md.upstream
 ```
 
@@ -585,7 +587,7 @@ This section runs only after the **Pre-flight Phase** passes — that is, once *
 Issue exactly one `curl` against GitHub's archive host, downloading into the temp directory established during the pre-flight phase:
 
 ```text
-curl -fsSL https://codeload.github.com/stonean/ductus/tar.gz/refs/heads/main \
+curl -fsSL "https://codeload.github.com/${DUCTUS_REPO:-stonean/ductus}/tar.gz/refs/heads/main" \
   -o {tempdir}/main.tar.gz
 ```
 
