@@ -107,13 +107,15 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 - [ ] Frontmatter Schema: replace both `captured-issues` rows with `dispositions` and `decisions`
 - [ ] §pipeline-boundaries: name `/{project}:log` as the inbox's only producer
 - [ ] Re-resolve every anchor the rewrite renames, with `check-corpus-links` and `resolve-anchor`
+- [ ] Keep §brownfield-inbox stating why the standing inbox count is a notice and never a gate (gating it would push the honest choice between a growing list and a silent one toward silence). Four sources cite "the reason §brownfield-inbox gives for capture": `runtime/src/primitives/check_promotion_coverage.rs` (module doc), `scripts/audit/promotion-coverage.sh`, `scripts/audit/README.md` (Family 38), and `framework/commands/audit.md` (Family 38). Keep that reason stated, or update all four in the same change
+- [ ] Inbound `#automatic-issue-capture` links: the constitution's own §grounding bullet, re-pointed here, and two in `specs/047-analyze-findings-durability/spec.md`, re-pointed in task 24 when 047 is reopened. `check-corpus-links` strips fragments before checking, so a renamed anchor does not block the pre-commit hook in between
 
 - **Done when**: `grep -n "Automatic issue capture\|captured-issues\|captured to the inbox" framework/constitution.md` returns nothing, and every inbound `#automatic-issue-capture` link in the corpus is re-pointed.
 
 ## 13. `analyze.md`
 
 - [ ] Replace step 16 with host-responsibility steps: process decisions, fix and route (gated per write, no discard for hard-fail or blocking, `--all` grouped by spec with a leave-the-rest choice), and re-run detection when anything was written
-- [ ] Step 17 passes `findings`, `expired-decisions`, and `new-decisions`
+- [ ] Step 17 passes `findings` (each with tier, family, message, path, `live`, and disposition), `expired-decisions` from process-decisions, and `decided-by` (`git config user.email`); the writer derives new decisions from the routed and discarded live findings itself
 - [ ] Add `disposition-drift` to the `--fix` triggers in the frontmatter description, Purpose, Scope Boundaries, and step 18; add a markdown-only "Disposition drift" section
 - [ ] Rewrite §Finding capture (durability) as §Finding dispositions, and the Purpose and Scope Boundaries write lists
 
@@ -121,7 +123,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 14. `review.md`
 
-- [ ] Add a process-decisions step and a fix-and-route step before `write-review`; step 9 passes dispositioned observations and the decision lists
+- [ ] Add a process-decisions step and a fix-and-route step before `write-review`; step 9 passes dispositioned observations (each with `decision-key` when process-decisions matched it), `expired-decisions`, and `decided-by`; the writer derives new decisions from the routed and discarded observations itself
 - [ ] Remove the inbox read from Scope Boundaries and Inputs, the `captured-issues` fields from both frontmatter examples, the `## Captured issues` skeleton entry, §Captured issues, the write-through half of §Observations, and §The inbox row with the `captured` output line
 - [ ] Replace review.md's "do not invent frontmatter fields to track dispositions" warning with a pointer to `dispositions:`
 
@@ -176,12 +178,13 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 ## 21. Reconcile the spec, plan, and data model
 
 - [ ] Re-read [spec.md](spec.md) against the finished prose and runtime; where an implementation decision refined a detail (key shape, section names), correct the spec, plan, or data model so the three agree
+- [ ] Known deviations to reconcile. `write-review` and `write-analysis` take no `new-decisions` list: they derive new decisions from the dispositioned findings and require `decided-by` when any is new, and a re-matched decision keeps its original stamp. `write-analysis`'s `findings` entries carry no `decision-key`, because the key is always `{family} — {message}`. `ReviewObservation` gained `disposition` and `decision-key`, and `Disposition`/`DispositionOutcome`/`AnalysisFinding`/`AnalysisTier` are the schema names. plan.md (§process-decisions, §write-review, §write-analysis) and data-model.md (the Changed primitive inputs and process-decisions sections) still describe `new-decisions`
 
 - **Done when**: the spec, plan, and data model describe one set of field names, section names, and keys.
 
 ## 22. Goldens, mirrors, and the audit
 
-- [ ] Re-bless `review-basic`, `analyze-basic`, `implement-basic`, and `status-basic` with `BLESS=1`, reading each diff to confirm it contains only the intended changes
+- [ ] Re-bless `analyze-basic`, `implement-basic`, and `status-basic` with `BLESS=1 cargo test --release --locked --test parity <test_name>`, reading each diff to confirm it contains only the intended changes. `review-basic` was already re-blessed in `c4b21ff4`, where its only change was the removed `captured-issues` key. The pre-commit hook runs the full `cargo test`, parity included, so a commit that changes a golden's stream re-blesses it in that same commit
 - [ ] Commit through the pre-commit hook so the `.claude/commands/ductus/` mirrors and help tables regenerate
 - [ ] Run `cargo test --release --locked`, `scripts/audit/run-all.sh`, and full markdown lint
 
@@ -197,6 +200,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 ## 24. Discharge 047 and 008
 
 - [ ] Reopen each with `set-status` (`from: done`); correct every claim 058 falsifies (047's inbox-persistence premise and its capture criteria; 008's adoption-audit inbox write); add a blockquote signpost linking to [058](spec.md)
+- [ ] Re-point 047 `spec.md`'s two `#automatic-issue-capture` links to the constitution section task 12 renamed
 - [ ] Re-run `/ductus:review` and `/ductus:analyze` on each so both records carry `dispositions:`; return each to `done` through `check-review-gate`
 
 - **Done when**: `check-review-gate` passes for both and returns them to `done`, and 058's gate reports 008 and 047 discharged.
@@ -210,7 +214,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 26. Discharge 050
 
-- [ ] Reopen; annotate `scenarios/findings-route-by-scope.md`'s chore and no-spec-in-progress edge cases as superseded by 058, and add the signpost to `spec.md`
+- [ ] 050 is already `in-progress`: it was reopened in `c421d0e1` for scenario `report-outcomes-not-edits` (its task 24, done). Skip the reopen, and let this return to `done` cover both
+- [ ] Annotate `scenarios/findings-route-by-scope.md`'s chore and no-spec-in-progress edge cases as superseded by 058, and add the signpost to `spec.md`
 - [ ] Re-run review and analyze; return to `done`
 
 - **Done when**: 050 is `done` through its gate, and 058's gate reports it discharged.
