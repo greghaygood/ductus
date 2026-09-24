@@ -114,6 +114,107 @@ pub(crate) fn read_decisions(feature_dir: &Path, file: &str) -> Result<Vec<RawDe
     super::read_recorded_list(feature_dir, file, DECISIONS_KEY)
 }
 
+/// The `decisions:` list a writer records.
+///
+/// Every stored entry survives unless this run expired it or decided its key
+/// afresh; a malformed entry always survives, because an entry that cannot be
+/// read cannot be proven dead. Each decision this run made is then either a
+/// **match** — a well-formed stored entry with the same key, outcome, and
+/// companion, kept byte-for-byte with its original `decided-at` and
+/// `decided-by` — or **new**, stamped with `decided_at` and `decided_by`.
+///
+/// # Errors
+///
+/// Returns `Err("decided-by")` when a new decision exists and `decided_by` is
+/// absent or blank: a decision nobody can attribute is not auditable, so the
+/// writer refuses rather than storing one.
+pub(crate) fn merge(
+    stored: Vec<RawDecision>,
+    expired: &[DecisionRef],
+    decided: &[DecisionRef],
+    decided_at: &str,
+    decided_by: Option<&str>,
+) -> std::result::Result<Vec<RawDecision>, &'static str> {
+    let fresh: Vec<&DecisionRef> = decided
+        .iter()
+        .filter(|decision| {
+            !stored
+                .iter()
+                .any(|entry| entry.to_ref().as_ref() == Some(*decision))
+        })
+        .collect();
+    let author = decided_by.map(str::trim).filter(|who| !who.is_empty());
+    if !fresh.is_empty() && author.is_none() {
+        return Err("decided-by");
+    }
+    let dropped = |entry: &RawDecision| {
+        let Some(well_formed) = entry.to_ref() else {
+            return false; // malformed entries are never pruned
+        };
+        expired.iter().any(|gone| gone.key == well_formed.key)
+            || fresh.iter().any(|new| new.key == well_formed.key)
+    };
+    let mut merged: Vec<RawDecision> = stored.into_iter().filter(|entry| !dropped(entry)).collect();
+    for decision in fresh {
+        merged.push(RawDecision {
+            key: Some(decision.key.clone()),
+            outcome: Some(
+                match decision.outcome {
+                    DecisionOutcome::Routed => "routed",
+                    DecisionOutcome::Discarded => "discarded",
+                }
+                .to_string(),
+            ),
+            target: decision.target.clone(),
+            reason: decision.reason.clone(),
+            decided_at: Some(decided_at.to_string()),
+            decided_by: author.map(str::to_string),
+            extra: BTreeMap::new(),
+        });
+    }
+    Ok(merged)
+}
+
+/// Append the `decisions:` list to a rendered record, known fields first and
+/// every adopter-authored extra after them, verbatim — the waiver list's
+/// rendering rules, shared rather than copied.
+pub(crate) fn render(block: &mut String, decisions: &[RawDecision]) {
+    use std::fmt::Write as _;
+    if decisions.is_empty() {
+        return;
+    }
+    let _ = writeln!(block, "{DECISIONS_KEY}:");
+    for decision in decisions {
+        let fields = [
+            ("key", decision.key.as_deref()),
+            ("outcome", decision.outcome.as_deref()),
+            ("target", decision.target.as_deref()),
+            ("reason", decision.reason.as_deref()),
+            ("decided-at", decision.decided_at.as_deref()),
+            ("decided-by", decision.decided_by.as_deref()),
+        ];
+        let mut first = true;
+        let mut indent = || {
+            let indent = if first { "  - " } else { "    " };
+            first = false;
+            indent
+        };
+        for (key, value) in fields {
+            if let Some(value) = value {
+                let _ = writeln!(
+                    block,
+                    "{}{key}: {}",
+                    indent(),
+                    super::write_review::yaml_string(value)
+                );
+            }
+        }
+        for (key, value) in &decision.extra {
+            super::write_review::render_extra_field(block, indent(), key, value);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -185,6 +286,125 @@ mod tests {
         assert!(
             read_decisions(dir.path(), "analysis.md").is_err(),
             "a list that silently read as empty would re-ask every settled question"
+        );
+    }
+
+    fn stored(key: &str, outcome: &str, companion: &str) -> RawDecision {
+        RawDecision {
+            key: Some(key.into()),
+            outcome: Some(outcome.into()),
+            target: (outcome == "routed").then(|| companion.to_string()),
+            reason: (outcome == "discarded").then(|| companion.to_string()),
+            decided_at: Some("2026-09-01T00:00:00Z".into()),
+            decided_by: Some("first@example.com".into()),
+            extra: BTreeMap::new(),
+        }
+    }
+
+    fn decided(key: &str, outcome: DecisionOutcome, companion: &str) -> DecisionRef {
+        DecisionRef {
+            key: key.into(),
+            outcome,
+            target: (outcome == DecisionOutcome::Routed).then(|| companion.to_string()),
+            reason: (outcome == DecisionOutcome::Discarded).then(|| companion.to_string()),
+        }
+    }
+
+    #[test]
+    fn a_matching_decision_keeps_its_original_stamp() {
+        let merged = merge(
+            vec![stored("k", "discarded", "noise")],
+            &[],
+            &[decided("k", DecisionOutcome::Discarded, "noise")],
+            "2026-09-25T00:00:00Z",
+            None,
+        )
+        .unwrap();
+        assert_eq!(merged.len(), 1);
+        assert_eq!(
+            merged[0].decided_by.as_deref(),
+            Some("first@example.com"),
+            "a re-matched decision is the same decision, not a new one"
+        );
+    }
+
+    #[test]
+    fn a_changed_decision_replaces_the_stored_one() {
+        let merged = merge(
+            vec![stored("k", "discarded", "noise")],
+            &[],
+            &[decided(
+                "k",
+                DecisionOutcome::Routed,
+                "specs/031-x/tasks.md",
+            )],
+            "2026-09-25T00:00:00Z",
+            Some("second@example.com"),
+        )
+        .unwrap();
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].outcome.as_deref(), Some("routed"));
+        assert_eq!(merged[0].decided_by.as_deref(), Some("second@example.com"));
+        assert_eq!(
+            merged[0].decided_at.as_deref(),
+            Some("2026-09-25T00:00:00Z")
+        );
+    }
+
+    #[test]
+    fn expired_entries_drop_and_malformed_ones_never_do() {
+        let malformed = RawDecision {
+            key: Some("broken".into()),
+            ..RawDecision::default()
+        };
+        let merged = merge(
+            vec![stored("gone", "routed", "specs/031-x/tasks.md"), malformed],
+            &[decided(
+                "gone",
+                DecisionOutcome::Routed,
+                "specs/031-x/tasks.md",
+            )],
+            &[],
+            "2026-09-25T00:00:00Z",
+            None,
+        )
+        .unwrap();
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].key.as_deref(), Some("broken"));
+    }
+
+    #[test]
+    fn a_new_decision_without_an_author_is_refused() {
+        assert_eq!(
+            merge(
+                Vec::new(),
+                &[],
+                &[decided("k", DecisionOutcome::Discarded, "noise")],
+                "2026-09-25T00:00:00Z",
+                Some("  "),
+            ),
+            Err("decided-by")
+        );
+    }
+
+    #[test]
+    fn a_rendered_list_reads_back_to_the_same_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut original = stored(
+            "perf: a() loops — `src/a.rs`",
+            "routed",
+            "specs/031-x/tasks.md",
+        );
+        original.extra.insert(
+            "ticket".into(),
+            serde_norway::Value::String("OPS-12".into()),
+        );
+        let mut block = String::new();
+        render(&mut block, std::slice::from_ref(&original));
+        write(dir.path(), "review.md", &block);
+        assert_eq!(
+            read_decisions(dir.path(), "review.md").unwrap(),
+            vec![original]
         );
     }
 

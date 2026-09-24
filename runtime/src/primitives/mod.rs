@@ -2440,7 +2440,9 @@ mod tests {
             Some("057-analyze-artifact-and-record-relocation")
         );
         assert_eq!(record.diff_base.as_deref(), Some("def5678"));
-        assert_eq!(record.captured_issues, Some(4));
+        // `captured-issues: 4` is a pre-058 field: still in the file, still
+        // parsed past, no longer carried by the record.
+        assert_eq!(record.dispositions, None);
         assert_eq!(record.skipped_passes, vec!["security", "simplicity"]);
 
         // ...and the fields that were duplicated still arrive.

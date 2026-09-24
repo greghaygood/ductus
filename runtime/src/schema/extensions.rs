@@ -1257,6 +1257,7 @@ mod tests {
             observations: vec![crate::schema::primitives::ReviewObservation {
                 text: "perf: config re-read per call".into(),
                 path: "runtime/src/schema/paths.rs".into(),
+                ..crate::schema::primitives::ReviewObservation::default()
             }],
         };
         let r_value: serde_json::Value = serde_json::to_value(&response).unwrap();

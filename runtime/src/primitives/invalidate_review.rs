@@ -100,14 +100,13 @@ fn invalidate_record_artifact(
     feature_dir: &Path,
     waivers: &[crate::primitives::write_review::RawWaiverFull],
 ) -> Result<()> {
-    const SCALARS: [&str; 14] = [
+    const SCALARS: [&str; 13] = [
         "last-run",
         "reviewed-against",
         "diff-base",
         "must-violations",
         "should-violations",
         "low-confidence",
-        "captured-issues",
         "examined",
         "scope",
         "skipped-passes",

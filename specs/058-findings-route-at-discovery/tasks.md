@@ -21,12 +21,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 3. `write-review`: stop capturing, record dispositions
 
-- [ ] Remove `capture_observations`, `inbox_bullet_text`, `observations_captured`, and `inbox_standing` from `write_review.rs` and its result
-- [ ] Remove `WriteReviewArgs.captured_issues`, the `captured-issues:` frontmatter line, and the `## Captured issues` section with `render_captured`
-- [ ] Add `disposition` and `decision-key` to `ReviewObservation`, validated per outcome before any write; render each observation's outcome; compute and write `dispositions:`
-- [ ] Take `expired-decisions` and `new-decisions`; re-render surviving, matched, and new decisions with extras preserved
-- [ ] Drop `captured-issues` from `invalidate_review.rs`'s nulled scalars
-- [ ] Replace the observation-capture tests (`observation_is_rendered_and_written_through_to_the_inbox` through `observation_capture_honors_the_configured_specs_root`) with tests that the inbox is never written, that the disposition renders and counts, that an empty-scope run still records dispositions, and that decisions persist and prune
+- [x] Remove `capture_observations`, `inbox_bullet_text`, `observations_captured`, and `inbox_standing` from `write_review.rs` and its result
+- [x] Remove `WriteReviewArgs.captured_issues`, the `captured-issues:` frontmatter line, and the `## Captured issues` section with `render_captured`
+- [x] Add `disposition` and `decision-key` to `ReviewObservation`, validated per outcome before any write; render each observation's outcome; compute and write `dispositions:`
+- [x] Take `expired-decisions` and `new-decisions`; re-render surviving, matched, and new decisions with extras preserved
+- [x] Drop `captured-issues` from `invalidate_review.rs`'s nulled scalars
+- [x] Replace the observation-capture tests (`observation_is_rendered_and_written_through_to_the_inbox` through `observation_capture_honors_the_configured_specs_root`) with tests that the inbox is never written, that the disposition renders and counts, that an empty-scope run still records dispositions, and that decisions persist and prune
 
 - **Done when**: no path in `write_review.rs` reaches `append_inbox`, a run with observations leaves `specs/inbox.md` byte-identical, `review.md` carries `dispositions:` and `decisions:`, and the file's tests pass.
 

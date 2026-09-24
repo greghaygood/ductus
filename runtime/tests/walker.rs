@@ -217,22 +217,28 @@ fn walker_halts_on_primitive_failure_with_error_envelope() {
 /// The observations leg is asserted by [`assert_observations_threaded`].
 ///
 /// The observations channel must be threaded the whole way — pass response →
-/// walker accumulator → `write-review` → both the report section and the
-/// inbox. Without this leg the report's `## Observations` section would render
-/// `*None.*` on every run whether or not the reviewer recorded any: a check
-/// that cannot run, indistinguishable from one that passed.
+/// walker accumulator → `write-review` → the report section and the record's
+/// `dispositions:` map. Without this leg the report's `## Observations` section
+/// would render `*None.*` on every run whether or not the reviewer recorded
+/// any: a check that cannot run, indistinguishable from one that passed.
+///
+/// The exec walker has no operator to ask, so the observation arrives with no
+/// disposition and must be recorded as **undispositioned** — owed, not handled
+/// — and must never reach the inbox (spec 058).
 fn assert_observations_threaded(repo_root: &std::path::Path, review: &str) {
     assert!(
-        review.contains("## Observations\n\n- perf: a() is called in a loop — `src/a.rs`"),
+        review.contains(
+            "## Observations\n\n- perf: a() is called in a loop — `src/a.rs` — **undispositioned**"
+        ),
         "accumulated performReview observations reached the report:\n{review}"
     );
-    let inbox = std::fs::read_to_string(repo_root.join("specs/inbox.md"))
-        .expect("write-review captured the observation to the inbox");
     assert!(
-        inbox.contains(
-            "- [ ] perf: a() is called in a loop — `src/a.rs` (captured during review of 001-x)"
-        ),
-        "recording the observation is what captured it:\n{inbox}"
+        review.contains("  undispositioned: 1\n"),
+        "an exec-path observation is counted as owed:\n{review}"
+    );
+    assert!(
+        !repo_root.join("specs/inbox.md").exists(),
+        "a review writes nothing to the inbox"
     );
 }
 

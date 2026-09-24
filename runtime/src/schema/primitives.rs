@@ -111,9 +111,6 @@ pub struct ReviewBlock {
     /// The sha the review diffed from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub diff_base: Option<String>,
-    /// Observations the run appended to the inbox.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub captured_issues: Option<u32>,
     /// Review dimensions that did not run this pass, by name.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub skipped_passes: Vec<String>,
@@ -159,6 +156,41 @@ impl Dispositions {
     pub fn total(&self) -> u32 {
         self.fixed + self.routed + self.discarded + self.undispositioned
     }
+}
+
+/// What a run did with one finding (spec 058).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum DispositionOutcome {
+    /// Fixed in the run.
+    Fixed,
+    /// Written to an artifact the pre-`done` gate reads; `target` names it.
+    Routed,
+    /// Judged out of scope; `reason` says why.
+    Discarded,
+    /// No decision was made. The default, so a caller that supplies no
+    /// disposition — the exec walker, which has no operator to ask — records
+    /// the finding as owed rather than as handled.
+    #[default]
+    Undispositioned,
+}
+
+/// One finding's disposition: the outcome, plus the companion that makes it
+/// auditable — a route's `target`, a discard's `reason`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct Disposition {
+    /// What was done.
+    #[serde(default)]
+    pub outcome: DispositionOutcome,
+    /// The routed-to artifact, repo-relative. Required when `outcome` is
+    /// `routed`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
+    /// Why the finding is out of scope. Required when `outcome` is
+    /// `discarded`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 /// The outcome a stored decision records. `fixed` is never stored — a fixed
@@ -588,9 +620,9 @@ pub struct ReviewFinding {
 /// One review **observation** — something the reviewer judged real that maps
 /// to no loaded rule, so it cannot be a [`ReviewFinding`]. Observations never
 /// enter the MUST / SHOULD / low-confidence counts and never affect
-/// `blocking`; `write-review` renders them in their own report section and
-/// appends each one to the inbox in the same call, so recording an observation
-/// *is* capturing it (spec 022 scenario `review-observations-write-through`).
+/// `blocking`. Each carries its disposition, which `write-review` renders
+/// beside it and counts under the record's `dispositions:` map (spec 058). An
+/// observation is never written to the inbox.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct ReviewObservation {
@@ -602,6 +634,16 @@ pub struct ReviewObservation {
     /// empty when it is not anchored to one file.
     #[serde(default)]
     pub path: String,
+    /// What the run did with it. Defaults to `undispositioned`.
+    #[serde(default)]
+    pub disposition: Disposition,
+    /// The key of a stored decision the host matched this observation to via
+    /// `process-decisions`. Observation text is the reviewer's own wording, so
+    /// a re-observed issue is matched by the host rather than by the text
+    /// reproducing byte for byte. Absent means the observation's rendered line
+    /// is its key.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decision_key: Option<String>,
 }
 
 /// Args for `write-review`. Findings cross the runtime boundary as a single
@@ -659,18 +701,26 @@ pub struct WriteReviewArgs {
     #[serde(default, alias = "expired")]
     #[arg(skip)]
     pub expired_waivers: Vec<WaiverRef>,
-    /// Inbox additions in the review window from `compute-review-scope`;
-    /// listed under Captured issues (informational).
-    #[serde(default)]
-    #[arg(skip)]
-    pub captured_issues: Vec<String>,
-    /// Reviewer observations that map to no loaded rule. Excluded from every
-    /// count and from `blocking`; each is appended to the inbox by this same
-    /// call, so the report and the inbox cannot diverge. Supplied via
-    /// MCP/interpreter JSON; not a CLI flag.
+    /// Reviewer observations that map to no loaded rule, each with its
+    /// disposition. Excluded from every violation count and from `blocking`;
+    /// counted under `dispositions:`. A routed or discarded observation that
+    /// matches no stored decision becomes one. Supplied via MCP/interpreter
+    /// JSON; not a CLI flag.
     #[serde(default)]
     #[arg(skip)]
     pub observations: Vec<ReviewObservation>,
+    /// Stored decisions `process-decisions` reported expired; dropped from
+    /// `review.md`'s `decisions:` list on this write. No alias: the exec walker
+    /// never runs `process-decisions`, and `expired` already binds waivers.
+    #[serde(default)]
+    #[arg(skip)]
+    pub expired_decisions: Vec<DecisionRef>,
+    /// Who made this run's new decisions — `git config user.email`, as
+    /// `waived-by` is. Required when any observation is newly routed or
+    /// discarded; a stored decision nobody can attribute is not auditable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub decided_by: Option<String>,
     /// How many of this run's in-scope files the five passes actually read.
     ///
     /// The **numerator** of a claim whose denominator the primitive derives
@@ -721,10 +771,8 @@ pub struct WriteReviewResult {
     pub waived: u32,
     /// Observations rendered in the report's `## Observations` section.
     pub observations: u32,
-    /// Observations newly appended to the inbox by this call; the remainder of
-    /// `observations` were already there and deduped. Reported so a caller can
-    /// tell "nothing to capture" from "capture ran and found duplicates".
-    pub observations_captured: u32,
+    /// How the observations were dispositioned — the map this call recorded.
+    pub dispositions: Dispositions,
     /// `true` when `must-violations` exceeds zero.
     pub blocking: bool,
     /// Derived exit code: 1 when blocking, else 0.
@@ -741,23 +789,6 @@ pub struct WriteReviewResult {
     /// can still overstate the numerator, but it cannot hide how large the
     /// subject was.
     pub scope: u32,
-    /// The project's standing inbox backlog at the moment this review was
-    /// written.
-    ///
-    /// Reported for the same reason `analyze_freshness` is: so
-    /// `/{project}:review` renders its `inbox` row from the primitive rather
-    /// than from a second implementation. It never affects `blocking` or
-    /// `exit_code` — the row is a notice, not a gate.
-    ///
-    /// **Distinct from the report's Captured issues section**, which lists
-    /// this review window's additions. Two numbers answering two questions;
-    /// neither stands in for the other, and the standing one is the half that
-    /// was previously invisible for any item older than the feature in hand.
-    ///
-    /// Taken **after** this run's own observation captures, so a freshly
-    /// recorded observation is counted. That is the honest reading of
-    /// "outstanding now": the bullet is in the file and nothing has routed it.
-    pub inbox_standing: InboxStanding,
     /// The spec's analyze-record freshness, computed against the **working
     /// tree** at the moment this review was written (spec 047 AC12).
     ///
