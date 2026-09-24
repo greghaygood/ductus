@@ -218,3 +218,9 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Verify: the anchor set is unchanged, `npx markdownlint-cli2` passes, each promoted rule's distinctive phrasing finds one normative statement and one pointer, and `plan.md`'s second-round table keys still match 1:1
 
 - **Done when**: every entry in `plan.md` §Classification's `#### Second round — promote` table has its canonical normative text as a bullet in `framework/constitution.md` under an existing section, each such entry's `AGENTS.md` line is a pointer stating nothing normative of its own, the anchor set before and after is identical, no project-only entry is altered, and the one entry routed to a rule file is registered there rather than here.
+
+## 24. Report outcomes, not edits
+
+- [x] Implement the behavior described in `scenarios/report-outcomes-not-edits.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
