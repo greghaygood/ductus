@@ -2624,6 +2624,16 @@ pub struct AppendTaskArgs {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub parent_heading: Option<String>,
+    /// Return an existing **pending** task with this exact title instead of
+    /// appending a second one (spec 058). Off by default, so every existing
+    /// caller keeps its behavior. The case it exists for is a disposition
+    /// task: it has no scenario to key the slug dedup on, and a re-run of an
+    /// interrupted `/{project}:implement` must not record the same finding
+    /// twice. A spent section with the same title never matches — the same
+    /// finding surfacing again after it was dispositioned is new work.
+    #[serde(default)]
+    #[arg(long)]
+    pub dedup_title: bool,
 }
 
 /// Result for `append-task`.

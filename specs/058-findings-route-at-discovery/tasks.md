@@ -77,8 +77,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 9. `append-task`: `dedup-title`
 
-- [ ] Add `dedup-title: bool` (default `false`) to `AppendTaskArgs`; when set, a pending section with an identical title returns its number with `appended: false`
-- [ ] Tests: dedup against a pending section, no dedup against a spent one, default behavior unchanged (`a_slugless_body_still_appends_every_time` still passes)
+- [x] Add `dedup-title: bool` (default `false`) to `AppendTaskArgs`; when set, a pending section with an identical title returns its number with `appended: false`
+- [x] Tests: dedup against a pending section, no dedup against a spent one, default behavior unchanged (`a_slugless_body_still_appends_every_time` still passes)
 
 - **Done when**: two identical disposition-task appends with `dedup-title` produce one task, and the tests pass.
 

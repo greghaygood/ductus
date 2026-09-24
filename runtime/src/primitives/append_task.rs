@@ -102,6 +102,20 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
         });
     }
 
+    // Title dedup, opt-in (spec 058): a disposition task names a finding, not
+    // a scenario, so the slug guard above cannot key on it. Only a *pending*
+    // section matches — see `pending_task_titled`.
+    if args.dedup_title
+        && let Some(existing_number) = pending_task_titled(&existing, args.title.trim())
+    {
+        return Ok(AppendTaskResult {
+            task_number: existing_number,
+            path: rel_path(&tasks_path, repo),
+            created: created_now,
+            appended: false,
+        });
+    }
+
     let next_number = next_task_number(&existing);
     let new_content = match detect_tasks_structure(&existing) {
         TasksStructure::Flat => {
@@ -159,6 +173,44 @@ fn task_number_referencing_scenario(existing: &str, slug: &str) -> Option<u32> {
         }
         if current.is_some() && line.contains(&needle) {
             return current;
+        }
+    }
+    None
+}
+
+/// The number of a **pending** task section titled exactly `title`, if any.
+///
+/// Pending means at least one unchecked checkbox inside the section. A spent
+/// section — every box checked — never matches: the same finding surfacing
+/// again after it was dispositioned is new work, not a duplicate. Sections
+/// end at the next level-2 or level-3 heading, numbered or not, so a phase
+/// container closes the task before it. Fence- and comment-aware, as the
+/// numbering walk is.
+fn pending_task_titled(existing: &str, title: &str) -> Option<u32> {
+    use crate::primitives::{SkipScanner, parse_atx_heading};
+
+    let mut skip = SkipScanner::default();
+    // (number, title matches) of the section being walked.
+    let mut current: Option<(u32, bool)> = None;
+    for line in existing.lines() {
+        if skip.skip(line) {
+            continue;
+        }
+        if let Some((level, text)) = parse_atx_heading(line) {
+            if level == 2 || level == 3 {
+                current = text.split_once(". ").and_then(|(num, rest)| {
+                    num.trim()
+                        .parse::<u32>()
+                        .ok()
+                        .map(|number| (number, rest.trim() == title))
+                });
+            }
+            continue;
+        }
+        if let Some((number, true)) = current
+            && line.trim_start().starts_with("- [ ]")
+        {
+            return Some(number);
         }
     }
     None
@@ -451,6 +503,7 @@ mod tests {
             // Phased-structure routing is tested separately; flat tests
             // leave this unset.
             parent_heading: None,
+            dedup_title: false,
         }
     }
 
@@ -548,6 +601,65 @@ mod tests {
         let second = run(&a, tmp.path()).unwrap();
         assert!(second.appended);
         assert_eq!(second.task_number, 2);
+    }
+
+    fn disposition_args(title: &str) -> AppendTaskArgs {
+        let mut a = args("specs/042-foo", title, "the finding is dispositioned.");
+        a.slug = None;
+        a.body = Some(vec!["src/a.rs — leaks a handle".into()]);
+        a.dedup_title = true;
+        a
+    }
+
+    #[test]
+    fn dedup_title_returns_the_pending_task_instead_of_appending_again() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let a = disposition_args("Disposition out-of-spec finding: handle leak");
+        let first = run(&a, tmp.path()).unwrap();
+        assert!(first.appended);
+        let second = run(&a, tmp.path()).unwrap();
+        assert!(!second.appended, "an interrupted run's re-append converges");
+        assert_eq!(second.task_number, first.task_number);
+        let tasks = fs::read_to_string(tmp.path().join("specs/042-foo/tasks.md")).unwrap();
+        assert_eq!(tasks.matches("handle leak").count(), 1, "{tasks}");
+    }
+
+    #[test]
+    fn dedup_title_never_matches_a_spent_section() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        fs::write(
+            tmp.path().join("specs/042-foo/tasks.md"),
+            "# 042 — Foo Tasks\n\n## 1. Disposition out-of-spec finding: handle leak\n\n\
+             - [x] src/a.rs — leaks a handle (discarded: fixed upstream)\n\n\
+             - **Done when**: the finding is dispositioned.\n",
+        )
+        .unwrap();
+        let result = run(
+            &disposition_args("Disposition out-of-spec finding: handle leak"),
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(result.appended, "the finding surfacing again is new work");
+        assert_eq!(result.task_number, 2);
+    }
+
+    #[test]
+    fn dedup_title_is_exact_and_ignores_a_different_title() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        run(
+            &disposition_args("Disposition out-of-spec finding: handle leak"),
+            tmp.path(),
+        )
+        .unwrap();
+        let other = run(
+            &disposition_args("Disposition out-of-spec finding: handle leak in b.rs"),
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(other.appended);
     }
 
     #[test]

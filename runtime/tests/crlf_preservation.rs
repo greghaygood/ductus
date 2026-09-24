@@ -168,6 +168,7 @@ fn append_task_preserves_crlf() {
             body: None,
             slug: Some("second-thing".into()),
             parent_heading: None,
+            dedup_title: false,
         },
         repo,
     )

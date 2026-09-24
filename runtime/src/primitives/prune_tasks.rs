@@ -619,6 +619,7 @@ mod tests {
                 body: None,
                 slug: Some("x".into()),
                 parent_heading: None,
+                dedup_title: false,
             },
             &repo,
         )
