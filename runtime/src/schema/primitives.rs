@@ -806,6 +806,48 @@ pub struct WriteReviewResult {
 
 // -- write-analysis ----------------------------------------------------------
 
+/// The tier an analyze finding was detected in.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum AnalysisTier {
+    /// Malformed or missing required structure.
+    HardFail,
+    /// Holds the spec out of `done`.
+    Blocking,
+    /// Recorded; never gated on by itself.
+    #[default]
+    Advisory,
+}
+
+/// One analyze finding and what the run did with it (spec 058).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct AnalysisFinding {
+    /// The tier it was detected in.
+    #[serde(default)]
+    pub tier: AnalysisTier,
+    /// The detecting family, e.g. `review-state-drift`, `grounding`.
+    pub family: String,
+    /// One line. With `family`, forms the stored-decision key
+    /// `{family} — {message}`.
+    pub message: String,
+    /// The citing artifact.
+    #[serde(default)]
+    pub path: String,
+    /// `false` for a finding fixed in the run and absent from the re-check.
+    #[serde(default = "default_true")]
+    pub live: bool,
+    /// What the run did with it. `discarded` is refused for a `hard-fail` or
+    /// `blocking` finding: those already gate `done`, and a discard would be a
+    /// bypass the gate does not have.
+    #[serde(default)]
+    pub disposition: Disposition,
+}
+
+fn default_true() -> bool {
+    true
+}
+
 /// Args for `write-analysis` — record that `/ductus:analyze` ran, and what it
 /// found, in `specs/NNN/analysis.md`.
 ///
@@ -863,29 +905,26 @@ pub struct WriteAnalysisArgs {
     #[serde(default)]
     #[arg(long = "unexamined-reason", value_parser = parse_reason_count)]
     pub unexamined_by_reason: Vec<(String, u32)>,
-    /// Inbox items this run captured, recorded as `analyze.captured-issues`.
-    ///
-    /// The mirror of `write-review`'s field of the same name, and it exists
-    /// for the reason `unexamined` does. `advisory` states how many findings
-    /// the run produced; §brownfield-inbox requires that a findings-producing
-    /// command *record* them rather than only print them — but the appends
-    /// are separate `append-inbox` calls the host makes, so a run that
-    /// recorded `advisory: 5` and captured nothing was byte-identical to one
-    /// that captured all five, and nothing could tell them apart. The review
-    /// side once had `check-review-agreement` pinning `review.md` to the
-    /// spec's `review:` block; spec 057 gave each record one home and retired
-    /// that check, and gave analyze a report artifact of its own — so this
-    /// field, not a cross-artifact comparison, is what separates the two.
-    ///
-    /// Recorded rather than derived, deliberately. Counting inbox bullets
-    /// here would make `captured-issues == advisory` look like an invariant
-    /// when it is not: `append-inbox`'s `dedup-prefix` guard legitimately
-    /// suppresses a re-append, so a correct re-run captures fewer than it
-    /// found. What the field buys is that the two numbers are both *stated*,
-    /// so a divergence is legible and an agreement check becomes writable.
+    /// Every finding the run dispositioned or left owed, each with its tier
+    /// and disposition (spec 058) — both passes: findings fixed in the run
+    /// (`live: false`, gone from the re-check) and the re-check's live
+    /// findings. The tier counts above stay the authority on how many live
+    /// findings there are; a live finding this list omits is counted as
+    /// undispositioned, so an omission can never read as handled. Supplied via
+    /// MCP/interpreter JSON; not a CLI flag.
     #[serde(default)]
-    #[arg(long = "captured-issue")]
-    pub captured_issues: Vec<String>,
+    #[arg(skip)]
+    pub findings: Vec<AnalysisFinding>,
+    /// Stored decisions `process-decisions` reported expired; dropped from
+    /// `analysis.md`'s `decisions:` list on this write.
+    #[serde(default)]
+    #[arg(skip)]
+    pub expired_decisions: Vec<DecisionRef>,
+    /// Who made this run's new decisions — `git config user.email`. Required
+    /// when any live finding is newly routed or discarded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub decided_by: Option<String>,
 }
 
 /// Parse a `reason=count` pair for `--unexamined-reason`.
@@ -932,9 +971,8 @@ pub struct WriteAnalysisResult {
     /// opposed to being inserted for the first time. Reported so a caller can
     /// tell a re-analysis from a spec leaving the grandfathered population.
     pub replaced: bool,
-    /// The `captured-issues` count actually written, so a caller can confirm
-    /// the record states what it passed.
-    pub captured_issues: u32,
+    /// The `dispositions:` map actually written.
+    pub dispositions: Dispositions,
 }
 
 /// Parsed spec frontmatter.

@@ -32,12 +32,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 4. `write-analysis`: take findings, new skeleton
 
-- [ ] Replace `WriteAnalysisArgs.captured_issues` with `findings`, per the data model
-- [ ] Compute `dispositions:`, with `undispositioned` equal to the live tier total minus routed and discarded live findings
-- [ ] Reject a `discarded` outcome on a `hard-fail` or `blocking` finding before any write
-- [ ] Render live findings with their dispositions under each tier section, a `{n} finding(s) not itemized` line when a tier count exceeds its itemized findings, and `## Fixed in this run` in place of `## Captured issues`; drop the inbox sentences from the Summary and `tier_line`; keep checkbox stripping
-- [ ] Take `expired-decisions` and `new-decisions`, as `write-review` does
-- [ ] Rewrite `the_skeleton_is_fixed_and_complete`, `records_captured_issues_beside_advisory`, and `a_divergence_between_advisory_and_captured_is_recorded_not_smoothed` for the new shape; add tests for the unitemized-count rule and the discard rejection
+- [x] Replace `WriteAnalysisArgs.captured_issues` with `findings`, per the data model
+- [x] Compute `dispositions:`, with `undispositioned` equal to the live tier total minus routed and discarded live findings
+- [x] Reject a `discarded` outcome on a `hard-fail` or `blocking` finding before any write
+- [x] Render live findings with their dispositions under each tier section, a `{n} finding(s) not itemized` line when a tier count exceeds its itemized findings, and `## Fixed in this run` in place of `## Captured issues`; drop the inbox sentences from the Summary and `tier_line`; keep checkbox stripping
+- [x] Take `expired-decisions` and `new-decisions`, as `write-review` does
+- [x] Rewrite `the_skeleton_is_fixed_and_complete`, `records_captured_issues_beside_advisory`, and `a_divergence_between_advisory_and_captured_is_recorded_not_smoothed` for the new shape; add tests for the unitemized-count rule and the discard rejection
 
 - **Done when**: a call with tier counts and no findings records every live finding as undispositioned, a discard on a blocking finding is refused with nothing written, and the file's tests pass.
 

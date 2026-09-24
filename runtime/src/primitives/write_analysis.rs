@@ -17,12 +17,19 @@
 //! the repository had said the spec was complete. The gap was found by being
 //! asked, which is the definition of a diligence dependency.
 //!
-//! **This changes `/ductus:analyze`'s read-only contract, deliberately, and
-//! the new line is between the subject and the observation.** Analyze still
-//! never mutates an artifact it audits; `--fix` remains the only path that
-//! does. Recording that the audit happened is not mutating the subject — it is
+//! **Recording that the audit happened is not mutating the subject** — it is
 //! precisely what `write-review` does for the other gate, and precisely why
-//! that gate was enforceable and this one was not.
+//! that gate was enforceable and this one was not. Detection stays read-only;
+//! the fix-and-route step that follows it writes only with the operator's
+//! per-write confirmation, and this record is written after that step and a
+//! re-check, so it describes the state after dispositions (spec 058).
+//!
+//! Every finding arrives with its disposition, and the record counts them
+//! under `dispositions:`. The tier counts stay host-supplied scalars from the
+//! re-check, and `undispositioned` is derived as the live tier total minus the
+//! live findings routed or discarded — so a finding the caller does not
+//! itemize, including every finding on the exec path, is counted as owed.
+//! Nothing is written to the inbox.
 //!
 //! The block deliberately is **not** a copy of `review:`:
 //!
@@ -47,12 +54,16 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
 
+use crate::primitives::decisions;
 use crate::primitives::{
     PrimitiveError, Result, read_text, rel_path, split_frontmatter, validate_no_traversal,
     write_atomic,
 };
 use crate::schema::paths;
-use crate::schema::primitives::{WriteAnalysisArgs, WriteAnalysisResult};
+use crate::schema::primitives::{
+    AnalysisFinding, AnalysisTier, DecisionOutcome, DecisionRef, DispositionOutcome, Dispositions,
+    WriteAnalysisArgs, WriteAnalysisResult,
+};
 
 /// Execute the `write-analysis` primitive against the given repo root.
 ///
@@ -97,6 +108,20 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         .any(|line| !line.starts_with([' ', '\t']) && line.starts_with("analyze:"));
 
     let blocking = args.hard_fail > 0 || args.blocking_findings > 0;
+    let dispositions = count_dispositions(args)?;
+    let merged = decisions::merge(
+        decisions::read_decisions(&feature_dir, crate::primitives::ANALYSIS_RECORD_FILE)?,
+        &args.expired_decisions,
+        &decided_findings(&args.findings),
+        &single_line(&args.analyzed_at),
+        args.decided_by.as_deref().map(single_line).as_deref(),
+    )
+    .map_err(|field| {
+        invalid(
+            field,
+            "required when a finding is newly routed or discarded",
+        )
+    })?;
     // The breakdown is the authority when supplied: a total a caller can
     // contradict is a total that will eventually be contradicted, which is
     // the same reason `blocking` is derived rather than accepted.
@@ -165,7 +190,17 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     // the byte-identical failure `write-analysis` was built to end, one level
     // out.
     let analysis_path = feature_dir.join(crate::primitives::ANALYSIS_RECORD_FILE);
-    let report = render_analysis(args, blocking, unexamined, &by_reason, &subjects);
+    let report = render_analysis(
+        args,
+        &Derived {
+            blocking,
+            unexamined,
+            dispositions,
+        },
+        &by_reason,
+        &subjects,
+        &merged,
+    );
     write_atomic(&analysis_path, &report)?;
 
     Ok(WriteAnalysisResult {
@@ -173,8 +208,175 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         blocking,
         unexamined,
         replaced,
-        captured_issues: u32::try_from(args.captured_issues.len()).unwrap_or(u32::MAX),
+        dispositions,
     })
+}
+
+/// A validation failure naming the offending argument.
+fn invalid(argument: impl Into<String>, reason: &str) -> PrimitiveError {
+    PrimitiveError::InvalidArgument {
+        primitive: "write-analysis".into(),
+        argument: argument.into(),
+        reason: reason.into(),
+    }
+}
+
+/// The tier's live count, as the host's re-check stated it.
+fn tier_count(args: &WriteAnalysisArgs, tier: AnalysisTier) -> u32 {
+    match tier {
+        AnalysisTier::HardFail => args.hard_fail,
+        AnalysisTier::Blocking => args.blocking_findings,
+        AnalysisTier::Advisory => args.advisory,
+    }
+}
+
+/// Validate the itemized findings against the tier counts and derive the
+/// `dispositions:` map. Everything that can be refused is refused here, before
+/// any write.
+///
+/// The tier counts are the authority on how many live findings exist, so the
+/// itemization may fall short of them — the shortfall is undispositioned — but
+/// may never exceed them, and may never contradict itself: a finding the
+/// re-check still produces was not fixed, and a finding gone from the re-check
+/// was.
+fn count_dispositions(args: &WriteAnalysisArgs) -> Result<Dispositions> {
+    let mut counts = Dispositions::default();
+    let mut itemized = [0u32; 3];
+    for (idx, finding) in args.findings.iter().enumerate() {
+        let at = |field: &str| format!("findings[{idx}].{field}");
+        if finding.family.trim().is_empty() {
+            return Err(invalid(at("family"), "family is empty"));
+        }
+        if finding.message.trim().is_empty() {
+            return Err(invalid(at("message"), "message is empty"));
+        }
+        let disposition = &finding.disposition;
+        let present =
+            |value: &Option<String>| value.as_deref().is_some_and(|v| !v.trim().is_empty());
+        match disposition.outcome {
+            DispositionOutcome::Routed if !present(&disposition.target) => {
+                return Err(invalid(
+                    at("disposition.target"),
+                    "a route names its target",
+                ));
+            }
+            DispositionOutcome::Discarded if !present(&disposition.reason) => {
+                return Err(invalid(
+                    at("disposition.reason"),
+                    "a discard states its reason",
+                ));
+            }
+            DispositionOutcome::Discarded
+                if matches!(
+                    finding.tier,
+                    AnalysisTier::HardFail | AnalysisTier::Blocking
+                ) =>
+            {
+                return Err(invalid(
+                    at("disposition.outcome"),
+                    "a hard-fail or blocking finding already gates done; fix or route it, never discard it",
+                ));
+            }
+            _ => {}
+        }
+        if !finding.live {
+            if disposition.outcome != DispositionOutcome::Fixed {
+                return Err(invalid(
+                    at("disposition.outcome"),
+                    "a finding gone from the re-check was fixed; record it as fixed",
+                ));
+            }
+            counts.fixed = counts.fixed.saturating_add(1);
+            continue;
+        }
+        let slot = match finding.tier {
+            AnalysisTier::HardFail => 0,
+            AnalysisTier::Blocking => 1,
+            AnalysisTier::Advisory => 2,
+        };
+        itemized[slot] = itemized[slot].saturating_add(1);
+        match disposition.outcome {
+            DispositionOutcome::Fixed => {
+                return Err(invalid(
+                    at("disposition.outcome"),
+                    "the re-check still produces this finding, so it was not fixed",
+                ));
+            }
+            DispositionOutcome::Routed => counts.routed = counts.routed.saturating_add(1),
+            DispositionOutcome::Discarded => counts.discarded = counts.discarded.saturating_add(1),
+            DispositionOutcome::Undispositioned => {}
+        }
+    }
+    for (slot, tier) in [
+        AnalysisTier::HardFail,
+        AnalysisTier::Blocking,
+        AnalysisTier::Advisory,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if itemized[slot] > tier_count(args, tier) {
+            return Err(invalid(
+                "findings",
+                "more live findings are itemized in a tier than its count states",
+            ));
+        }
+    }
+    let live_total = args
+        .hard_fail
+        .saturating_add(args.blocking_findings)
+        .saturating_add(args.advisory);
+    counts.undispositioned =
+        live_total.saturating_sub(counts.routed.saturating_add(counts.discarded));
+    Ok(counts)
+}
+
+/// The live findings routed or discarded, as the decisions they store, keyed
+/// `{family} — {message}`.
+fn decided_findings(findings: &[AnalysisFinding]) -> Vec<DecisionRef> {
+    findings
+        .iter()
+        .filter(|finding| finding.live)
+        .filter_map(|finding| {
+            let disposition = &finding.disposition;
+            let trimmed = |value: &Option<String>| value.as_deref().map(single_line);
+            let (outcome, target, reason) = match disposition.outcome {
+                DispositionOutcome::Routed => {
+                    (DecisionOutcome::Routed, trimmed(&disposition.target), None)
+                }
+                DispositionOutcome::Discarded => (
+                    DecisionOutcome::Discarded,
+                    None,
+                    trimmed(&disposition.reason),
+                ),
+                DispositionOutcome::Fixed | DispositionOutcome::Undispositioned => return None,
+            };
+            Some(DecisionRef {
+                key: finding_key(finding),
+                outcome,
+                target,
+                reason,
+            })
+        })
+        .collect()
+}
+
+/// The stored-decision key for an analyze finding: the deterministic half of
+/// the old capture key. The capture key's leading `{category}` was assigned by
+/// the host when it wrote the bullet, so it does not reproduce across runs.
+fn finding_key(finding: &AnalysisFinding) -> String {
+    format!(
+        "{} — {}",
+        single_line(&finding.family),
+        single_line(&finding.message)
+    )
+}
+
+/// The counts this call derived, rendered into the record.
+struct Derived {
+    blocking: bool,
+    unexamined: u32,
+    dispositions: Dispositions,
 }
 
 /// Render `analysis.md` — the record's frontmatter plus the fixed skeleton.
@@ -185,11 +387,13 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
 /// describes the current analysis and git carries the history.
 fn render_analysis(
     args: &WriteAnalysisArgs,
-    blocking: bool,
-    unexamined: u32,
+    derived: &Derived,
     by_reason: &BTreeMap<String, u32>,
     subjects: &crate::primitives::analyze_subjects::SubjectDigest,
+    decisions_list: &[decisions::RawDecision],
 ) -> String {
+    let (blocking, unexamined, counts) =
+        (derived.blocking, derived.unexamined, derived.dispositions);
     let feature = &args.feature;
     let mut out = String::from("---\n");
     let _ = writeln!(out, "spec: {}", single_line(feature));
@@ -203,7 +407,6 @@ fn render_analysis(
     let _ = writeln!(out, "blocking-findings: {}", args.blocking_findings);
     let _ = writeln!(out, "advisory: {}", args.advisory);
     let _ = writeln!(out, "unexamined: {unexamined}");
-    let _ = writeln!(out, "captured-issues: {}", args.captured_issues.len());
     if !subjects.digests.is_empty() {
         let _ = writeln!(out, "analyzed-digest:");
         for (path, digest) in &subjects.digests {
@@ -223,48 +426,130 @@ fn render_analysis(
         }
     }
     let _ = writeln!(out, "blocking: {blocking}");
+    // Always written, all four counts: a record without the map predates
+    // dispositions, and the gate reads that absence as a record to re-run.
+    let _ = writeln!(out, "dispositions:");
+    let _ = writeln!(out, "  fixed: {}", counts.fixed);
+    let _ = writeln!(out, "  routed: {}", counts.routed);
+    let _ = writeln!(out, "  discarded: {}", counts.discarded);
+    let _ = writeln!(out, "  undispositioned: {}", counts.undispositioned);
+    decisions::render(&mut out, decisions_list);
     out.push_str("---\n\n");
 
     let _ = writeln!(out, "# Analysis — {feature}\n");
     let verdict = if blocking { "blocking" } else { "not blocking" };
     let _ = writeln!(out, "## Summary\n");
-    let _ = writeln!(
-        out,
+    let mut summary = format!(
         "{} hard-fail, {} blocking, {} advisory; {verdict}. {} unexamined target(s). \
-         Findings route to the inbox — this report records them, `/{{project}}:groom` routes them.\n",
-        args.hard_fail, args.blocking_findings, args.advisory, unexamined,
+         Dispositions: {} fixed, {} routed, {} discarded, {} undispositioned.",
+        args.hard_fail,
+        args.blocking_findings,
+        args.advisory,
+        unexamined,
+        counts.fixed,
+        counts.routed,
+        counts.discarded,
+        counts.undispositioned,
     );
-    let _ = writeln!(out, "## Hard failures\n\n{}\n", tier_line(args.hard_fail));
-    let _ = writeln!(
-        out,
-        "## Blocking findings\n\n{}\n",
-        tier_line(args.blocking_findings)
-    );
-    let _ = writeln!(
-        out,
-        "## Advisory findings\n\n{}\n",
-        tier_line(args.advisory)
-    );
+    if counts.undispositioned > 0 {
+        summary.push_str(
+            " `done` is blocked until each undispositioned finding is fixed, routed, or discarded.",
+        );
+    }
+    let _ = writeln!(out, "{summary}\n");
+    for (heading, tier) in [
+        ("Hard failures", AnalysisTier::HardFail),
+        ("Blocking findings", AnalysisTier::Blocking),
+        ("Advisory findings", AnalysisTier::Advisory),
+    ] {
+        let _ = writeln!(out, "## {heading}\n\n{}\n", render_tier(args, tier));
+    }
     let _ = writeln!(
         out,
         "## Unexamined targets\n\n{}\n",
         render_unexamined(unexamined, by_reason)
     );
-    let _ = write!(
-        out,
-        "## Captured issues\n\n{}\n",
-        render_captured_plain(&args.captured_issues)
-    );
+    let fixed: Vec<&AnalysisFinding> = args.findings.iter().filter(|f| !f.live).collect();
+    let _ = write!(out, "## Fixed in this run\n\n{}\n", render_list(&fixed));
     out
 }
 
-/// A tier's one-line count, or `*None.*`.
-fn tier_line(count: u32) -> String {
-    if count == 0 {
-        "*None.*".to_string()
-    } else {
-        format!("{count} finding(s) — see **Captured issues** below and the inbox.")
+/// A tier's live findings, each beside its disposition, plus a line for any
+/// the caller counted but did not itemize — so the body can never understate
+/// what the frontmatter counts. `*None.*` when the tier is empty.
+fn render_tier(args: &WriteAnalysisArgs, tier: AnalysisTier) -> String {
+    let listed: Vec<&AnalysisFinding> = args
+        .findings
+        .iter()
+        .filter(|finding| finding.live && finding.tier == tier)
+        .collect();
+    let count = tier_count(args, tier);
+    if count == 0 && listed.is_empty() {
+        return "*None.*".to_string();
     }
+    let mut lines: Vec<String> = Vec::new();
+    if !listed.is_empty() {
+        lines.push(render_list(&listed));
+    }
+    let missing = count.saturating_sub(u32::try_from(listed.len()).unwrap_or(u32::MAX));
+    if missing > 0 {
+        lines.push(format!(
+            "{missing} finding(s) not itemized — counted as undispositioned."
+        ));
+    }
+    lines.join("\n\n")
+}
+
+/// Findings as plain bullets, each beside its disposition, or `*None.*`.
+///
+/// Every piece of caller text passes through [`plain`], which flattens line
+/// breaks and strips a leading checkbox marker: the mechanical half of spec 057
+/// AC13, so this report can never become a second triage queue.
+fn render_list(findings: &[&AnalysisFinding]) -> String {
+    if findings.is_empty() {
+        return "*None.*".to_string();
+    }
+    findings
+        .iter()
+        .map(|finding| {
+            let disposition = &finding.disposition;
+            let companion = |value: &Option<String>| plain(value.as_deref().unwrap_or(""));
+            let outcome = match disposition.outcome {
+                DispositionOutcome::Fixed => "**fixed**".to_string(),
+                DispositionOutcome::Routed => {
+                    format!("**routed** to `{}`", companion(&disposition.target))
+                }
+                DispositionOutcome::Discarded => {
+                    format!("**discarded**: {}", companion(&disposition.reason))
+                }
+                DispositionOutcome::Undispositioned => "**undispositioned**".to_string(),
+            };
+            let path = plain(&finding.path);
+            let location = if path.is_empty() {
+                String::new()
+            } else {
+                format!(" — `{path}`")
+            };
+            format!(
+                "- {} — {}{location} — {outcome}",
+                plain(&finding.family),
+                plain(&finding.message)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Caller text flattened to one line with any leading checkbox marker removed.
+fn plain(text: &str) -> String {
+    let text = single_line(text);
+    let text = text.strip_prefix("- ").unwrap_or(&text);
+    text.strip_prefix("[ ] ")
+        .or_else(|| text.strip_prefix("[x] "))
+        .or_else(|| text.strip_prefix("[X] "))
+        .unwrap_or(text)
+        .trim()
+        .to_string()
 }
 
 /// The unexamined breakdown, or `*None — every target was examined.*`
@@ -282,32 +567,6 @@ fn render_unexamined(unexamined: u32, by_reason: &BTreeMap<String, u32>) -> Stri
     by_reason
         .iter()
         .map(|(reason, count)| format!("- {reason}: {count}"))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-/// The captured findings as plain bullets, with any checkbox marker stripped.
-///
-/// The strip is the mechanical half of spec 057 AC13: these strings are inbox
-/// bullets, and the inbox's form *is* `- [ ] …`. Rendering them verbatim would
-/// make this report a second triage queue — the parallel surface 047 rejected —
-/// so the guarantee is enforced here rather than asked of every caller.
-fn render_captured_plain(issues: &[String]) -> String {
-    if issues.is_empty() {
-        return "*None.*".to_string();
-    }
-    issues
-        .iter()
-        .map(|line| {
-            let text = line.trim();
-            let text = text.strip_prefix("- ").unwrap_or(text);
-            let text = text
-                .strip_prefix("[ ] ")
-                .or_else(|| text.strip_prefix("[x] "))
-                .or_else(|| text.strip_prefix("[X] "))
-                .unwrap_or(text);
-            format!("- {}", text.trim())
-        })
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -390,7 +649,7 @@ mod tests {
             "## Blocking findings",
             "## Advisory findings",
             "## Unexamined targets",
-            "## Captured issues",
+            "## Fixed in this run",
         ];
         let mut cursor = 0;
         for heading in expected {
@@ -401,20 +660,20 @@ mod tests {
         }
     }
 
-    /// No section carries a checkbox — the mechanical half of AC13.
-    ///
-    /// The captured bullets arrive in the inbox's own `- [ ] …` form, so the
-    /// guarantee has to be enforced by the renderer rather than asked of the
-    /// caller. Feeding it exactly that form is the point of the fixture.
+    /// No section carries a checkbox — the mechanical half of AC13 — even when
+    /// a caller's finding text arrives in the inbox's old `- [ ] …` form.
     #[test]
-    fn the_report_carries_no_checkbox_even_when_captures_arrive_with_one() {
+    fn the_report_carries_no_checkbox_even_when_finding_text_arrives_with_one() {
         let tmp = spec_repo("status: in-progress\ndependencies: []");
         let mut a = args();
-        a.advisory = 2;
-        a.captured_issues = vec![
-            "- [ ] convention: criterion-path-existence — specs/system.md missing — spec.md".into(),
-            "bug: task-consistency — task 4 has no Done when — tasks.md".into(),
-        ];
+        a.advisory = 1;
+        a.findings = vec![finding(
+            AnalysisTier::Advisory,
+            "- [ ] criterion-path-existence",
+            "specs/system.md missing",
+            DispositionOutcome::Undispositioned,
+            None,
+        )];
         run(&a, tmp.path()).unwrap();
 
         let report = analysis_md(&tmp);
@@ -423,10 +682,9 @@ mod tests {
             "analysis.md must never become a second triage queue:\n{report}"
         );
         assert!(
-            report.contains("- convention: criterion-path-existence"),
+            report.contains("- criterion-path-existence — specs/system.md missing"),
             "the finding's text still lands, just without the marker:\n{report}"
         );
-        assert!(report.contains("- bug: task-consistency"), "{report}");
     }
 
     /// An unexamined breakdown reaches the report, not just the record.
@@ -451,50 +709,217 @@ mod tests {
             advisory: 0,
             unexamined: 0,
             unexamined_by_reason: vec![],
-            captured_issues: vec![],
+            findings: vec![],
+            expired_decisions: vec![],
+            decided_by: None,
+        }
+    }
+
+    fn finding(
+        tier: AnalysisTier,
+        family: &str,
+        message: &str,
+        outcome: DispositionOutcome,
+        companion: Option<&str>,
+    ) -> AnalysisFinding {
+        AnalysisFinding {
+            tier,
+            family: family.into(),
+            message: message.into(),
+            path: "spec.md".into(),
+            live: outcome != DispositionOutcome::Fixed,
+            disposition: crate::schema::primitives::Disposition {
+                outcome,
+                target: (outcome == DispositionOutcome::Routed)
+                    .then(|| companion.unwrap_or_default().to_string()),
+                reason: (outcome == DispositionOutcome::Discarded)
+                    .then(|| companion.unwrap_or_default().to_string()),
+            },
         }
     }
 
     #[test]
-    fn records_captured_issues_beside_advisory() {
-        // The pair is the point: `advisory` says how many findings the run
-        // produced, `captured-issues` how many it landed in the inbox. Before
-        // this field a run that recorded `advisory: 3` and captured nothing
-        // was byte-identical to one that captured all three, and nothing
-        // could tell them apart. The cross-artifact comparison that once
-        // covered the review side is retired (spec 057), so this field is the
-        // only thing that separates them.
+    fn a_call_with_counts_and_no_findings_records_every_live_finding_as_owed() {
+        // The exec path's shape: tier counts from the re-check, nothing
+        // itemized, because there was no operator to disposition anything.
         let tmp = spec_repo("status: in-progress\ndependencies: []");
         let mut a = args();
+        a.blocking_findings = 1;
         a.advisory = 3;
-        a.captured_issues = vec![
-            "convention: a.rs names a retired path".into(),
-            "bug: b.rs drops an error".into(),
-            "perf: c.rs re-reads the config per call".into(),
-        ];
         let result = run(&a, tmp.path()).unwrap();
-        assert_eq!(result.captured_issues, 3);
-        let spec = analysis_md(&tmp);
-        assert!(spec.contains("advisory: 3"));
-        assert!(spec.contains("captured-issues: 3"));
+        assert_eq!(result.dispositions.undispositioned, 4);
+        let report = analysis_md(&tmp);
+        assert!(report.contains("  undispositioned: 4\n"), "{report}");
+        assert!(
+            report.contains("3 finding(s) not itemized — counted as undispositioned."),
+            "the body must not understate what the frontmatter counts:\n{report}"
+        );
+        assert!(!report.contains("captured-issues"), "{report}");
+        assert!(report.contains("`done` is blocked"), "{report}");
     }
 
     #[test]
-    fn a_divergence_between_advisory_and_captured_is_recorded_not_smoothed() {
-        // The two numbers are NOT required to agree, and the field would be
-        // worse than useless if they were forced to: `append-inbox`'s
-        // dedup-prefix guard legitimately suppresses a re-append, so a correct
-        // re-run captures fewer than it found. What must not happen is the
-        // divergence being invisible.
+    fn each_disposition_is_counted_and_rendered_in_its_section() {
         let tmp = spec_repo("status: in-progress\ndependencies: []");
         let mut a = args();
-        a.advisory = 4;
-        a.captured_issues = vec![];
+        a.blocking_findings = 1;
+        a.advisory = 2;
+        a.decided_by = Some("dev@example.com".into());
+        a.findings = vec![
+            finding(
+                AnalysisTier::Advisory,
+                "grounding",
+                "cites a gone path",
+                DispositionOutcome::Fixed,
+                None,
+            ),
+            finding(
+                AnalysisTier::Blocking,
+                "task-consistency",
+                "task 4 has no Done when",
+                DispositionOutcome::Routed,
+                Some("specs/042-demo/tasks.md"),
+            ),
+            finding(
+                AnalysisTier::Advisory,
+                "applicable-rules",
+                "BE-AUTHN-001 does not fire",
+                DispositionOutcome::Discarded,
+                Some("cited for a future endpoint"),
+            ),
+            finding(
+                AnalysisTier::Advisory,
+                "decision-drift",
+                "prose asserts an open state",
+                DispositionOutcome::Undispositioned,
+                None,
+            ),
+        ];
         let result = run(&a, tmp.path()).unwrap();
-        assert_eq!(result.captured_issues, 0);
-        let spec = analysis_md(&tmp);
-        assert!(spec.contains("advisory: 4"));
-        assert!(spec.contains("captured-issues: 0"));
+        assert_eq!(
+            result.dispositions,
+            Dispositions {
+                fixed: 1,
+                routed: 1,
+                discarded: 1,
+                undispositioned: 1
+            }
+        );
+        let report = analysis_md(&tmp);
+        assert!(report.contains("- task-consistency — task 4 has no Done when — `spec.md` — **routed** to `specs/042-demo/tasks.md`"), "{report}");
+        assert!(report.contains("- applicable-rules — BE-AUTHN-001 does not fire — `spec.md` — **discarded**: cited for a future endpoint"), "{report}");
+        assert!(
+            report.contains(
+                "## Fixed in this run\n\n- grounding — cites a gone path — `spec.md` — **fixed**"
+            ),
+            "{report}"
+        );
+    }
+
+    #[test]
+    fn a_discard_on_a_gating_finding_is_refused_with_nothing_written() {
+        for tier in [AnalysisTier::HardFail, AnalysisTier::Blocking] {
+            let tmp = spec_repo("status: in-progress\ndependencies: []");
+            let mut a = args();
+            a.hard_fail = 1;
+            a.blocking_findings = 1;
+            a.decided_by = Some("dev@example.com".into());
+            a.findings = vec![finding(
+                tier,
+                "f",
+                "m",
+                DispositionOutcome::Discarded,
+                Some("why"),
+            )];
+            let error = run(&a, tmp.path()).unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains("findings[0].disposition.outcome"),
+                "{error}"
+            );
+            assert!(!analysis_exists(&tmp), "nothing is written on a refusal");
+        }
+    }
+
+    #[test]
+    fn a_self_contradicting_itemization_is_refused() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut still_firing = finding(
+            AnalysisTier::Advisory,
+            "f",
+            "m",
+            DispositionOutcome::Fixed,
+            None,
+        );
+        still_firing.live = true;
+        let mut gone_but_routed = finding(
+            AnalysisTier::Advisory,
+            "f",
+            "m",
+            DispositionOutcome::Routed,
+            Some("t"),
+        );
+        gone_but_routed.live = false;
+        for bad in [still_firing, gone_but_routed] {
+            let mut a = args();
+            a.advisory = 1;
+            a.findings = vec![bad];
+            assert!(run(&a, tmp.path()).is_err());
+        }
+        let mut over = args();
+        over.advisory = 0;
+        over.findings = vec![finding(
+            AnalysisTier::Advisory,
+            "f",
+            "m",
+            DispositionOutcome::Undispositioned,
+            None,
+        )];
+        assert!(
+            run(&over, tmp.path()).is_err(),
+            "more itemized than counted"
+        );
+        assert!(!analysis_exists(&tmp));
+    }
+
+    #[test]
+    fn a_decision_is_stored_keyed_on_family_and_message_and_pruned_once_expired() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 1;
+        a.decided_by = Some("dev@example.com".into());
+        a.findings = vec![finding(
+            AnalysisTier::Advisory,
+            "applicable-rules",
+            "BE-AUTHN-001 does not fire",
+            DispositionOutcome::Discarded,
+            Some("future endpoint"),
+        )];
+        run(&a, tmp.path()).unwrap();
+        let dir = tmp.path().join("specs/042-demo");
+        let stored = decisions::read_decisions(&dir, "analysis.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(
+            stored[0].key.as_deref(),
+            Some("applicable-rules — BE-AUTHN-001 does not fire")
+        );
+
+        // The finding stops firing: process-decisions reports the entry
+        // expired, and the next write drops it.
+        let mut next = args();
+        next.expired_decisions = vec![DecisionRef {
+            key: "applicable-rules — BE-AUTHN-001 does not fire".into(),
+            outcome: DecisionOutcome::Discarded,
+            target: None,
+            reason: Some("future endpoint".into()),
+        }];
+        run(&next, tmp.path()).unwrap();
+        assert!(
+            decisions::read_decisions(&dir, "analysis.md")
+                .unwrap()
+                .is_empty()
+        );
     }
 
     /// A first run creates the artifact, and leaves `spec.md` alone.
