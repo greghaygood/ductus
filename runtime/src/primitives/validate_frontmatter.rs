@@ -260,19 +260,38 @@ fn validate_no_residual_records(
 fn validate_record_artifacts(dir: &Path, findings: &mut Vec<FrontmatterFinding>) {
     use crate::primitives::RecordLoad;
 
-    if let RecordLoad::Unreadable(reason) = crate::primitives::load_review_record(dir) {
-        findings.push(FrontmatterFinding {
-            severity: AnalyzeSeverity::HardFail,
-            field: "review.md".into(),
-            message: format!("review.md exists but carries no readable record: {reason}"),
-        });
-    }
-    if let RecordLoad::Unreadable(reason) = crate::primitives::load_analyze_record(dir) {
-        findings.push(FrontmatterFinding {
-            severity: AnalyzeSeverity::HardFail,
-            field: "analysis.md".into(),
-            message: format!("analysis.md exists but carries no readable record: {reason}"),
-        });
+    let review_unreadable = match crate::primitives::load_review_record(dir) {
+        RecordLoad::Unreadable(reason) => Some(reason),
+        RecordLoad::Absent | RecordLoad::Present(_) => None,
+    };
+    let analysis_unreadable = match crate::primitives::load_analyze_record(dir) {
+        RecordLoad::Unreadable(reason) => Some(reason),
+        RecordLoad::Absent | RecordLoad::Present(_) => None,
+    };
+    for (file, unreadable) in [
+        (crate::primitives::REVIEW_RECORD_FILE, review_unreadable),
+        (crate::primitives::ANALYSIS_RECORD_FILE, analysis_unreadable),
+    ] {
+        if let Some(reason) = unreadable {
+            findings.push(FrontmatterFinding {
+                severity: AnalyzeSeverity::HardFail,
+                field: file.into(),
+                message: format!("{file} exists but carries no readable record: {reason}"),
+            });
+            continue;
+        }
+        // The stored decisions live beside the record rather than in it, so a
+        // malformed list does not make the record unreadable — and must not
+        // read as empty either, because an empty list re-asks every settled
+        // question (spec 058). Reported here so the defect is named before a
+        // writer refuses over it.
+        if let Err(error) = crate::primitives::decisions::read_decisions(dir, file) {
+            findings.push(FrontmatterFinding {
+                severity: AnalyzeSeverity::HardFail,
+                field: format!("{file} decisions"),
+                message: format!("{file}'s decisions: list does not parse: {error}"),
+            });
+        }
     }
 }
 
@@ -431,6 +450,69 @@ mod tests {
                 found.message
             );
         }
+    }
+
+    /// A `decisions:` list that will not parse is named, never read as empty —
+    /// and an absent list is no finding at all.
+    #[test]
+    fn a_malformed_decisions_list_is_a_hard_fail_in_either_record() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("spec.md");
+        std::fs::write(&path, "---\nstatus: draft\ndependencies: []\n---\n\n# X\n").unwrap();
+        for file in ["review.md", "analysis.md"] {
+            std::fs::write(
+                tmp.path().join(file),
+                "---\nlast-run: 2026-09-25T00:00:00Z\ndecisions: not-a-list\n---\n",
+            )
+            .unwrap();
+        }
+        let result = run(
+            &ValidateFrontmatterArgs {
+                path: path.to_string_lossy().into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        for field in ["review.md decisions", "analysis.md decisions"] {
+            let found = result
+                .findings
+                .iter()
+                .find(|f| f.field == field)
+                .unwrap_or_else(|| panic!("no finding for {field}: {:?}", result.findings));
+            assert_eq!(found.severity, AnalyzeSeverity::HardFail);
+            assert!(
+                found.message.contains("does not parse"),
+                "{}",
+                found.message
+            );
+        }
+    }
+
+    #[test]
+    fn an_absent_decisions_list_is_no_finding() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("spec.md");
+        std::fs::write(&path, "---\nstatus: draft\ndependencies: []\n---\n\n# X\n").unwrap();
+        std::fs::write(
+            tmp.path().join("analysis.md"),
+            "---\nlast-run: 2026-09-25T00:00:00Z\nblocking: false\n---\n",
+        )
+        .unwrap();
+        let result = run(
+            &ValidateFrontmatterArgs {
+                path: path.to_string_lossy().into(),
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(
+            !result
+                .findings
+                .iter()
+                .any(|f| f.field.ends_with("decisions")),
+            "{:?}",
+            result.findings
+        );
     }
 
     fn findings_for(frontmatter: &str) -> Vec<FrontmatterFinding> {

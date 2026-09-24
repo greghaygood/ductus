@@ -84,8 +84,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 10. `validate-frontmatter` reports an unparseable `decisions:` list
 
-- [ ] In `validate_record_artifacts`, read each record's `decisions:` through `read_recorded_list` and report a parse failure as a hard failure naming the file and the key
-- [ ] Tests: a malformed list in `review.md` and in `analysis.md` each produce one finding; an absent list produces none
+- [x] In `validate_record_artifacts`, read each record's `decisions:` through `read_recorded_list` and report a parse failure as a hard failure naming the file and the key
+- [x] Tests: a malformed list in `review.md` and in `analysis.md` each produce one finding; an absent list produces none
 
 - **Done when**: the tests pass and a malformed list can no longer read as empty anywhere in the runtime.
 
