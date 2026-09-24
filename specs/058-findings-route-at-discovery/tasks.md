@@ -60,10 +60,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 7. `check-review-gate`: two new blocks
 
-- [ ] Add `record-predates-dispositions` and `undispositioned-findings` to `ReviewGateBlock`
-- [ ] Add `disposition_block` after the analyze checks, in the order: predates (review, then analysis), then undispositioned (review, then analysis)
-- [ ] Correct `run`'s "all six block reasons" doc and the module doc's check list; update the gate-order text in the `check-review-gate` MCP description
-- [ ] Tests: each block fires; each is outranked by every existing check (a stale analysis outranks a missing map); a map-less record on a `done` spec short-circuits at `already-done`; an all-zero map passes
+- [x] Add `record-predates-dispositions` and `undispositioned-findings` to `ReviewGateBlock`
+- [x] Add `disposition_block` after the analyze checks, in the order: predates (review, then analysis), then undispositioned (review, then analysis)
+- [x] Correct `run`'s "all six block reasons" doc and the module doc's check list; update the gate-order text in the `check-review-gate` MCP description
+- [x] Tests: each block fires; each is outranked by every existing check (a stale analysis outranks a missing map); a map-less record on a `done` spec short-circuits at `already-done`; an all-zero map passes
 
 - **Done when**: the gate's ordering tests cover both new variants and pass.
 

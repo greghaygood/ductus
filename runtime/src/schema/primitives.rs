@@ -3475,6 +3475,18 @@ pub enum ReviewGateBlock {
     /// its own `analyze:` block into every one of them; with that block
     /// excluded, 1 of 54 flags and it is a true positive.
     AnalyzeStale,
+    /// `review.md` or `analysis.md` carries no `dispositions:` map: the record
+    /// was written before findings were dispositioned (spec 058), and its
+    /// run's findings may sit in the inbox unrouted. Absence is not zero, so
+    /// the command that wrote the record is re-run. There is deliberately no
+    /// grandfather clause, for the reason the analyze record has none: the
+    /// record is always writable at the moment a spec is being completed.
+    RecordPredatesDispositions,
+    /// Either record counts one or more undispositioned findings. The block
+    /// asks for a decision, not a fix: discarding a false positive with its
+    /// reason clears it, so this does not promote advisory checks to blocking
+    /// in the sense their promotion criteria guard against.
+    UndispositionedFindings,
 }
 
 /// The freshness of a durable record — `review:` or `analyze:` — against the

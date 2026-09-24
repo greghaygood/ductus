@@ -2,12 +2,15 @@
 //!
 //! The deterministic surface behind the completion gate's step 13 (spec
 //! 022, scenario coverage-expansion-primitives), which the host previously
-//! walked by hand on every completion attempt: first the feature
-//! directory's markdown lint (through the `lint-markdown` machinery,
-//! replacing the raw `npx markdownlint-cli2` invocation), then unresolved
-//! scenario open questions, then an undischarged `folds-into` fold, then
-//! the review record in `review.md`, then whether that recorded review
-//! is still current. The first failing
+//! walked by hand on every completion attempt: first whether the spec is
+//! already `done`, then the feature directory's markdown lint (through the
+//! `lint-markdown` machinery, replacing the raw `npx markdownlint-cli2`
+//! invocation), then unresolved scenario open questions, then an
+//! undischarged `folds-into` fold, then an undischarged `cross-spec-impact`,
+//! then the review record in `review.md` and whether it is still current,
+//! then the analyze record in `analysis.md` and whether it is still current,
+//! and last the two records' `dispositions:` maps — a record that predates
+//! them, then any undispositioned finding (spec 058). The first failing
 //! check wins and produces the canonical `blocked: …` message — with the
 //! adopter's `[host] project` command namespace substituted into the
 //! `/{project}:review` references — plus, on `must-violations`, the
@@ -45,8 +48,8 @@ use crate::schema::primitives::{
 /// [`PrimitiveError::FeatureNotFound`] when the feature directory does
 /// not exist, [`PrimitiveError::Io`] when `spec.md` is unreadable or
 /// `npx` cannot be spawned, or [`PrimitiveError::Yaml`] for a malformed
-/// frontmatter block. Every gate verdict — including all six block
-/// reasons — is a domain outcome in the result.
+/// frontmatter block. Every gate verdict — including every block reason
+/// [`ReviewGateBlock`] names — is a domain outcome in the result.
 pub fn run(args: &CheckReviewGateArgs, repo: &Path) -> Result<CheckReviewGateResult> {
     run_with_lint(args, repo, lint_markdown::run)
 }
@@ -200,6 +203,14 @@ pub(crate) fn run_with_lint(
         Ok(freshness) => freshness,
     };
 
+    // Gate checks 11 and 12: the records' dispositions (spec 058). Last,
+    // because every check above names a more upstream defect: a record that
+    // is missing, failing, or stale has to be re-run before what it says about
+    // its findings means anything.
+    if let Some(blocked) = disposition_block(&review, analyze_record.as_ref(), &rel_dir, &project) {
+        return Ok(blocked);
+    }
+
     // The gate passes. Before saying so, name what it could not examine.
     //
     // Both staleness checks above read the working tree, so an uncommitted
@@ -225,6 +236,107 @@ pub(crate) fn run_with_lint(
         // rendering identically.
         cross_spec_impact: cross_spec,
     })
+}
+
+/// Gate checks 11 and 12 — the two records' `dispositions:` maps (spec 058).
+///
+/// **A record without the map predates dispositions, and absence is not
+/// zero.** Before 058 a run's findings were captured to the inbox, which no
+/// gate read, so reading a map-less record as "nothing undispositioned" would
+/// pass exactly the case the change exists for: an old run whose findings sit
+/// in the inbox unseen. That departs from the notice-only precedent for a
+/// record predating a *digest*, deliberately — a digest-less record says only
+/// that freshness is unknown, while a map-less one may be hiding owed work.
+///
+/// Then the counts: any undispositioned finding in either record blocks. The
+/// block asks for a decision rather than a fix, so it does not promote
+/// analyze's advisory checks past their published criteria.
+///
+/// Both classes name every record in them, not just the first, because the
+/// remedy for each record is a different command.
+fn disposition_block(
+    review: &crate::schema::primitives::ReviewBlock,
+    analyze: Option<&AnalyzeBlock>,
+    rel_dir: &str,
+    project: &str,
+) -> Option<CheckReviewGateResult> {
+    let analyze_map = analyze.and_then(|record| record.dispositions);
+    let records = [
+        ("review.md", "review", review.dispositions),
+        ("analysis.md", "analyze", analyze_map),
+    ];
+    let blocked = |by, message: String, guidance: String| CheckReviewGateResult {
+        passed: false,
+        blocked_by: Some(by),
+        message: Some(message),
+        guidance: Some(guidance),
+        violations: vec![],
+        cross_spec_impact: vec![],
+    };
+
+    let predating: Vec<(&str, &str)> = records
+        .iter()
+        .filter(|(_, _, map)| map.is_none())
+        .map(|(file, command, _)| (*file, *command))
+        .collect();
+    if !predating.is_empty() {
+        let files: Vec<String> = predating
+            .iter()
+            .map(|(file, _)| format!("{rel_dir}/{file}"))
+            .collect();
+        let commands: Vec<String> = predating
+            .iter()
+            .map(|(_, command)| format!("/{project}:{command}"))
+            .collect();
+        return Some(blocked(
+            ReviewGateBlock::RecordPredatesDispositions,
+            format!(
+                "blocked: {} predate{} finding dispositions — re-run {}",
+                files.join(" and "),
+                if files.len() == 1 { "s" } else { "" },
+                commands.join(" and ")
+            ),
+            format!(
+                "A record without a `dispositions:` map was written before findings were \
+                 dispositioned, so its run's findings may sit in the inbox unrouted. Re-running \
+                 {} writes the map; the gate does not read its absence as zero.",
+                commands.join(" and ")
+            ),
+        ));
+    }
+
+    let owed: Vec<(&str, &str, u32)> = records
+        .iter()
+        .filter_map(|(file, command, map)| {
+            map.filter(|counts| counts.undispositioned > 0)
+                .map(|counts| (*file, *command, counts.undispositioned))
+        })
+        .collect();
+    if owed.is_empty() {
+        return None;
+    }
+    let total: u32 = owed.iter().map(|(_, _, n)| n).sum();
+    let detail: Vec<String> = owed
+        .iter()
+        .map(|(file, _, n)| format!("{rel_dir}/{file}: {n}"))
+        .collect();
+    let commands: Vec<String> = owed
+        .iter()
+        .map(|(_, command, _)| format!("/{project}:{command}"))
+        .collect();
+    Some(blocked(
+        ReviewGateBlock::UndispositionedFindings,
+        format!(
+            "blocked: {total} undispositioned finding(s) — {}",
+            detail.join(", ")
+        ),
+        format!(
+            "Re-run {} and give each finding a disposition: fix it, route it to the artifact \
+             that owns it, or discard it with its reason. Routed and discarded decisions are \
+             stored, so a settled finding is not asked about again.",
+            commands.join(" and ")
+        ),
+    ))
 }
 
 /// What a **passing** gate could not examine, as one guidance line.
@@ -990,9 +1102,18 @@ mod tests {
             } else {
                 "analysis.md"
             };
+            // Every fixture record is written as a post-058 run would write
+            // it, with a `dispositions:` map, unless it states its own. The
+            // records that deliberately predate the map are written directly
+            // by the tests that exercise that block.
+            let map = if body.contains("dispositions:") {
+                ""
+            } else {
+                "dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 0\n"
+            };
             fs::write(
                 dir.join(file),
-                format!("---\nspec: 007-gate\n{body}---\n\n# {key} — 007-gate\n"),
+                format!("---\nspec: 007-gate\n{body}{map}---\n\n# {key} — 007-gate\n"),
             )
             .unwrap();
         }
@@ -2277,6 +2398,12 @@ mod tests {
             body.push_str(line.strip_prefix("  ").unwrap_or(line));
             body.push('\n');
         }
+        // A post-058 record, as `relocate_records_in` writes one.
+        if !body.contains("dispositions:") {
+            body.push_str(
+                "dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 0\n",
+            );
+        }
         fs::write(
             dir.join(file),
             format!("---\nspec: 007-gate\n{body}---\n\n# {key} — 007-gate\n"),
@@ -2473,5 +2600,155 @@ mod tests {
         );
         let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
         assert_eq!(result.blocked_by, Some(ReviewGateBlock::NotReviewed));
+    }
+
+    // -- dispositions (spec 058) ------------------------------------------------
+
+    const ZERO_MAP: &str =
+        "dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 0\n";
+
+    /// Rewrite a seeded record as a pre-058 run left it: no `dispositions:`.
+    fn strip_dispositions(repo: &Path, file: &str) {
+        let path = repo.join("specs/007-gate").join(file);
+        let text = fs::read_to_string(&path).unwrap();
+        assert!(
+            text.contains(ZERO_MAP),
+            "fixture record carries the map: {text}"
+        );
+        fs::write(&path, text.replace(ZERO_MAP, "")).unwrap();
+    }
+
+    fn set_undispositioned(repo: &Path, file: &str, count: u32) {
+        let path = repo.join("specs/007-gate").join(file);
+        let text = fs::read_to_string(&path).unwrap();
+        fs::write(
+            &path,
+            text.replace(
+                "  undispositioned: 0\n",
+                &format!("  undispositioned: {count}\n"),
+            ),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn a_review_that_predates_dispositions_blocks_and_names_its_command() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), ANALYZE_ADVISORY_ONLY);
+        strip_dispositions(tmp.path(), "review.md");
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert!(!result.passed);
+        assert_eq!(
+            result.blocked_by,
+            Some(ReviewGateBlock::RecordPredatesDispositions)
+        );
+        let message = result.message.unwrap();
+        assert_eq!(
+            message,
+            "blocked: specs/007-gate/review.md predates finding dispositions — re-run /ductus:review"
+        );
+        assert!(
+            result
+                .guidance
+                .unwrap()
+                .contains("does not read its absence as zero")
+        );
+    }
+
+    #[test]
+    fn both_predating_records_are_named_together() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), ANALYZE_ADVISORY_ONLY);
+        strip_dispositions(tmp.path(), "review.md");
+        strip_dispositions(tmp.path(), "analysis.md");
+        let message = run_with_lint(&args(), tmp.path(), clean_lint)
+            .unwrap()
+            .message
+            .unwrap();
+        assert!(
+            message.contains("review.md and specs/007-gate/analysis.md predate"),
+            "{message}"
+        );
+        assert!(
+            message.contains("/ductus:review and /ductus:analyze"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn an_undispositioned_finding_blocks_with_its_count_per_record() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), ANALYZE_ADVISORY_ONLY);
+        set_undispositioned(tmp.path(), "analysis.md", 2);
+        set_undispositioned(tmp.path(), "review.md", 1);
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert_eq!(
+            result.blocked_by,
+            Some(ReviewGateBlock::UndispositionedFindings)
+        );
+        assert_eq!(
+            result.message.as_deref(),
+            Some(
+                "blocked: 3 undispositioned finding(s) — specs/007-gate/review.md: 1, \
+                 specs/007-gate/analysis.md: 2"
+            )
+        );
+        let guidance = result.guidance.unwrap();
+        assert!(
+            guidance.contains("/ductus:review and /ductus:analyze"),
+            "{guidance}"
+        );
+        assert!(
+            guidance.contains("discard it with its reason"),
+            "{guidance}"
+        );
+    }
+
+    #[test]
+    fn a_predating_record_outranks_an_undispositioned_count() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), ANALYZE_ADVISORY_ONLY);
+        strip_dispositions(tmp.path(), "review.md");
+        set_undispositioned(tmp.path(), "analysis.md", 4);
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert_eq!(
+            result.blocked_by,
+            Some(ReviewGateBlock::RecordPredatesDispositions),
+            "a count beside a record that predates the field means nothing yet"
+        );
+    }
+
+    #[test]
+    fn a_stale_analysis_outranks_a_missing_map() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), REVIEWED_CLEAN);
+        let base = git_commit_all(tmp.path(), "base");
+        seed_with_current_digest(tmp.path(), &base);
+        // Stripping review.md's map edits an analyze subject, so the analysis
+        // is stale too — and staleness is the more upstream defect.
+        strip_dispositions(tmp.path(), "review.md");
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert_eq!(result.blocked_by, Some(ReviewGateBlock::AnalyzeStale));
+    }
+
+    #[test]
+    fn a_done_spec_short_circuits_before_any_disposition_check() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), ALREADY_DONE);
+        let review = tmp.path().join("specs/007-gate/review.md");
+        if review.exists() {
+            let text = fs::read_to_string(&review).unwrap();
+            fs::write(&review, text.replace(ZERO_MAP, "")).unwrap();
+        }
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert_eq!(result.blocked_by, Some(ReviewGateBlock::AlreadyDone));
+    }
+
+    #[test]
+    fn an_all_zero_map_passes() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), ANALYZE_ADVISORY_ONLY);
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert!(result.passed, "{result:?}");
     }
 }
