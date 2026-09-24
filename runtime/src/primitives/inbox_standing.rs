@@ -1,25 +1,23 @@
 //! The **standing** inbox backlog — how deep the queue is and how old its
-//! oldest item is — shared by `write-review` and `diff-cross-spec`.
+//! oldest item is — rendered by `dashboard` as `/{project}:status`'s `Inbox:`
+//! line.
 //!
-//! Every surface that showed the inbox before this was **window-scoped**.
-//! `/{project}:review`'s **Captured issues** section lists bullets added since
-//! its diff base; `/{project}:implement`'s completion summary lists
-//! `diff-cross-spec`'s `inbox-additions`, computed from the feature's first
-//! commit. Both answer *"what was captured while this feature was open"*.
-//! Neither answers *"what is outstanding"*, so an item older than the current
-//! feature was invisible by construction — six stood in the inbox when
-//! `ductus-v0.47.0` was cut, and they appeared in that feature's reports only
-//! because all six happened to land inside its window.
+//! It began as the other half of a pair. `write-review` and `diff-cross-spec`
+//! each showed a **window** — the bullets captured while the feature in hand
+//! was open — and a window cannot show an item older than that feature: six
+//! stood in the inbox when `ductus-v0.47.0` was cut, and they appeared in that
+//! feature's reports only because all six happened to land inside its window
+//! (spec 022, scenario `the-inbox-row`). Spec 058 retired the windows along
+//! with the capture that fed them — no finding a run produces reaches the
+//! inbox now — and moved this row to `dashboard`, because a count of the
+//! todos a person has logged has no bearing on the spec a review or
+//! implementation run is working on.
 //!
-//! The window keeps its own role: it is what ties a finding to the work that
-//! produced it. This is the other number, and neither stands in for the other
-//! (spec 022, scenario `the-inbox-row`).
-//!
-//! **A notice, never a gate.** §brownfield-inbox's whole design rests on
-//! capture being free — *"the honest choice between a growing backlog and a
-//! silent one would push toward silence"* — so gating `done` or a release on
-//! inbox depth would make capture expensive. The row changes what the operator
-//! knows at the moment they decide, and withholds nothing.
+//! **A notice, never a gate.** §brownfield-inbox keeps capture free — *"the
+//! honest choice between a growing backlog and a silent one would otherwise
+//! push toward silence"* — so gating `done` or a release on inbox depth would
+//! make logging a todo expensive. The row changes what the operator knows at
+//! the moment they decide, and withholds nothing.
 
 use std::path::Path;
 

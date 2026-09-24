@@ -100,15 +100,15 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 12. Constitution
 
-- [ ] §design-principles: drop "an inbox item" from the second disposition
-- [ ] §grounding: route an implementation-time assumption to a task or open question
-- [ ] §bug-handling: a chore found by a run is fixed in that run; a hand-logged chore lives in the inbox until done
-- [ ] §brownfield-inbox: rewrite as manual capture; replace `#### Automatic issue capture` with `#### Finding dispositions` (three dispositions, scope tiers, disposition tasks, persisted decisions, the gate)
-- [ ] Frontmatter Schema: replace both `captured-issues` rows with `dispositions` and `decisions`
-- [ ] §pipeline-boundaries: name `/{project}:log` as the inbox's only producer
-- [ ] Re-resolve every anchor the rewrite renames, with `check-corpus-links` and `resolve-anchor`
-- [ ] Keep §brownfield-inbox stating why the standing inbox count is a notice and never a gate (gating it would push the honest choice between a growing list and a silent one toward silence). Four sources cite "the reason §brownfield-inbox gives for capture": `runtime/src/primitives/check_promotion_coverage.rs` (module doc), `scripts/audit/promotion-coverage.sh`, `scripts/audit/README.md` (Family 38), and `framework/commands/audit.md` (Family 38). Keep that reason stated, or update all four in the same change
-- [ ] Inbound `#automatic-issue-capture` links: the constitution's own §grounding bullet, re-pointed here, and two in `specs/047-analyze-findings-durability/spec.md`, re-pointed in task 24 when 047 is reopened. `check-corpus-links` strips fragments before checking, so a renamed anchor does not block the pre-commit hook in between
+- [x] §design-principles: drop "an inbox item" from the second disposition
+- [x] §grounding: route an implementation-time assumption to a task or open question
+- [x] §bug-handling: a chore found by a run is fixed in that run; a hand-logged chore lives in the inbox until done
+- [x] §brownfield-inbox: rewrite as manual capture; replace `#### Automatic issue capture` with `#### Finding dispositions` (three dispositions, scope tiers, disposition tasks, persisted decisions, the gate)
+- [x] Frontmatter Schema: replace both `captured-issues` rows with `dispositions` and `decisions`
+- [x] §pipeline-boundaries: name `/{project}:log` as the inbox's only producer
+- [x] Re-resolve every anchor the rewrite renames, with `check-corpus-links` and `resolve-anchor`
+- [x] Keep §brownfield-inbox stating why the standing inbox count is a notice and never a gate (gating it would push the honest choice between a growing list and a silent one toward silence). Four sources cite "the reason §brownfield-inbox gives for capture": `runtime/src/primitives/check_promotion_coverage.rs` (module doc), `scripts/audit/promotion-coverage.sh`, `scripts/audit/README.md` (Family 38), and `framework/commands/audit.md` (Family 38). Keep that reason stated, or update all four in the same change
+- [x] Inbound `#automatic-issue-capture` links: the constitution's own §grounding bullet, re-pointed here, and two in `specs/047-analyze-findings-durability/spec.md`, re-pointed in task 24 when 047 is reopened. `check-corpus-links` strips fragments before checking, so a renamed anchor does not block the pre-commit hook in between
 
 - **Done when**: `grep -n "Automatic issue capture\|captured-issues\|captured to the inbox" framework/constitution.md` returns nothing, and every inbound `#automatic-issue-capture` link in the corpus is re-pointed.
 
