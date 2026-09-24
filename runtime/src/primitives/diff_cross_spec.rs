@@ -6,28 +6,27 @@
 //! diff from the feature's first spec-dir commit — the same base
 //! `derive-boundary` computes, through the shared
 //! [`first_commit_for_prefix`] walk — scoped to the spec root and filtered
-//! to paths outside the feature's own directory, plus the lines added to
-//! `{specs-root}/inbox.md` in the same window (§brownfield-inbox capture).
+//! to paths outside the feature's own directory.
 //!
 //! The diff runs against the working tree (index and untracked files
 //! included), not `HEAD`: the per-task summary (step 7) fires before the
-//! task's commit, when the run's inbox captures and any sibling-spec edits
-//! are still uncommitted. On a clean tree the result equals the
-//! documented `git diff <first-commit>..HEAD -- {specs-root}/` form
-//! (step 12). Read-only.
+//! task's commit, when any sibling-spec edits are still uncommitted. On a
+//! clean tree the result equals the documented
+//! `git diff <first-commit>..HEAD -- {specs-root}/` form (step 12).
+//! Read-only.
 //!
-//! `/ductus:review`'s captured-issues section stays on
-//! `compute-review-scope`, whose window starts at the in-progress
-//! transition — the review wants the current work window, not the
-//! feature's whole history.
+//! `{specs-root}/inbox.md` is excluded from the result. It holds only what a
+//! person logs (spec 058), so editing it is not a cross-spec impact, and no
+//! inbox window or standing count is reported here any more — the standing
+//! row moved to `dashboard`.
 
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use git2::{DiffLineType, DiffOptions, Repository};
+use git2::{DiffOptions, Repository};
 
 use crate::primitives::derive_boundary::first_commit_for_prefix;
-use crate::primitives::{PrimitiveError, Result, bullet_text, iter_bullets};
+use crate::primitives::{PrimitiveError, Result};
 use crate::schema::paths;
 use crate::schema::primitives::{DiffCrossSpecArgs, DiffCrossSpecResult};
 
@@ -63,12 +62,6 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
             first_commit: String::new(),
             current_head: String::new(),
             cross_spec_paths: Vec::new(),
-            inbox_additions: Vec::new(),
-            // Standing depth is readable even with no window to diff: it is a
-            // property of the file now, not of a commit range. A row that
-            // vanished here would make "no window" and "nothing outstanding"
-            // the same output.
-            inbox_standing: super::inbox_standing::standing(repo),
             // Empty lists alone would read as "no cross-spec impact". They
             // carry guidance instead, so the caller reports "unknowable"
             // rather than a clean bill this primitive cannot vouch for.
@@ -84,8 +77,7 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
     let first_tree = repository.find_commit(first_commit)?.tree()?;
 
     // One diff, first-commit tree → working tree, scoped to the spec root.
-    // Untracked files (a brand-new sibling scenario, a fresh inbox.md) must
-    // surface with content, so their inbox lines count as additions.
+    // Untracked files (a brand-new sibling scenario) must surface too.
     let mut opts = DiffOptions::new();
     opts.pathspec(&layout.specs_root)
         .include_untracked(true)
@@ -93,20 +85,7 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
         .show_untracked_content(true);
     let diff = repository.diff_tree_to_workdir_with_index(Some(&first_tree), Some(&mut opts))?;
 
-    // The bullets the inbox actually holds after the window. The diff is
-    // tree-to-workdir, so the post-image is the file on disk. `bullet_text`
-    // alone is line-local and would accept a `- ` line sitting inside an HTML
-    // comment; `iter_bullets` is the comment- and fence-aware reader the
-    // inbox primitives share, and the file — not the diff — is the authority
-    // on what counts as an item.
-    let real_bullets: std::collections::HashSet<String> =
-        std::fs::read_to_string(repo.join(&inbox_rel))
-            .ok()
-            .map(|content| iter_bullets(&content).map(|(_, text)| text).collect())
-            .unwrap_or_default();
-
     let mut cross_spec: BTreeSet<String> = BTreeSet::new();
-    let mut inbox_additions: Vec<String> = Vec::new();
     diff.foreach(
         &mut |delta, _| {
             for path in [delta.old_file().path(), delta.new_file().path()]
@@ -115,8 +94,7 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
             {
                 let s = path.to_string_lossy().replace('\\', "/");
                 // Belt and braces over the pathspec: keep spec-root paths
-                // only, drop the feature's own dir, and route the inbox to
-                // its dedicated field instead.
+                // only, and drop the feature's own dir and the inbox.
                 if s.starts_with(&root_prefix) && !s.starts_with(&spec_prefix) && s != inbox_rel {
                     cross_spec.insert(s);
                 }
@@ -125,35 +103,13 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
         },
         None,
         None,
-        Some(&mut |delta, _hunk, line| {
-            let is_inbox = delta
-                .new_file()
-                .path()
-                .or_else(|| delta.old_file().path())
-                .is_some_and(|p| p.to_string_lossy().replace('\\', "/") == inbox_rel);
-            if is_inbox
-                && line.origin_value() == DiffLineType::Addition
-                && let Ok(text) = std::str::from_utf8(line.content())
-            {
-                // Keep real item bullets only: a brand-new inbox file diffs
-                // with its heading and blank lines as additions too, and a
-                // restored `<!-- Rules: … -->` guidance block contributes its
-                // own `- ` lines. Neither is a captured issue.
-                let line_text = text.trim_end_matches(['\n', '\r']);
-                if bullet_text(line_text).is_some_and(|t| real_bullets.contains(&t)) {
-                    inbox_additions.push(line_text.to_string());
-                }
-            }
-            true
-        }),
+        None,
     )?;
 
     Ok(DiffCrossSpecResult {
         first_commit: first_commit.to_string(),
         current_head: head_oid.to_string(),
         cross_spec_paths: cross_spec.into_iter().collect(),
-        inbox_additions,
-        inbox_standing: super::inbox_standing::standing(repo),
         guidance: None,
     })
 }
@@ -234,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn reports_sibling_changes_and_inbox_additions_only() {
+    fn reports_sibling_changes_only() {
         let tmp = seeded_repo();
         let result = run(&args("020-demo"), tmp.path()).unwrap();
         assert_eq!(
@@ -242,10 +198,10 @@ mod tests {
             vec!["specs/007-sibling/spec.md".to_string()],
             "own feature dir, inbox, and non-spec code are all excluded"
         );
-        assert_eq!(
-            result.inbox_additions,
-            vec!["- security: token logged in plaintext".to_string()],
-            "only the added inbox lines report (heading unchanged)"
+        let wire = serde_json::to_value(&result).unwrap();
+        assert!(
+            wire.get("inbox-additions").is_none() && wire.get("inbox-standing").is_none(),
+            "no inbox field is reported any more: {wire}"
         );
         assert!(!result.first_commit.is_empty());
         assert!(!result.current_head.is_empty());
@@ -262,13 +218,12 @@ mod tests {
         commit_all(&repo, "feat(020): plan");
         let result = run(&args("020-demo"), tmp.path()).unwrap();
         assert!(result.cross_spec_paths.is_empty());
-        assert!(result.inbox_additions.is_empty());
     }
 
     #[test]
     fn uncommitted_working_tree_changes_surface() {
         // Step 7 fires before the task's commit: an untracked sibling
-        // scenario and an uncommitted inbox capture must both surface.
+        // scenario must surface, and an uncommitted inbox edit must not.
         let tmp = tempfile::tempdir().unwrap();
         let repo = Repository::init(tmp.path()).unwrap();
         write(
@@ -289,11 +244,8 @@ mod tests {
         let result = run(&args("020-demo"), tmp.path()).unwrap();
         assert_eq!(
             result.cross_spec_paths,
-            vec!["specs/007-sibling/scenarios/edge.md".to_string()]
-        );
-        assert_eq!(
-            result.inbox_additions,
-            vec!["- leak: connection pool never drained".to_string()]
+            vec!["specs/007-sibling/scenarios/edge.md".to_string()],
+            "a logged todo is no spec's impact"
         );
     }
 
@@ -322,11 +274,8 @@ mod tests {
         let result = run(&args("020-demo"), tmp.path()).unwrap();
         assert_eq!(
             result.cross_spec_paths,
-            vec!["governance/007-sib/spec.md".to_string()]
-        );
-        assert_eq!(
-            result.inbox_additions,
-            vec!["- captured under the custom root".to_string()]
+            vec!["governance/007-sib/spec.md".to_string()],
+            "the inbox under a configured root is excluded too"
         );
     }
 
@@ -347,7 +296,6 @@ mod tests {
         assert_eq!(result.first_commit, "");
         assert_eq!(result.current_head, "");
         assert!(result.cross_spec_paths.is_empty());
-        assert!(result.inbox_additions.is_empty());
 
         // The empty lists must not read as a clean bill of health: guidance
         // is what separates "no impact" from "impact unknowable".

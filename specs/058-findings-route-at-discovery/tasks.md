@@ -43,18 +43,18 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 5. Remove the inbox windows from `compute-review-scope` and `diff-cross-spec`
 
-- [ ] Remove `captured_issues` from `ComputeReviewScopeResult` along with `diff_since`, `inbox_in_worktree`, and `inbox_at`; delete the three `captured_issues_*` tests
-- [ ] Remove `inbox_additions` and `inbox_standing` from `DiffCrossSpecResult` and `diff_cross_spec.rs`, keeping `inbox.md` out of `cross_spec_paths`; update `diff_cross_spec_round_trip` and the file's tests
-- [ ] Update `runtime/tests/mcp.rs`: `compute_review_scope_returns_structured_scope_via_mcp` and `diff_cross_spec_reports_the_standing_inbox_via_mcp`
+- [x] Remove `captured_issues` from `ComputeReviewScopeResult` along with `diff_since`, `inbox_in_worktree`, and `inbox_at`; delete the three `captured_issues_*` tests
+- [x] Remove `inbox_additions` and `inbox_standing` from `DiffCrossSpecResult` and `diff_cross_spec.rs`, keeping `inbox.md` out of `cross_spec_paths`; update `diff_cross_spec_round_trip` and the file's tests
+- [x] Update `runtime/tests/mcp.rs`: `compute_review_scope_returns_structured_scope_via_mcp` and `diff_cross_spec_reports_the_standing_inbox_via_mcp`
 
 - **Done when**: neither result carries an inbox field, an edit to `specs/inbox.md` still appears in no `cross-spec-paths`, and the affected tests pass.
 
 ## 6. `dashboard` renders the inbox row
 
-- [ ] Add `inbox-standing` to `DashboardResult`, computed by `inbox_standing::standing`
-- [ ] Render one `Inbox:` line in `render_callouts` in the four states from the data model, on every run
-- [ ] Correct `InboxStanding.state`'s "three states" doc
-- [ ] Tests: each of the four states renders, and a clean inbox renders a line rather than nothing
+- [x] Add `inbox-standing` to `DashboardResult`, computed by `inbox_standing::standing`
+- [x] Render one `Inbox:` line in `render_callouts` in the four states from the data model, on every run
+- [x] Correct `InboxStanding.state`'s "three states" doc
+- [x] Tests: each of the four states renders, and a clean inbox renders a line rather than nothing
 
 - **Done when**: `./runtime/target/release/ductus dashboard` prints the `Inbox:` line against this repository, and the tests pass.
 

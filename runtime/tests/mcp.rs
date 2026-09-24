@@ -615,7 +615,10 @@ async fn compute_review_scope_returns_structured_scope_via_mcp() {
     // returns the structured shape.
     assert!(obj["diff-base"].is_string());
     assert!(obj["scope"].is_array());
-    assert!(obj["captured-issues"].is_array());
+    assert!(
+        obj.get("captured-issues").is_none(),
+        "the inbox window left this result (spec 058)"
+    );
 }
 
 /// The three fields 0.48.0 added to primitive **results** cross the MCP wire.
@@ -627,9 +630,9 @@ async fn compute_review_scope_returns_structured_scope_via_mcp() {
 /// the wrapper drops) would be invisible to every other test, and the
 /// markdown-only and MCP paths are supposed to reach the same result.
 ///
-/// `check-review-gate`'s `cross-spec-impact` and `diff-cross-spec`'s
-/// `inbox-standing` had no wire test at all; `write-review`'s `inbox-standing`
-/// crossed the wire in the test below without being asserted on.
+/// `check-review-gate`'s `cross-spec-impact` had no wire test at all. The
+/// standing inbox count, which once rode `diff-cross-spec` and `write-review`,
+/// now crosses the wire on `dashboard` and is asserted below.
 #[tokio::test]
 async fn the_cross_spec_impact_gate_reports_per_entry_via_mcp() {
     let tmp = tempfile::tempdir().unwrap();
@@ -664,8 +667,8 @@ async fn the_cross_spec_impact_gate_reports_per_entry_via_mcp() {
 }
 
 #[tokio::test]
-async fn diff_cross_spec_reports_the_standing_inbox_via_mcp() {
-    // `diff-cross-spec` discovers a repository, so the fixture needs one.
+async fn dashboard_reports_the_standing_inbox_via_mcp() {
+    // A committed fixture, so the inbox written afterwards has no blame.
     let tmp = init_git_fixture();
     fs::write(
         tmp.path().join("specs/inbox.md"),
@@ -674,12 +677,7 @@ async fn diff_cross_spec_reports_the_standing_inbox_via_mcp() {
     .unwrap();
 
     let client = start_pair(tmp.path().to_path_buf()).await;
-    let result = call_tool(
-        &client,
-        "diff-cross-spec",
-        json!({ "feature": "001-basic" }),
-    )
-    .await;
+    let result = call_tool(&client, "dashboard", json!({})).await;
     let standing = &structured_object(&result)["inbox-standing"];
 
     assert_eq!(standing["state"], "outstanding");

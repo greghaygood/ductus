@@ -28,8 +28,8 @@ use crate::primitives::{
 use crate::schema::paths;
 use crate::schema::primitives::{
     DashboardArgs, DashboardConfig, DashboardResult, DashboardScenarioDetail,
-    DashboardSessionTarget, DashboardSpec, Frontmatter, ReferenceOutcome, ResolutionRecord,
-    ResolveReferencesArgs,
+    DashboardSessionTarget, DashboardSpec, Frontmatter, InboxStanding, InboxState,
+    ReferenceOutcome, ResolutionRecord, ResolveReferencesArgs,
 };
 use crate::schema::services::Services;
 use crate::schema::status::{ALLOWED_STATUSES, UNBLOCKING_STATUSES};
@@ -54,12 +54,16 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
     // different file than the one parsed.
     let (config, config_name) = load_config(repo)?;
     let session_target = load_session_target(repo)?;
+    let inbox_standing = super::inbox_standing::standing(repo);
     let rendered_markdown = render_markdown(
         repo,
-        &specs,
-        &tags_union,
-        &config,
-        config_name,
+        &View {
+            specs: &specs,
+            tags_union: &tags_union,
+            config: &config,
+            config_name,
+            inbox: &inbox_standing,
+        },
         session_target.as_ref(),
     )?;
     Ok(DashboardResult {
@@ -67,6 +71,7 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
         specs,
         tags_union,
         config,
+        inbox_standing,
         rendered_markdown,
     })
 }
@@ -84,19 +89,26 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
 /// Render the full pipeline view. Blocks are joined by blank lines; the
 /// references readout is omitted entirely when no spec declares
 /// references (a single-service adopter sees no change).
+/// What the pipeline view is rendered from, beside the session target.
+struct View<'a> {
+    specs: &'a [DashboardSpec],
+    tags_union: &'a [String],
+    config: &'a DashboardConfig,
+    config_name: &'a str,
+    inbox: &'a InboxStanding,
+}
+
 fn render_markdown(
     repo: &Path,
-    specs: &[DashboardSpec],
-    tags_union: &[String],
-    config: &DashboardConfig,
-    config_name: &str,
+    view: &View<'_>,
     session_target: Option<&DashboardSessionTarget>,
 ) -> Result<String> {
     let project = Host::load(repo).project;
+    let specs = view.specs;
     let mut blocks = vec![
         render_preamble(specs, session_target, &project),
         render_table(specs, session_target, &project),
-        render_callouts(specs, tags_union, config, &project, config_name),
+        render_callouts(view, &project),
     ];
     if let Some(readout) = render_references(repo, specs, &project)? {
         blocks.push(readout);
@@ -188,34 +200,12 @@ fn render_table(
 /// repo-relative resolved config file, rendered in the disabled-rule-files
 /// provenance tag (spec 042: `.ductus/config.toml`, or the legacy root
 /// `.govern.toml` pre-migration).
-fn render_callouts(
-    specs: &[DashboardSpec],
-    tags_union: &[String],
-    config: &DashboardConfig,
-    project: &str,
-    config_name: &str,
-) -> String {
+fn render_callouts(view: &View<'_>, project: &str) -> String {
+    let (specs, tags_union, config, config_name) =
+        (view.specs, view.tags_union, view.config, view.config_name);
     let mut lines: Vec<String> = Vec::new();
     if !specs.is_empty() {
-        // Lifecycle order; an out-of-set status (a hand-edited
-        // frontmatter) still counts, appended after the known tiers.
-        let mut parts: Vec<String> = Vec::new();
-        let mut counted: Vec<&str> = Vec::new();
-        for status in ALLOWED_STATUSES {
-            let n = specs.iter().filter(|s| s.status == *status).count();
-            if n > 0 {
-                parts.push(format!("{status} {n}"));
-                counted.push(status);
-            }
-        }
-        for spec in specs {
-            if !counted.contains(&spec.status.as_str()) {
-                let n = specs.iter().filter(|s| s.status == spec.status).count();
-                parts.push(format!("{} {n}", spec.status));
-                counted.push(spec.status.as_str());
-            }
-        }
-        lines.push(format!("Counts: {}", parts.join(" · ")));
+        lines.push(render_counts(specs));
     }
     let blocked: Vec<&str> = specs
         .iter()
@@ -305,7 +295,53 @@ fn render_callouts(
             config.disabled_rule_files.join(", ")
         ));
     }
+    lines.push(render_inbox_line(view.inbox, project));
     lines.join("\n")
+}
+
+/// The `Counts:` line, in lifecycle order. An out-of-set status (a
+/// hand-edited frontmatter) still counts, appended after the known tiers.
+fn render_counts(specs: &[DashboardSpec]) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    let mut counted: Vec<&str> = Vec::new();
+    for status in ALLOWED_STATUSES {
+        let n = specs.iter().filter(|s| s.status == *status).count();
+        if n > 0 {
+            parts.push(format!("{status} {n}"));
+            counted.push(status);
+        }
+    }
+    for spec in specs {
+        if !counted.contains(&spec.status.as_str()) {
+            let n = specs.iter().filter(|s| s.status == spec.status).count();
+            parts.push(format!("{} {n}", spec.status));
+            counted.push(spec.status.as_str());
+        }
+    }
+    format!("Counts: {}", parts.join(" · "))
+}
+
+/// The standing inbox row, rendered on **every** run in one of four states.
+///
+/// Never omitted: a clean inbox renders a clean row and an absent one renders
+/// its own state, because examined-and-empty, not-computed, and nothing-there
+/// must not share an output. An age that `git blame` could not determine is
+/// reported as undeterminable — never as today.
+fn render_inbox_line(inbox: &InboxStanding, project: &str) -> String {
+    match inbox.state {
+        InboxState::NoFile => format!("Inbox: ? no {} — nothing examined", inbox.path),
+        InboxState::Clean => "Inbox: ✓ clean".to_string(),
+        InboxState::Outstanding => match inbox.oldest.as_deref() {
+            Some(oldest) => format!(
+                "Inbox: {} item(s) outstanding, oldest {oldest} — run /{project}:groom to route",
+                inbox.outstanding
+            ),
+            None => format!(
+                "Inbox: {} item(s) outstanding, age undeterminable — run /{project}:groom to route",
+                inbox.outstanding
+            ),
+        },
+    }
 }
 
 /// The cross-service references readout: one section per spec whose
@@ -1685,6 +1721,82 @@ reason = "Deferred until v2 perf budget lands."
         assert!(
             !rendered.contains("unresolved scenario question(s)"),
             "no callout when nothing is outstanding: {rendered}"
+        );
+    }
+
+    // -- the standing inbox row (spec 058) --------------------------------------
+
+    fn inbox_line(rendered: &str) -> Option<&str> {
+        rendered.lines().find(|line| line.starts_with("Inbox:"))
+    }
+
+    #[test]
+    fn the_inbox_row_renders_even_when_there_is_no_inbox() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(tmp.path(), "");
+        write_spec(
+            tmp.path(),
+            "001-x",
+            "status: draft\ndependencies: []\n",
+            "*None.*",
+        );
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        assert_eq!(result.inbox_standing.state, InboxState::NoFile);
+        assert_eq!(
+            inbox_line(&result.rendered_markdown),
+            Some("Inbox: ? no specs/inbox.md — nothing examined"),
+            "an absent inbox is its own state, never clean:\n{}",
+            result.rendered_markdown
+        );
+    }
+
+    #[test]
+    fn a_clean_inbox_renders_a_clean_row_rather_than_nothing() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(tmp.path(), "");
+        std::fs::create_dir_all(tmp.path().join("specs")).unwrap();
+        std::fs::write(
+            tmp.path().join("specs/inbox.md"),
+            "# Inbox\n\n<!-- Rules:\n     - guidance, not an item -->\n",
+        )
+        .unwrap();
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        assert_eq!(
+            inbox_line(&result.rendered_markdown),
+            Some("Inbox: ✓ clean")
+        );
+    }
+
+    #[test]
+    fn an_outstanding_inbox_without_history_reports_its_age_as_undeterminable() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(tmp.path(), "");
+        std::fs::create_dir_all(tmp.path().join("specs")).unwrap();
+        std::fs::write(
+            tmp.path().join("specs/inbox.md"),
+            "# Inbox\n\n- [ ] one todo\n- [ ] and another\n",
+        )
+        .unwrap();
+        let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+        assert_eq!(result.inbox_standing.outstanding, 2);
+        assert_eq!(
+            inbox_line(&result.rendered_markdown),
+            Some("Inbox: 2 item(s) outstanding, age undeterminable — run /ductus:groom to route"),
+            "an age blame cannot determine is unknown, never today"
+        );
+    }
+
+    #[test]
+    fn a_dated_outstanding_inbox_names_its_oldest_item() {
+        let standing = InboxStanding {
+            state: InboxState::Outstanding,
+            outstanding: 6,
+            oldest: Some("2026-05-19".into()),
+            path: "specs/inbox.md".into(),
+        };
+        assert_eq!(
+            render_inbox_line(&standing, "ductus"),
+            "Inbox: 6 item(s) outstanding, oldest 2026-05-19 — run /ductus:groom to route"
         );
     }
 }

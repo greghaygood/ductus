@@ -1,6 +1,6 @@
 //! `compute-review-scope` — deterministic scope resolution for `/ductus:review`.
 //!
-//! Resolves three things the review command needs, from git history:
+//! Resolves two things the review command needs, from git history:
 //!
 //! - **diff-base** — the **parent** of the commit the spec advanced to
 //!   `in-progress` at (the transition itself is found by the lookup shared with
@@ -11,10 +11,10 @@
 //! - **scope** — the union of the plan's `Affected Files` set and the set of
 //!   files modified since `diff-base`. Both, because either alone can omit
 //!   what the review exists to look at.
-//! - **captured-issues** — inbox bullets present in the **working tree** that
-//!   were not present at the diff base, so a capture made during the session
-//!   being reviewed is visible to the section that exists to surface it
-//!   (`diff-base..HEAD`), the incidental issues logged during the work.
+//!
+//! It no longer reports an inbox window. Nothing captures findings to the
+//! inbox any more (spec 058), so its additions over a review window say
+//! nothing about the work being reviewed.
 //!
 //! Read-only.
 //!
@@ -77,11 +77,10 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
         },
     };
 
-    let inbox_rel = format!("{}/inbox.md", layout.specs_root);
-    let (modified_since, captured_issues) = if diff_base.is_empty() {
-        (Vec::new(), Vec::new())
+    let modified_since = if diff_base.is_empty() {
+        Vec::new()
     } else {
-        diff_since(&repository, &diff_base, &inbox_rel)?
+        diff_since(&repository, &diff_base)?
     };
 
     let plan_affected = read_plan_affected(&feature_dir);
@@ -105,12 +104,9 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
         scope,
         modified_since,
         plan_affected,
-        captured_issues,
     })
 }
 
-/// Diff `base_sha..HEAD`: return the sorted set of changed file paths and the
-/// lines added to `inbox_rel` in that window.
 /// The first parent of the status-transition commit `sha`, or `sha` itself
 /// when it has no parent.
 ///
@@ -131,11 +127,8 @@ fn transition_parent(repository: &Repository, sha: &str) -> Result<String> {
     })
 }
 
-fn diff_since(
-    repo: &Repository,
-    base_sha: &str,
-    inbox_rel: &str,
-) -> Result<(Vec<String>, Vec<String>)> {
+/// Diff `base_sha..HEAD`: the sorted set of changed file paths.
+fn diff_since(repo: &Repository, base_sha: &str) -> Result<Vec<String>> {
     let base_tree = repo.find_commit(Oid::from_str(base_sha)?)?.tree()?;
     let head_tree = repo.head()?.peel_to_commit()?.tree()?;
 
@@ -154,55 +147,7 @@ fn diff_since(
         None,
         None,
     )?;
-
-    // Inbox bullets present **now** that were not present at the diff base.
-    //
-    // Read from the working tree, not from `HEAD`. This section exists to
-    // surface issues captured during the work being reviewed, and a capture
-    // made this session is by definition uncommitted — a `base..HEAD` diff
-    // reported none of them, which is the same committed-tree horizon spec 047
-    // removed from the analyze record. Comparing bullet *sets* rather than
-    // diff lines is also what the previous implementation converged on by
-    // filtering added lines against the post-image: restoring the shipped
-    // `<!-- Rules: … -->` guidance block once reported ~30 "captured issues",
-    // one per comment line. The set difference states that intent directly.
-    let bullets_at_base: BTreeSet<String> = inbox_at(repo, &base_tree, inbox_rel)
-        .as_deref()
-        .map(|content| super::iter_bullets(content).map(|(_, text)| text).collect())
-        .unwrap_or_default();
-    let captured: Vec<String> = inbox_in_worktree(repo, inbox_rel)
-        .as_deref()
-        .map(|content| {
-            let lines: Vec<&str> = content.lines().collect();
-            super::iter_bullets(content)
-                .filter(|(_, text)| !bullets_at_base.contains(text))
-                // The whole source line, as the diff-based implementation
-                // emitted, so the checkbox marker and any trailing detail
-                // survive into the report verbatim.
-                .filter_map(|(idx, _)| lines.get(idx).map(|line| (*line).to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    Ok((files.into_iter().collect(), captured))
-}
-
-/// The inbox file's contents in the **working tree**, or `None` when it is
-/// absent or not valid UTF-8.
-///
-/// The counterpart to [`inbox_at`], and the reason `captured-issues` can see a
-/// capture made in the session being reviewed.
-fn inbox_in_worktree(repo: &Repository, inbox_rel: &str) -> Option<String> {
-    let root = repo.workdir()?;
-    std::fs::read_to_string(root.join(inbox_rel)).ok()
-}
-
-/// The inbox file's contents at `tree`, or `None` when it is absent or not
-/// valid UTF-8 there.
-fn inbox_at(repo: &Repository, tree: &git2::Tree<'_>, inbox_rel: &str) -> Option<String> {
-    let entry = tree.get_path(Path::new(inbox_rel)).ok()?;
-    let blob = repo.find_blob(entry.id()).ok()?;
-    String::from_utf8(blob.content().to_vec()).ok()
+    Ok(files.into_iter().collect())
 }
 
 /// Parse a feature's `plan.md` `## Affected Files` section into a list of file
@@ -431,109 +376,6 @@ mod tests {
     }
 
     #[test]
-    fn captured_issues_ignores_added_lines_that_are_not_real_bullets() {
-        // Restoring the shipped `<!-- Rules: … -->` guidance block reported one
-        // "captured issue" per comment line, including the bare `-` lines
-        // inside it. The inbox primitives already share a comment-aware bullet
-        // grammar; the authority is the post-image file, not the raw diff.
-        let (tmp, _sha) = repo_with_progress();
-        let repo = Repository::open(tmp.path()).unwrap();
-        let spec_path = tmp.path().join("specs/001-x/spec.md");
-        let inbox = tmp.path().join("specs/inbox.md");
-        write(&spec_path, &spec("planned"));
-        write(&inbox, "# Inbox\n\n- pre-existing item\n");
-        commit_all(&repo, "feat: plan");
-        write(&spec_path, &spec("in-progress"));
-        commit_all(&repo, "chore: begin");
-        write(
-            &inbox,
-            "# Inbox\n\n<!-- Rules:\n     - not an item\n     - also not an item\n-->\n\n\
-             - pre-existing item\n- captured: a real one\n",
-        );
-        commit_all(&repo, "chore: restore guidance and capture one issue");
-        let result = run(&args("001-x", None), tmp.path()).unwrap();
-        assert_eq!(
-            result.captured_issues,
-            vec!["- captured: a real one".to_string()],
-            "comment lines are not captured issues"
-        );
-    }
-
-    /// The reason this reads the working tree. A capture made during the work
-    /// being reviewed is by definition uncommitted, and a `base..HEAD` diff
-    /// reported none of them — the section whose whole purpose is to surface
-    /// mid-task captures at the gate could not see them.
-    #[test]
-    fn captured_issues_sees_an_uncommitted_capture() {
-        let tmp = tempfile::tempdir().unwrap();
-        let repo = Repository::init(tmp.path()).unwrap();
-        let spec_path = tmp.path().join("specs/001-x/spec.md");
-        let inbox = tmp.path().join("specs/inbox.md");
-        write(&spec_path, &spec("planned"));
-        write(&inbox, "# Inbox\n\n- pre-existing item\n");
-        commit_all(&repo, "feat: plan");
-        write(&spec_path, &spec("in-progress"));
-        commit_all(&repo, "chore: begin");
-
-        // Captured this session and deliberately NOT committed.
-        write(
-            &inbox,
-            "# Inbox\n\n- pre-existing item\n- captured: found while reviewing\n",
-        );
-
-        let result = run(&args("001-x", None), tmp.path()).unwrap();
-        assert!(
-            result
-                .captured_issues
-                .contains(&"- captured: found while reviewing".to_string()),
-            "an uncommitted capture must be visible: {:?}",
-            result.captured_issues
-        );
-        assert!(
-            !result
-                .captured_issues
-                .contains(&"- pre-existing item".to_string()),
-            "the pre-existing item predates the diff base"
-        );
-    }
-
-    #[test]
-    fn captured_issues_lists_inbox_additions_in_the_window() {
-        let tmp = tempfile::tempdir().unwrap();
-        let repo = Repository::init(tmp.path()).unwrap();
-        let spec_path = tmp.path().join("specs/001-x/spec.md");
-        let inbox = tmp.path().join("specs/inbox.md");
-        write(&spec_path, &spec("planned"));
-        write(&inbox, "# Inbox\n\n- pre-existing item\n");
-        commit_all(&repo, "feat: plan");
-        write(&spec_path, &spec("in-progress"));
-        commit_all(&repo, "chore: begin");
-        // Append two issues to the inbox during the work window.
-        write(
-            &inbox,
-            "# Inbox\n\n- pre-existing item\n- captured: leak in a.rs\n- captured: missing check in b.rs\n",
-        );
-        commit_all(&repo, "chore: capture issues");
-        let result = run(&args("001-x", None), tmp.path()).unwrap();
-        assert!(
-            result
-                .captured_issues
-                .contains(&"- captured: leak in a.rs".to_string())
-        );
-        assert!(
-            result
-                .captured_issues
-                .contains(&"- captured: missing check in b.rs".to_string())
-        );
-        // The pre-existing item predates diff-base → not captured.
-        assert!(
-            !result
-                .captured_issues
-                .contains(&"- pre-existing item".to_string())
-        );
-    }
-
-    #[test]
     fn no_in_progress_and_no_since_yields_empty_scope() {
         let tmp = tempfile::tempdir().unwrap();
         let repo = Repository::init(tmp.path()).unwrap();
@@ -543,7 +385,6 @@ mod tests {
         assert!(result.diff_base.is_empty());
         assert!(result.scope.is_empty());
         assert!(result.modified_since.is_empty());
-        assert!(result.captured_issues.is_empty());
     }
 
     #[test]

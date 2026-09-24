@@ -567,8 +567,6 @@ pub struct ComputeReviewScopeResult {
     pub modified_since: Vec<String>,
     /// Files listed under the plan's `## Affected Files` section.
     pub plan_affected: Vec<String>,
-    /// Lines added to `{specs-root}/inbox.md` in the `diff-base..HEAD` window.
-    pub captured_issues: Vec<String>,
 }
 
 // -- write-review ------------------------------------------------------------
@@ -1819,6 +1817,14 @@ pub struct DashboardResult {
     pub tags_union: Vec<String>,
     /// Config review-state summary.
     pub config: DashboardConfig,
+    /// The project's standing inbox — the todos a person has logged and
+    /// nobody has groomed. Rendered as the view's `Inbox:` line on every run,
+    /// including when the inbox is clean or absent, so examined-and-empty and
+    /// not-computed never read alike (spec 058). It moved here from
+    /// `write-review` and `diff-cross-spec`: once findings stopped reaching the
+    /// inbox, a count of personal todos had no bearing on the spec a review or
+    /// implementation run was working on.
+    pub inbox_standing: InboxStanding,
     /// The full pipeline view pre-rendered as one markdown fragment —
     /// preamble, dashboard table, counts and callouts, and the
     /// cross-service references readout (the runtime resolves each spec's
@@ -3692,27 +3698,12 @@ pub struct DiffCrossSpecResult {
     /// Current HEAD commit.
     pub current_head: String,
     /// Changed paths under the spec root but outside the feature's own
-    /// directory (sorted; `{specs-root}/inbox.md` is excluded — its
-    /// additions report separately below). The diff runs against the
+    /// directory (sorted; `{specs-root}/inbox.md` is excluded — it holds
+    /// what a person logs, which is no spec's impact). The diff runs against the
     /// working tree (index + untracked included), so uncommitted sibling
     /// edits surface at the per-task summary; on a clean tree this equals
     /// the documented `git diff <first-commit>..HEAD -- {specs-root}/`.
     pub cross_spec_paths: Vec<String>,
-    /// Bullet lines added to `{specs-root}/inbox.md` in the window — the
-    /// issues captured during the feature's work (§brownfield-inbox).
-    /// Filtered through the shared bullet grammar, so structural
-    /// additions (the heading, blanks when the whole file is new) never
-    /// report as captured items.
-    pub inbox_additions: Vec<String>,
-    /// The project's standing inbox backlog — what is outstanding now, as
-    /// opposed to `inbox_additions`, which is what this feature's window
-    /// added.
-    ///
-    /// Both are reported because they answer different questions and the
-    /// window one cannot cover for the other: an item older than the feature
-    /// in hand is absent from `inbox_additions` by construction, which is how
-    /// six items stood in the inbox while `ductus-v0.47.0` was cut.
-    pub inbox_standing: InboxStanding,
     /// Next-step guidance, present only when no commit touches the spec
     /// dir. Without it the empty lists above would read as *"no cross-spec
     /// impact"* — a positive claim — when the truth is that there is no
@@ -3756,7 +3747,9 @@ pub enum InboxState {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct InboxStanding {
-    /// Which of the three states the inbox is in.
+    /// The inbox's state. With [`Self::oldest`], `dashboard` renders one of
+    /// four rows: outstanding with a date, outstanding with age
+    /// undeterminable, clean, or no file.
     pub state: InboxState,
     /// Items outstanding now; `0` for both `clean` and `no-file`, which
     /// `state` is what distinguishes.
@@ -5750,22 +5743,30 @@ mod tests {
             first_commit: "abc123".into(),
             current_head: "def456".into(),
             cross_spec_paths: vec!["specs/007-sibling/spec.md".into()],
-            inbox_additions: vec!["- security: token logged in plaintext".into()],
-            inbox_standing: InboxStanding {
-                state: InboxState::Outstanding,
-                outstanding: 6,
-                oldest: Some("2026-05-19".into()),
-                path: "specs/inbox.md".into(),
-            },
             guidance: None,
         };
         let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
         assert_eq!(rv["cross-spec-paths"][0], "specs/007-sibling/spec.md");
-        // The standing row and the window list are separate keys answering
-        // separate questions; neither is derivable from the other.
-        assert_eq!(rv["inbox-standing"]["state"], "outstanding");
-        assert_eq!(rv["inbox-standing"]["outstanding"], 6);
-        assert_eq!(rv["inbox-standing"]["oldest"], "2026-05-19");
+        // Absent on an ordinary window, so no existing consumer sees a new key.
+        assert!(rv.get("guidance").is_none());
+        // The inbox window and standing count left this result (spec 058).
+        assert!(rv.get("inbox-additions").is_none());
+        assert!(rv.get("inbox-standing").is_none());
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn inbox_standing_round_trip() {
+        let standing = InboxStanding {
+            state: InboxState::Outstanding,
+            outstanding: 6,
+            oldest: Some("2026-05-19".into()),
+            path: "specs/inbox.md".into(),
+        };
+        let sv: serde_json::Value = serde_json::to_value(&standing).unwrap();
+        assert_eq!(sv["state"], "outstanding");
+        assert_eq!(sv["outstanding"], 6);
+        assert_eq!(sv["oldest"], "2026-05-19");
         // An undeterminable age is absent, never a stand-in date.
         let unknown_age = InboxStanding {
             state: InboxState::Outstanding,
@@ -5776,13 +5777,6 @@ mod tests {
         let uv: serde_json::Value = serde_json::to_value(&unknown_age).unwrap();
         assert!(uv.as_object().unwrap().get("oldest").is_none());
         assert_eq!(round_trip(&unknown_age), unknown_age);
-        // Absent on an ordinary window, so no existing consumer sees a new key.
-        assert!(rv.get("guidance").is_none());
-        assert_eq!(
-            rv["inbox-additions"][0],
-            "- security: token logged in plaintext"
-        );
-        assert_eq!(round_trip(&result), result);
     }
 
     #[test]
