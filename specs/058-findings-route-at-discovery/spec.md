@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: planned
 dependencies: [008-security-rules, 020-code-review, 022-deterministic-runtime, 047-analyze-findings-durability, 050-constitution, 057-analyze-artifact-and-record-relocation]
 cross-spec-impact:
   - 008-security-rules
@@ -140,7 +140,7 @@ records the tier counts after dispositions.
   `done` spec is already handled.
 - **With no operator, it writes nothing.** Under `ductus exec`, or on any host
   that cannot confirm, the step proposes nothing. Each live finding that
-  matches no stored discard is recorded as undispositioned, so the record stays
+  matches no stored decision is recorded as undispositioned, so the record stays
   honest and the gate blocks `done` until an interactive run dispositions it.
 - **`--all` groups proposals by spec.** Each prompt offers to leave the rest of
   that spec's findings undispositioned, so a corpus-wide run is not dozens of
@@ -149,7 +149,7 @@ records the tier counts after dispositions.
 A newly introduced advisory check that fires across `done` specs shows up as
 drift on each of them until its findings are dispositioned. That is intended:
 either the specs are not finished, or the check is noise, and one stored
-discard per finding quiets it until the finding's message changes.
+decision per finding quiets it until the finding's message changes.
 
 ### Undispositioned findings block `done`
 
@@ -163,24 +163,37 @@ reach `done`; it has to be dispositioned. The gate reports undispositioned
 findings after every existing review and analyze check, because each of those
 names a more upstream defect.
 
-### Discards persist across runs
+### Decisions persist across runs
 
-Detection is stateless, so a finding discarded in one run fires again in the
-next. Without a persisted discard, every re-run would ask again for decisions
-already made. Each discard is therefore stored in the record of the command
-that made it:
+Detection is stateless, so a finding decided in one run fires again in the
+next. That holds for a routed finding as much as a discarded one: a finding
+routed to a scenario or task keeps firing until the routed work lands. Without
+a persisted decision, every re-run would ask again for decisions already made,
+and a routed finding would come back undispositioned and block `done` again.
+Each **routed** or **discarded** decision is therefore stored in the record of
+the command that made it. A fixed finding needs no entry, because it stops
+firing.
 
-- **`analysis.md`** stores analyze discards, keyed on the finding's dedup key
-  (`{category}: {family} — {message}`, the key the inbox capture used).
-- **`review.md`** stores observation discards beside its existing waivers,
-  keyed on the observation's text and path.
+- **`analysis.md`** stores analyze decisions, keyed on `{family} — {message}`.
+  That is the deterministic part of the key the inbox capture used. The
+  capture key's leading `{category}` was assigned by the host when it wrote the
+  bullet, so it does not reproduce across runs and is left out.
+- **`review.md`** stores observation decisions beside its existing waivers,
+  keyed on the observation's text and path. Observation text is the reviewer's
+  own wording, so the host matches a new observation against the stored
+  decisions and supplies the matching key, rather than relying on the text
+  reproducing byte for byte.
 
-Each stored discard carries its reason, when it was made, and who made it,
-matching the review waiver shape. A later run that produces a finding matching
-a stored discard counts it as discarded without asking. A stored discard whose
-finding no longer fires is pruned on the next run, as an expired review waiver
-is. Changing a finding's message changes its key, so a reworded finding is a
-new finding and is asked about again.
+Each stored decision carries its outcome, its target (for a route) or reason
+(for a discard), when it was made, and who made it, matching the review waiver
+shape. A later run that produces a finding matching a stored decision counts
+it under the stored outcome without asking. A stored decision whose finding no
+longer fires is pruned on the next run, as an expired review waiver is. For a
+routed finding, that is the moment the routed work lands. A run that did not
+evaluate a finding's source retains the decision rather than pruning it, as a
+dimension-restricted review retains a waiver. Changing a finding's message
+changes its key, so a reworded finding is a new finding and is asked about
+again.
 
 ### `/{project}:review`
 
@@ -268,8 +281,8 @@ two new fields:
   their own counts. The map's name says what is being counted, so a `fixed`
   count beside `must-violations` cannot be read as violations fixed. The gate
   reads `dispositions.undispositioned`.
-- **`discards:`** is the list of stored discards (§Discards persist across
-  runs), beside `review.md`'s existing `waivers:`.
+- **`decisions:`** is the list of stored routed and discarded decisions
+  (§Decisions persist across runs), beside `review.md`'s existing `waivers:`.
 
 A run that found five findings and dispositioned fewer is visible in the
 record. `captured-issues` existed for that same reason, and it measured the
@@ -377,13 +390,16 @@ spec's links to it. Each also gets the contract change itself:
 - **An observation on a review whose scope is empty is still dispositioned.**
   The reviewer's judgment is the input, not the diff, as it was when
   observations were captured.
-- **A `discards:` list that does not parse is reported, never treated as
+- **A `decisions:` list that does not parse is reported, never treated as
   empty.** `validate-frontmatter` names it. Until it is repaired, the run asks
   about each finding again, so a malformed list can cost a repeat question but
   never silently waive a finding.
-- **`/{project}:prune` never drops an unchecked disposition task.** Prune only
-  removes spent sections, so an undispositioned finding keeps holding its spec
-  out of `done`.
+- **`/{project}:prune`'s default mode never drops an unchecked disposition
+  task.** It removes only spent sections, so an undispositioned finding keeps
+  holding its spec out of `done`. `--reset` does drop unchecked tasks, but it
+  is refused below `done` without `--force`, and a `done` spec cannot hold an
+  unchecked task. A forced reset is the operator discarding the work
+  deliberately.
 - **An adopter inbox keeps its original guidance comment.** The inbox is
   installed once and never updated, so the header in an existing adopter's
   inbox still describes automatic capture. A registry migration replaces that
@@ -399,8 +415,8 @@ spec's links to it. Each also gets the contract change itself:
 - [ ] AC6: `review.md`, `analyze.md`, and `implement.md` route findings by referencing the Groom decision tree in `groom.md` rather than restating it, as `specify.md` already does.
 - [ ] AC7: A finding routed to an existing `done` spec names the `done → in-progress` reopen in its confirmation prompt, and performs the reopen through `set-status` with `from: done`.
 - [ ] AC8: A finding with no covering spec is routed only when the operator creates a spec through `/{project}:specify`'s procedure in the same run. A declined creation leaves the finding discarded with a reason or undispositioned, and the record never counts it as routed.
-- [ ] AC9: `review.md` and `analysis.md` frontmatter carry a `dispositions:` map (`fixed`, `routed`, `discarded`, `undispositioned`) and a `discards:` list in place of `captured-issues`. The constitution's Frontmatter Schema declares each field and its type, and `validate-frontmatter` validates them.
-- [ ] AC10: The Captured issues section is removed from `review.md`'s and `analysis.md`'s skeletons, and neither `compute-review-scope` nor `diff-cross-spec` returns an inbox-additions field.
+- [ ] AC9: `review.md` and `analysis.md` frontmatter carry a `dispositions:` map (`fixed`, `routed`, `discarded`, `undispositioned`) and a `decisions:` list in place of `captured-issues`. The constitution's Frontmatter Schema declares each field and its type, and `validate-frontmatter` validates them.
+- [ ] AC10: The Captured issues section is removed from `review.md`'s and `analysis.md`'s skeletons. `compute-review-scope` no longer returns its `captured-issues` window, and `diff-cross-spec` no longer returns `inbox-additions` or `inbox-standing`.
 - [ ] AC11: The standing inbox row no longer appears in `/{project}:review` or `/{project}:implement` output. `/{project}:status` renders it from `dashboard` on every run, in the four existing states: outstanding count with the oldest item's date, outstanding with age undeterminable, clean, and no inbox file.
 - [ ] AC12: The `/ductus` brownfield security audit writes no inbox item. It reports each finding with its spec and points to `/{project}:analyze`.
 - [ ] AC13: The constitution's §design-principles no longer lists an inbox item as a disposition for known-outstanding work. §grounding routes an implementation-time assumption to a task or open question. §bug-handling's chore paragraph states that a chore found by a run is fixed in that run. §brownfield-inbox describes the inbox as manual capture, with Automatic issue capture replaced by the three-disposition rule.
@@ -416,13 +432,13 @@ spec's links to it. Each also gets the contract change itself:
 - [ ] AC23: A repo-wide search for the automatic-capture shape — `captured during` bullets, `inbox-additions`, a `Captured issues` section, or an `append-inbox` call outside `/{project}:log` — returns no hit outside this spec, Resolved Questions sections, signposts, and git history.
 - [ ] AC24: Full markdown lint passes across every file the change touches.
 - [ ] AC25: `check-review-gate` blocks `in-progress → done` while `review.md` or `analysis.md` records one or more undispositioned findings, names the count and the command that dispositions them, and checks this only after every existing review and analyze check has passed.
-- [ ] AC26: `/{project}:analyze` runs its fix-and-route step on every invocation without a flag. Under `ductus exec` it writes no fix or route, and records each live finding that matches no stored discard as undispositioned.
-- [ ] AC27: `/{project}:analyze` reports a `done` spec whose `analysis.md` records undispositioned findings as drift, and with `--fix` reverts it `done → in-progress` through `set-status` with `from: done`.
+- [ ] AC26: `/{project}:analyze` runs its fix-and-route step on every invocation without a flag. Under `ductus exec` it writes no fix or route, and records each live finding that matches no stored decision as undispositioned.
+- [ ] AC27: `/{project}:analyze` reports a `done` spec whose `analysis.md` or `review.md` records undispositioned findings as drift, and with `--fix` reverts it `done → in-progress` through `set-status` with `from: done`.
 - [ ] AC28: `/{project}:analyze --all` groups fix-and-route proposals by spec, and each prompt offers to leave that spec's remaining findings undispositioned.
 - [ ] AC29: `check-review-gate` blocks an `in-progress` spec whose `review.md` or `analysis.md` has no `dispositions:` map, and names the command to re-run. A record written before this change that carries `captured-issues` still parses, and `/{project}:analyze` does not report a `done` spec's map-less record as drift.
 - [ ] AC30: `/{project}:analyze` offers no discard for a hard-fail or blocking finding. Such a finding is fixed or routed, and it keeps `blocking: true` in the record until the re-check no longer produces it.
 - [ ] AC31: A confirmed disposition whose write fails (a refused scenario slug, a chore fix that fails or proves not mechanical) is counted as undispositioned, never as fixed or routed, and the report names the failure beside the finding.
-- [ ] AC32: A finding discarded in one run is stored with its reason, time, and author in the record of the command that discarded it. A re-run over an unchanged tree counts it as discarded without prompting, and a re-run in which it no longer fires prunes the stored discard.
+- [ ] AC32: A routed or discarded decision made in one run is stored with its outcome, its target or reason, its time, and its author in the record of the command that made it. A re-run over an unchanged tree counts the finding under its stored outcome without prompting. A re-run in which the finding no longer fires prunes the stored decision, and a run that did not evaluate the finding's source retains it.
 - [ ] AC33: `/{project}:implement` working a disposition task fixes, routes with confirmation, or discards the finding, and checks the task off only once one of the three has happened. A discard writes its reason onto the checked task.
 
 ## Open Questions
@@ -432,9 +448,12 @@ spec's links to it. Each also gets the contract change itself:
 ## Resolved Questions
 
 - **Does an undispositioned finding block `done`?** Yes. `check-review-gate`
-  blocks while either record carries an undispositioned finding, and discards
-  persist across runs (see §Undispositioned findings block `done` and
-  §Discards persist across runs). Without the block, a declined proposal would
+  blocks while either record carries an undispositioned finding, and
+  decisions persist across runs (see §Undispositioned findings block `done` and
+  §Decisions persist across runs). Clarify persisted discards only. Planning
+  generalized that to routed decisions too, because a routed finding keeps
+  firing until its routed work lands, and a discard-only list would bring it
+  back undispositioned on the next run. Without the block, a declined proposal would
   leave the same residue this spec removes. Without persistence, the block
   would ask again on every re-run, because detection is stateless. Grounded in
   the existing asymmetry: analyze advisories were kept out of the gate because
@@ -477,8 +496,8 @@ spec's links to it. Each also gets the contract change itself:
   where an unresolved decision on a finished spec is drift rather than a notice.
 - **What are the disposition counts called, and where do they live?** In a
   `dispositions:` map with `fixed`, `routed`, `discarded`, and
-  `undispositioned`, identical in both records, with stored discards in a
-  `discards:` list (see §Run records). No migration rewrites existing records.
+  `undispositioned`, identical in both records, with stored decisions in a
+  `decisions:` list (see §Run records). No migration rewrites existing records.
   A map-less record blocks an `in-progress` spec until its command re-runs, and
   is not drift on a `done` spec. Grounded in `runtime/src/schema/primitives.rs`,
   where neither record struct denies unknown fields, so an old record still

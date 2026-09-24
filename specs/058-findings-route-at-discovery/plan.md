@@ -1,0 +1,503 @@
+# 058 — Findings route at discovery Plan
+
+Implements [058 — Findings route at discovery](spec.md).
+
+## Overview
+
+The change has three layers, landed in dependency order:
+
+1. **The runtime.** It stops writing to the inbox, records a disposition for
+   every finding, persists routed and discarded decisions across runs, and
+   gates `done` on undispositioned findings.
+2. **The framework prose.** Commands, the constitution, templates, docs, and
+   `AGENTS.md` all change to state the new contract.
+3. **The cross-spec discharge.** Six `done` specs are reopened, each has the
+   claims 058 falsifies corrected, and each is returned to `done` through gates
+   that only the new runtime has.
+
+The ordering is forced by one fact. The MCP server runs the binary it was
+started with (`AGENTS.md`, "After changing runtime source, verify through the
+built binary"), and `.ductus/bin/ductus` is a symlink to
+`runtime/target/release/ductus`. So every runtime task lands and is built
+first. Then the session restarts. Only after that are any pipeline commands run
+that consume the new primitives.
+
+Disposition is a host judgment, and the runtime never makes it. The host picks
+fix, route, or discard by walking the groom decision tree, and confirms each
+write. The runtime does four things with that judgment: it counts the
+dispositions, persists the routed and discarded decisions, renders them, and
+gates on the count.
+
+## Technical Decisions
+
+### The record shape is owned by the two writers, so the new fields are theirs
+
+`write-review` and `write-analysis` both rewrite their artifact whole, with a
+fixed field set:
+
+- `render_report` writes the frontmatter at
+  `runtime/src/primitives/write_review.rs:477-523` and writes the file with
+  `write_atomic` at `:222`.
+- `render_analysis` does the same at
+  `runtime/src/primitives/write_analysis.rs:195-225`.
+
+`framework/commands/review.md:482-483` already warns against inventing
+disposition fields for exactly this reason: `write-review` "would drop them on
+the next run". So `dispositions:` and `decisions:` join each writer's fixed set
+rather than riding along as unknown keys.
+
+**`dispositions:` is a typed field, and its absence has a meaning.** It is
+`Option<Dispositions>` on `ReviewBlock` (`runtime/src/schema/primitives.rs:35`)
+and `AnalyzeBlock` (`:136`). `None` means the record predates 058.
+`Some(zeros)` means a run that found nothing. The two states must never
+collapse, the same rule `examined: Option<u32>` already follows
+(`primitives.rs:90-95`). Neither struct denies unknown fields; nothing in
+`runtime/src` does, and `runtime/src/mcp/server.rs:131` explains why. So a
+record that still carries `captured-issues` parses unchanged. The full shapes
+are in [data-model.md](data-model.md).
+
+**`decisions:` is read the way waivers are read.** Waivers live outside
+`ReviewBlock` and are read by `read_recorded_waivers`
+(`runtime/src/primitives/mod.rs:614-635`). That reader is hard-wired to
+`review.md`'s `waivers:` key. It generalizes to a file-and-key reader,
+`read_recorded_list`, so both records can read `decisions:`, and
+`read_recorded_waivers` becomes a thin wrapper over it. Open-schema extras on
+an entry are preserved with the `RawWaiverFull` pattern: a
+`#[serde(flatten)] extra` map, re-rendered verbatim
+(`write_review.rs:872-906`, `:967-981`).
+
+### A new read-only primitive, `process-decisions`, classifies stored decisions before the host proposes
+
+The host must know which findings already carry a stored decision *before* the
+fix-and-route step. Otherwise it asks questions that were already answered. So
+classification cannot wait for the writer, just as waiver classification does
+not wait for it: `/{project}:review` calls `process-waivers` at step 8, before
+`write-review` at step 9 (`framework/commands/review.md:121-122`).
+
+`process-decisions` mirrors `process-waivers`
+(`runtime/src/primitives/process_waivers.rs:70-120`):
+
+- **Args:**
+  - `feature`;
+  - `record`: `review` or `analysis`;
+  - `fired`: this run's finding keys;
+  - `restricted`: true when a review skipped passes, or an analysis skipped
+    targets.
+- **Result:**
+  - `matched`: stored decisions whose key fired, each with its outcome and
+    target or reason;
+  - `expired`: stored decisions whose key did not fire on an unrestricted run;
+  - `retained`: stored decisions whose key did not fire on a restricted run;
+  - `notices`.
+- **Malformed entries** are reported and never pruned. Duplicates warn, and the
+  first one wins.
+
+Both rules match `review.md` §Malformed and duplicate waivers
+(`framework/commands/review.md:703-722`).
+
+The writers then take:
+
+- `expired-decisions`, applied the way `expired_waivers` is (the
+  `WriteReviewArgs` field at `primitives.rs:522-524`, pruned by
+  `surviving_waivers` at `write_review.rs:797-803`);
+- `new-decisions`, this run's routes and discards, each with the host-supplied
+  `decided-at` and `decided-by` values that `--waive` already supplies for
+  waivers.
+
+A matched decision is re-rendered unchanged, and it counts toward `routed` or
+`discarded` in `dispositions:`.
+
+The key is `{family} — {message}` for analyze findings. The old capture key's
+leading `{category}` is host-assigned and exists only in prose
+(`framework/commands/analyze.md:76`); `ArtifactFinding` carries no category
+field (`primitives.rs:3664-3683`). For review observations the key is the
+observation's rendered line, as `observation_line` builds it
+(`write_review.rs:361-369`). Because observation text is the reviewer's own
+wording, the host matches a new observation against `process-decisions`'
+stored entries and passes the matched key back, rather than trusting the text
+to reproduce.
+
+### `write-review` stops capturing and starts recording dispositions
+
+- **Remove the write-through.** Delete `capture_observations`
+  (`write_review.rs:332-356`), its call before the report write (`:209-216`),
+  `inbox_bullet_text` (`:376-381`), the `observations_captured` result field
+  (`primitives.rs:590`), and `inbox_standing` from the result (`:240`;
+  `primitives.rs:623`).
+- **Remove the captured-issues window.** Delete `WriteReviewArgs.captured_issues`
+  (`primitives.rs:529`), the `captured-issues:` frontmatter line
+  (`write_review.rs:492`), and the `## Captured issues` section with
+  `render_captured` (`:562-565`, `:661-679`). `invalidate-review` drops
+  `captured-issues` from the scalars it nulls
+  (`runtime/src/primitives/invalidate_review.rs:110`). Its keep-every-other-key
+  rule already preserves `decisions:`.
+- **Observations carry their disposition.** `ReviewObservation`
+  (`primitives.rs:459-468`) gains:
+  - `disposition`: an outcome (`fixed`, `routed`, `discarded`, or
+    `undispositioned`), plus a `target` for a route and a `reason` for a
+    discard, each validated as required by its outcome;
+  - `decision-key`: optional, naming a matched stored decision.
+
+  `render_observations` (`:681-695`) renders the outcome and its target or
+  reason beside each observation. The `dispositions:` map is computed from the
+  observations; the caller never supplies it.
+- **An empty scope still records.** Observations on an empty-scope run are
+  dispositioned and counted, as they were captured before.
+
+### `write-analysis` receives the findings, because capture was its only source of finding text
+
+Today the writer receives per-tier counts plus the captured inbox bullets. The
+bullets are the only finding text it sees, which is why `## Captured issues`
+exists: see the 057 data model,
+[057 — analyze artifact and record relocation](../057-analyze-artifact-and-record-relocation/spec.md).
+With capture gone, the writer has to be given the findings.
+
+- `WriteAnalysisArgs.captured_issues` (`primitives.rs:720`) is replaced by
+  `findings`. Each entry carries `tier`, `family`, `message`, `path`, and a
+  disposition shaped as above. The list covers both passes: findings fixed in
+  the run (gone from the re-check) and live findings from the re-check.
+- **Tier counts stay host-supplied scalars from the re-check.** That contract
+  is unchanged, so the exec walker's existing dispatch of `write-analysis`
+  (`runtime/tests/golden/analyze-basic.jsonl:15`) still binds.
+  `undispositioned` is computed as the live tier total minus the live findings
+  that carry a `routed` or `discarded` outcome. A finding the caller omits
+  therefore counts as undispositioned by construction; it can never be silently
+  counted as handled. That is also how a `ductus exec` run, which itemizes
+  nothing, records every live finding as undispositioned (AC26).
+- **AC30 is enforced in the writer.** A `discarded` outcome on a `hard-fail` or
+  `blocking` finding is a validation error, raised before any write.
+- **The body skeleton:**
+  - `## Captured issues` (`write_analysis.rs:253-257`) becomes
+    `## Fixed in this run`;
+  - each tier section lists its live findings with their dispositions;
+  - a tier count above its itemized findings renders a
+    `{n} finding(s) not itemized` line, so the body cannot understate what the
+    frontmatter counts;
+  - the "Findings route to the inbox" Summary sentence (`:234`) and the inbox
+    pointer in `tier_line` (`:266`) go;
+  - checkbox stripping (`render_captured_plain`, `:289-313`) carries over to
+    the new renderer, so 057's AC13 still holds.
+
+### The inbox windows and the standing row leave the review and implement primitives
+
+- **`compute-review-scope`:** drop `captured_issues` from
+  `ComputeReviewScopeResult` (`primitives.rs:402`), along with `diff_since`,
+  `inbox_in_worktree`, and `inbox_at`
+  (`runtime/src/primitives/compute_review_scope.rs:80-85`, `:108`,
+  `:134-206`).
+- **`diff-cross-spec`:** drop `inbox_additions` and `inbox_standing`
+  (`runtime/src/primitives/diff_cross_spec.rs:66`, `:71`, `:96-106`,
+  `:128-148`, `:155-156`; `primitives.rs:3500`, `:3509`). **Keep** the
+  exclusion of `inbox.md` from `cross_spec_paths` (`diff_cross_spec.rs:120`):
+  editing a manual todo is not a cross-spec impact.
+- **`inbox_standing::standing`** (`runtime/src/primitives/inbox_standing.rs:37`)
+  survives, with `dashboard` as its only caller.
+
+### `/{project}:status` renders the standing row, and the runtime now renders its strings
+
+`DashboardResult` (`primitives.rs:1604-1624`) gains `inbox-standing`.
+`render_callouts` (`runtime/src/primitives/dashboard.rs:191-309`) gains an
+`Inbox:` line. Today the four state strings exist only in command prose
+(`framework/commands/implement.md:93-96`, `framework/commands/review.md:780-783`),
+and `dashboard` never reads the inbox (`review.md:767-768`). Rendering them in
+`dashboard` makes the row deterministic and covers it with `status.md`'s
+strict-stdout parity golden. The row is rendered on every run: outstanding with
+the oldest item's date, outstanding with age undeterminable, clean, or no file.
+The `InboxStanding.state` doc still says "three states"
+(`primitives.rs:3554`); it is corrected in passing.
+
+### The gate gains two blocks, checked last, predates before count
+
+After the analyze checks (`runtime/src/primitives/check_review_gate.rs:182-201`)
+and before the pass (`:216`), a new `disposition_block` checks four things, in
+this order:
+
+1. `review.md` has no `dispositions:` map;
+2. `analysis.md` has no `dispositions:` map;
+3. `review.md` has `undispositioned` above zero;
+4. `analysis.md` has `undispositioned` above zero.
+
+A missing map comes first, because a count from a record that predates the
+field means nothing.
+
+Two new `ReviewGateBlock` variants (the enum is at `primitives.rs:3129`):
+
+- **`record-predates-dispositions`** names the record and the command to re-run.
+- **`undispositioned-findings`** names the count and the command that
+  dispositions them.
+
+Blocking on a missing field departs from the existing precedent, where a record
+that predates a field is `Undeterminable` and rides a notice on a passing gate
+(`check_review_gate.rs:203-215`; `primitives.rs:63-74`). The departure is the
+decision Resolved Question 5 made. It matches the gate's own refusal of a
+grandfather clause for the analyze record (`check_review_gate.rs:269-274`).
+
+Two stale doc comments are corrected while the gate is being edited: `run`'s
+"all six block reasons" (`:48-49`) and the module doc (`:5-14`). The gate order
+restated in `framework/commands/implement.md:83` and `:150-176`, and in the MCP
+description (`runtime/src/mcp/server.rs:793-794`), gains the two checks.
+
+### A new `disposition-drift` family, rather than a new condition inside analyze-state drift
+
+`check_analyze_drift` (`runtime/src/primitives/check_artifacts.rs:595-630`)
+emits every condition under one family name, `analyze-state-drift`. `--fix` has
+never reverted on that family: its only triggers are review-state drift and
+scenario open questions (`framework/commands/analyze.md:2`, `:18`, `:92`).
+
+Adding the undispositioned condition to that family would leave the host
+distinguishing conditions by message text. A separate `disposition-drift`
+family instead gives `--fix` a family key to trigger on:
+
+- It applies at `done` only.
+- It reads **both** records, because the gate reads both and a `done` spec with
+  undispositioned review observations is the same residue.
+- It is `Blocking`.
+- A record without a map produces nothing, the same grandfathering as the
+  analyze-state drift family (`check_artifacts.rs:605-607`).
+
+`--fix` reverts on it through the host's guarded `set-status`, as it does for
+the other two triggers. The revert stays host-side, because `check-artifacts`
+has no write path (`primitives.rs:3653-3657`). `analyze.md` gains a
+markdown-only "Disposition drift" section, and the stale family-order doc at
+`primitives.rs:3716-3719` is corrected in passing.
+
+### `append-task` gains an opt-in title dedup, so disposition tasks stay idempotent
+
+`append-task` dedups only on a scenario slug (`append_task.rs:85-103`). A
+slug-less body appends every time, by design (`a_slugless_body_still_appends_every_time`).
+A disposition task has no scenario to point at, so a re-run of an interrupted
+`/{project}:implement` would append the same finding twice. That breaks the
+constitution's "Re-capture is idempotent" rule, which this spec carries forward
+rather than drops.
+
+`AppendTaskArgs` (`primitives.rs:2364-2415`) gains `dedup-title: bool`, default
+`false`. When set, an existing **pending** section with an identical title
+returns its number with `appended: false`. A spent section with the same title
+does not match, because the same finding surfacing again after being
+dispositioned is new work.
+
+The disposition task's shape:
+
+- **Title:** `Disposition out-of-spec finding: {summary}`
+- **Body:** `{path} — {detail}`
+- **Done when:** the finding is fixed, routed, or discarded, with a discard's
+  reason written on the task.
+
+### Command procedures: the fix-and-route step is host work that `ductus exec` skips
+
+Analyze's and review's fix-and-route steps need per-finding arguments the
+walker does not hold. So they are **host responsibility** steps: the primitive
+is named without backticks, under `<!-- audit:ignore-promotion -->`, per the
+`AGENTS.md` rule on backticking a primitive "only when the walker can actually
+supply its arguments". The subprocess walker no-ops such steps by design. That
+is what makes an exec run write no fix or route and record everything
+undispositioned (AC26), with no special case.
+
+`process-decisions` is host responsibility for the same reason: its `fired`
+keys are per-finding.
+
+Routing reuses the existing `routeInboxItem` extension point
+(`runtime/src/schema/extensions.rs:314-379`), with the finding's text as
+`item_text`. The five-route vocabulary is unchanged. Only the docs on
+`InboxRoute::Chore` ("stays in the inbox", `:370`) and `InboxRoute::Discard`
+(`:372`) are rewritten, to describe the chore being fixed and the item being
+removed.
+
+- **`analyze.md`:**
+  - Step 16 (capture) becomes three steps:
+    - process decisions;
+    - fix and route, gated per write;
+    - re-run the detection steps when anything was written.
+  - Step 17 passes `findings` instead of `captured-issues`.
+  - The Purpose, Scope Boundaries, frontmatter description, and
+    §Finding capture (durability) (`:365-403`) are rewritten to match.
+  - The renumbering moves the `write-analysis` dispatch, so
+    `analyze-basic.jsonl` is re-blessed.
+- **`review.md`:**
+  - Step 9 passes dispositioned observations.
+  - A process-decisions step and a fix-and-route step precede it.
+  - §Captured issues, §Observations' write-through (`:412-473`), and
+    §The inbox row (`:763-806`) are replaced.
+- **`implement.md`:**
+  - Walk step 5 (`:132`) appends a disposition task through `append-task`
+    with `dedup-title`.
+  - Steps 7, 13, and 15 (`:68`, `:81`, `:86-99`) drop the window and the
+    standing row, and list the pending disposition tasks instead.
+  - The markdown-only gate step 6 (`:186`) follows.
+  - The inbox write-boundary carve-out (`:50`) goes.
+- **`amend.md`:** the chore guard and its routing row (`:149`, `:218`, `:234`)
+  fix the chore instead of redirecting to `/{project}:log`.
+- **`groom.md`:** the one surviving "leave it in the inbox" line for a chore
+  (`:72`) contradicts step 8 (`:49`) and is corrected. The five routes are
+  unchanged.
+- **`log.md`**, **`help.md`**, and **`status.md`:** `status.md` gains the inbox
+  row. `help.md:125` describes the inbox as manual capture.
+
+### The constitution states the rule once, and every command points at it
+
+- **§design-principles** (`framework/constitution.md:52`) drops "an inbox item"
+  from the second disposition.
+- **§grounding** (`:108`) routes an implementation-time assumption to a task or
+  an open question.
+- **§bug-handling** (`:302`) says a chore found by a run is fixed in that run,
+  and a chore logged by hand lives in the inbox until it is done.
+- **§brownfield-inbox:**
+  - `:444-458` is rewritten to describe manual capture, which also resolves the
+    `:449` contradiction ("leaves it in place") with `:456`;
+  - `#### Automatic issue capture` (`:461-472`) is replaced by
+    `#### Finding dispositions`, the three-disposition rule with the scope
+    tiers, the disposition task, persisted decisions, and the gate.
+- **The Frontmatter Schema rows** (`:552`, `:574`) replace `captured-issues`
+  with `dispositions` and `decisions`.
+- **§pipeline-boundaries** (`:752`) keeps "an inbox item" as a destination,
+  but names `/{project}:log` as its only producer.
+
+### The inbox template changes, and a migration carries its guidance to existing adopters
+
+`specs/inbox.md` is installed with strategy `create`
+(`framework/bootstrap/ductus.md:670-677`; `runtime/src/primitives/apply_manifest.rs:16-17`),
+and no migration targets it. So an adopter keeps whatever header it first
+received.
+
+- **The template.** `framework/templates/project/inbox.md` drops the intro's
+  incidental-capture role (`:3-6`), the "chores… left in place" line
+  (`:16-18`), and forms 2 and 3 (`:27-41`). This repository's own
+  `specs/inbox.md` header follows.
+- **The migration.** A `framework/migrations.toml` entry, `inbox-guidance-refresh`
+  (`introduced_in = "0.53.0"`, `target_paths = ["specs/inbox.md"]`, an
+  adopter-relative path, so Family 10b does not apply), gets a procedure file
+  following the `audit-record-relocate.md` shape. The procedure:
+  1. resolves `[paths] specs-root`;
+  2. does nothing when the inbox is absent;
+  3. checks idempotency: done when the leading guidance comment already equals
+     the template's;
+  4. otherwise replaces the first `<!-- Rules:` comment block with the
+     template's, preserving line endings and leaving every item byte-identical.
+
+### The adoption security audit reports instead of capturing
+
+In `framework/bootstrap/ductus-procedure.md`:
+
+- §Writing findings to the inbox and §Deduplication (`:209-223`) are removed.
+- §Audit summary (`:225-227`) and §Security audit summary (`:369-381`) print
+  each finding with its spec and a pointer to `/{project}:analyze`.
+- The trigger (`:179-182`) and rule loading are unchanged.
+- `ductus.md` carries no capture prose, so its Family 21 byte-identity with
+  `govern.md` is unaffected.
+
+### Cross-spec discharge is priced by destination and batched per spec
+
+This follows the 057 precedent (`d6c1ee8a`, `ddfd95ed`). Each affected spec is:
+
+1. reopened with `set-status` from `done`;
+2. corrected for every claim 058 falsifies;
+3. signposted back to 058 in a blockquote;
+4. returned to `done` through its gate.
+
+A blockquote signpost discharges the obligation, because
+`cross_spec_impact_states` reads back-links with the `Pointers` scope, which
+keeps blockquote lines (`check_review_gate.rs`, the doc above
+`cross_spec_impact_states`). It also induces no `dependencies:` edge, which
+would close a cycle with 058's own links.
+
+| Spec | What changes | Destination file | Re-run cost |
+| --- | --- | --- | --- |
+| 008 | Adoption audit no longer writes the inbox | `spec.md` | review (record shape only) + analyze |
+| 020 | `captured-issues`, Captured issues and Observations rows | `data-model.md`, `spec.md` | review + analyze |
+| 022 | Three superseded scenarios; inbox fields in the data model | `scenarios/*.md`, `data-model.md`, `spec.md` | review + analyze |
+| 047 | Its premise, that analyze findings persist to the inbox | `spec.md` | review (record shape only) + analyze |
+| 050 | The `findings-route-by-scope` edge cases | `scenarios/findings-route-by-scope.md`, `spec.md` | review + analyze |
+| 057 | `captured-issues` and the `## Captured issues` section | `data-model.md`, `spec.md` | review + analyze |
+
+Every reopened spec needs a review run, including 008 and 047 whose durable
+contracts do not change. That is AC29: a reopened spec whose `review.md`
+predates dispositions is blocked until review re-runs. It is the upgrade cost
+Resolved Question 5 accepted, paid here on six specs. A review whose only work
+is writing the new record shape is recorded truthfully with a small `examined`
+against its `scope`. That is the disposition `AGENTS.md` already prescribes for
+022's digest repair. 022's full re-review remains its own decision to spend and
+is not implied by this plan. Its three scenario edits are reviewed; its 95
+other scenarios are not re-read, and the record says so.
+
+The discharge runs only after the restart onto the new runtime. Records written
+by the old binary would carry no map and would fail AC29 at the next gate.
+
+### Release
+
+The bump is `0.52.1` → `0.53.0`, a minor release: primitive result schemas
+lose fields, a primitive is added, and the gate blocks on new conditions. The
+version goes in the repo-root `version` file, `runtime/Cargo.toml:3`, and a
+`runtime/CHANGELOG.md` section. `Cargo.lock` is refreshed by one build without
+`--locked`. Family 20 checks that they agree. The tag `ductus-v0.53.0` is cut
+after every spec is `done`, following the `AGENTS.md` release entry. The new
+primitive joins `framework/runtime-tools.txt`, whose parity with the registry
+is asserted by `runtime/tests/mcp.rs:109-119`. The configure permission lists
+gain it too (`framework/bootstrap/configure/claude.md:119-120`, `auggie.md:107-108`).
+
+## Affected Files
+
+| File | Action | Purpose |
+| --- | --- | --- |
+| `runtime/src/schema/primitives.rs` | Modify | `Dispositions`, `dispositions` on both records, `Decision` shapes, `process-decisions` args and result, observation disposition, `findings` on `write-analysis`, removed inbox fields, two gate variants, `dedup-title`, `inbox-standing` on the dashboard result |
+| `runtime/src/primitives/process_decisions.rs` | Create | Classify stored decisions against this run's keys |
+| `runtime/src/primitives/mod.rs` | Modify | `read_recorded_list`; register the new module |
+| `runtime/src/primitives/write_review.rs` | Modify | Drop capture and the window; record dispositions and decisions |
+| `runtime/src/primitives/write_analysis.rs` | Modify | Take findings; new skeleton; dispositions and decisions |
+| `runtime/src/primitives/compute_review_scope.rs` | Modify | Drop the captured-issues window |
+| `runtime/src/primitives/diff_cross_spec.rs` | Modify | Drop inbox additions and standing |
+| `runtime/src/primitives/dashboard.rs` | Modify | Inbox standing and its rendered row |
+| `runtime/src/primitives/inbox_standing.rs` | Modify | Doc only: its caller is now `dashboard` |
+| `runtime/src/primitives/check_review_gate.rs` | Modify | Two new blocks; doc corrections |
+| `runtime/src/primitives/check_artifacts.rs` | Modify | `disposition-drift` family |
+| `runtime/src/primitives/append_task.rs` | Modify | `dedup-title` |
+| `runtime/src/primitives/invalidate_review.rs` | Modify | Drop `captured-issues` from the nulled scalars |
+| `runtime/src/primitives/validate_frontmatter.rs` | Modify | Report an unparseable `decisions:` list |
+| `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, `runtime/src/main.rs`, `runtime/src/interpreter/mod.rs` | Modify | Register and dispatch `process-decisions`; tool descriptions; comments naming the inbox |
+| `runtime/src/schema/extensions.rs` | Modify | `InboxRoute` docs |
+| `runtime/tests/mcp.rs`, `runtime/tests/walker.rs`, `runtime/tests/golden/{review,analyze,implement,status}-basic.jsonl` | Modify | Wire assertions and goldens for the new shapes |
+| `framework/runtime-tools.txt`, `framework/bootstrap/configure/{claude,auggie}.md` | Modify | The new tool name and its permission |
+| `framework/commands/{review,analyze,implement,amend,groom,log,help,status}.md` | Modify | The new procedures |
+| `.claude/commands/ductus/*.md` | Regenerate | Mirrors, via the pre-commit hook |
+| `framework/constitution.md` | Modify | The rule, stated once |
+| `framework/templates/project/inbox.md`, `specs/inbox.md` | Modify | Manual-capture guidance |
+| `framework/migrations.toml`, `framework/migrations/inbox-guidance-refresh.md` | Create/Modify | Carry the guidance to adopter inboxes |
+| `framework/bootstrap/ductus-procedure.md` | Modify | The audit reports instead of capturing |
+| `docs/analyze.md`, `docs/slash-commands.md`, `README.md` | Modify | User-facing descriptions |
+| `AGENTS.md` | Modify | Retire or rewrite the capture-era entries |
+| `specs/{008,020,022,047,050,057}-*/` | Modify | Cross-spec discharge |
+| `version`, `runtime/Cargo.toml`, `runtime/Cargo.lock`, `runtime/CHANGELOG.md` | Modify | Release `0.53.0` |
+
+## Data Model
+
+See [data-model.md](data-model.md).
+
+## Trade-offs
+
+- **Blocking on a missing `dispositions:` map, rather than a notice.** It costs
+  every spec that is `in-progress` at upgrade, and every spec reopened
+  afterwards, a review and an analyze run. The six discharges here pay it. It
+  was accepted, because reading absence as zero passes exactly the old run
+  whose findings went to the inbox unseen.
+- **A separate `disposition-drift` family instead of extending
+  `analyze-state-drift`.** One more family name, in exchange for `--fix`
+  triggering on a key rather than a message.
+- **`process-decisions` as its own primitive rather than a mode of
+  `process-waivers`.** Waivers are keyed on `(rule, file)` and applied to
+  MUST violations; decisions are keyed on a finding key and carry an outcome.
+  Folding them together would give one primitive two anchor rules.
+- **Host-matched review keys.** Observation decisions depend on the host
+  recognizing a re-observed issue. A miss costs one repeated question, never a
+  silent waiver, because an unmatched stored decision is pruned rather than
+  applied to something else.
+- **Rejected: keeping `captured-issues` as a deprecated alias.** Nothing reads
+  it. `AnalyzeBlock` never even had the field (`primitives.rs:136-239`), and
+  an alias would keep a measurement of the wrong thing alive.
+- **Rejected: a rewrite migration for existing records.** Records parse
+  unchanged. Rewriting them would fabricate a `dispositions:` map for runs that
+  never dispositioned anything, the same fabrication the analyze-state drift
+  family's grandfather rule refuses (`check_artifacts.rs:570-588`).
+- **Known limitation: a legacy spec nobody touches is never re-checked for the
+  adoption audit's gaps.** This is accepted in the spec's adoption-audit
+  section.
+- **Known limitation: 022's full re-review is not bought here.** Its record
+  will state the small numerator honestly.
