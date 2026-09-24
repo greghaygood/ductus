@@ -66,6 +66,16 @@
 //!   pretending a backfill were possible. It is not: an analyze record
 //!   asserts a run happened, and writing one for a run that did not is the
 //!   fabrication this whole family exists to prevent.
+//! - **disposition-drift** (blocking) — a `done` spec whose `review.md` or
+//!   `analysis.md` records one or more undispositioned findings (spec 058).
+//!   The pre-`done` gate blocks on the same count, so a `done` spec carrying
+//!   one either predates the gate or had its record re-run after it closed,
+//!   and either way `done` no longer means done. A record without a
+//!   `dispositions:` map produces nothing here: it predates the field, and
+//!   the analyze-state drift family's grandfather reasoning applies — a
+//!   backfilled map would assert dispositions nobody made. `/{project}:analyze
+//!   --fix` reverts on this family by name, which is why it is its own family
+//!   rather than a message inside analyze-state drift.
 //! - **scenario-open-questions** (blocking at `done`, advisory otherwise)
 //!   — a scenario is an organizational split of the spec, so its
 //!   unresolved questions are the spec's questions for completeness. At
@@ -202,6 +212,13 @@ pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResul
     check_analyze_drift(
         &mut findings,
         analyze_record.as_present(),
+        &status,
+        &spec_path,
+        repo,
+    );
+    check_disposition_drift(
+        &mut findings,
+        (review_record.as_present(), analyze_record.as_present()),
         &status,
         &spec_path,
         repo,
@@ -557,6 +574,51 @@ fn record_unreadable_artifact(
             family: family.into(),
             reason: "artifact-unreadable".into(),
             path,
+        });
+    }
+}
+
+/// (d3) Disposition drift — a `done` spec whose record counts undispositioned
+/// findings (spec 058). One finding per record, naming the command whose
+/// record it is. A map-less record is silent: see the module doc.
+fn check_disposition_drift(
+    findings: &mut Vec<ArtifactFinding>,
+    (review, analyze): (
+        Option<&crate::schema::primitives::ReviewBlock>,
+        Option<&crate::schema::primitives::AnalyzeBlock>,
+    ),
+    status: &str,
+    spec_path: &Path,
+    repo: &Path,
+) {
+    if status != "done" {
+        return;
+    }
+    let spec_rel = rel_path(spec_path, repo);
+    let records = [
+        ("review.md", "review", review.and_then(|r| r.dispositions)),
+        (
+            "analysis.md",
+            "analyze",
+            analyze.and_then(|r| r.dispositions),
+        ),
+    ];
+    for (file, command, map) in records {
+        let Some(counts) = map else {
+            continue; // predates dispositions: grandfathered, never backfilled
+        };
+        if counts.undispositioned == 0 {
+            continue;
+        }
+        findings.push(ArtifactFinding {
+            family: "disposition-drift".into(),
+            severity: AnalyzeSeverity::Blocking,
+            message: format!(
+                "disposition drift: done spec's {file} records {} undispositioned finding(s) — \
+                 re-run the {command} command and fix, route, or discard each",
+                counts.undispositioned
+            ),
+            path: spec_rel.clone(),
         });
     }
 }
@@ -1936,6 +1998,94 @@ mod tests {
                 .iter()
                 .any(|(f, _)| *f == "analyze-state-drift")
         );
+    }
+
+    const OWED: &str =
+        "  dispositions:\n    fixed: 0\n    routed: 0\n    discarded: 0\n    undispositioned: 2";
+
+    fn disposition_families(
+        result: &crate::schema::primitives::CheckArtifactsResult,
+    ) -> Vec<String> {
+        result
+            .findings
+            .iter()
+            .filter(|f| f.family == "disposition-drift")
+            .map(|f| f.message.clone())
+            .collect()
+    }
+
+    fn seed_done_with(repo: &Path, status: &str, review: &str, analyze: &str) {
+        seed_feature(repo, status, Some(review), Some(analyze));
+        write(repo, &format!("specs/{FEATURE}/plan.md"), "# Demo Plan\n");
+        write(repo, &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
+    }
+
+    #[test]
+    fn a_done_spec_with_undispositioned_findings_is_disposition_drift_in_either_record() {
+        let tmp = tempdir().unwrap();
+        seed_done_with(
+            tmp.path(),
+            "done",
+            &format!("{CLEAN_REVIEW}\n{OWED}"),
+            &format!("{CLEAN_ANALYZE}\n{OWED}"),
+        );
+        let result = run(&args(), tmp.path()).unwrap();
+        let drift = disposition_families(&result);
+        assert_eq!(drift.len(), 2, "{drift:?}");
+        assert!(
+            drift[0].contains("review.md records 2 undispositioned"),
+            "{drift:?}"
+        );
+        assert!(drift[0].contains("re-run the review command"), "{drift:?}");
+        assert!(
+            drift[1].contains("analysis.md records 2 undispositioned"),
+            "{drift:?}"
+        );
+        assert!(result.findings.iter().any(|f| f.family == "disposition-drift"
+            && f.severity == AnalyzeSeverity::Blocking));
+    }
+
+    #[test]
+    fn disposition_drift_is_silent_below_done_and_for_a_map_less_record() {
+        let tmp = tempdir().unwrap();
+        seed_done_with(
+            tmp.path(),
+            "in-progress",
+            &format!("{CLEAN_REVIEW}\n{OWED}"),
+            &format!("{CLEAN_ANALYZE}\n{OWED}"),
+        );
+        assert!(disposition_families(&run(&args(), tmp.path()).unwrap()).is_empty());
+
+        let tmp = tempdir().unwrap();
+        seed_done_with(tmp.path(), "done", CLEAN_REVIEW, CLEAN_ANALYZE);
+        assert!(
+            disposition_families(&run(&args(), tmp.path()).unwrap()).is_empty(),
+            "a record predating the map is grandfathered, never backfilled"
+        );
+    }
+
+    #[test]
+    fn disposition_drift_follows_analyze_state_drift() {
+        let tmp = tempdir().unwrap();
+        seed_done_with(
+            tmp.path(),
+            "done",
+            CLEAN_REVIEW,
+            &format!(
+                "  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc\n  hard-fail: 1\n  blocking-findings: 0\n  advisory: 0\n  unexamined: 0\n  blocking: true\n{OWED}"
+            ),
+        );
+        let result = run(&args(), tmp.path()).unwrap();
+        let order: Vec<&str> = result.findings.iter().map(|f| f.family.as_str()).collect();
+        let analyze_at = order
+            .iter()
+            .position(|f| *f == "analyze-state-drift")
+            .unwrap();
+        let disposition_at = order
+            .iter()
+            .position(|f| *f == "disposition-drift")
+            .unwrap();
+        assert!(analyze_at < disposition_at, "{order:?}");
     }
 
     /// A spec below `done` is exempt: the block populates lazily on the first

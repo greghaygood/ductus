@@ -69,9 +69,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 8. `check-artifacts`: `disposition-drift` family
 
-- [ ] Add `check_disposition_drift` at `done`, reading both records, `Blocking` per record with `undispositioned > 0`, and nothing for a map-less record
-- [ ] Update the `ArtifactFinding` family list and correct the family-order doc on `CheckArtifactsResult`
-- [ ] Tests: fires for either record, silent below `done`, silent for a map-less record, ordered after the analyze-state drift family
+- [x] Add `check_disposition_drift` at `done`, reading both records, `Blocking` per record with `undispositioned > 0`, and nothing for a map-less record
+- [x] Update the `ArtifactFinding` family list and correct the family-order doc on `CheckArtifactsResult`
+- [x] Tests: fires for either record, silent below `done`, silent for a map-less record, ordered after the analyze-state drift family
 
 - **Done when**: `./runtime/target/release/ductus check-artifacts` reports the family against a fixture `done` spec with an undispositioned record, and the tests pass.
 
