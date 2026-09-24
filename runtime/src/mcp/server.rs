@@ -340,7 +340,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "diff-cross-spec",
-        description = "Compute /ductus:implement's cross-spec impact surface: diff the feature's first spec-dir commit against the working tree, scoped to the spec root and filtered to paths outside the feature's own directory, plus the lines added to {specs-root}/inbox.md in the window (the captured issues). Read-only; empty lists are the no-impact outcome."
+        description = "Compute /ductus:implement's cross-spec impact surface: diff the feature's first spec-dir commit against the working tree, scoped to the spec root and filtered to paths outside the feature's own directory. {specs-root}/inbox.md is excluded: it holds what a person logs, which is no spec's impact. Read-only; empty lists are the no-impact outcome."
     )]
     async fn diff_cross_spec(
         &self,
@@ -636,7 +636,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "compute-review-scope",
-        description = "Resolve /ductus:review's diff-base, file scope, and inbox-window captured issues."
+        description = "Resolve /ductus:review's diff-base (the parent of the commit the spec entered in-progress at, or a --since override) and its file scope (the union of the plan's Affected Files and the files modified since the diff base)."
     )]
     async fn compute_review_scope(
         &self,
@@ -649,7 +649,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-review",
-        description = "Render specs/NNN/review.md — the review report and, in that same file's frontmatter, the record of the run. `spec.md` is not written: each audit record has one home (spec 057). Consumes the pass findings as a single array (plus waiver results, scope scalars, and skipped-pass flags), applies the cross-pass dedup (highest-severity-wins on rule-id + file + overlapping range) before counting, buckets survivors into MUST / SHOULD / low-confidence / waived, prunes expired waivers, and emits the 0-findings / blocking:false report for empty scope. Both writes are atomic."
+        description = "Render specs/NNN/review.md — the review report and, in that same file's frontmatter, the record of the run. `spec.md` is not written: each audit record has one home (spec 057). Consumes the pass findings as a single array (plus waiver results, scope scalars, and skipped-pass flags), applies the cross-pass dedup (highest-severity-wins on rule-id + file + overlapping range) before counting, buckets survivors into MUST / SHOULD / low-confidence / waived, prunes expired waivers, and emits the 0-findings / blocking:false report for empty scope. Each observation carries its disposition (fixed, routed with its target, discarded with its reason, or undispositioned by default); the record counts them in a derived dispositions: map, a newly routed or discarded observation is stored under decisions: (decided-by required), and expired-decisions from process-decisions are pruned. Nothing is written to the inbox. Atomic."
     )]
     async fn write_review(
         &self,
@@ -662,7 +662,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-analysis",
-        description = "Record that /ductus:analyze ran, by writing specs/NNN/analysis.md — the record in its frontmatter, the findings in a fixed body skeleton. The durable counterpart to review.md, and what `check-review-gate` reads to hold a spec out of `done` until the second gate has actually run. Takes the run's hard-fail / blocking / advisory counts plus `unexamined` (the skipped-target count, so a clean record cannot be read as a fully-examined one), sets `blocking` from the two gating tiers, and splices the block without disturbing sibling keys. Refuses a spec whose frontmatter does not parse rather than recording a clean run into it. Atomic."
+        description = "Record that /ductus:analyze ran, by writing specs/NNN/analysis.md — the record in its frontmatter, the findings in a fixed body skeleton. The durable counterpart to review.md, and what `check-review-gate` reads to hold a spec out of `done` until the second gate has actually run. Takes the run's hard-fail / blocking / advisory counts (from the re-check after the fix-and-route step) plus `unexamined` (the skipped-target count, so a clean record cannot be read as a fully-examined one), and `findings`, each with its tier and disposition. Sets `blocking` from the two gating tiers and derives a dispositions: map in which a live finding the caller did not itemize counts as undispositioned; refuses a discard on a hard-fail or blocking finding; stores routed and discarded decisions under decisions: (decided-by required) and prunes expired-decisions. Nothing is written to the inbox. Refuses a spec whose frontmatter does not parse rather than recording a clean run into it. Atomic."
     )]
     async fn write_analysis(
         &self,
@@ -701,7 +701,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "dashboard",
-        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the config review-state summary (.ductus/config.toml), and the optional session target read from the session file (.ductus/session.toml, falling back to .govern/session.toml then the legacy root pre-migration)."
+        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the config review-state summary (.ductus/config.toml), the standing inbox (outstanding count and oldest item's date, rendered as an Inbox: line on every run), and the optional session target read from the session file (.ductus/session.toml, falling back to .govern/session.toml then the legacy root pre-migration)."
     )]
     async fn dashboard(
         &self,

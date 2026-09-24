@@ -91,10 +91,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 11. Remaining runtime text and wire tests
 
-- [ ] Rewrite the `InboxRoute::Chore` and `InboxRoute::Discard` docs in `runtime/src/schema/extensions.rs`
-- [ ] Update inbox-naming comments in `runtime/src/interpreter/mod.rs` and `runtime/src/main.rs`, and the tool descriptions for `write-review`, `write-analysis`, `compute-review-scope`, `diff-cross-spec`, and `dashboard` in `runtime/src/mcp/server.rs`
-- [ ] Update `runtime/tests/walker.rs`'s `assert_observations_threaded` to assert the disposition renders and the inbox is untouched
-- [ ] Run `cargo fmt`, `cargo clippy --release --locked -- -D warnings`, and `cargo test --release --locked` (goldens are re-blessed in task 22, after the command prose)
+- [x] Rewrite the `InboxRoute::Chore` and `InboxRoute::Discard` docs in `runtime/src/schema/extensions.rs`
+- [x] Update inbox-naming comments in `runtime/src/interpreter/mod.rs` and `runtime/src/main.rs`, and the tool descriptions for `write-review`, `write-analysis`, `compute-review-scope`, `diff-cross-spec`, and `dashboard` in `runtime/src/mcp/server.rs`
+- [x] Update `runtime/tests/walker.rs`'s `assert_observations_threaded` to assert the disposition renders and the inbox is untouched
+- [x] Run `cargo fmt`, `cargo clippy --release --locked -- -D warnings`, and `cargo test --release --locked` (goldens are re-blessed in task 22, after the command prose)
 
 - **Done when**: `grep -rn "inbox" runtime/src` returns only `append-inbox`, `remove-inbox-item`, `inbox_standing`, the dashboard row, the `routeInboxItem` extension, and test fixtures, and every non-golden test passes.
 

@@ -369,7 +369,8 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         // `write-review` step consumes the union across all passes. Both
         // arrays accumulate identically — an observation is a pass output the
         // reviewer judged real but that matched no loaded rule, and it reaches
-        // `write-review` (and through it the inbox) by this same route.
+        // `write-review` by this same route. The walker has no operator to
+        // disposition it, so it is recorded undispositioned (spec 058).
         if identifier == "performReview" {
             for key in payload::PERFORM_REVIEW_ACCUMULATORS {
                 let Some(Value::Array(items)) = response.get(*key) else {

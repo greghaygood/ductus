@@ -625,8 +625,8 @@ pub struct ReviewFinding {
 #[serde(rename_all = "kebab-case")]
 pub struct ReviewObservation {
     /// What was observed, as one line of prose. Leading it with a category
-    /// (`security` / `leak` / `convention` / `bug` / `perf` / `other`) matches
-    /// the inbox template's auto-capture form, but nothing parses it.
+    /// (`security` / `leak` / `convention` / `bug` / `perf` / `other`) helps a
+    /// reader route it, but nothing parses it.
     pub text: String,
     /// Repo-relative path (optionally `file:line`) the observation anchors to;
     /// empty when it is not anchored to one file.
@@ -3699,8 +3699,8 @@ pub struct AppendQuestionResult {
 /// Args for `diff-cross-spec`. Computes `/ductus:implement`'s cross-spec
 /// impact surface: the diff from the feature's first spec-dir commit to
 /// the working tree, scoped to the spec root and filtered to paths
-/// outside the feature's own directory, plus the lines added to
-/// `{specs-root}/inbox.md` in the same window.
+/// outside the feature's own directory. `{specs-root}/inbox.md` is
+/// excluded (spec 058).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct DiffCrossSpecArgs {
@@ -3757,15 +3757,16 @@ pub enum InboxState {
     NoFile,
 }
 
-/// The **standing** inbox backlog — what is outstanding, as opposed to what
-/// was captured in the current work window.
+/// The **standing** inbox — the todos a person has logged and nobody has
+/// groomed.
 ///
-/// Reported by `write-review` and `diff-cross-spec` so `/{project}:review` and
-/// `/{project}:implement`'s completion summary can render the `inbox` row
-/// without a second implementation, the way the `analyze` row is derived from
-/// `analyze-freshness`. **It is a notice, never a gate** — gating on inbox
-/// depth would make capture expensive, and §brownfield-inbox's design rests on
-/// capture being free (spec 022, scenario `the-inbox-row`).
+/// Reported by `dashboard`, which renders it as `/{project}:status`'s `Inbox:`
+/// line; it moved there from `write-review` and `diff-cross-spec` when findings
+/// stopped reaching the inbox (spec 058), because a count of personal todos
+/// has no bearing on the spec a review or implementation run is working on.
+/// **It is a notice, never a gate** — gating on it would make logging a todo
+/// expensive, and the honest choice between a growing list and a silent one
+/// would then push toward silence (§brownfield-inbox).
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct InboxStanding {

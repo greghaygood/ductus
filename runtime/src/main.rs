@@ -89,7 +89,7 @@ enum Command {
     CheckStuck(CheckStuckArgs),
     /// Derive the runtime write boundary from git history.
     DeriveBoundary(DeriveBoundaryArgs),
-    /// Diff the feature's first spec-dir commit against the working tree, filtered to sibling-spec paths + inbox additions.
+    /// Diff the feature's first spec-dir commit against the working tree, filtered to sibling-spec paths.
     DiffCrossSpec(DiffCrossSpecArgs),
     /// Select rule files for /ductus:review (suffix, [rules] surfaces, disabled-rule-files).
     DiscoverRuleFiles(DiscoverRuleFilesArgs),
@@ -97,7 +97,7 @@ enum Command {
     ProcessWaivers(ProcessWaiversArgs),
     /// Classify a spec's recorded routed/discarded decisions against this run's finding keys.
     ProcessDecisions(ProcessDecisionsArgs),
-    /// Resolve /ductus:review's diff-base, file scope, and captured issues.
+    /// Resolve /ductus:review's diff-base and file scope.
     ComputeReviewScope(ComputeReviewScopeArgs),
     /// Render specs/NNN/review.md — the report and its record, in one file.
     WriteReview(WriteReviewArgs),

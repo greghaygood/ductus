@@ -367,9 +367,12 @@ pub enum InboxRoute {
     /// Durable behavioral requirement under an existing spec: create a
     /// scenario (plus task append and possible done → in-progress reopen).
     Scenario,
-    /// Project maintenance with no feature home: stays in the inbox.
+    /// Project maintenance with no feature home: fixed in the pass that
+    /// routes it, then removed — never parked (§bug-handling).
     Chore,
-    /// Not actionable: remove from the inbox.
+    /// Not actionable, or out of scope: removed with no other write. A finding
+    /// a review or analyze run discards has its reason stored in that run's
+    /// record (spec 058).
     Discard,
 }
 
