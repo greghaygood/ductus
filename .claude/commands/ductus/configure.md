@@ -82,6 +82,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__ductus__derive-boundary`
    - `mcp__ductus__discover-rule-files`
    - `mcp__ductus__process-waivers`
+   - `mcp__ductus__process-decisions`
    - `mcp__ductus__compute-review-scope`
    - `mcp__ductus__write-review`
    - `mcp__ductus__write-analysis`

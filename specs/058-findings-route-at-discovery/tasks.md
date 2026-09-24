@@ -4,18 +4,18 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 1. Record shapes: `dispositions` and `decisions`
 
-- [ ] Add `Dispositions { fixed, routed, discarded, undispositioned }` and `dispositions: Option<Dispositions>` to `ReviewBlock` and `AnalyzeBlock` in `runtime/src/schema/primitives.rs`
-- [ ] Add the stored-decision shapes (full entry with a flattened `extra` map, and a `DecisionRef`) per [data-model.md](data-model.md)
-- [ ] Generalize `read_recorded_waivers` into `read_recorded_list(file, key)` in `runtime/src/primitives/mod.rs`, keeping `read_recorded_waivers` as a wrapper over it
-- [ ] Tests: absent map versus an all-zero map; a record still carrying `captured-issues` parses; a `decisions:` list round-trips with extras preserved; an unparseable list is an error, not an empty list
+- [x] Add `Dispositions { fixed, routed, discarded, undispositioned }` and `dispositions: Option<Dispositions>` to `ReviewBlock` and `AnalyzeBlock` in `runtime/src/schema/primitives.rs`
+- [x] Add the stored-decision shapes (full entry with a flattened `extra` map, and a `DecisionRef`) per [data-model.md](data-model.md)
+- [x] Generalize `read_recorded_waivers` into `read_recorded_list(file, key)` in `runtime/src/primitives/mod.rs`, keeping `read_recorded_waivers` as a wrapper over it
+- [x] Tests: absent map versus an all-zero map; a record still carrying `captured-issues` parses; a `decisions:` list round-trips with extras preserved; an unparseable list is an error, not an empty list
 
 - **Done when**: the new types round-trip, a pre-058 `review.md` and `analysis.md` load with `dispositions: None`, and `cargo test --release --locked` passes.
 
 ## 2. `process-decisions` primitive
 
-- [ ] Create `runtime/src/primitives/process_decisions.rs`, mirroring `process_waivers.rs`: matched, expired, and retained; malformed entries and duplicate keys produce notices and are never pruned
-- [ ] Register it in `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, `runtime/src/main.rs`, and `runtime/src/interpreter/mod.rs`; add it to `framework/runtime-tools.txt` and to the permission lists in `framework/bootstrap/configure/claude.md` and `auggie.md`
-- [ ] Tests: each lifecycle state, restricted-run retention, missing `target` or `reason` as malformed, first duplicate wins, and a record with no `decisions:` yields empty lists
+- [x] Create `runtime/src/primitives/process_decisions.rs`, mirroring `process_waivers.rs`: matched, expired, and retained; malformed entries and duplicate keys produce notices and are never pruned
+- [x] Register it in `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, `runtime/src/main.rs`, and `runtime/src/interpreter/mod.rs`; add it to `framework/runtime-tools.txt` and to the permission lists in `framework/bootstrap/configure/claude.md` and `auggie.md`
+- [x] Tests: each lifecycle state, restricted-run retention, missing `target` or `reason` as malformed, first duplicate wins, and a record with no `decisions:` yields empty lists
 
 - **Done when**: the primitive answers through `./runtime/target/release/ductus process-decisions`, `runtime/tests/mcp.rs`'s tool-list parity passes, and the new tests pass.
 

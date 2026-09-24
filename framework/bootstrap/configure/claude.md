@@ -82,6 +82,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__ductus__derive-boundary`
    - `mcp__ductus__discover-rule-files`
    - `mcp__ductus__process-waivers`
+   - `mcp__ductus__process-decisions`
    - `mcp__ductus__compute-review-scope`
    - `mcp__ductus__write-review`
    - `mcp__ductus__write-analysis`

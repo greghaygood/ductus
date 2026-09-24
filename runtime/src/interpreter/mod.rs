@@ -67,11 +67,11 @@ use crate::schema::primitives::{
     DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
     GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RelocateAuditRecordsArgs,
-    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
-    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
-    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
+    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
+    WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -713,6 +713,7 @@ fn dispatch_primitive(
         "diff-cross-spec" => call!(DiffCrossSpecArgs, diff_cross_spec),
         "discover-rule-files" => call!(DiscoverRuleFilesArgs, discover_rule_files),
         "process-waivers" => call!(ProcessWaiversArgs, process_waivers),
+        "process-decisions" => call!(ProcessDecisionsArgs, process_decisions),
         "compute-review-scope" => call!(ComputeReviewScopeArgs, compute_review_scope),
         "write-review" => call!(WriteReviewArgs, write_review),
         "write-analysis" => call!(WriteAnalysisArgs, write_analysis),

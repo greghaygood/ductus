@@ -54,15 +54,16 @@ use crate::schema::primitives::{
     LabelCriteriaArgs, LabelCriteriaResult, LintMarkdownArgs, LintMarkdownResult,
     MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergeManagedBlockResult,
     MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
-    ProcessWaiversArgs, ProcessWaiversResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs,
-    ReadSpecResult, ReadTasksArgs, ReadTasksResult, RelocateAuditRecordsArgs,
-    RelocateAuditRecordsResult, RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs,
-    ResolveAnchorResult, ResolveConstitutionsArgs, ResolveConstitutionsResult, ResolveFeatureArgs,
-    ResolveFeatureResult, ResolveReferencesArgs, ResolveReferencesResult, RetireFeatureArgs,
-    RetireFeatureResult, RewriteSpecLinksArgs, RewriteSpecLinksResult, RunGeneratorArgs,
-    RunGeneratorResult, SetStatusArgs, SetStatusResult, TraverseDepsArgs, TraverseDepsResult,
-    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteAnalysisArgs, WriteAnalysisResult,
-    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
+    ProcessDecisionsArgs, ProcessDecisionsResult, ProcessWaiversArgs, ProcessWaiversResult,
+    PruneTasksArgs, PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
+    RelocateAuditRecordsArgs, RelocateAuditRecordsResult, RemoveInboxItemArgs,
+    RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveConstitutionsArgs,
+    ResolveConstitutionsResult, ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs,
+    ResolveReferencesResult, RetireFeatureArgs, RetireFeatureResult, RewriteSpecLinksArgs,
+    RewriteSpecLinksResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
+    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    WriteAnalysisArgs, WriteAnalysisResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
+    WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -616,6 +617,19 @@ impl GovRuntimeServer {
         params: Parameters<ProcessWaiversArgs>,
     ) -> Result<Json<ProcessWaiversResult>, String> {
         primitives::process_waivers::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "process-decisions",
+        description = "Classify the routed and discarded decisions recorded in a spec's review.md or analysis.md against this run's finding keys (matched/expired/retained/dedup), before the host proposes dispositions, so a settled finding is counted under its stored outcome and not asked about again. Pass restricted when the run did not evaluate every source: a non-firing decision is then retained, never expired. Read-only; malformed entries are reported and never pruned."
+    )]
+    async fn process_decisions(
+        &self,
+        params: Parameters<ProcessDecisionsArgs>,
+    ) -> Result<Json<ProcessDecisionsResult>, String> {
+        primitives::process_decisions::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

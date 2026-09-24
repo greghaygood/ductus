@@ -70,6 +70,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:ductus:derive-boundary", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:discover-rule-files", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:process-waivers", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:ductus:process-decisions", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:compute-review-scope", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:write-review", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:write-analysis", "permission": { "type": "allow" } }`

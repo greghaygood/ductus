@@ -117,6 +117,78 @@ pub struct ReviewBlock {
     /// Review dimensions that did not run this pass, by name.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub skipped_passes: Vec<String>,
+    /// How the run's **observations** were dispositioned (spec 058). MUST and
+    /// SHOULD violations keep their own counts and their fix-or-waive model;
+    /// this map counts only what maps to no loaded rule.
+    ///
+    /// `None` means the record predates dispositions, and is **not** zero:
+    /// the gate blocks an `in-progress` spec on it rather than reading it as a
+    /// run that found nothing, because an old run's observations went to the
+    /// inbox and none of them was dispositioned.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dispositions: Option<Dispositions>,
+}
+
+/// How a run's findings were dispositioned — the counts both audit records
+/// carry under `dispositions:` (spec 058).
+///
+/// Every field is **required**. A map missing one of them makes the whole
+/// record unreadable rather than defaulting the absent count to zero, because
+/// a defaulted `undispositioned: 0` is exactly the value that would let a
+/// hand-trimmed map pass the gate.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct Dispositions {
+    /// Findings fixed in the run. A fixed finding is gone from the re-check,
+    /// so it is counted from the run's first pass.
+    pub fixed: u32,
+    /// Live findings routed to an artifact the pre-`done` gate reads — this
+    /// run, or by a stored decision the run matched.
+    pub routed: u32,
+    /// Live findings discarded with a recorded reason — this run, or by a
+    /// stored decision the run matched.
+    pub discarded: u32,
+    /// Live findings with no disposition. The gate blocks `done` while this
+    /// is above zero.
+    pub undispositioned: u32,
+}
+
+impl Dispositions {
+    /// Every finding the map accounts for.
+    #[must_use]
+    pub fn total(&self) -> u32 {
+        self.fixed + self.routed + self.discarded + self.undispositioned
+    }
+}
+
+/// The outcome a stored decision records. `fixed` is never stored — a fixed
+/// finding stops firing — and `undispositioned` is never stored, because it is
+/// the absence of a decision.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum DecisionOutcome {
+    /// The finding was written to an artifact the gate reads; `target` names it.
+    Routed,
+    /// The finding was judged out of scope; `reason` says why.
+    Discarded,
+}
+
+/// A stored decision as `process-decisions` reports it, and as a writer is
+/// told to prune it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct DecisionRef {
+    /// The finding key: `{family} — {message}` for analyze, the observation's
+    /// rendered line for review.
+    pub key: String,
+    /// What was decided.
+    pub outcome: DecisionOutcome,
+    /// The routed-to artifact, when `outcome` is `routed`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
+    /// The discard reason, when `outcome` is `discarded`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 /// The analyze record, parsed from `analysis.md`'s frontmatter — the durable
@@ -236,6 +308,11 @@ pub struct AnalyzeBlock {
     /// `done` — `hard-fail` or `blocking-findings` above zero.
     #[serde(default)]
     pub blocking: bool,
+    /// How the run's findings were dispositioned, every tier counted (spec
+    /// 058). `None` means the record predates dispositions — see
+    /// [`ReviewBlock::dispositions`] for why that is not zero.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dispositions: Option<Dispositions>,
 }
 
 // -- discover-rule-files -----------------------------------------------------
@@ -366,6 +443,66 @@ pub struct ProcessWaiversResult {
     pub retained: Vec<WaiverRef>,
     /// Ordered notice lines: `waiver expired: …`, `waiver retained: …`,
     /// `malformed waiver …`, and `duplicate waiver: …`, in entry order.
+    pub notices: Vec<String>,
+}
+
+// -- process-decisions -------------------------------------------------------
+
+/// The audit record whose `decisions:` list a call reads (spec 058).
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::ValueEnum,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum DecisionRecord {
+    /// `review.md` — decisions on review observations.
+    #[default]
+    Review,
+    /// `analysis.md` — decisions on analyze findings.
+    Analysis,
+}
+
+/// Args for `process-decisions`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProcessDecisionsArgs {
+    /// Feature directory whose record carries the `decisions:` list.
+    #[arg(long)]
+    pub feature: String,
+    /// Which record to read. Required: the two lists key different findings,
+    /// so there is no sensible default to fall back on.
+    #[arg(long, value_enum)]
+    pub record: DecisionRecord,
+    /// This run's finding keys — `{family} — {message}` for analyze, the
+    /// observation's rendered line (or the stored key the host matched it to)
+    /// for review.
+    #[serde(default)]
+    #[arg(long = "fired")]
+    pub fired: Vec<String>,
+    /// The run did not evaluate every source — a review with skipped passes,
+    /// or an analysis with unexamined targets. A non-firing decision is then
+    /// **retained** rather than expired, because its finding's source may
+    /// simply not have been looked at.
+    #[serde(default)]
+    #[arg(long)]
+    pub restricted: bool,
+}
+
+/// Result for `process-decisions`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProcessDecisionsResult {
+    /// Stored decisions whose key fired this run. The host counts each
+    /// matching finding under the stored outcome and asks nothing.
+    pub matched: Vec<DecisionRef>,
+    /// Stored decisions whose key did not fire on an unrestricted run. Passed
+    /// to the writer as `expired-decisions`, which drops them. For a routed
+    /// decision this is the moment the routed work landed.
+    pub expired: Vec<DecisionRef>,
+    /// Stored decisions whose key did not fire on a restricted run — neither
+    /// matched nor expired, so the writer keeps them.
+    pub retained: Vec<DecisionRef>,
+    /// Ordered notice lines: `decision expired: …`, `decision retained: …`,
+    /// `malformed decision …`, and `duplicate decision: …`, in entry order.
     pub notices: Vec<String>,
 }
 

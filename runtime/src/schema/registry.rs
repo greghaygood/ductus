@@ -36,6 +36,7 @@ pub const PRIMITIVE_REGISTRY: &[&str] = &[
     "derive-boundary",
     "discover-rule-files",
     "process-waivers",
+    "process-decisions",
     "compute-review-scope",
     "write-review",
     "write-analysis",

@@ -33,6 +33,7 @@ pub mod create_feature;
 pub mod create_plan_artifacts;
 pub mod create_scenario;
 pub mod dashboard;
+pub(crate) mod decisions;
 pub mod derive_boundary;
 pub mod derive_dependencies;
 pub mod derive_references;
@@ -53,6 +54,7 @@ pub mod mechanical_sweep;
 pub mod merge_managed_block;
 pub mod merge_permissions;
 pub mod migrate_session_file;
+pub mod process_decisions;
 pub mod process_waivers;
 pub mod prune_tasks;
 pub mod read_spec;
@@ -614,24 +616,110 @@ pub(crate) fn load_analyze_record(
 pub(crate) fn read_recorded_waivers<T: serde::de::DeserializeOwned>(
     feature_dir: &Path,
 ) -> Result<Vec<T>> {
-    #[derive(serde::Deserialize)]
-    struct WaiverFm<T> {
-        #[serde(default = "Vec::new")]
-        waivers: Vec<T>,
-    }
+    read_recorded_list(feature_dir, REVIEW_RECORD_FILE, "waivers")
+}
 
-    let path = feature_dir.join(REVIEW_RECORD_FILE);
+/// A list recorded under `key` in the frontmatter of `feature_dir/file`.
+///
+/// The one reader for every list an audit record carries beside its counts —
+/// `review.md`'s `waivers:`, and both records' `decisions:` (spec 058). Each
+/// of those lives outside the record struct so that a malformed *entry* is a
+/// reportable notice rather than a whole-record parse failure, which means
+/// each needs a reader of its own; owning the location here is what keeps
+/// those readers from disagreeing about it.
+///
+/// An absent file or an absent key yields an empty list: no record, or a
+/// record with nothing decided, is a state. A key whose value will not
+/// deserialize into the list is an error, **never** an empty list — a
+/// `decisions:` list that silently read as empty would re-ask every settled
+/// question, and a `waivers:` list that did would silently re-block.
+pub(crate) fn read_recorded_list<T: serde::de::DeserializeOwned>(
+    feature_dir: &Path,
+    file: &str,
+    key: &str,
+) -> Result<Vec<T>> {
+    let path = feature_dir.join(file);
     if !path.is_file() {
         return Ok(Vec::new());
     }
     let content = read_text(&path)?;
     let (fm_text, _body) = split_frontmatter(&content, &path)?;
-    let parsed: WaiverFm<T> =
-        serde_norway::from_str(fm_text).map_err(|source| PrimitiveError::Yaml {
-            path: path.clone(),
-            source,
-        })?;
-    Ok(parsed.waivers)
+    serde::de::DeserializeSeed::deserialize(
+        KeyedList::<T> {
+            key,
+            item: std::marker::PhantomData,
+        },
+        serde_norway::Deserializer::from_str(fm_text),
+    )
+    .map_err(|source| PrimitiveError::Yaml {
+        path: path.clone(),
+        source,
+    })
+}
+
+/// Deserializes the one list stored under `key` in a frontmatter mapping and
+/// skips every other entry unread.
+///
+/// Deliberately a visitor rather than a parse into `serde_norway::Value`: a
+/// `Value` mapping rejects a duplicated key *anywhere* in the frontmatter,
+/// while the derived struct this replaced ignored every key it did not name.
+/// A hand-edited `review.md` with a repeated scalar must keep yielding its
+/// waivers, so only a repeat of `key` itself is an error here.
+struct KeyedList<'k, T> {
+    key: &'k str,
+    item: std::marker::PhantomData<T>,
+}
+
+impl<'de, T: serde::de::DeserializeOwned> serde::de::DeserializeSeed<'de> for KeyedList<'_, T> {
+    type Value = Vec<T>;
+
+    fn deserialize<D: serde::Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> std::result::Result<Self::Value, D::Error> {
+        deserializer.deserialize_map(self)
+    }
+}
+
+impl<'de, T: serde::de::DeserializeOwned> serde::de::Visitor<'de> for KeyedList<'_, T> {
+    type Value = Vec<T>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "a frontmatter mapping")
+    }
+
+    // An empty frontmatter block carries no list at all.
+    fn visit_unit<E: serde::de::Error>(self) -> std::result::Result<Self::Value, E> {
+        Ok(Vec::new())
+    }
+
+    fn visit_none<E: serde::de::Error>(self) -> std::result::Result<Self::Value, E> {
+        Ok(Vec::new())
+    }
+
+    fn visit_map<A: serde::de::MapAccess<'de>>(
+        self,
+        mut map: A,
+    ) -> std::result::Result<Self::Value, A::Error> {
+        let mut found: Option<Vec<T>> = None;
+        // Keys are read as values rather than strings, so a non-string key
+        // elsewhere in the frontmatter is skipped exactly as the derived
+        // struct skipped it.
+        while let Some(entry_key) = map.next_key::<serde_norway::Value>()? {
+            if entry_key.as_str() != Some(self.key) {
+                map.next_value::<serde::de::IgnoredAny>()?;
+                continue;
+            }
+            if found.is_some() {
+                return Err(serde::de::Error::custom(format!(
+                    "duplicate entry with key \"{}\"",
+                    self.key
+                )));
+            }
+            found = Some(map.next_value()?);
+        }
+        Ok(found.unwrap_or_default())
+    }
 }
 
 /// The artifact owning the review record.
@@ -2397,6 +2485,89 @@ mod tests {
             record.analyzed_digest.get("spec.md").map(String::as_str),
             Some("aaaa")
         );
+    }
+
+    // --- dispositions (spec 058) ---------------------------------------------
+    // Absent and all-zero are two answers: a record that predates dispositions
+    // did not disposition anything, while a record whose run found nothing
+    // did. And a partial map is unreadable rather than defaulted, because the
+    // defaulted `undispositioned: 0` is the value that would pass the gate.
+
+    #[test]
+    fn a_record_that_predates_dispositions_loads_with_none_and_keeps_parsing() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("review.md"),
+            "---\nlast-run: 2026-09-15T00:00:00Z\ncaptured-issues: 2\nblocking: false\n---\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("analysis.md"),
+            "---\nlast-run: 2026-09-15T00:00:00Z\ncaptured-issues: 3\nblocking: false\n---\n",
+        )
+        .unwrap();
+
+        let RecordLoad::Present(review) = load_review_record(dir.path()) else {
+            panic!("a pre-058 review.md must still parse");
+        };
+        let RecordLoad::Present(analysis) = load_analyze_record(dir.path()) else {
+            panic!("a pre-058 analysis.md must still parse");
+        };
+        assert_eq!(review.dispositions, None);
+        assert_eq!(analysis.dispositions, None);
+    }
+
+    #[test]
+    fn an_all_zero_map_is_present_not_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("analysis.md"),
+            "---\nlast-run: 2026-09-25T00:00:00Z\nblocking: false\n\
+             dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 0\n---\n",
+        )
+        .unwrap();
+        let RecordLoad::Present(analysis) = load_analyze_record(dir.path()) else {
+            panic!("expected a present record");
+        };
+        assert_eq!(
+            analysis.dispositions,
+            Some(crate::schema::primitives::Dispositions::default()),
+            "a run that found nothing recorded that it found nothing"
+        );
+    }
+
+    #[test]
+    fn a_partial_dispositions_map_is_unreadable_not_defaulted() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("review.md"),
+            "---\nlast-run: 2026-09-25T00:00:00Z\n\
+             dispositions:\n  fixed: 1\n  routed: 0\n  discarded: 0\n---\n",
+        )
+        .unwrap();
+        assert!(
+            matches!(load_review_record(dir.path()), RecordLoad::Unreadable(_)),
+            "a map missing `undispositioned` must not read as zero undispositioned"
+        );
+    }
+
+    #[test]
+    fn read_recorded_list_reads_any_key_and_refuses_a_malformed_one() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("analysis.md"),
+            "---\nwaivers: [a, b]\ndecisions: {not: a-list}\n---\n",
+        )
+        .unwrap();
+        let listed: Vec<String> =
+            read_recorded_list(dir.path(), ANALYSIS_RECORD_FILE, "waivers").unwrap();
+        assert_eq!(listed, vec!["a", "b"]);
+        assert!(
+            read_recorded_list::<String>(dir.path(), ANALYSIS_RECORD_FILE, "decisions").is_err()
+        );
+        let empty: Vec<String> =
+            read_recorded_list(dir.path(), ANALYSIS_RECORD_FILE, "absent").unwrap();
+        assert!(empty.is_empty());
     }
 
     // --- numbered task headings ----------------------------------------------

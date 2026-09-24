@@ -19,11 +19,11 @@ use ductus::schema::primitives::{
     DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
     GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs, RelocateAuditRecordsArgs,
-    RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs, ResolveFeatureArgs,
-    ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs,
-    SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
+    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
+    WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -95,6 +95,8 @@ enum Command {
     DiscoverRuleFiles(DiscoverRuleFilesArgs),
     /// Classify a spec's recorded waivers in review.md against currently-firing findings.
     ProcessWaivers(ProcessWaiversArgs),
+    /// Classify a spec's recorded routed/discarded decisions against this run's finding keys.
+    ProcessDecisions(ProcessDecisionsArgs),
     /// Resolve /ductus:review's diff-base, file scope, and captured issues.
     ComputeReviewScope(ComputeReviewScopeArgs),
     /// Render specs/NNN/review.md — the report and its record, in one file.
@@ -652,6 +654,9 @@ fn main() -> ExitCode {
         }
         Command::ProcessWaivers(args) => {
             emit_result(primitives::process_waivers::run(&args, &repo))
+        }
+        Command::ProcessDecisions(args) => {
+            emit_result(primitives::process_decisions::run(&args, &repo))
         }
         Command::ComputeReviewScope(args) => {
             emit_result(primitives::compute_review_scope::run(&args, &repo))

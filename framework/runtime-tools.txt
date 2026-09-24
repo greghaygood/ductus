@@ -28,6 +28,7 @@ set-status
 derive-boundary
 discover-rule-files
 process-waivers
+process-decisions
 compute-review-scope
 write-review
 write-analysis
