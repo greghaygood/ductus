@@ -707,9 +707,10 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<DashboardArgs>,
     ) -> Result<Json<DashboardResult>, String> {
-        primitives::dashboard::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        // The standing inbox row blames the inbox's history — blocking pool,
+        // like the other history walks.
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::dashboard::run(&params.0, repo.as_path())).await
     }
 
     #[tool(

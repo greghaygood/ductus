@@ -256,18 +256,18 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 32. Fix the disposition runtime's correctness defects the 058 review found
 
-- [ ] SHOULD QUAL-GROUND-001: reject C0/C1 control characters and the YAML line breaks (U+0085, U+2028, U+2029) in single-line arguments (`validate_single_line`), flatten them in `write_analysis`'s `single_line`, and test that a decision record carrying them is refused or re-reads cleanly
-- [ ] `exec analyze`: `write-analysis` must not bind another primitive's `findings` from the walker context (`check-orphaned-references` returns one); exec itemizes nothing
-- [ ] exec `performReview`: a disposition or `decision-key` the host's response supplies is dropped, so an exec run records every observation undispositioned (AC26)
-- [ ] `decisions::merge`: collapse this run's fresh decisions by key, refusing conflicting outcomes for one key; match a stored decision on key and outcome, as the data model says, keeping its original stamp
-- [ ] Refuse a blank `decision-key` (fall back to the observation line) and a blank `reviewed-at`/`analyzed-at`, so no writer stores an entry its reader calls malformed
-- [ ] Make `AnalysisFinding.tier` required, so an untagged finding cannot slip a discard past the hard-fail/blocking refusal
-- [ ] Share one disposition-to-decision conversion (`Disposition` on the schema) so `write-review` and `write-analysis` apply one newline policy and a stored analyze key matches the host's fired key
-- [ ] `append-task` `dedup-title`: use `split_numbered_heading` and the shared checkbox grammar, and match a title ending in `#` against the heading the renderer wrote
-- [ ] `invalidate-review`: drop the stale `dispositions:` map with the other run scalars
-- [ ] Inbox age: blame the working-tree content (`blame_buffer`), not HEAD, so an uncommitted edit cannot shift bullet lines onto other commits; uncommitted lines carry no date
-- [ ] The no-file inbox row says the file is unreadable when it exists but cannot be read
-- [ ] Run `dashboard`'s blame through `dispatch_blocking` on the MCP server, as other history walks are
+- [x] SHOULD QUAL-GROUND-001: reject C0/C1 control characters and the YAML line breaks (U+0085, U+2028, U+2029) in single-line arguments (`validate_single_line`), flatten them in `write_analysis`'s `single_line`, and test that a decision record carrying them is refused or re-reads cleanly
+- [x] `exec analyze`: `write-analysis` must not bind another primitive's `findings` from the walker context (`check-orphaned-references` returns one); exec itemizes nothing
+- [x] exec `performReview`: a disposition or `decision-key` the host's response supplies is dropped, so an exec run records every observation undispositioned (AC26)
+- [x] `decisions::merge`: collapse this run's fresh decisions by key, refusing conflicting outcomes for one key; match a stored decision on key and outcome, as the data model says, keeping its original stamp
+- [x] Refuse a blank `decision-key` (fall back to the observation line) and a blank `reviewed-at`/`analyzed-at`, so no writer stores an entry its reader calls malformed
+- [x] Make `AnalysisFinding.tier` required, so an untagged finding cannot slip a discard past the hard-fail/blocking refusal
+- [x] Share one disposition-to-decision conversion (`Disposition` on the schema) so `write-review` and `write-analysis` apply one newline policy and a stored analyze key matches the host's fired key
+- [x] `append-task` `dedup-title`: use `split_numbered_heading` and the shared checkbox grammar, and match a title ending in `#` against the heading the renderer wrote
+- [x] `invalidate-review`: drop the stale `dispositions:` map with the other run scalars
+- [x] Inbox age: blame the working-tree content (`blame_buffer`), not HEAD, so an uncommitted edit cannot shift bullet lines onto other commits; uncommitted lines carry no date
+- [x] The no-file inbox row says the file is unreadable when it exists but cannot be read
+- [x] Run `dashboard`'s blame through `dispatch_blocking` on the MCP server, as other history walks are
 
 - **Done when**: each defect has a test that fails before its fix and passes after, `cargo test --release --locked` and `clippy -D warnings` pass, and a decision carrying ESC or U+2028 never leaves a record unreadable
 

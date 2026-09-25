@@ -100,7 +100,10 @@ fn invalidate_record_artifact(
     feature_dir: &Path,
     waivers: &[crate::primitives::write_review::RawWaiverFull],
 ) -> Result<()> {
-    const SCALARS: [&str; 13] = [
+    // `dispositions` goes with the run's other counts: a record reading
+    // `last-run: null` that still carried the invalidated run's disposition
+    // counts would state outcomes of a run it says never happened.
+    const SCALARS: [&str; 14] = [
         "last-run",
         "reviewed-against",
         "diff-base",
@@ -113,6 +116,7 @@ fn invalidate_record_artifact(
         "reviewed-digest",
         "reviewed-unreadable",
         "blocking",
+        "dispositions",
         "waivers",
     ];
 
@@ -223,6 +227,30 @@ mod tests {
             fs::read_to_string(tmp.path().join("specs/050-alpha/spec.md")).unwrap(),
             spec_before
         );
+    }
+
+    /// The invalidated run's disposition counts go with its other counts: a
+    /// record reading `last-run: null` cannot state outcomes of a run it says
+    /// never happened. Its stored decisions stay — like waivers, they are an
+    /// operator's recorded judgements, not the run's output (spec 058).
+    #[test]
+    fn the_dispositions_map_goes_and_the_decisions_stay() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_spec(tmp.path(), "050-alpha", SPEC);
+        fs::write(
+            tmp.path().join("specs/050-alpha/review.md"),
+            "---\nspec: 050-alpha\nlast-run: 2026-08-01T00:00:00Z\nmust-violations: 0\nblocking: false\n\
+             dispositions:\n  fixed: 1\n  routed: 0\n  discarded: 1\n  undispositioned: 0\n\
+             decisions:\n  - key: \"other: noise\"\n    outcome: discarded\n    reason: not this spec\n    \
+             decided-at: 2026-08-01T00:00:00Z\n    decided-by: dev@example.com\n---\n\n# Review — 050-alpha\n",
+        )
+        .unwrap();
+        run(&args("050-alpha"), tmp.path()).unwrap();
+        let record = review_md(tmp.path());
+        assert!(!record.contains("dispositions:"), "{record}");
+        assert!(!record.contains("fixed: 1"), "{record}");
+        assert!(record.contains("decisions:"), "{record}");
+        assert!(record.contains("reason: not this spec"), "{record}");
     }
 
     /// A waiver is an operator's recorded judgement about a finding.

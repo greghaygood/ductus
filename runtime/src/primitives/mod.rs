@@ -1195,22 +1195,57 @@ pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
     Ok(())
 }
 
-/// Reject a text value carrying an embedded newline or carriage return.
+/// Reject a text value carrying an embedded newline or carriage return, or
+/// any other character that is not plain single-line text: a control
+/// character other than tab, or one of the Unicode line breaks YAML also
+/// treats as a break (see [`is_line_hazard`]).
+///
 /// Such a value, interpolated verbatim into a markdown or YAML artifact,
 /// would inject document structure (a phantom heading, a new frontmatter
-/// key); `primitive`/`argument` name the offending field. Shared by every
-/// primitive that splices caller-supplied text into a file it writes.
+/// key) or leave a file the YAML reader refuses outright — it rejects raw
+/// control characters, so one stored decision would make a whole record
+/// unreadable (spec 058). `primitive`/`argument` name the offending field.
+/// Shared by every primitive that splices caller-supplied text into a file it
+/// writes.
 pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str) -> Result<()> {
+    let reject = |reason: &str| PrimitiveError::InvalidArgument {
+        primitive: primitive.into(),
+        argument: argument.into(),
+        reason: reason.into(),
+    };
     if value.contains('\n') || value.contains('\r') {
-        return Err(PrimitiveError::InvalidArgument {
-            primitive: primitive.into(),
-            argument: argument.into(),
-            reason: "embedded newlines would inject document structure; \
-                     supply single-line text"
-                .into(),
-        });
+        return Err(reject(
+            "embedded newlines would inject document structure; supply single-line text",
+        ));
+    }
+    if value.chars().any(is_line_hazard) {
+        return Err(reject(
+            "control characters and Unicode line breaks would inject document structure \
+             or leave a record the YAML reader refuses; supply plain single-line text",
+        ));
     }
     Ok(())
+}
+
+/// A character that is not plain single-line text: a control character other
+/// than tab (C0, DEL, C1 — `U+0085` among them), or `U+2028` / `U+2029`, which
+/// YAML treats as line breaks. The YAML reader refuses raw control characters,
+/// and a line break inside a plain scalar ends it.
+pub(crate) fn is_line_hazard(c: char) -> bool {
+    (c.is_control() && c != '\t') || matches!(c, '\u{2028}' | '\u{2029}')
+}
+
+/// `value` as one line of plain text: every [`is_line_hazard`] character
+/// becomes a space, and the result is trimmed. The one normalization a stored
+/// decision key and its companion text pass through, so the key a writer
+/// stores and the key a host fires for the same finding agree (spec 058).
+pub(crate) fn flatten_line(value: &str) -> String {
+    value
+        .chars()
+        .map(|c| if is_line_hazard(c) { ' ' } else { c })
+        .collect::<String>()
+        .trim()
+        .to_string()
 }
 
 /// Extract an inbox/list bullet line's text: the trimmed content after the
@@ -3616,6 +3651,30 @@ mod tests {
         let outside = line.rfind("still open").unwrap();
         assert!(spans.iter().any(|s| s.contains(&inside)));
         assert!(!spans.iter().any(|s| s.contains(&outside)));
+    }
+
+    /// Single-line text is plain text: a control character other than tab, or
+    /// a Unicode line break, is refused — the YAML reader refuses a raw control
+    /// character, so one stored in a record makes the record unreadable
+    /// (spec 058). Tab stays legal.
+    #[test]
+    fn single_line_text_refuses_control_characters_and_line_breaks() {
+        for bad in [
+            "a\nb",
+            "a\rb",
+            "a\u{1b}b",
+            "a\u{7f}b",
+            "a\u{85}b",
+            "a\u{2028}b",
+            "a\u{2029}b",
+        ] {
+            assert!(
+                validate_single_line("p", "arg", bad).is_err(),
+                "{bad:?} must be refused"
+            );
+        }
+        assert!(validate_single_line("p", "arg", "a\tb — `c`: d").is_ok());
+        assert_eq!(flatten_line(" a\u{1b}b\nc\u{2028}d\t "), "a b c d");
     }
 }
 

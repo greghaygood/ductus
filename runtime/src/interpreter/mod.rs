@@ -376,7 +376,20 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 let Some(Value::Array(items)) = response.get(*key) else {
                     continue;
                 };
-                let items = items.clone();
+                let mut items = items.clone();
+                // An observation's disposition is decided by an operator in the
+                // fix-and-route step, which the walker no-ops: a disposition or
+                // matched decision key the reviewer's response supplies is not
+                // one, so it is dropped and the observation is recorded
+                // undispositioned (spec 058, AC26).
+                if *key == "observations" {
+                    for item in &mut items {
+                        if let Value::Object(observation) = item {
+                            observation.remove("disposition");
+                            observation.remove("decision-key");
+                        }
+                    }
+                }
                 match self.context.get_mut(*key) {
                     Some(Value::Array(existing)) => existing.extend(items),
                     _ => {
@@ -677,6 +690,17 @@ fn dispatch_primitive(
         && let Some(findings @ Value::Array(_)) = bindings.get("findings").cloned()
     {
         bindings.insert("fired".into(), findings);
+    }
+    // Exec-path binding for `write-analysis`: its `findings` argument is the
+    // host's itemized dispositions, which the walker never produces — the
+    // fix-and-route step is host responsibility and no-ops here, so an exec
+    // run itemizes nothing and the writer counts every live finding as
+    // undispositioned (spec 058). The context's `findings` key belongs to
+    // other primitives (`check-artifacts`, `check-orphaned-references`), whose
+    // entries are not analyze findings and would fail to bind, so it never
+    // reaches this primitive.
+    if name == "write-analysis" {
+        bindings.remove("findings");
     }
     // Exec-path binding for `mark-criterion`: `/ductus:implement`'s completion
     // gate seeds `criterion-index`/`checked: true`, but the checkbox flip
@@ -1136,6 +1160,99 @@ mod tests {
                 .contains("blocking:"),
             "the spec carries no review record"
         );
+    }
+
+    /// An exec run has no operator to disposition an observation, so a
+    /// disposition the reviewer's response supplies is dropped and the
+    /// observation is recorded undispositioned (spec 058, AC26) — never as
+    /// `fixed` without a gate.
+    #[test]
+    fn perform_review_dispositions_are_dropped_on_the_exec_path() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: in-progress\ndependencies: []\n---\n\n# x\n",
+        )
+        .unwrap();
+        let procedure = Procedure {
+            command: "review".into(),
+            steps: vec![
+                Step::Extension {
+                    number: StepNumber(vec![1]),
+                    identifier: "performReview".into(),
+                    prose: String::new(),
+                    location: loc(),
+                },
+                Step::Primitive {
+                    number: StepNumber(vec![2]),
+                    name: "write-review".into(),
+                    prose: String::new(),
+                    location: loc(),
+                },
+            ],
+        };
+        let responses = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[],\"observations\":[{\"text\":\"perf: slow\",\"path\":\"a.rs\",\"disposition\":{\"outcome\":\"fixed\"},\"decision-key\":\"perf: slow — `a.rs`\"}]}}\n";
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert(
+            "reviewed-at".into(),
+            Value::String("2026-07-04T00:00:00Z".into()),
+        );
+        context.insert("reviewed-against".into(), Value::String("abc1234".into()));
+        context.insert("diff-base".into(), Value::String("def5678".into()));
+        let mut reader = Cursor::new(responses.to_string());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            tmp.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+        let review = std::fs::read_to_string(dir.join("review.md")).unwrap();
+        assert!(
+            review.contains(
+                "dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 1\n"
+            ),
+            "{review}"
+        );
+    }
+
+    /// `write-analysis` binds no `findings` from the walker context: that key
+    /// belongs to `check-artifacts` and `check-orphaned-references`, whose
+    /// entries are not analyze findings. Before this, one orphaned reference
+    /// made an exec `/analyze` fail at the record step (spec 058).
+    #[test]
+    fn write_analysis_binds_no_other_primitives_findings() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: in-progress\ndependencies: []\n---\n\n# x\n",
+        )
+        .unwrap();
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert(
+            "analyzed-at".into(),
+            Value::String("2026-09-25T00:00:00Z".into()),
+        );
+        context.insert("analyzed-against".into(), Value::String("abc1234".into()));
+        context.insert(
+            "findings".into(),
+            serde_json::json!([{
+                "referrer": "CLAUDE.md",
+                "target": ".ductus/missing.md",
+                "line": 3,
+                "migration": ""
+            }]),
+        );
+        dispatch_primitive("write-analysis", &context, tmp.path()).unwrap();
+        assert!(dir.join("analysis.md").is_file());
     }
 
     #[test]

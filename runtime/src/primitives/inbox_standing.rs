@@ -62,7 +62,7 @@ pub(crate) fn standing(repo: &Path) -> InboxStanding {
 
     InboxStanding {
         outstanding: u32::try_from(bullets.len()).unwrap_or(u32::MAX),
-        oldest: oldest_bullet_date(repo, &rel, &bullets),
+        oldest: oldest_bullet_date(repo, &rel, &content, &bullets),
         state: InboxState::Outstanding,
         path: rel,
     }
@@ -80,19 +80,35 @@ pub(crate) fn standing(repo: &Path) -> InboxStanding {
 /// rewrite the whole file atomically on every call, so any whole-file signal
 /// would reset a surviving line's date on the next unrelated capture.
 ///
+/// The blame is of the **working-tree** `content`, layered on the committed
+/// history with `blame_buffer`, because the bullet indexes come from the
+/// working tree. Blaming the committed file alone paired those indexes with
+/// committed lines, so after an uncommitted removal — routinely, right after
+/// `/{project}:groom` — every later bullet read the date of a line above it
+/// (spec 058). A line not yet committed carries no date and is skipped: it is
+/// newer than every committed one, so it cannot be the oldest.
+///
 /// `None` when it cannot be determined — a shallow clone with no history to
-/// blame, a file not yet committed, a blame that fails for any other reason.
-/// That is reported as *undeterminable* by the caller rather than silently
-/// dropped or defaulted to today. **This reads git history**, so a CI job
-/// running it needs `fetch-depth: 0` (§design-principles).
-fn oldest_bullet_date(repo: &Path, rel: &str, bullets: &[usize]) -> Option<String> {
+/// blame, a file not yet committed, every bullet uncommitted, a blame that
+/// fails for any other reason. That is reported as *undeterminable* by the
+/// caller rather than silently dropped or defaulted to today. **This reads git
+/// history**, so a CI job running it needs `fetch-depth: 0`
+/// (§design-principles).
+fn oldest_bullet_date(repo: &Path, rel: &str, content: &str, bullets: &[usize]) -> Option<String> {
     let repository = Repository::discover(repo).ok()?;
-    let blame = repository.blame_file(Path::new(rel), None).ok()?;
+    let committed = repository.blame_file(Path::new(rel), None).ok()?;
+    let blame = committed.blame_buffer(content.as_bytes()).ok()?;
     bullets
         .iter()
         // `iter_bullets` yields 0-based line indexes; blame is 1-based.
         .filter_map(|idx| blame.get_line(idx + 1))
-        .filter_map(|hunk| hunk.final_signature().map(|sig| sig.when().seconds()))
+        .map(|hunk| hunk.final_commit_id())
+        .filter(|commit| !commit.is_zero())
+        // Read from the commit rather than the hunk's `final_signature`: libgit2
+        // leaves that unset on the hunks a buffer blame carries over from the
+        // committed history. The author time is what it held.
+        .filter_map(|commit| repository.find_commit(commit).ok())
+        .map(|commit| commit.author().when().seconds())
         .min()
         .map(format_utc_date)
 }
@@ -229,6 +245,45 @@ mod tests {
             Some("2025-05-19"),
             "a whole-file rewrite must not reset a surviving line's age"
         );
+    }
+
+    /// The bullet indexes come from the working tree, so the blame must be of
+    /// the working tree too. Blaming only the committed file shifted every
+    /// bullet below an uncommitted removal onto the line above it — right
+    /// after `/groom` removes the oldest item, the row reported that removed
+    /// item's date as the queue's oldest (spec 058).
+    #[test]
+    fn an_uncommitted_removal_does_not_shift_the_oldest_date() {
+        let tmp = tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        seed_inbox(tmp.path(), "# Inbox\n\n- the old one\n");
+        commit_all(&repo, "capture the first item", 1_747_612_800);
+        seed_inbox(tmp.path(), "# Inbox\n\n- the old one\n- a fresh one\n");
+        commit_all(&repo, "capture a second item", 1_789_516_800);
+
+        // Groomed away, not yet committed.
+        seed_inbox(tmp.path(), "# Inbox\n\n- a fresh one\n");
+        let result = standing(tmp.path());
+        assert_eq!(result.outstanding, 1);
+        assert_eq!(
+            result.oldest,
+            Some(format_utc_date(1_789_516_800)),
+            "the surviving item's own date, not the removed item's"
+        );
+    }
+
+    /// A bullet not yet committed has no date, and it is newer than every
+    /// committed one, so it is skipped rather than read as the oldest.
+    #[test]
+    fn an_uncommitted_bullet_is_not_the_oldest() {
+        let tmp = tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        seed_inbox(tmp.path(), "# Inbox\n\n- committed\n");
+        commit_all(&repo, "capture", 1_747_612_800);
+        seed_inbox(tmp.path(), "# Inbox\n\n- logged just now\n- committed\n");
+        let result = standing(tmp.path());
+        assert_eq!(result.outstanding, 2);
+        assert_eq!(result.oldest, Some(format_utc_date(1_747_612_800)));
     }
 
     #[test]

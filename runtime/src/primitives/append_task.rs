@@ -183,32 +183,48 @@ fn task_number_referencing_scenario(existing: &str, slug: &str) -> Option<u32> {
 /// Pending means at least one unchecked checkbox inside the section. A spent
 /// section — every box checked — never matches: the same finding surfacing
 /// again after it was dispositioned is new work, not a duplicate. Sections
-/// end at the next level-2 or level-3 heading, numbered or not, so a phase
-/// container closes the task before it. Fence- and comment-aware, as the
-/// numbering walk is.
+/// and checkboxes are recognized by the grammars `prune-tasks` and
+/// `read-tasks` use — [`crate::primitives::split_numbered_heading`] at the
+/// file's task level, closed by any heading at or above it, and
+/// [`crate::primitives::checkbox::find_checkbox_line`] — so a task one of them
+/// sees is the task this one sees. Fence- and comment-aware, as the numbering
+/// walk is.
 fn pending_task_titled(existing: &str, title: &str) -> Option<u32> {
-    use crate::primitives::{SkipScanner, parse_atx_heading};
+    use crate::primitives::{
+        SkipScanner, TasksStructure, checkbox, detect_tasks_structure, parse_atx_heading,
+        split_numbered_heading,
+    };
 
+    // The title as the heading the renderer writes for it reads back — the
+    // heading parser trims a closing `#` run, so `… C#` is compared as `… C`
+    // on both sides rather than never matching itself.
+    let wanted = parse_atx_heading(&format!("## {title}")).map(|(_, text)| text)?;
+    // Task sections as `prune-tasks` and `read-tasks` segment them: a task is
+    // a numbered heading at the task level, and any heading at or above that
+    // level closes it.
+    let task_level: u8 = match detect_tasks_structure(existing) {
+        TasksStructure::Flat => 2,
+        TasksStructure::Phased => 3,
+    };
     let mut skip = SkipScanner::default();
-    // (number, title matches) of the section being walked.
+    // (number, title matches) of the task section being walked.
     let mut current: Option<(u32, bool)> = None;
     for line in existing.lines() {
         if skip.skip(line) {
             continue;
         }
-        if let Some((level, text)) = parse_atx_heading(line) {
-            if level == 2 || level == 3 {
-                current = text.split_once(". ").and_then(|(num, rest)| {
-                    num.trim()
-                        .parse::<u32>()
-                        .ok()
-                        .map(|number| (number, rest.trim() == title))
-                });
-            }
+        if let Some((level, heading)) = parse_atx_heading(line)
+            && level <= task_level
+        {
+            current = (level == task_level)
+                .then(|| split_numbered_heading(&heading))
+                .flatten()
+                .and_then(|(number, rest)| number.parse::<u32>().ok().map(|n| (n, rest == wanted)));
             continue;
         }
         if let Some((number, true)) = current
-            && line.trim_start().starts_with("- [ ]")
+            && let Some((_bracket, marker)) = checkbox::find_checkbox_line(line)
+            && line.as_bytes()[marker] == b' '
         {
             return Some(number);
         }
@@ -643,6 +659,45 @@ mod tests {
         .unwrap();
         assert!(result.appended, "the finding surfacing again is new work");
         assert_eq!(result.task_number, 2);
+    }
+
+    /// The renderer writes the title verbatim and the heading parser trims a
+    /// closing `#` run, so a title ending in `#` must be compared as the
+    /// heading reads back — otherwise it never matched itself and every
+    /// re-run appended it again.
+    #[test]
+    fn dedup_title_matches_a_title_ending_in_a_hash() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let a = disposition_args("Disposition out-of-spec finding: leak in C#");
+        let first = run(&a, tmp.path()).unwrap();
+        let second = run(&a, tmp.path()).unwrap();
+        assert!(!second.appended);
+        assert_eq!(second.task_number, first.task_number);
+    }
+
+    /// Sections and checkboxes follow the grammars `prune-tasks` and
+    /// `read-tasks` use: a tab after the dash is still a pending checkbox, a
+    /// `## 12.Title` heading is still a task, and an unnumbered `###` inside
+    /// a flat file does not close the task it sits in.
+    #[test]
+    fn dedup_title_uses_the_shared_task_and_checkbox_grammars() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        fs::write(
+            tmp.path().join("specs/042-foo/tasks.md"),
+            "# 042 — Foo Tasks\n\n## 7.Disposition out-of-spec finding: handle leak\n\n\
+             ### Notes\n\n-\t[ ] src/a.rs — leaks a handle\n\n\
+             - **Done when**: the finding is dispositioned.\n",
+        )
+        .unwrap();
+        let result = run(
+            &disposition_args("Disposition out-of-spec finding: handle leak"),
+            tmp.path(),
+        )
+        .unwrap();
+        assert!(!result.appended, "the pending section is the same task");
+        assert_eq!(result.task_number, 7);
     }
 
     #[test]

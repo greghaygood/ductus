@@ -213,4 +213,4 @@ one `Inbox:` line in one of four states:
 - `Inbox: N item(s) outstanding, oldest YYYY-MM-DD — run /{project}:groom to route`
 - `Inbox: N item(s) outstanding, age undeterminable — run /{project}:groom to route`
 - `Inbox: ✓ clean`
-- `Inbox: ? no {specs-root}/inbox.md — nothing examined`
+- `Inbox: ? no readable {specs-root}/inbox.md — nothing examined`

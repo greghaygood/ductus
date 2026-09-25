@@ -56,12 +56,12 @@ use std::path::Path;
 
 use crate::primitives::decisions;
 use crate::primitives::{
-    PrimitiveError, Result, read_text, rel_path, split_frontmatter, validate_no_traversal,
-    write_atomic,
+    PrimitiveError, Result, flatten_line, read_text, rel_path, split_frontmatter,
+    validate_no_traversal, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
-    AnalysisFinding, AnalysisTier, DecisionOutcome, DecisionRef, DispositionOutcome, Dispositions,
+    AnalysisFinding, AnalysisTier, DecisionRef, DispositionOutcome, Dispositions,
     WriteAnalysisArgs, WriteAnalysisResult,
 };
 
@@ -107,6 +107,11 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         .lines()
         .any(|line| !line.starts_with([' ', '\t']) && line.starts_with("analyze:"));
 
+    // A blank timestamp would be stamped onto every new decision as a blank
+    // `decided-at`, an entry the decisions reader classifies as malformed.
+    if single_line(&args.analyzed_at).is_empty() {
+        return Err(invalid("analyzed-at", "the run's timestamp is empty"));
+    }
     let blocking = args.hard_fail > 0 || args.blocking_findings > 0;
     let dispositions = count_dispositions(args)?;
     let merged = decisions::merge(
@@ -116,12 +121,7 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         &single_line(&args.analyzed_at),
         args.decided_by.as_deref().map(single_line).as_deref(),
     )
-    .map_err(|field| {
-        invalid(
-            field,
-            "required when a finding is newly routed or discarded",
-        )
-    })?;
+    .map_err(|refusal| refusal.into_error("write-analysis", "findings", "a finding"))?;
     // The breakdown is the authority when supplied: a total a caller can
     // contradict is a total that will eventually be contradicted, which is
     // the same reason `blocking` is derived rather than accepted.
@@ -337,27 +337,7 @@ fn decided_findings(findings: &[AnalysisFinding]) -> Vec<DecisionRef> {
     findings
         .iter()
         .filter(|finding| finding.live)
-        .filter_map(|finding| {
-            let disposition = &finding.disposition;
-            let trimmed = |value: &Option<String>| value.as_deref().map(single_line);
-            let (outcome, target, reason) = match disposition.outcome {
-                DispositionOutcome::Routed => {
-                    (DecisionOutcome::Routed, trimmed(&disposition.target), None)
-                }
-                DispositionOutcome::Discarded => (
-                    DecisionOutcome::Discarded,
-                    None,
-                    trimmed(&disposition.reason),
-                ),
-                DispositionOutcome::Fixed | DispositionOutcome::Undispositioned => return None,
-            };
-            Some(DecisionRef {
-                key: finding_key(finding),
-                outcome,
-                target,
-                reason,
-            })
-        })
+        .filter_map(|finding| decisions::decision_for(&finding.disposition, &finding_key(finding)))
         .collect()
 }
 
@@ -571,14 +551,19 @@ fn render_unexamined(unexamined: u32, by_reason: &BTreeMap<String, u32>) -> Stri
         .join("\n")
 }
 
-/// Collapse any line break in a host-supplied scalar to a space.
+/// Collapse any line break or control character in a host-supplied scalar to
+/// a space — the shared [`flatten_line`] normalization.
 ///
 /// `write-review` rejects such a value outright; this one flattens instead,
-/// because both of these fields are machine-generated (a timestamp and a sha)
-/// and a newline in either is a caller defect with no legitimate reading —
-/// there is no user intent to preserve, only an injection to defuse.
+/// because the record is written on every run and must not be refused over a
+/// stray character: the timestamp and sha are machine-generated, and a
+/// finding's family and message become a stored decision's key, where a raw
+/// control character would leave the whole record unreadable (spec 058).
+/// There is no user intent to preserve, only an injection to defuse. The same
+/// normalization keys a fired finding in `process-decisions`, so a stored key
+/// and the key a host fires for the same finding agree.
 fn single_line(value: &str) -> String {
-    value.replace(['\n', '\r'], " ").trim().to_string()
+    flatten_line(value)
 }
 
 #[cfg(test)]
@@ -586,6 +571,7 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+    use crate::schema::primitives::DecisionOutcome;
     use std::fs;
     use tempfile::TempDir;
 
@@ -1253,5 +1239,65 @@ mod tests {
             "{spec}"
         );
         assert!(spec.contains("unexamined: 1"), "{spec}");
+    }
+
+    // -- spec 058 review: decision-record hardening -------------------------
+
+    /// A control character in a finding's message or a discard's reason is
+    /// flattened before it is stored, so the record reads back and the stored
+    /// key is the one `process-decisions` fires for the same finding. A raw one
+    /// would have left the whole record unreadable.
+    #[test]
+    fn line_hazards_are_flattened_so_the_record_reads_back() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 1;
+        a.decided_by = Some("dev@example.com".into());
+        a.findings = vec![finding(
+            AnalysisTier::Advisory,
+            "grounding",
+            "cites\u{1b}[31m a path\u{2028}twice",
+            DispositionOutcome::Discarded,
+            Some("false\u{1b}positive"),
+        )];
+        run(&a, tmp.path()).unwrap();
+        let dir = tmp.path().join("specs/042-demo");
+        let stored = decisions::read_decisions(&dir, "analysis.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(
+            stored[0].key.as_deref(),
+            Some("grounding — cites [31m a path twice")
+        );
+        assert_eq!(stored[0].reason.as_deref(), Some("false positive"));
+        assert!(matches!(
+            crate::primitives::load_analyze_record(&dir),
+            crate::primitives::RecordLoad::Present(_)
+        ));
+    }
+
+    /// A blank timestamp would stamp every new decision with a blank
+    /// `decided-at`, which the reader then calls malformed.
+    #[test]
+    fn a_blank_analyzed_at_is_refused() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.analyzed_at = " \n ".into();
+        assert!(matches!(
+            run(&a, tmp.path()),
+            Err(PrimitiveError::InvalidArgument { argument, .. }) if argument == "analyzed-at"
+        ));
+        assert!(!analysis_exists(&tmp));
+    }
+
+    /// `tier` is required: the discard refusal reads it, so a finding that
+    /// omits it must not bind as the permissive advisory tier.
+    #[test]
+    fn a_finding_without_a_tier_does_not_bind() {
+        let parsed = serde_json::from_value::<AnalysisFinding>(serde_json::json!({
+            "family": "grounding",
+            "message": "m",
+            "disposition": { "outcome": "discarded", "reason": "noise" },
+        }));
+        assert!(parsed.is_err(), "an untagged finding must be refused");
     }
 }

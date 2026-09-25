@@ -821,8 +821,10 @@ pub enum AnalysisTier {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct AnalysisFinding {
-    /// The tier it was detected in.
-    #[serde(default)]
+    /// The tier it was detected in. Required, with no default: the writer's
+    /// refusal to store a discard for a `hard-fail` or `blocking` finding
+    /// reads it, so a default could only be the permissive tier, letting an
+    /// untagged blocking finding be stored as discarded.
     pub tier: AnalysisTier,
     /// The detecting family, e.g. `review-state-drift`, `grounding`.
     pub family: String,
@@ -849,13 +851,13 @@ fn default_true() -> bool {
 /// Args for `write-analysis` — record that `/ductus:analyze` ran, and what it
 /// found, in `specs/NNN/analysis.md`.
 ///
-/// The narrow, always-on write that makes analyze's own run durable. It is a
-/// deliberate change to that command's read-only contract, and the line the
-/// contract now draws is between the **subject** and the **observation**:
-/// analyze still never mutates an artifact it audits, and `--fix` remains the
-/// only path that does. Recording that the audit happened is not mutating the
-/// subject — it is the same thing `write-review` does for the other gate, and
-/// the reason that gate could be enforced while this one could not.
+/// The narrow, always-on write that makes analyze's own run durable. Its
+/// detection never mutates an artifact it audits; the confirmed fixes and
+/// routes of the fix-and-route step, and `--fix`'s status revert, are the
+/// only writes to one (spec 058). Recording that the audit happened is not
+/// mutating the subject — it is the same thing `write-review` does for the
+/// other gate, and the reason that gate could be enforced while this one could
+/// not.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteAnalysisArgs {

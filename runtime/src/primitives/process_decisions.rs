@@ -23,7 +23,9 @@
 use std::path::Path;
 
 use crate::primitives::decisions::read_decisions;
-use crate::primitives::{ANALYSIS_RECORD_FILE, PrimitiveError, REVIEW_RECORD_FILE, Result};
+use crate::primitives::{
+    ANALYSIS_RECORD_FILE, PrimitiveError, REVIEW_RECORD_FILE, Result, flatten_line,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{
     DecisionOutcome, DecisionRecord, DecisionRef, ProcessDecisionsArgs, ProcessDecisionsResult,
@@ -52,18 +54,20 @@ pub fn run(args: &ProcessDecisionsArgs, repo: &Path) -> Result<ProcessDecisionsR
         DecisionRecord::Analysis => ANALYSIS_RECORD_FILE,
     };
     let stored = read_decisions(&feature_dir, file)?;
+    // The writers store every key through `flatten_line`, so a fired key is
+    // compared in the same form: a finding whose message carried a stray line
+    // break still matches the decision stored for it.
+    let fired: Vec<String> = args.fired.iter().map(|key| flatten_line(key)).collect();
 
     let mut result = ProcessDecisionsResult::default();
     let mut seen: Vec<String> = Vec::new();
     for (index, entry) in stored.iter().enumerate() {
-        if let Some(field) = entry.defect() {
+        let Some(decision) = entry.to_ref() else {
+            let field = entry.defect().unwrap_or("outcome");
             result.notices.push(format!(
                 "malformed decision at {file} decisions[{index}]: missing or invalid '{field}'"
             ));
             continue;
-        }
-        let Some(decision) = entry.to_ref() else {
-            continue; // unreachable: a well-formed entry always converts
         };
         if seen.contains(&decision.key) {
             result.notices.push(format!(
@@ -74,7 +78,7 @@ pub fn run(args: &ProcessDecisionsArgs, repo: &Path) -> Result<ProcessDecisionsR
         }
         seen.push(decision.key.clone());
 
-        if args.fired.iter().any(|key| key == &decision.key) {
+        if fired.iter().any(|key| key == &flatten_line(&decision.key)) {
             result.matched.push(decision);
         } else if args.restricted {
             result.notices.push(format!(
@@ -278,5 +282,23 @@ mod tests {
             run(&args(DecisionRecord::Review, &[], false), tmp.path()),
             Err(PrimitiveError::FeatureNotFound { .. })
         ));
+    }
+
+    /// A fired key is compared in the form the writers store it: a finding
+    /// whose message carried a stray line break still matches its decision.
+    #[test]
+    fn a_fired_key_with_a_line_break_matches_its_flattened_decision() {
+        let tmp = repo_with("analysis.md", ROUTED);
+        let result = run(
+            &args(
+                DecisionRecord::Analysis,
+                &["grounding — plan.md cites\na missing path"],
+                false,
+            ),
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.matched.len(), 1);
+        assert!(result.expired.is_empty());
     }
 }

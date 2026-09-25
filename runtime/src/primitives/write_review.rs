@@ -43,8 +43,8 @@ use crate::primitives::{
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
-    ConstitutionOutcome, DecisionOutcome, DecisionRef, DispositionOutcome, Dispositions,
-    RecordFreshness, ReviewFinding, ReviewObservation, WriteReviewArgs, WriteReviewResult,
+    ConstitutionOutcome, DecisionRef, DispositionOutcome, Dispositions, RecordFreshness,
+    ReviewFinding, ReviewObservation, WriteReviewArgs, WriteReviewResult,
 };
 use crate::schema::severity::ReviewSeverity;
 /// Reject any scalar field that would inject document structure.
@@ -66,6 +66,15 @@ fn validate_scalar_fields(args: &WriteReviewArgs) -> Result<()> {
         |argument: &str, value: &str| super::validate_single_line("write-review", argument, value);
     single_line("feature", &args.feature)?;
     single_line("reviewed-at", &args.reviewed_at)?;
+    // A blank timestamp would be stamped onto every new decision as a blank
+    // `decided-at`, an entry the decisions reader classifies as malformed.
+    if args.reviewed_at.trim().is_empty() {
+        return Err(PrimitiveError::InvalidArgument {
+            primitive: "write-review".into(),
+            argument: "reviewed-at".into(),
+            reason: "the run's timestamp is empty".into(),
+        });
+    }
     single_line("reviewed-against", &args.reviewed_against)?;
     single_line("diff-base", &args.diff_base)?;
     if let Some(scenario) = args.scenario.as_deref() {
@@ -228,11 +237,7 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
         &args.reviewed_at,
         args.decided_by.as_deref(),
     )
-    .map_err(|field| PrimitiveError::InvalidArgument {
-        primitive: "write-review".into(),
-        argument: field.into(),
-        reason: "required when an observation is newly routed or discarded".into(),
-    })?;
+    .map_err(|refusal| refusal.into_error("write-review", "observations", "an observation"))?;
     let report = render_report(
         args,
         &Buckets {
@@ -378,34 +383,15 @@ fn count_dispositions(observations: &[ReviewObservation]) -> Dispositions {
 }
 
 /// The routed and discarded observations, as the decisions they store. The key
-/// is the stored decision the host matched the observation to, else the
-/// observation's own rendered line.
+/// is the stored decision the host matched the observation to, else — when
+/// no key was supplied, or a blank one — the observation's own rendered line.
 fn decided_observations(observations: &[ReviewObservation]) -> Vec<DecisionRef> {
     observations
         .iter()
         .filter_map(|observation| {
-            let disposition = &observation.disposition;
-            let outcome = match disposition.outcome {
-                DispositionOutcome::Routed => DecisionOutcome::Routed,
-                DispositionOutcome::Discarded => DecisionOutcome::Discarded,
-                DispositionOutcome::Fixed | DispositionOutcome::Undispositioned => return None,
-            };
-            let trimmed = |value: &Option<String>| value.as_deref().map(|v| v.trim().to_string());
-            Some(DecisionRef {
-                key: observation.decision_key.as_deref().map_or_else(
-                    || observation_line(observation),
-                    |key| key.trim().to_string(),
-                ),
-                outcome,
-                target: match outcome {
-                    DecisionOutcome::Routed => trimmed(&disposition.target),
-                    DecisionOutcome::Discarded => None,
-                },
-                reason: match outcome {
-                    DecisionOutcome::Discarded => trimmed(&disposition.reason),
-                    DecisionOutcome::Routed => None,
-                },
-            })
+            let key = nonblank(observation.decision_key.as_deref())
+                .map_or_else(|| observation_line(observation), str::to_string);
+            decisions::decision_for(&observation.disposition, &key)
         })
         .collect()
 }
@@ -982,9 +968,26 @@ pub(crate) fn render_extra_field(
 /// they parse back as strings (`serde_norway` has no timestamp type) and a
 /// mid-value colon does not trip `needs_quote`, so quoting them here would be
 /// no-op churn.
+///
+/// A value carrying a control character or a Unicode line break is always
+/// quoted, and every such character is escaped: the YAML reader refuses a raw
+/// control character, so a single one left bare would make the whole record
+/// unreadable (spec 058). `serde_json` escapes C0 characters but not DEL, C1,
+/// `U+2028` or `U+2029`, so those are escaped here — YAML's double-quoted
+/// `\u` escape reads back the same character.
 pub(crate) fn yaml_string(value: &str) -> String {
     if needs_quote(value) || reparses_as_nonstring(value) {
-        serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""))
+        let quoted = serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""));
+        quoted
+            .chars()
+            .fold(String::with_capacity(quoted.len()), |mut out, c| {
+                if super::is_line_hazard(c) {
+                    let _ = write!(out, "\\u{:04x}", u32::from(c));
+                } else {
+                    out.push(c);
+                }
+                out
+            })
     } else {
         value.to_string()
     }
@@ -1002,7 +1005,7 @@ fn reparses_as_nonstring(value: &str) -> bool {
 const YAML_INDICATORS: &[u8] = b"!&*?|>@%#{}[],\"'`:-";
 
 fn needs_quote(value: &str) -> bool {
-    if value.is_empty() || value != value.trim() {
+    if value.is_empty() || value != value.trim() || value.chars().any(super::is_line_hazard) {
         return true;
     }
     if value.contains(": ")
@@ -1045,7 +1048,7 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
-    use crate::schema::primitives::WaiverRef;
+    use crate::schema::primitives::{DecisionOutcome, WaiverRef};
     use std::fs;
     use tempfile::{TempDir, tempdir};
 
@@ -2232,5 +2235,114 @@ mod tests {
             !report.contains("## Unexamined governance\n\n*None.*"),
             "an unreadable registry must never render as None: {report}"
         );
+    }
+
+    // -- spec 058 review: decision-record hardening -------------------------
+
+    /// A control character or a Unicode line break in a quoted value is
+    /// escaped, so the frontmatter the YAML reader parses back holds the same
+    /// string. A raw one would make the whole record unreadable.
+    #[test]
+    fn yaml_string_escapes_control_characters_and_line_breaks() {
+        for value in [
+            "false\u{1b}positive",
+            "split\u{2028}here",
+            "para\u{2029}graph",
+            "next\u{85}line",
+            "del\u{7f}ete",
+        ] {
+            let rendered = yaml_string(value);
+            assert!(
+                !rendered.chars().any(crate::primitives::is_line_hazard),
+                "no raw hazard may survive: {rendered:?}"
+            );
+            let parsed: String = serde_norway::from_str(&rendered).unwrap();
+            assert_eq!(parsed, value, "round-trip of {value:?}");
+        }
+    }
+
+    /// An observation's text is refused before any write when it carries a
+    /// control character, as a newline already was.
+    #[test]
+    fn an_observation_carrying_a_control_character_is_refused() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.decided_by = Some("dev@example.com".into());
+        args.observations = vec![dispositioned(
+            "other: noise\u{1b}[31m",
+            DispositionOutcome::Discarded,
+            Some("false positive"),
+        )];
+        assert!(matches!(
+            run(&args, tmp.path()),
+            Err(PrimitiveError::InvalidArgument { argument, .. })
+                if argument == "observations[0].text"
+        ));
+        assert!(!tmp.path().join("specs/001-x/review.md").exists());
+    }
+
+    /// A blank timestamp would stamp every new decision with a blank
+    /// `decided-at`, which the reader then calls malformed.
+    #[test]
+    fn a_blank_reviewed_at_is_refused() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.reviewed_at = "   ".into();
+        assert!(matches!(
+            run(&args, tmp.path()),
+            Err(PrimitiveError::InvalidArgument { argument, .. }) if argument == "reviewed-at"
+        ));
+    }
+
+    /// A blank `decision-key` is no key: the observation is stored under its
+    /// own rendered line, never under an empty key the reader would reject.
+    #[test]
+    fn a_blank_decision_key_falls_back_to_the_observation_line() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.decided_by = Some("dev@example.com".into());
+        let mut observation = dispositioned(
+            "other: machinery",
+            DispositionOutcome::Discarded,
+            Some("not this spec"),
+        );
+        observation.decision_key = Some("  ".into());
+        args.observations = vec![observation];
+        run(&args, tmp.path()).unwrap();
+        let stored =
+            decisions::read_decisions(&tmp.path().join("specs/001-x"), "review.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].key.as_deref(), Some("other: machinery"));
+        assert_eq!(stored[0].defect(), None);
+    }
+
+    /// Two observations sharing a key are one finding: one stored decision,
+    /// and different decisions for the one key are refused.
+    #[test]
+    fn same_key_observations_store_one_decision_and_conflicts_are_refused() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.decided_by = Some("dev@example.com".into());
+        args.observations = vec![
+            dispositioned("other: twice", DispositionOutcome::Discarded, Some("noise")),
+            dispositioned("other: twice", DispositionOutcome::Discarded, Some("noise")),
+        ];
+        run(&args, tmp.path()).unwrap();
+        let stored =
+            decisions::read_decisions(&tmp.path().join("specs/001-x"), "review.md").unwrap();
+        assert_eq!(stored.len(), 1, "one key, one stored decision");
+
+        args.observations = vec![
+            dispositioned("other: split", DispositionOutcome::Discarded, Some("noise")),
+            dispositioned(
+                "other: split",
+                DispositionOutcome::Routed,
+                Some("specs/001-x/tasks.md"),
+            ),
+        ];
+        assert!(matches!(
+            run(&args, tmp.path()),
+            Err(PrimitiveError::InvalidArgument { argument, .. }) if argument == "observations"
+        ));
     }
 }

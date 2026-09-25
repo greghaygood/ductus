@@ -329,7 +329,7 @@ fn render_counts(specs: &[DashboardSpec]) -> String {
 /// reported as undeterminable — never as today.
 fn render_inbox_line(inbox: &InboxStanding, project: &str) -> String {
     match inbox.state {
-        InboxState::NoFile => format!("Inbox: ? no {} — nothing examined", inbox.path),
+        InboxState::NoFile => format!("Inbox: ? no readable {} — nothing examined", inbox.path),
         InboxState::Clean => "Inbox: ✓ clean".to_string(),
         InboxState::Outstanding => match inbox.oldest.as_deref() {
             Some(oldest) => format!(
@@ -1744,7 +1744,7 @@ reason = "Deferred until v2 perf budget lands."
         assert_eq!(result.inbox_standing.state, InboxState::NoFile);
         assert_eq!(
             inbox_line(&result.rendered_markdown),
-            Some("Inbox: ? no specs/inbox.md — nothing examined"),
+            Some("Inbox: ? no readable specs/inbox.md — nothing examined"),
             "an absent inbox is its own state, never clean:\n{}",
             result.rendered_markdown
         );
