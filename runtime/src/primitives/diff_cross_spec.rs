@@ -81,8 +81,7 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
     let mut opts = DiffOptions::new();
     opts.pathspec(&layout.specs_root)
         .include_untracked(true)
-        .recurse_untracked_dirs(true)
-        .show_untracked_content(true);
+        .recurse_untracked_dirs(true);
     let diff = repository.diff_tree_to_workdir_with_index(Some(&first_tree), Some(&mut opts))?;
 
     let mut cross_spec: BTreeSet<String> = BTreeSet::new();

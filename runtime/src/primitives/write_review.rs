@@ -554,14 +554,7 @@ fn render_report(
         }
     }
     let _ = writeln!(fm, "blocking: {blocking}");
-    // Always written, all four counts: a record without the map predates
-    // dispositions, and the gate reads that absence as a record to re-run.
-    let counts = record.dispositions;
-    let _ = writeln!(fm, "dispositions:");
-    let _ = writeln!(fm, "  fixed: {}", counts.fixed);
-    let _ = writeln!(fm, "  routed: {}", counts.routed);
-    let _ = writeln!(fm, "  discarded: {}", counts.discarded);
-    let _ = writeln!(fm, "  undispositioned: {}", counts.undispositioned);
+    decisions::render_dispositions(&mut fm, record.dispositions);
     render_waivers_at(&mut fm, record.waivers, "");
     decisions::render(&mut fm, record.decisions);
     fm.push_str("---");
@@ -716,19 +709,9 @@ fn render_observations(observations: &[ReviewObservation]) -> String {
     observations
         .iter()
         .map(|observation| {
-            let disposition = &observation.disposition;
-            let companion =
-                |value: &Option<String>| value.as_deref().unwrap_or("").trim().to_string();
-            let outcome = match disposition.outcome {
-                DispositionOutcome::Fixed => "**fixed**".to_string(),
-                DispositionOutcome::Routed => {
-                    format!("**routed** to `{}`", companion(&disposition.target))
-                }
-                DispositionOutcome::Discarded => {
-                    format!("**discarded**: {}", companion(&disposition.reason))
-                }
-                DispositionOutcome::Undispositioned => "**undispositioned**".to_string(),
-            };
+            let outcome = decisions::disposition_suffix(&observation.disposition, |text| {
+                text.trim().to_string()
+            });
             format!("- {} — {outcome}", observation_line(observation))
         })
         .collect::<Vec<_>>()

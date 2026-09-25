@@ -20,7 +20,9 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::primitives::{PrimitiveError, Result, flatten_line};
-use crate::schema::primitives::{DecisionOutcome, DecisionRef, Disposition, DispositionOutcome};
+use crate::schema::primitives::{
+    DecisionOutcome, DecisionRef, Disposition, DispositionOutcome, Dispositions,
+};
 
 /// The frontmatter key both records store decisions under.
 pub(crate) const DECISIONS_KEY: &str = "decisions";
@@ -135,6 +137,38 @@ pub(crate) fn decision_for(disposition: &Disposition, key: &str) -> Option<Decis
         target,
         reason,
     })
+}
+
+/// Append a record's `dispositions:` map — always, all four counts, because
+/// its absence has a meaning: a record without it predates dispositions, and
+/// the gate reads that absence as a record to re-run. Shared by both writers,
+/// so the two records carry one shape.
+pub(crate) fn render_dispositions(block: &mut String, counts: Dispositions) {
+    use std::fmt::Write as _;
+    let _ = writeln!(block, "dispositions:");
+    let _ = writeln!(block, "  fixed: {}", counts.fixed);
+    let _ = writeln!(block, "  routed: {}", counts.routed);
+    let _ = writeln!(block, "  discarded: {}", counts.discarded);
+    let _ = writeln!(block, "  undispositioned: {}", counts.undispositioned);
+}
+
+/// The suffix a report renders beside a finding for its disposition — fixed,
+/// routed with its target in a code span, discarded with its reason, or
+/// undispositioned, each outcome in bold — with the companion text passed
+/// through `plain`, each writer's own normalization for its report body.
+pub(crate) fn disposition_suffix(
+    disposition: &Disposition,
+    plain: impl Fn(&str) -> String,
+) -> String {
+    let companion = |value: &Option<String>| plain(value.as_deref().unwrap_or(""));
+    match disposition.outcome {
+        DispositionOutcome::Fixed => "**fixed**".to_string(),
+        DispositionOutcome::Routed => format!("**routed** to `{}`", companion(&disposition.target)),
+        DispositionOutcome::Discarded => {
+            format!("**discarded**: {}", companion(&disposition.reason))
+        }
+        DispositionOutcome::Undispositioned => "**undispositioned**".to_string(),
+    }
 }
 
 /// Why [`merge`] refused a run's decisions.

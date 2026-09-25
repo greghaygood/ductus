@@ -273,11 +273,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 33. Remove 058's dead code and stale runtime docs; add the missing tests
 
-- [ ] Remove `Dispositions::total`, the inert `--decided-by` CLI flags on `write-review` and `write-analysis`, and `process-decisions`' dead `let … else` branch (one `match entry.to_ref()`); make `process-decisions`' `fired` `#[arg(skip)]` as `process-waivers`' is, and drop `DecisionRecord`'s `#[default]` if nothing needs it
-- [ ] Drop the leftover `show_untracked_content(true)` in `diff_cross_spec.rs` if `include_untracked` alone surfaces untracked paths (test it)
-- [ ] Fix `main.rs`'s `append-inbox` help (no dedup), and `dashboard.rs`'s misattached doc comment and `render_callouts` doc (it renders the Inbox line)
-- [ ] Share the `dispositions:` frontmatter block and the disposition suffix rendering between `write-review` and `write-analysis`
-- [ ] Add an MCP call-and-assert test for `process-decisions`, and schema round-trip tests pinning the kebab-case wire names of `Dispositions`, `DecisionRef`, `ProcessDecisionsArgs`/`Result`, `AnalysisFinding`, and `ReviewObservation`'s new fields
+- [x] Remove `Dispositions::total`, the inert `--decided-by` CLI flags on `write-review` and `write-analysis`, and `process-decisions`' dead `let … else` branch (one `match entry.to_ref()`); make `process-decisions`' `fired` `#[arg(skip)]` as `process-waivers`' is, and drop `DecisionRecord`'s `#[default]` if nothing needs it
+- [x] Drop the leftover `show_untracked_content(true)` in `diff_cross_spec.rs` if `include_untracked` alone surfaces untracked paths (test it)
+- [x] Fix `main.rs`'s `append-inbox` help (no dedup), and `dashboard.rs`'s misattached doc comment and `render_callouts` doc (it renders the Inbox line)
+- [x] Share the `dispositions:` frontmatter block and the disposition suffix rendering between `write-review` and `write-analysis`
+- [x] Add an MCP call-and-assert test for `process-decisions`, and schema round-trip tests pinning the kebab-case wire names of `Dispositions`, `DecisionRef`, `ProcessDecisionsArgs`/`Result`, `AnalysisFinding`, and `ReviewObservation`'s new fields
 
 - **Done when**: no 058 item is dead or documented as doing what it does not, the new tests pass, and `cargo test --release --locked` and `clippy -D warnings` pass
 

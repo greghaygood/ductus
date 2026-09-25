@@ -86,9 +86,6 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
 // printing: user-facing rendering stays with the host (§runtime-boundary).
 // ---------------------------------------------------------------------------
 
-/// Render the full pipeline view. Blocks are joined by blank lines; the
-/// references readout is omitted entirely when no spec declares
-/// references (a single-service adopter sees no change).
 /// What the pipeline view is rendered from, beside the session target.
 struct View<'a> {
     specs: &'a [DashboardSpec],
@@ -98,6 +95,9 @@ struct View<'a> {
     inbox: &'a InboxStanding,
 }
 
+/// Render the full pipeline view. Blocks are joined by blank lines; the
+/// references readout is omitted entirely when no spec declares
+/// references (a single-service adopter sees no change).
 fn render_markdown(
     repo: &Path,
     view: &View<'_>,
@@ -196,7 +196,8 @@ fn render_table(
 }
 
 /// Counts per status plus the conditional callouts (blocked, recovery,
-/// tags, disabled rule files), one line each. `config_name` is the
+/// tags, disabled rule files), one line each, closed by the standing inbox
+/// line, which renders on every run (spec 058). `config_name` is the
 /// repo-relative resolved config file, rendered in the disabled-rule-files
 /// provenance tag (spec 042: `.ductus/config.toml`, or the legacy root
 /// `.govern.toml` pre-migration).

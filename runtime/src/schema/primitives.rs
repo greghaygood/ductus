@@ -150,14 +150,6 @@ pub struct Dispositions {
     pub undispositioned: u32,
 }
 
-impl Dispositions {
-    /// Every finding the map accounts for.
-    #[must_use]
-    pub fn total(&self) -> u32 {
-        self.fixed + self.routed + self.discarded + self.undispositioned
-    }
-}
-
 /// What a run did with one finding (spec 058).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -482,19 +474,18 @@ pub struct ProcessWaiversResult {
 
 /// The audit record whose `decisions:` list a call reads (spec 058).
 #[derive(
-    Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::ValueEnum,
+    Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::ValueEnum,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum DecisionRecord {
     /// `review.md` — decisions on review observations.
-    #[default]
     Review,
     /// `analysis.md` — decisions on analyze findings.
     Analysis,
 }
 
 /// Args for `process-decisions`.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProcessDecisionsArgs {
     /// Feature directory whose record carries the `decisions:` list.
@@ -506,9 +497,10 @@ pub struct ProcessDecisionsArgs {
     pub record: DecisionRecord,
     /// This run's finding keys — `{family} — {message}` for analyze, the
     /// observation's rendered line (or the stored key the host matched it to)
-    /// for review.
+    /// for review. MCP only, as `process-waivers`' `fired` is: the keys come
+    /// from the host's passes, which the CLI surface has no way to run.
     #[serde(default)]
-    #[arg(long = "fired")]
+    #[arg(skip)]
     pub fired: Vec<String>,
     /// The run did not evaluate every source — a review with skipped passes,
     /// or an analysis with unexamined targets. A non-firing decision is then
@@ -716,8 +708,10 @@ pub struct WriteReviewArgs {
     /// Who made this run's new decisions — `git config user.email`, as
     /// `waived-by` is. Required when any observation is newly routed or
     /// discarded; a stored decision nobody can attribute is not auditable.
+    /// Not a CLI flag: `observations` is not one either, so a CLI call can
+    /// make no decision to attribute.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[arg(skip)]
     pub decided_by: Option<String>,
     /// How many of this run's in-scope files the five passes actually read.
     ///
@@ -921,9 +915,11 @@ pub struct WriteAnalysisArgs {
     #[arg(skip)]
     pub expired_decisions: Vec<DecisionRef>,
     /// Who made this run's new decisions — `git config user.email`. Required
-    /// when any live finding is newly routed or discarded.
+    /// when any live finding is newly routed or discarded. Not a CLI flag:
+    /// `findings` is not one either, so a CLI call can make no decision to
+    /// attribute.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[arg(skip)]
     pub decided_by: Option<String>,
 }
 
@@ -5815,6 +5811,94 @@ mod tests {
         assert!(rv.get("deduped").is_none());
         assert_eq!(rv["item-count"], 3);
         assert_eq!(round_trip(&result), result);
+    }
+
+    /// The spec-058 shapes on the wire: every field name is kebab-case, and
+    /// each type round-trips. The commands and the data model name these
+    /// fields, so a rename here is a contract change the tests must see.
+    #[test]
+    fn disposition_shapes_round_trip_with_their_wire_names() {
+        use super::{
+            AnalysisFinding, AnalysisTier, DecisionOutcome, DecisionRecord, DecisionRef,
+            Disposition, DispositionOutcome, Dispositions, ProcessDecisionsArgs,
+            ProcessDecisionsResult, ReviewObservation,
+        };
+        let counts = Dispositions {
+            fixed: 1,
+            routed: 2,
+            discarded: 3,
+            undispositioned: 4,
+        };
+        let v = serde_json::to_value(counts).unwrap();
+        assert_eq!(v["undispositioned"], 4);
+        assert_eq!(round_trip(&counts), counts);
+
+        let decision = DecisionRef {
+            key: "grounding — m".into(),
+            outcome: DecisionOutcome::Routed,
+            target: Some("specs/001-x/tasks.md".into()),
+            reason: None,
+        };
+        let v = serde_json::to_value(&decision).unwrap();
+        assert_eq!(v["outcome"], "routed");
+        assert!(v.get("reason").is_none());
+        assert_eq!(round_trip(&decision), decision);
+
+        let args = ProcessDecisionsArgs {
+            feature: "001-x".into(),
+            record: DecisionRecord::Analysis,
+            fired: vec!["grounding — m".into()],
+            restricted: true,
+        };
+        let v = serde_json::to_value(&args).unwrap();
+        assert_eq!(v["record"], "analysis");
+        assert_eq!(v["restricted"], true);
+        assert_eq!(round_trip(&args), args);
+
+        let result = ProcessDecisionsResult {
+            matched: vec![decision.clone()],
+            expired: Vec::new(),
+            retained: Vec::new(),
+            notices: vec!["n".into()],
+        };
+        let v = serde_json::to_value(&result).unwrap();
+        for key in ["matched", "expired", "retained", "notices"] {
+            assert!(v.get(key).is_some(), "{key}");
+        }
+        assert_eq!(round_trip(&result), result);
+
+        let finding = AnalysisFinding {
+            tier: AnalysisTier::HardFail,
+            family: "grounding".into(),
+            message: "m".into(),
+            path: "spec.md".into(),
+            live: false,
+            disposition: Disposition {
+                outcome: DispositionOutcome::Fixed,
+                target: None,
+                reason: None,
+            },
+        };
+        let v = serde_json::to_value(&finding).unwrap();
+        assert_eq!(v["tier"], "hard-fail");
+        assert_eq!(v["live"], false);
+        assert_eq!(v["disposition"]["outcome"], "fixed");
+        assert_eq!(round_trip(&finding), finding);
+
+        let observation = ReviewObservation {
+            text: "perf: slow".into(),
+            path: "a.rs".into(),
+            disposition: Disposition {
+                outcome: DispositionOutcome::Discarded,
+                target: None,
+                reason: Some("noise".into()),
+            },
+            decision_key: Some("perf: slow — `a.rs`".into()),
+        };
+        let v = serde_json::to_value(&observation).unwrap();
+        assert_eq!(v["decision-key"], "perf: slow — `a.rs`");
+        assert_eq!(v["disposition"]["outcome"], "discarded");
+        assert_eq!(round_trip(&observation), observation);
     }
 
     #[test]

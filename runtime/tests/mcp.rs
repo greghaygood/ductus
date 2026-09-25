@@ -588,6 +588,58 @@ async fn process_waivers_applies_via_mcp() {
     assert!(obj["expired"].as_array().unwrap().is_empty());
 }
 
+/// `process-decisions` answers over MCP with the kebab-case wire names the
+/// commands read: `record`, `fired`, `restricted` in, and `matched` /
+/// `expired` / `retained` / `notices` out, each decision carrying its `key`,
+/// `outcome`, and companion (spec 058).
+#[tokio::test]
+async fn process_decisions_classifies_via_mcp() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("specs/001-x");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# x\n",
+    )
+    .unwrap();
+    fs::write(
+        dir.join("analysis.md"),
+        "---\nspec: 001-x\nlast-run: 2026-09-25T00:00:00Z\ndecisions:\n  \
+         - key: \"grounding — cites a missing path\"\n    outcome: routed\n    \
+         target: specs/001-x/tasks.md\n    decided-at: 2026-09-25T00:00:00Z\n    \
+         decided-by: dev@example.com\n  \
+         - key: \"applicable-rules — BE-AUTHN-001 does not fire\"\n    outcome: discarded\n    \
+         reason: cited for a future endpoint\n    decided-at: 2026-09-25T00:00:00Z\n    \
+         decided-by: dev@example.com\n---\n\n# Analysis — 001-x\n",
+    )
+    .unwrap();
+
+    let client = start_pair(tmp.path().to_path_buf()).await;
+    let result = call_tool(
+        &client,
+        "process-decisions",
+        json!({
+            "feature": "001-x",
+            "record": "analysis",
+            "fired": ["grounding — cites a missing path"],
+            "restricted": false,
+        }),
+    )
+    .await;
+    let obj = structured_object(&result);
+    let matched = obj["matched"].as_array().unwrap();
+    assert_eq!(matched.len(), 1);
+    assert_eq!(matched[0]["key"], "grounding — cites a missing path");
+    assert_eq!(matched[0]["outcome"], "routed");
+    assert_eq!(matched[0]["target"], "specs/001-x/tasks.md");
+    let expired = obj["expired"].as_array().unwrap();
+    assert_eq!(expired.len(), 1);
+    assert_eq!(expired[0]["outcome"], "discarded");
+    assert_eq!(expired[0]["reason"], "cited for a future endpoint");
+    assert!(obj["retained"].as_array().unwrap().is_empty());
+    assert!(!obj["notices"].as_array().unwrap().is_empty());
+}
+
 #[tokio::test]
 async fn compute_review_scope_returns_structured_scope_via_mcp() {
     use git2::{IndexAddOption, Repository, Signature};

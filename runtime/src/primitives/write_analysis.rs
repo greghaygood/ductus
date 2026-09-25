@@ -406,13 +406,7 @@ fn render_analysis(
         }
     }
     let _ = writeln!(out, "blocking: {blocking}");
-    // Always written, all four counts: a record without the map predates
-    // dispositions, and the gate reads that absence as a record to re-run.
-    let _ = writeln!(out, "dispositions:");
-    let _ = writeln!(out, "  fixed: {}", counts.fixed);
-    let _ = writeln!(out, "  routed: {}", counts.routed);
-    let _ = writeln!(out, "  discarded: {}", counts.discarded);
-    let _ = writeln!(out, "  undispositioned: {}", counts.undispositioned);
+    decisions::render_dispositions(&mut out, counts);
     decisions::render(&mut out, decisions_list);
     out.push_str("---\n\n");
 
@@ -492,18 +486,7 @@ fn render_list(findings: &[&AnalysisFinding]) -> String {
     findings
         .iter()
         .map(|finding| {
-            let disposition = &finding.disposition;
-            let companion = |value: &Option<String>| plain(value.as_deref().unwrap_or(""));
-            let outcome = match disposition.outcome {
-                DispositionOutcome::Fixed => "**fixed**".to_string(),
-                DispositionOutcome::Routed => {
-                    format!("**routed** to `{}`", companion(&disposition.target))
-                }
-                DispositionOutcome::Discarded => {
-                    format!("**discarded**: {}", companion(&disposition.reason))
-                }
-                DispositionOutcome::Undispositioned => "**undispositioned**".to_string(),
-            };
+            let outcome = decisions::disposition_suffix(&finding.disposition, plain);
             let path = plain(&finding.path);
             let location = if path.is_empty() {
                 String::new()

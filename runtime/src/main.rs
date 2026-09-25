@@ -143,7 +143,7 @@ enum Command {
     AppendQuestion(AppendQuestionArgs),
     /// Append a numbered task block to a feature's tasks.md (atomic rewrite).
     AppendTask(AppendTaskArgs),
-    /// Append one bullet to {specs-root}/inbox.md (atomic, optional dedup-by-prefix).
+    /// Append one bullet to {specs-root}/inbox.md (atomic) — the surface behind /log.
     AppendInbox(AppendInboxArgs),
     /// Remove the first bullet matching `item` from {specs-root}/inbox.md (atomic).
     RemoveInboxItem(RemoveInboxItemArgs),
