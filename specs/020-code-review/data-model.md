@@ -153,7 +153,7 @@ Each finding under MUST/SHOULD/Low-confidence sections:
 - **Suggested fix**: <code block or prose>
 ```
 
-Findings under **Waived findings** include an additional `**Waived**: <reason from spec frontmatter>` field.
+Findings under **Waived findings** include an additional `**Waived**: <reason from the waiver in review.md's frontmatter>` field.
 
 ### Idempotency invariant
 

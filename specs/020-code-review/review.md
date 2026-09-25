@@ -1,41 +1,39 @@
 ---
 spec: 020-code-review
-last-run: 2026-09-16T12:36:08Z
-reviewed-against: 606aa1cdd26b42c48a9b5290eaf120f6d071c6c8
-diff-base: 1f5539dbc98706aa8811c10cc484d59901eea9fa
+last-run: 2026-09-25T18:23:57Z
+reviewed-against: cbc1f042b85cb720d31f1c86139774a70719a946
+diff-base: 2c488bf7d3d45e4177e5ad005d32d04fb88d646c
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
-examined: 11
-scope: 18
+examined: 2
+scope: 15
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 11b5d869a67084c3bc55f363f5ed899afec0ae720fd6ea0d6ab6ecccdfa403b6
+  data-model.md: a3f182639b7be06ee9bcf4d38b8cf5021adbf14a07ee91c1425d46613abb35cf
   scenarios/review-flag-parsing-is-specified.md: 9f1a3dd82bab2b9622808c31dd2bb00f0c6f403effeb8bb496bb4b329496e9c7
   scenarios/waiver-expiry.md: a06cf9e1d638fefd25d2edcf9d38a7ad56fa0b7e74ab048e4e77ce2878df77ca
 blocking: false
+dispositions:
+  fixed: 2
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 020-code-review
 
 ## Summary
 
-Re-review for spec 057's record relocation, which reopened this spec to discharge its `cross-spec-impact:` entry. Five passes over the resolved scope; 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers (`process-waivers` returned empty in every bucket).
+Re-review for spec 058's cross-spec discharge (058 task 25). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. Two observations, both fixed in the run.
 
-**This is the second recording of this review**, and the reason is worth stating rather than hiding behind a fresh timestamp. The first was recorded at `267070e4`; `/ductus:analyze`'s `resolve-anchor` step then found three dead `§` references introduced by this same task's edits — `§Frontmatter Schema` is a constitution *subsection*, which carries no marker and is not addressable, and `§Review state drift` named a section of `framework/commands/analyze.md` rather than the constitution the notation resolves against. Fixing them touched `data-model.md`, a durable contract, so `check-review-gate` answered `review-stale` naming that path and the record had to be re-taken against `606aa1cd`. The gate behaved exactly as designed; the lesson is ordering — analyze's anchor check reads artifacts the review had already digested, so running it first would have saved a pass.
+**What changed.** 058 removed `captured-issues` from the review record and replaced it with a `dispositions:` map and a `decisions:` list. `data-model.md`'s `review.md` table, YAML example, and body-sections table now match `write-review`'s render order: `dispositions` after `blocking`, `decisions` after `waivers`, no captured-issues section, and an Observations row that renders each observation beside its disposition. `spec.md` gains a 058 signpost after the merge paragraph (now past tense), and the 057 signpost notes the replacement.
 
-**Three defects were found by the quality pass and fixed in this pass rather than recorded as findings**, so they are absent from the counts above by being gone at `reviewed-against` rather than by never having existed. All three were in `framework/templates/ci/adopter-generators.yml`'s audit-record gate — the surface AC5 names as the third gate mechanism, rewritten by 057 — and all three were the same shape that step was rewritten to remove: a record with no `blocking` field read as `blocking: false`; `last-run: NULL` or `Null` read as a real timestamp; `blocking: True` read as not-blocking. Each exits 0 silently, in the one check whose whole subject is hand-edited frontmatter, which is precisely how such a record arises. `blocking` is **required** on both records by the constitution's Frontmatter Schema and the gate turns on it, so absent is a state the step could not examine and not a clean one — `QUAL-CLAIM-001`. Proven by probe in **both** directions rather than by reading: four fixtures run against the pre-fix step exit 0 with zero errors on all three, against the fixed step exit 1 naming the record, and the clean control still exits 0. Fixed at `267070e4`. Nothing in `cargo test`, `run-all.sh` or the markdown lint covers this template, so the probe recorded in that commit message is the only evidence there is, and it is stated rather than implied.
+**Observations, fixed.** (1) §Embedded artifacts said the pre-done gate reads nine things; 058 added two, so it reads eleven (checked against `ReviewGateBlock` in `runtime/src/schema/primitives.rs`). (2) `data-model.md` §Finding record said a waived finding's reason comes from spec frontmatter; waivers have lived in `review.md`'s frontmatter since 057. Both were one-phrase chores, confirmed before writing.
 
-**What else changed.** 057 merged the run record's two homes into `review.md`, renaming `reviewed-at` to `last-run`, and replaced this spec's CI predicate. AC4, AC5, AC8 and AC15 are annotated in place rather than restated; a signpost at the top records both halves and links back to 057. AC15's `examined` / `scope` half survives intact and its **enforcement** half is gone with audit Family 31 — recorded as a real loss rather than smoothed over, with the observation that the family could not have carried the claim far anyway, since one `/ductus:review` call wrote both sides from the same values.
+**Scope.** `diff-base` 2c488bf7, 15 in scope, examined **2**: this spec's `spec.md` and `data-model.md`, both read in full. The thirteen unread: `scenarios/waiver-expiry.md` is unchanged and names no 058 field; 057's `spec.md` and `data-model.md` are reviewed under 057; 058's `tasks.md` is 058's; the rest are this spec's historical Affected Files, unchanged since the diff base. The record shapes were checked against `write_review.rs`'s frontmatter render and `decisions::render`, and against the constitution's Audit records table.
 
-**`data-model.md` had two tables for one record, and that is the drift this spec's own AC15 contradicted.** The `review:` block's table was missing `examined`, `scope` and `reviewed-digest`; `review.md`'s was missing `captured-issues`, `examined` and `scope`. They collapse to one table, re-derived field-by-field from `write_review.rs`'s render order rather than from either prior table — including `reviewed-unreadable`, which neither had. The body-sections table gained `Captured issues`, `Observations` and `Unexamined governance`, stale since 047, 022 and 055 respectively; that is outside 057's scope and was fixed here because the reopen was already spent and the document claims to be authoritative.
-
-**One claim in `plan.md` was written wrong and corrected before commit**, recorded because the correction is the useful half. Its retired `awk-parsed YAML … replaced by a deterministic runtime check in v2` limitation was first replaced with *the step stays inline because an adopter's CI has no guaranteed runtime* — false: the `derive` step two above it invokes `.ductus/bin/ductus` directly. The grounded reason is that no primitive answers this step's question. `check-review-gate` gates the `in-progress → done` transition and returns early on a spec already at `done`, which is every spec this step examines, so aiming it here would report `passed` over the whole corpus; `dashboard`'s per-spec payload carries no record fields either. Gate and step are complements, not one wrapping the other. Both were checked against the source before the sentence was rewritten.
-
-**Scope.** `diff-base` 1f5539db, 18 in scope (up from 16 as this session's own commits joined the window). Examined **11 of 18**, and both halves of that number are qualified. Two of the eleven are this session's own review reports — `specs/020-code-review/review.md` and `specs/047-analyze-findings-durability/review.md` — read because they were written here, which is a weaker kind of read than a pass over someone else's file and is counted anyway rather than quietly dropped. The seven unread are named: read only in the regions this review's claims assert on are `framework/commands/implement.md` (the pre-done gate, step 5 in full — its nine checks were confirmed consistent with the relocation), `framework/commands/review.md` (922 lines; the Instructions, Flags, Scope Boundaries and markdown-only steps 1–5), `framework/commands/analyze.md` (402; §Review state drift and the Instructions), and `framework/constitution.md` (834; the Frontmatter Schema and Validation Severity subsections). Not read at all: `README.md`, and `.claude/commands/ductus/review.md`, the generated mirror of a source that was not fully read either. And **`framework/templates/spec/spec-and-plan.md` does not exist** — 023's lightweight-track sunset deleted it; it stays in scope because this spec's plan lists it, and is named here as absent rather than silently dropped, as the previous review also did. Its `plan.md` row now says so.
-
-**Passes.** Security had no subject beyond the CI template's embedded `python3`, which takes the spec root through an env var rather than shell interpolation (commented as deliberate) and reads only files in its own checkout. Reuse: the template's hand-rolled `frontmatter()` reader is a fourth frontmatter parser in a repo whose runtime parses frontmatter for a living, which AGENTS.md §Design Principles names — assessed and **not** a finding, on the grounding above that no primitive exposes this step's subject. Efficiency: one `listdir` and two small reads per spec, linear. Simplicity: the gate's branches map one-to-one onto the three record states and none is redundant.
+**Passes.** Security, reuse, and efficiency had no subject: prose in one spec and its data model. Quality: each corrected row was checked against the code that renders it. Simplicity: `data-model.md` points at 058's data model for the two new fields' shapes rather than restating them.
 
 ## MUST violations (blocking)
 
@@ -53,13 +51,10 @@ Re-review for spec 057's record relocation, which reopened this spec to discharg
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- convention: the embedded-artifacts note counted nine gate checks; 058 added two — `specs/020-code-review/spec.md` — **fixed**
+- convention: a waived finding's reason was said to come from spec frontmatter, where waivers have not lived since 057 — `specs/020-code-review/data-model.md` — **fixed**
 
 ## Skipped passes
 

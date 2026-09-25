@@ -305,7 +305,7 @@ authority, and `30e1fbaa` holds the original bytes.
 - **`framework/commands/implement.md`** — the pre-`done` review gate. The
   `in-progress` → `done` transition halts while the review record's `last-run`
   is unset or its `blocking` is `true`. The gate has grown since — it now reads
-  nine things in order, the analyze record among them — and its live shape is
+  eleven things in order, the analyze record among them — and its live shape is
   the command source's.
 - **`framework/commands/analyze.md`** — the review-drift check, which reports a
   `done` spec whose review record is missing or blocking, and reverts it under
