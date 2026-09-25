@@ -452,8 +452,10 @@ Writes `specs/{feature}/analysis.md` — the run's record in that file's frontma
 > `dispositions:` map, counting a live finding the call does not itemize as
 > undispositioned, and stores each routed or discarded finding under
 > `decisions:`, keyed `{family} — {message}`. It refuses a discard on a
-> hard-fail or blocking finding, and requires `decided-by` when a decision is
-> new. [058's data model](../058-findings-route-at-discovery/data-model.md) records the shapes.
+> hard-fail or blocking finding — so each finding's `tier` is required — and
+> requires `decided-by` when a decision is new. A finding may carry the
+> `decision-key` of the stored decision the host matched it to, since many
+> analyze messages are host-worded; absent, its key is `{family} — {message}`. [058's data model](../058-findings-route-at-discovery/data-model.md) records the shapes.
 
 **Two values are derived, never accepted**, for the same reason: a field a caller can contradict is a field that will eventually be contradicted.
 
@@ -910,7 +912,7 @@ Result:
 { "path": "specs/inbox.md", "created": false, "item-count": 4 }
 ```
 
-Appends `- [ ] {text}` (the checkbox inbox form the inbox template and constitution §bug-handling document) atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). Bullet scanning (dedup and counting) is comment/fence-aware — a `-` line inside the template's `<!-- Rules: … -->` guidance is not an item. `item-count` reports the total inbox bullets after the call. The `dedup-prefix` argument and `deduped` result it once carried were removed by 058: their callers were `/ductus:implement`'s auto-capture and the adoption security audit, both gone, and `/ductus:log` never passed it. A caller that still passes the argument has it ignored, since no args struct denies unknown fields. Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
+Appends `- [ ] {text}` (the checkbox inbox form the inbox template and constitution §bug-handling document) atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). Bullet scanning (dedup and counting) is comment/fence-aware — a `-` line inside the template's `<!-- Rules: … -->` guidance is not an item. `item-count` reports the total inbox bullets after the call. The `dedup-prefix` argument and `deduped` result it once carried were removed by 058: their callers were `/ductus:implement`'s auto-capture and the adoption security audit, both gone, and `/ductus:log` never passed it. A caller that still passes the argument is refused on MCP and the CLI, which reject an unknown argument by name; only the exec interpreter, which binds from a wider context, ignores it. Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
 
 ### `check-orphaned-references` — adopter-owned files pointing at paths that are gone
 
@@ -1083,6 +1085,24 @@ Both are written to `review.md`'s frontmatter — and, until spec 057 left the r
 
 A record predating the field carries neither key, so there is no denominator to judge and the family stays silent. That exemption is bounded and self-correcting — the next review of that spec writes a `scope` — rather than a per-spec grandfather date.
 
+### `process-decisions` — classify stored decisions before dispositions
+
+Added by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md). Args:
+
+```json
+{ "feature": "042-widget", "record": "analysis",
+  "fired": ["grounding — plan.md cites a missing path"], "restricted": false }
+```
+
+Result:
+
+```json
+{ "matched": [{ "key": "grounding — plan.md cites a missing path", "outcome": "routed", "target": "specs/042-widget/tasks.md" }],
+  "expired": [], "retained": [], "notices": [] }
+```
+
+Classifies the routed and discarded decisions in `review.md`'s or `analysis.md`'s `decisions:` list against this run's finding keys, before the host proposes any disposition, so a settled finding is counted under its stored outcome rather than asked about again — the way `process-waivers` classifies waivers ahead of `write-review`. **matched**: the key fired. **expired**: it did not, on an unrestricted run, and the writer drops it — for a routed finding, the moment the routed work landed. **retained**: it did not, but `restricted` says the run did not evaluate every source. A malformed entry or a repeated key produces a notice and is never pruned. `fired` is MCP-only, as `process-waivers`' is, and each fired key is compared in the flattened single-line form the writers store. Read-only; a `decisions:` list that does not parse is an error, never an empty result. The shapes are recorded in [058's data model](../058-findings-route-at-discovery/data-model.md).
+
 ### `remove-inbox-item` — remove one bullet from the inbox
 
 Args:
@@ -1164,7 +1184,7 @@ Result:
 }
 ```
 
-Nine families, mirroring `/ductus:analyze`'s markdown-only reference exactly (severity tiers included — the primitive mechanizes the documented policy): `artifact-completeness` (blocking — `plan.md`/`tasks.md` required at `planned`/`in-progress`/`done`; `data-model.md` never required), `task-consistency` (blocking, when `tasks.md` exists — strictly-increasing numbering, `Done when` presence), `scenario-consistency` (advisory — every `scenarios/*.md` has a referencing task, skipped for `done` specs and satisfied by §tasks-phase pruning evidence: zero task sections or non-contiguous numbering), `review-state-drift` (blocking, three conditions — a `done` spec with `review.last-run` unset, with `review.blocking: true`, or with a non-zero `review.should-violations`, the third added by 045's task 15 because §implement-phase forbids reaching `done` over an outstanding SHOULD and the count is what states whether one is outstanding; a `done` spec with no `review.md` at all is grandfathered — keyed on the artifact since spec 057, because keyed on the block it would exempt every spec in a migrated corpus), `scenario-open-questions` (blocking at `done`, advisory otherwise), `link-adjacent-drift` (advisory — prose asserting an open state that its own sibling link's target contradicts), `criterion-path-existence` (advisory — a filesystem path named in a `done` spec's acceptance criterion that no longer resolves), `criterion-labels` (advisory — a duplicate `AC{n}` within one spec, a `next-criterion` that no longer exceeds the body, and an unlabelled criterion in a spec that carries a counter), and `analyze-state-drift` (blocking — `review-state-drift`'s counterpart, added by spec 047: a `done` spec with `analyze.last-run` unset or `analyze.blocking: true`, grandfathered for a record predating it. Advisory analyze findings are deliberately **not** gated here, because that tier is made of checks introduced advisory with their own published promotion criteria and gating on them would promote all of them at once). `--all` iteration stays with the caller. The command-frontmatter-completeness family stays in the markdown-only reference (it reads the host's command directory, which the runtime does not own).
+Ten families, mirroring `/ductus:analyze`'s markdown-only reference exactly (severity tiers included — the primitive mechanizes the documented policy): `artifact-completeness` (blocking — `plan.md`/`tasks.md` required at `planned`/`in-progress`/`done`; `data-model.md` never required), `task-consistency` (blocking, when `tasks.md` exists — strictly-increasing numbering, `Done when` presence), `scenario-consistency` (advisory — every `scenarios/*.md` has a referencing task, skipped for `done` specs and satisfied by §tasks-phase pruning evidence: zero task sections or non-contiguous numbering), `review-state-drift` (blocking, three conditions — a `done` spec with `review.last-run` unset, with `review.blocking: true`, or with a non-zero `review.should-violations`, the third added by 045's task 15 because §implement-phase forbids reaching `done` over an outstanding SHOULD and the count is what states whether one is outstanding; a `done` spec with no `review.md` at all is grandfathered — keyed on the artifact since spec 057, because keyed on the block it would exempt every spec in a migrated corpus), `scenario-open-questions` (blocking at `done`, advisory otherwise), `link-adjacent-drift` (advisory — prose asserting an open state that its own sibling link's target contradicts), `criterion-path-existence` (advisory — a filesystem path named in a `done` spec's acceptance criterion that no longer resolves), `criterion-labels` (advisory — a duplicate `AC{n}` within one spec, a `next-criterion` that no longer exceeds the body, and an unlabelled criterion in a spec that carries a counter), and `analyze-state-drift` (blocking — `review-state-drift`'s counterpart, added by spec 047: a `done` spec with `analyze.last-run` unset or `analyze.blocking: true`, grandfathered for a record predating it. Advisory analyze findings are deliberately **not** gated here, because that tier is made of checks introduced advisory with their own published promotion criteria and gating on them would promote all of them at once), and `disposition-drift` (blocking — added by spec 058: a `done` spec whose `review.md` records undispositioned findings, silent for a record with no `dispositions:` map. `analysis.md` is not judged here: this family runs inside `/ductus:analyze`, whose own run is about to replace that record, so a finding read from it could never clear, and `/ductus:analyze` judges it from the record it writes instead). `--all` iteration stays with the caller. The command-frontmatter-completeness family stays in the markdown-only reference (it reads the host's command directory, which the runtime does not own).
 
 `scenario-consistency`'s **referencing-task rule is canonical for every surface that asks "does a task reference this scenario?"** A task references a scenario when the scenario's **slug** appears in the task's heading, in any subtask's text, or in its `Done when` clause. The match is on the slug, not on the `scenarios/{slug}.md` path: the path form is what `append-task`'s default body emits, and the wider slug match is what tolerates a hand-written task naming the scenario without it. A second surface applying a narrower rule disagrees asymmetrically — `/{project}:amend`'s reconcile pass would offer a task for a scenario this family already considers mapped, producing the duplicate its dedup exists to prevent — so a surface restating the rule (as the markdown-only path must, per §runtime-host-integration) states *this* rule. `mapped_scenario_produces_no_finding` and `bare_slug_reference_satisfies_the_mapping` cover both authoring forms, so a narrowing on the runtime side fails a test rather than shipping.
 
