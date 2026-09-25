@@ -156,7 +156,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 18. The adoption security audit
 
-- [ ] `framework/bootstrap/ductus-procedure.md`: remove §Writing findings to the inbox and §Deduplication; §Audit summary and §Security audit summary print each finding with its spec and point to `/{project}:analyze`
+- [x] `framework/bootstrap/ductus-procedure.md`: remove §Writing findings to the inbox and §Deduplication; §Audit summary and §Security audit summary print each finding with its spec and point to `/{project}:analyze`
 
 - **Done when**: the procedure writes no inbox item, and Family 21 still passes.
 

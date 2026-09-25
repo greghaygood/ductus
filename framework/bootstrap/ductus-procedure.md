@@ -172,7 +172,7 @@ The user reviews the result via `git diff` and commits or aborts via `git restor
 
 ## Security Audit (brownfield)
 
-Run a one-time security audit when the project newly receives a security rule file alongside existing feature specs. This is the brownfield-adoption hook described in `specs/008-security-rules/spec.md` — it routes findings through `specs/inbox.md` so the adopter can triage them via `/{project}:groom` at their own pace, rather than having every legacy spec immediately fail `/{project}:analyze`.
+Run a one-time security audit when the project newly receives a security rule file alongside existing feature specs. This is the brownfield-adoption hook described in `specs/008-security-rules/spec.md` — it reports each gap with the spec it belongs to and **writes nothing**, so the adopter sees every gap at adoption, and each one resurfaces as a finding to disposition when `/{project}:analyze` next runs on its spec, rather than every legacy spec failing at once.
 
 ### Trigger
 
@@ -181,7 +181,7 @@ Run the audit only when **both** conditions hold after the **Shared Files** mani
 1. At least one of `specs/rules/security-backend.md` or `specs/rules/security-frontend.md` was **newly created** by the manifest pass (the destination file did not exist before this run). A file that was merely updated or unchanged does not trigger the audit.
 2. The project contains at least one feature spec directory under `specs/`, in either of the two forms `.ductus/constitution.md` §numbering defines — sequential (`000-skeleton`) or branch-scoped (`1234.1-retry-budget`). Do **not** re-derive the digit convention here: §numbering states that the membership rule is defined in exactly one place and that a surface reading the spec corpus calls it rather than restating it, because a second copy is how the two forms drift apart. An earlier wording of this step said "zero-padded, three-digit prefix", which excluded every branch-scoped directory and, past 999, sequential ones too.
 
-If either condition fails, skip this section silently — no output, no finding, no inbox entry. This covers the two routine cases:
+If either condition fails, skip this section silently — no output, no finding. This covers the two routine cases:
 
 - **Greenfield adoption** — no feature spec directories exist under `specs/`, so the audit has nothing to scan against.
 - **Routine re-run** — the rule files were created on a prior run; the manifest pass reports them as "updated" or "unchanged" rather than "created".
@@ -206,25 +206,23 @@ For each rule that loaded successfully:
 
 Rules whose Verification trigger does not fire for any artifact produce no finding (the contextual-application property — silently inert when no spec exercises the rule's surface).
 
-### Writing findings to the inbox
+### Reporting findings
 
-Each finding is one line appended to `specs/inbox.md`:
+The audit writes no file. Each finding is reported as one line under the spec it belongs to:
 
 ```text
-- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}
+{Rule ID}: {affected artifact path} does not address — {one-line summary}
 ```
 
-The `{one-line summary}` describes the gap concretely (e.g., `does not name a memory-hard password hashing algorithm`, `does not specify an output encoding strategy`). Prefixing each line with the rule ID makes related findings group naturally during `/{project}:groom` and gives the adopter a stable handle for cross-referencing.
+The `{one-line summary}` describes the gap concretely (e.g., `does not name a memory-hard password hashing algorithm`, `does not specify an output encoding strategy`). Leading each line with the rule ID groups related findings and gives the adopter a stable handle for cross-referencing.
 
-### Deduplication
+**Nothing is written to `specs/inbox.md`.** The inbox holds the todos a person logs, and no command writes a finding there, because it is the one destination no gate reads (`.ductus/constitution.md` §brownfield-inbox, Finding dispositions). A finding here names its spec, and `/{project}:analyze` applies the same rule's Verification trigger to a spec whenever it runs, so the gap comes back — as a finding that run must fix, route, or discard — when the spec is next worked on. The accepted cost is that a legacy spec nobody touches is never re-checked; that is the brownfield stance of letting adoption spread through the areas being worked on. An adopter who wants a particular gap tracked sooner records it with `/{project}:log`.
 
-Before appending each finding, scan the existing `specs/inbox.md` (if it exists) for any line beginning with `- [ ] {Rule ID}: {affected artifact path}` — the prefix up to the first em-dash. If a matching line is already present, skip the new finding. This makes the audit safe to re-trigger after a user deletes and re-installs a rule file.
-
-Findings the user has already groomed (lines that have been removed or rewritten) are not re-emitted — once the adopter has triaged a finding, `ductus` does not resurrect it.
+Because nothing is written, re-triggering the audit — after deleting and re-installing a rule file — reports the same findings again and changes no file.
 
 ### Audit summary
 
-Track the count of newly appended findings (post-deduplication). The total is reported by **Post-Scaffolding Output**; when the count is zero, the audit-summary line is omitted entirely.
+Collect the findings by spec. **Post-Scaffolding Output** reports them; when there are none, the audit-summary block is omitted entirely.
 
 ## Hook Installation
 
@@ -300,6 +298,7 @@ The Hook Installation section above still runs and may set `core.hooksPath` rega
 - Fill in AGENTS.md content — that requires project-specific knowledge
 - Fill in system.md content — that requires architectural decisions
 - Make git commits — the user decides when to commit
+- Write findings to `specs/inbox.md` — the security audit reports its gaps and writes nothing; the inbox holds what a person logs
 - Run `/{project}:configure` — that happens after adoption, interactively
 - Delete an agent's adopted tree — manual cleanup
 
@@ -368,17 +367,21 @@ The advisory is omitted when no agent is `pinned-divergent` — adopters whose p
 
 ### Security audit summary
 
-If the **Security Audit (brownfield)** section ran and appended one or more new findings to `specs/inbox.md`, append this single line to the file summary — rendering the command in **the adopted agent's own invocation form**, per the §Derived values **Invocation** row, exactly as the next-steps list below does. The colon form here is the `claude-style` default; printing it to an Antigravity or OpenCode adopter names a command that does not exist on their agent:
+If the **Security Audit (brownfield)** section ran and produced one or more findings, append this block to the file summary — rendering each command in **the adopted agent's own invocation form**, per the §Derived values **Invocation** row, exactly as the next-steps list below does. The colon form here is the `claude-style` default; printing it to an Antigravity or OpenCode adopter names a command that does not exist on their agent:
 
-> {N} security audit items added to `specs/inbox.md`. Run `/{project}:groom` to triage.
+```text
+Security audit: {N} gap(s) in {M} existing spec(s) — nothing was written.
+  {NNN-feature}
+    {Rule ID}: {affected artifact path} does not address — {one-line summary}
+Each gap resurfaces when /{project}:analyze next runs on its spec. Run it on a spec to fix, route, or discard its gaps now, or /{project}:log one to track it.
+```
 
-Where `{N}` is the count of newly appended findings (after deduplication). Omit this line when:
+One `{NNN-feature}` group per spec with a finding, each listing every finding for that spec — no cap, because a truncated list reads as the complete one. Omit the block when:
 
 - The audit did not run (trigger conditions did not fire — greenfield run, or routine re-run with rule files already present), OR
-- The audit ran but every finding was already in the inbox (`N == 0`), OR
 - The audit ran but produced no findings (no rule's Verification trigger fired against any existing artifact).
 
-This summary complements `/{project}:groom`, which is the user's path to working through the inbox at their own pace.
+This summary hands off to `/{project}:analyze`, which dispositions each gap in the run that finds it.
 
 ### First run (no existing `specs/` directory)
 
