@@ -192,8 +192,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 23. Restart onto the new runtime
 
-- [ ] `cargo build --release`, then restart the session so the MCP server and the slash commands load the new binary and the regenerated mirrors
-- [ ] Confirm through `mcp__ductus__dashboard` that the result carries `inbox-standing`
+- [x] `cargo build --release`, then restart the session so the MCP server and the slash commands load the new binary and the regenerated mirrors
+- [x] Confirm through `mcp__ductus__dashboard` that the result carries `inbox-standing`
 
 - **Done when**: an MCP call returns a shape only the new runtime produces.
 
