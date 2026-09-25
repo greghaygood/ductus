@@ -93,7 +93,9 @@ supersets: `blocking` and `waivers` existed only in `spec.md`'s block, while
 `diff-base`, `captured-issues`, and `skipped-passes` existed only in
 `review.md`. The relocated record is the union of both sides, with the
 timestamp keyed by meaning rather than name — `last-run` and `reviewed-at` were
-always the same instant spelled two ways.
+always the same instant spelled two ways. 058 has since replaced
+`captured-issues` with a `dispositions:` map, once the inbox stopped being a
+destination.
 
 **A reconciliation check becomes unnecessary.** With one copy of the record,
 `check-review-agreement` and the audit family over it have no subject left to
