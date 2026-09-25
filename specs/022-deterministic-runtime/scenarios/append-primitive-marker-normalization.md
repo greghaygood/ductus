@@ -22,7 +22,7 @@ Each append primitive strips **one** leading list marker from caller-supplied bu
 
 **One marker, never more.** The observed failure is a single doubling. Looping would eat legitimate content from text that genuinely begins with a dash, trading a visible defect for a silent one.
 
-**Applied before dedup, not after.** In `append-question` and `append-inbox` the normalized form is what gets compared *and* what gets written, so an entry can never be stored in one form and matched in another. `append-inbox`'s `dedup-prefix` is normalized the same way, which is what makes a marker-bearing prefix match the bullets it names.
+**Applied before dedup, not after.** In `append-question` and `append-inbox` the normalized form is what gets compared *and* what gets written, so an entry can never be stored in one form and matched in another. `append-inbox`'s `dedup-prefix` is normalized the same way, which is what makes a marker-bearing prefix match the bullets it names. **Changed by 058**: `append-inbox` no longer takes `dedup-prefix`, whose only callers 058 removed, so this rule now governs `append-question` alone; `append-inbox` still strips a caller-supplied marker from `text`.
 
 **The contract is documented at the argument.** Each affected parameter's schema description states that the primitive renders the marker and that a caller-supplied one is stripped — the argument description is where a caller looks, and an undocumented normalization is its own surprise.
 

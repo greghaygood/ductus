@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [021-runtime-boundary]
 next-criterion: 33
 ---
@@ -40,7 +40,8 @@ Spec [021-runtime-boundary](../021-runtime-boundary/spec.md) made the runtime co
 > `diff-cross-spec` compute no inbox window, and `inbox-standing` moved from
 > `write-review` and `diff-cross-spec` to `dashboard`. `check-review-gate`
 > gained two checks after the analyze ones: a record with no `dispositions:`
-> map, then a record counting undispositioned findings. AC26 and AC31 are
+> map, then a record counting undispositioned findings. `append-inbox` lost its
+> `dedup-prefix` guard and `deduped` result, whose only callers 058 removed. AC26 and AC31 are
 > annotated; `data-model.md` records the changed shapes; three scenarios are
 > marked superseded (`review-observations-write-through`, `the-inbox-row`,
 > `the-analyze-record-states-what-it-captured`), and the scenarios that named

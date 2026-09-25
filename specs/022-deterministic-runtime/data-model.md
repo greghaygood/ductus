@@ -901,16 +901,16 @@ Resolved fork (scenario open question): a separate primitive rather than a mode 
 Args:
 
 ```json
-{ "text": "security: token logged in plaintext — src/auth.rs", "dedup-prefix": "security: token logged" }
+{ "text": "security: token logged in plaintext — src/auth.rs" }
 ```
 
 Result:
 
 ```json
-{ "path": "specs/inbox.md", "created": false, "deduped": false, "item-count": 4 }
+{ "path": "specs/inbox.md", "created": false, "item-count": 4 }
 ```
 
-Appends `- [ ] {text}` (the checkbox inbox form the inbox template and constitution §bug-handling document) atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). Bullet scanning (dedup and counting) is comment/fence-aware — a `-` line inside the template's `<!-- Rules: … -->` guidance is not an item. With `dedup-prefix` supplied, an existing bullet whose text starts with the prefix (checkbox bullets included) suppresses the write and the result reports `deduped: true`. `item-count` reports the total inbox bullets after the call (the pre-existing total on a `deduped` no-op). Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
+Appends `- [ ] {text}` (the checkbox inbox form the inbox template and constitution §bug-handling document) atomically to `{specs-root}/inbox.md`, creating the file when missing (from `framework/templates/project/inbox.md` when that file exists on disk — the framework source repo — else a bare `# Inbox` heading). Bullet scanning (dedup and counting) is comment/fence-aware — a `-` line inside the template's `<!-- Rules: … -->` guidance is not an item. `item-count` reports the total inbox bullets after the call. The `dedup-prefix` argument and `deduped` result it once carried were removed by 058: their callers were `/ductus:implement`'s auto-capture and the adoption security audit, both gone, and `/ductus:log` never passed it. A caller that still passes the argument has it ignored, since no args struct denies unknown fields. Embedded newlines in `text` are rejected as an operational error (structure injection), matching `append-task`'s single-line rule.
 
 ### `check-orphaned-references` — adopter-owned files pointing at paths that are gone
 
