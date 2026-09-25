@@ -229,8 +229,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 28. Final sweep
 
-- [ ] Run AC23's repo-wide search for `captured during` bullets, `inbox-additions`, a `Captured issues` section, and an `append-inbox` call outside `/ductus:log`; resolve every hit outside the allowed set
-- [ ] Walk AC1–AC33 against the tree and mark each verified
+- [x] Run AC23's repo-wide search for `captured during` bullets, `inbox-additions`, a `Captured issues` section, and an `append-inbox` call outside `/ductus:log`; resolve every hit outside the allowed set
+- [x] Walk AC1–AC33 against the tree and mark each verified
 
 - **Done when**: the search returns only allowed hits, and every criterion is checked.
 
