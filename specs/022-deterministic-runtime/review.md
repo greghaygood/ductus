@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-25T18:51:53Z
-reviewed-against: e78f93f5dac90ab49decd71e1f7189a39ba07ee5
-diff-base: db1dd99970923e8082656c37b937c37d240f79e6
+last-run: 2026-09-25T19:13:11Z
+reviewed-against: f8c056facbe03c19d614b5faa6bb4acff4f5318b
+diff-base: c025607b2963aaeccea4a0f262dc80321e35523e
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 13
-scope: 47
+examined: 4
+scope: 37
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 57244d2180c1ad3d60a6581d744e385df807e8b1db6afd93815bd040c6be0409
+  data-model.md: e6ff943c0587d84f4087b94dc685fd7ef4116a7dc5c64042640c5ca37a53cefe
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -19,7 +19,7 @@ reviewed-digest:
   scenarios/analyze-artifact-checks.md: 5d8f5e76161fb02ff07c23d77a358349be4a04b7afae103b0136deb955c7e880
   scenarios/anchor-reference-kinds.md: 178e97f7cad2d6434284fa77f7c965635a6a85cee9bdeed7bd72c45c2c3fc9f2
   scenarios/append-inbox-comment-aware-write.md: c26a16c3be1a7e1c52eca2254061d545ec62b3b7d7c865affd1fa679d6c0ab6b
-  scenarios/append-primitive-marker-normalization.md: 42f66c331c19205f62f29d4ff2ef96a3d51ffab8aa38bf9df4ed09eeef6f8990
+  scenarios/append-primitive-marker-normalization.md: 26c5064dcdf3f697885faac80332207d079bfd7db2d14c0769254da21e5e4246
   scenarios/append-task-honours-slug-with-explicit-body.md: d831ac5fada945c565042a7216a7d7dd0fa7477efb635597901a5720926cf726
   scenarios/apply-manifest-substitution-contract.md: dfb59f607b4ac27dec233dca8c71742dbc2f139c98794829fad2cdfb8598d733
   scenarios/apply-manifest.md: e3f792134cfab148287877137d76f68879583d969b03e9dadcf7eb26df6dba20
@@ -35,7 +35,7 @@ reviewed-digest:
   scenarios/config-resolution-single-probe.md: fc602eb6f2d64f6d1956da411b809af3a53a0c91b26dd198f6b1af61e3347ab4
   scenarios/config-sourced-paths-and-the-traversal-boundary.md: 5ce4f8c45bdfd56606b9a977431e06683f4f38904742f96c358e6b6c5828b30e
   scenarios/constitution-excerpts-as-skill-resources.md: 56192a1689b5afe2bfc51928c27b7d567518816b79c8df0a50250bd3328a8e86
-  scenarios/coverage-expansion-primitives.md: ff05928a8b09b6b921b3336de678002385bdca65140b6d889978a748e5d1720a
+  scenarios/coverage-expansion-primitives.md: 4626b19eef4cff4f9ce01047b2afa6746573ec289da039cc969b8d8d37ebcd3f
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
@@ -86,7 +86,7 @@ reviewed-digest:
   scenarios/review-staleness-on-done-specs.md: e5090cf7fc1529f5763a91365e372980a9c61e9cef738dc24656ccd74fc5b7cc
   scenarios/runtime-primitive-structural-bugs.md: 7fb973b4c5ef5c0268df24996c585f9bf70465f4f7e36ad237d129894f5fd366
   scenarios/runtime-review-019-hardening.md: 9b759c9ce4fc57702e28d764179dcae7b7df9d04dc99ac166b3c0726cf3f9449
-  scenarios/scaffolding-primitives.md: e03523cb215de6f69d82e17f3c1cbb05a8155b0c4d524899ae3892d3737810d0
+  scenarios/scaffolding-primitives.md: 6bd370c11371f1ce71a87ea070df769cd654fdace168dcde363691252ae5c4d1
   scenarios/scenario-open-question-signal.md: bd9e127f09f6aa34417ee912f71a05f0205607b28c799944017a196943b7e129
   scenarios/scenario-question-parser-fix.md: bdcaf5f9bb7d0ff795d6e3a6a5045a79afc63b55d8ce4b3331f807c337bf2ada
   scenarios/severity-is-a-closed-set-not-a-string.md: 45be56aee78248f76087357bcbd807f21515e208e7e6ee5ab8865a924b2bb5d5
@@ -115,7 +115,7 @@ reviewed-digest:
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -125,15 +125,13 @@ dispositions:
 
 ## Summary
 
-Re-review for spec 058's cross-spec discharge (058 task 27), scoped to the contracts the reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run.
+Re-review for 058 task 31, scoped to the contracts this reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. No observations.
 
-**What changed.** 058 moved findings from the inbox to dispositions, so 022's contracts naming the inbox window, the standing row, or `captured-issues` were corrected. Three scenarios are marked superseded with a dated blockquote naming what replaced them: `review-observations-write-through`, `the-inbox-row` (which records its rejected /status count as reversed), and `the-analyze-record-states-what-it-captured`. Six are corrected where they name the removed shapes, plus `scaffolding-primitives`, which the re-check found beyond the measured list; `review-gate-unexaminable-contracts` now counts eleven gate checks. `data-model.md` updates `write-analysis`, `check-review-gate` (checks 11 and 12), `diff-cross-spec`, the observations and inbox-row addenda, and the `dashboard` addendum. `spec.md` gains a 058 signpost, and AC26 and AC31 are annotated. `groom-command-acceleration`'s chore edge case, stale from an earlier rule change, was fixed as 058's disposition task 29.
+**What changed.** 058 removed `append-inbox`'s `dedup-prefix` argument and `deduped` result: their only callers were `/ductus:implement`'s auto-capture and the adoption security audit, which 058 had already removed, and `/ductus:log` never passed it. `data-model.md`'s append-inbox section drops both from its JSON and says what an old caller now gets (the argument is ignored, since no args struct denies unknown fields). `scaffolding-primitives` marks the dedup clause and its edge case removed; `append-primitive-marker-normalization` says its normalize-before-dedup rule now governs `append-question` alone, while `append-inbox` still strips a caller-supplied marker from `text`; `coverage-expansion-primitives` notes that the `deduped` field it cites is gone; `spec.md`'s 058 signpost names the removal.
 
-**Observation, fixed.** `groom-command-acceleration` still listed a *chore-stays* route and said inbox removal remains a host edit; groom now does a chore in the pass, and `remove-inbox-item` performs removal. Both were annotated in place with confirmation.
+**Scope, and what was not re-read.** `diff-base` c025607b, 37 in scope, examined **4**: the three changed scenarios, read in full, and `data-model.md`, read at its `append-inbox` section rather than end to end. **The remaining scenarios under this spec were not re-read**; the recorded digest covers them as they are on disk, unchanged by this reopen. `spec.md` was checked at its signpost only. The rest of the scope is this spec's historical Affected Files. Each statement was checked against `runtime/src/primitives/append_inbox.rs` and `AppendInboxArgs`/`AppendInboxResult` as committed in c025607b.
 
-**Scope, and what was not re-read.** `diff-base` db1dd999, 47 in scope, examined **13**: the twelve changed scenarios, read in full, and `data-model.md`, read at every section the reopen touched (`write-analysis`, `dashboard`, `check-review-gate`, `diff-cross-spec`, `append-inbox`, the observations and inbox-row addenda, `examined`/`scope`) rather than end to end. **The remaining scenarios under this spec were not re-read**; the recorded digest covers them as they are on disk, unchanged by this reopen. `spec.md` was checked at its signpost and at AC26 and AC31 only. The rest of the scope is this spec's historical Affected Files, unchanged by this discharge, plus 058's `tasks.md`. The new shapes were checked against the code that produces them: `write_analysis.rs`'s `render_analysis`, `ReviewGateBlock` in `runtime/src/schema/primitives.rs`, `check_review_gate.rs`'s two new messages, and `dashboard.rs`'s `render_inbox_line` placement.
-
-**Passes.** Security, reuse, and efficiency had no subject: prose in scenarios and a data model. Quality: each corrected statement was checked against the code it describes. Simplicity: superseded scenarios are marked rather than deleted, so their reasoning stays readable where 058 reused or reversed it.
+**Passes.** Security, reuse, and efficiency had no subject: prose. Quality: each corrected statement matches the code. Simplicity: the removed guard is annotated where each scenario named it rather than deleted from the reasoning that motivated it.
 
 ## MUST violations (blocking)
 
@@ -153,7 +151,7 @@ Re-review for spec 058's cross-spec discharge (058 task 27), scoped to the contr
 
 ## Observations
 
-- convention: groom-command-acceleration still listed a chore-stays route and called inbox removal a host edit — `specs/022-deterministic-runtime/scenarios/groom-command-acceleration.md` — **fixed**
+*None.*
 
 ## Skipped passes
 
