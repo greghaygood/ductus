@@ -63,6 +63,8 @@ It is **not** a copy of `review:`, and the two differences are the design:
 
 **The drift family.** `check-artifacts` gains `analyze-state-drift`, the counterpart to `review-state-drift`: a `done` spec with `analyze.last-run` unset or `analyze.blocking: true`.
 
+> **Changed by 058.** The family left `check-artifacts`. Read during detection, it judged the record the run was about to replace, so its finding could never clear, even on a run that fixed its cause. `/{project}:analyze` now judges analyze-state drift from the record it writes, after recording it; that record always carries `last-run`, so the check reports a `done` spec whose new record is blocking.
+
 ## The grandfather rule, and why it is not a hiding place
 
 Every `done` spec written before the record exists without one — 54 of them at introduction. The drift family exempts them.

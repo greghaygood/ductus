@@ -2,7 +2,7 @@
 # scripts/audit/analyze-record-backlog.sh — Family 37 of /audit.
 #
 # Every `done` spec that carries a review record and no analyze record — the
-# exact population the `analyze-state-drift` check family grandfathers.
+# exact population the CI template's analyze-record check exempts.
 #
 # Since spec 057 each record lives in the artifact that owns it: the review
 # record in `review.md`, the analyze record in `analysis.md`, and `spec.md`
@@ -16,7 +16,7 @@
 # enforced; before it, a spec that had passed both gates and one that had
 # passed only the review were byte-identical on disk. Every `done` spec
 # written before that record existed therefore has no analyze record, and the
-# drift family exempts them.
+# CI template's record check exempts them.
 #
 # 046 refused exactly this shape of exemption for scenario questions — "a
 # sanctioned hiding place is worse than the gap it papers over" — and the

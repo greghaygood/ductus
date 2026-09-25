@@ -3883,14 +3883,13 @@ pub struct ArtifactFinding {
     /// Check family: `artifact-completeness`, `task-consistency`,
     /// `scenario-consistency`, `review-state-drift`,
     /// `scenario-open-questions`, `link-adjacent-drift`,
-    /// `criterion-path-existence`, `criterion-labels`,
-    /// `analyze-state-drift`, or `disposition-drift` — ten, matching the
-    /// `family:` literals the primitive emits.
+    /// `criterion-path-existence`, `criterion-labels`, or
+    /// `disposition-drift` — nine, matching the `family:` literals the
+    /// primitive emits.
     pub family: String,
     /// Severity tier per the reference's assignments: `blocking`
     /// (artifact completeness, task consistency, review state drift,
-    /// analyze-state drift, disposition drift, and scenario open questions
-    /// at `done`) or
+    /// disposition drift, and scenario open questions at `done`) or
     /// `advisory` (scenario consistency, scenario open questions below
     /// `done`, link-adjacent drift, criterion path existence, and criterion
     /// labels reciprocity).
@@ -3932,11 +3931,10 @@ pub struct CheckArtifactsResult {
     pub feature: String,
     /// Spec frontmatter `status` the tier classification ran against.
     pub status: String,
-    /// Findings across the ten families, in the order the primitive emits
+    /// Findings across the nine families, in the order the primitive emits
     /// them (completeness → task consistency → scenario consistency → review
-    /// drift → analyze-state drift → disposition drift → scenario open
-    /// questions → link-adjacent drift → criterion path existence → criterion
-    /// labels).
+    /// drift → disposition drift → scenario open questions → link-adjacent
+    /// drift → criterion path existence → criterion labels).
     pub findings: Vec<ArtifactFinding>,
     /// `true` when no family produced a finding.
     ///

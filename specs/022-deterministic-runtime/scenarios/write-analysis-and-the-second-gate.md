@@ -44,6 +44,8 @@ The primitive keeps its name though it now gates on both commands. Renaming is f
 
 **`check-artifacts`** gains `analyze-state-drift` — eight residual deterministic families become nine. It mirrors `review-state-drift` on the two states that gate and deliberately not on the advisory count, where its sibling *does* check `should-violations`. That asymmetry is stated in both the family and the block's own documentation, because a reader who notices it will otherwise read it as an omission.
 
+> **Changed by 058.** The family left `check-artifacts`: read during detection, it judged the record the run was about to replace, so its finding could never clear. `/{project}:analyze` now judges analyze-state drift from the record it writes, where `last-run` is always set, so it reports a `done` spec whose new record is blocking. `check-artifacts` runs nine families.
+
 ## Edge Cases
 
 - **`skip_serializing_if` on `Frontmatter.analyze`.** Absent stays absent: `read-spec` on a pre-record spec emits no `analyze` key rather than a defaulted block, so a consumer can distinguish "no record" from "an empty one". The grandfather rule depends on that distinction.

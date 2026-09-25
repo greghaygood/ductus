@@ -7,6 +7,7 @@ cross-spec-impact:
   - 022-deterministic-runtime
   - 047-analyze-findings-durability
   - 050-constitution
+  - 054-remove-supersession
   - 057-analyze-artifact-and-record-relocation
 next-criterion: 34
 ---
@@ -312,8 +313,8 @@ zero:
   is no exemption, matching the gate's standing refusal of a grandfather
   clause: the record is always writable at the moment a spec is being
   completed.
-- **On a `done` spec,** it is not drift. This follows the analyze-state-drift
-  family's bounded exemption for a `done` spec that predates a record.
+- **On a `done` spec,** it is not drift. This follows the bounded exemption
+  the CI template's record check gives a `done` spec that predates a record.
 
 Reading absence as zero would pass the case this spec exists for: an old run
 whose findings went to the inbox would reach `done` with none of them seen.
@@ -366,13 +367,18 @@ written as a blockquote. The dependency generator skips blockquote lines, so
 the back-link adds no `dependencies:` edge that would close a cycle with this
 spec's links to it. Each also gets the contract change itself:
 
-- **047:** its premise that analyze findings persist to the inbox.
+- **047:** its premise that analyze findings persist to the inbox, and the
+  analyze-state drift family it added to `check-artifacts`, which `/{project}:analyze`
+  now judges from the record it writes.
 - **022:** the `review-observations-write-through`, `the-inbox-row`, and
   `the-analyze-record-states-what-it-captured` scenarios, plus any other 022
-  scenario that names the inbox-additions window.
+  scenario that names the inbox-additions window; and the `check-artifacts`
+  registry, which gains `disposition-drift` and loses `analyze-state-drift`.
 - **020:** `review.md`'s `captured-issues` field and its Captured issues section.
 - **057:** `analysis.md`'s captured-issues section and field.
 - **050:** the `findings-route-by-scope` edge cases above.
+- **054:** AC10's `check-artifacts` family count, nine again with a different
+  membership.
 - **008:** the adoption audit's inbox write.
 
 ## Edge Cases

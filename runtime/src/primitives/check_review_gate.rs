@@ -378,9 +378,10 @@ fn passing_notices(review: &RecordFreshness, analyze: &RecordFreshness) -> Optio
 /// not reached the point where analysis is the next thing owed, and naming the
 /// later gate for an earlier defect sends a contributor to the wrong command.
 ///
-/// **No grandfather clause, and there must not be one.** The `analyze-state-drift`
-/// family exempts a `done` spec that predates the record, because it audits a
-/// corpus written before the field existed. This gate runs at the moment a
+/// **No grandfather clause, and there must not be one.** The CI template's
+/// record check and `/{project}:audit` Family 37 exempt a `done` spec that
+/// predates the record, because they audit a corpus written before the field
+/// existed. This gate runs at the moment a
 /// spec is being completed *now*, so the record is always writable — an
 /// exemption here would be a permanent hole rather than a bounded
 /// transitional one.

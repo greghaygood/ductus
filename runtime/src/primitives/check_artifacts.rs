@@ -1,11 +1,10 @@
 //! `check-artifacts` — the residual deterministic check families from
 //! `/ductus:analyze`'s markdown-only reference, mechanized for one feature.
 //!
-//! Owns ten families (spec 022, scenarios analyze-artifact-checks,
+//! Owns nine families (spec 022, scenarios analyze-artifact-checks,
 //! scenario-open-question-signal, link-adjacent-drift-family,
-//! criterion-path-existence-family, and criterion-label-assignment; spec 047
-//! for analyze-state drift; spec 058 for disposition drift). Each
-//! family MIRRORS
+//! criterion-path-existence-family, and criterion-label-assignment; spec 058
+//! for disposition drift). Each family MIRRORS
 //! `framework/commands/analyze.md`'s markdown-only reference — severity
 //! tiers and skip rules come from the reference, the primitive introduces
 //! no policy of its own:
@@ -51,37 +50,24 @@
 //!   scenario contributed no questions and, as a skip, no finding, so a
 //!   scenario carrying unresolved questions that would not parse passed the
 //!   gate built to catch exactly that. See [`record_unreadable_artifact`].
-//! - **analyze-state-drift** (blocking) — the counterpart to
-//!   review-state-drift, and it exists because there was no counterpart: a
-//!   `done` spec whose `analysis.md` record has `last-run` unset, or
-//!   `blocking: true`,
-//!   drifted. Advisory findings are recorded and deliberately
-//!   **not** checked here — analyze's advisory tier is made of checks
-//!   introduced advisory with their own published promotion criteria, and
-//!   gating on them would promote all of them at once. The grandfather rule
-//!   applies, and its population is bounded rather than open-ended: a `done`
-//!   spec with no `analyze:` block predates the record. `/audit` Family 37
-//!   reports exactly that set, so the exemption is countable and shrinking
-//!   rather than a silent permanent hiding place — the objection 046 raised
-//!   against exemptions, answered by making this one visible instead of
-//!   pretending a backfill were possible. It is not: an analyze record
-//!   asserts a run happened, and writing one for a run that did not is the
-//!   fabrication this whole family exists to prevent.
 //! - **disposition-drift** (blocking) — a `done` spec whose `review.md`
 //!   records one or more undispositioned findings (spec 058). The pre-`done`
 //!   gate blocks on the same count, so a `done` spec carrying one either
 //!   predates the gate or had its record re-run after it closed, and either
 //!   way `done` no longer means done. A record without a `dispositions:` map
-//!   produces nothing here: it predates the field, and the analyze-state drift
-//!   family's grandfather reasoning applies — a backfilled map would assert
-//!   dispositions nobody made. `/{project}:analyze --fix` reverts on this
-//!   family by name, which is why it is its own family rather than a message
-//!   inside analyze-state drift. **`analysis.md` is not judged here**: this
-//!   family runs inside `/{project}:analyze`, whose own run is about to
-//!   replace that record, so a finding read from it could never clear — it is
-//!   blocking, cannot be discarded, and outlives every re-run. `/{project}:analyze`
-//!   judges `analysis.md`'s drift from the record it writes instead (scenario
-//!   `analysis-drift-judges-the-record-it-writes`).
+//!   produces nothing here: it predates the field, and a backfilled map would
+//!   assert dispositions nobody made. `/{project}:analyze --fix` reverts on
+//!   this family by name.
+//!
+//! **`analysis.md` is judged by no family here** — neither its dispositions
+//! nor its own state (`last-run`, `blocking`). Every family runs inside
+//! `/{project}:analyze`, whose own run is about to replace that record, so a
+//! finding read from it could never clear: it is blocking, cannot be
+//! discarded, and outlives every re-run. `/{project}:analyze` judges both from
+//! the record it writes instead (scenarios
+//! `analysis-drift-judges-the-record-it-writes` and
+//! `analyze-state-drift-judges-the-record-it-writes`). The analyze-state drift
+//! family spec 047 added here is gone for that reason.
 //! - **scenario-open-questions** (blocking at `done`, advisory otherwise)
 //!   — a scenario is an organizational split of the spec, so its
 //!   unresolved questions are the spec's questions for completeness. At
@@ -207,17 +193,9 @@ pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResul
     // `validate-frontmatter` and by the pre-done gate. Reporting it twice, in
     // two vocabularies, is how one problem becomes two findings.
     let review_record = crate::primitives::load_review_record(&feature_dir);
-    let analyze_record = crate::primitives::load_analyze_record(&feature_dir);
     check_review_drift(
         &mut findings,
         review_record.as_present(),
-        &status,
-        &spec_path,
-        repo,
-    );
-    check_analyze_drift(
-        &mut findings,
-        analyze_record.as_present(),
         &status,
         &spec_path,
         repo,
@@ -614,75 +592,6 @@ fn check_disposition_drift(
         ),
         path: rel_path(spec_path, repo),
     });
-}
-
-/// (d2) Analyze-state drift — the counterpart to review-state drift, added
-/// because there was no counterpart at all.
-///
-/// For a `done` spec, `analyze.last-run` must be set and `analyze.blocking`
-/// must be `false`.
-///
-/// **Grandfather rule**, and it is the honest choice here rather than the
-/// convenient one. A `done` spec with no `analyze:` block predates the record
-/// and is exempt. 046 refused an exemption for scenario questions on the
-/// grounds that a sanctioned hiding place is worse than the gap it papers
-/// over, and the criterion-label check backfilled the corpus instead — so the
-/// precedent runs against exempting. It does not apply, and the difference is
-/// what a backfill would have to assert. A criterion label is derivable from
-/// the artifact: the backfill computed a value that was already true. An
-/// analyze record asserts *that a run happened*, which is not derivable from
-/// anything on disk, so backfilling it would mean writing a claim nobody
-/// verified into the field a later gate trusts — the precise failure this
-/// family exists to catch, committed by the family itself.
-///
-/// The exemption is made bounded instead of silent: `/audit` Family 37
-/// reports every `done` spec carrying a `review:` block and no `analyze:`
-/// one, which is exactly the grandfathered population. It is countable, it
-/// shrinks as specs are re-analyzed, and it can never grow — the gate
-/// (`check-review-gate`) has no grandfather clause, so nothing new can enter
-/// the set.
-///
-/// **Advisory findings are not checked**, unlike review-state drift's
-/// treatment of an outstanding SHOULD. See `AnalyzeBlock::advisory`: analyze's
-/// advisory tier is made of checks introduced advisory with published
-/// promotion criteria, and gating on them here would promote every one past
-/// the criteria it declares.
-fn check_analyze_drift(
-    findings: &mut Vec<ArtifactFinding>,
-    analyze: Option<&crate::schema::primitives::AnalyzeBlock>,
-    status: &str,
-    spec_path: &Path,
-    repo: &Path,
-) {
-    if status != "done" {
-        return;
-    }
-    let Some(analyze) = analyze else {
-        return; // grandfathered: no analyze record at all
-    };
-    let spec_rel = rel_path(spec_path, repo);
-    if analyze.last_run.is_none() {
-        findings.push(ArtifactFinding {
-            family: "analyze-state-drift".into(),
-            severity: AnalyzeSeverity::Blocking,
-            message: "analyze drift: done spec missing analysis (analyze.last-run unset) — \
-                      run the analyze command"
-                .into(),
-            path: spec_rel.clone(),
-        });
-    }
-    if analyze.blocking {
-        findings.push(ArtifactFinding {
-            family: "analyze-state-drift".into(),
-            severity: AnalyzeSeverity::Blocking,
-            message: format!(
-                "analyze drift: done spec has {} hard-fail and {} blocking analyze finding(s) \
-                 (analyze.blocking true) — resolve them and re-run the analyze command",
-                analyze.hard_fail, analyze.blocking_findings
-            ),
-            path: spec_rel,
-        });
-    }
 }
 
 /// (d) Review-state drift — reference §"Review state drift (blocking)":
@@ -1832,9 +1741,6 @@ mod tests {
         );
     }
 
-    /// `spec` plus an explicit `analyze:` block. `None` reproduces the
-    /// grandfathered shape — a `done` spec written before the record existed
-    /// — which the drift family must leave alone.
     /// Write the spec plus whichever records the case carries, each into the
     /// artifact that owns it (spec 057).
     ///
@@ -1866,132 +1772,32 @@ mod tests {
         }
     }
 
+    /// `analysis.md` is the record the calling `/analyze` run is about to
+    /// replace, so no family judges its state: a blocking record, or one whose
+    /// `last-run` is unset, produces nothing here. `/analyze` judges both from
+    /// the record it writes (scenario
+    /// `analyze-state-drift-judges-the-record-it-writes`); read from the old
+    /// record, the finding blocked every re-run, even one that fixed its cause.
+    #[test]
+    fn the_analysis_record_s_own_state_is_never_judged_here() {
+        for record in [
+            "  last-run: null\n  blocking: false",
+            "  last-run: 2026-07-10T00:00:00Z\n  hard-fail: 1\n  blocking-findings: 2\n  blocking: true",
+        ] {
+            let tmp = tempdir().unwrap();
+            seed_feature(tmp.path(), "done", Some(CLEAN_REVIEW), Some(record));
+            write(
+                tmp.path(),
+                &format!("specs/{FEATURE}/plan.md"),
+                "# Demo Plan\n",
+            );
+            write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
+            let result = run(&args(), tmp.path()).unwrap();
+            assert!(result.findings.is_empty(), "{:?}", families(&result));
+        }
+    }
+
     const CLEAN_ANALYZE: &str = "  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 1\n  blocking: false";
-
-    /// The ordinary passing case, and the reason `CLEAN_ANALYZE` exists: a
-    /// `done` spec carrying a completed, non-blocking analysis is not drift
-    /// even though it records advisory findings and an unexamined target.
-    #[test]
-    fn a_done_spec_with_a_clean_analyze_block_is_not_drift() {
-        let tmp = tempdir().unwrap();
-        seed_feature(tmp.path(), "done", Some(CLEAN_REVIEW), Some(CLEAN_ANALYZE));
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/plan.md"),
-            "# Demo Plan\n",
-        );
-        write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(
-            !families(&result)
-                .iter()
-                .any(|(f, _)| *f == "analyze-state-drift"),
-            "{:?}",
-            families(&result)
-        );
-    }
-
-    /// The grandfathered population: a `done` spec with no `analyze:` block
-    /// at all predates the record and is exempt. It is exempt rather than
-    /// backfilled because a backfill would have to assert a run happened, and
-    /// nothing on disk can substantiate that — the one claim this family must
-    /// never manufacture. `/audit` Family 37 counts this set so the exemption
-    /// is visible and bounded instead of silent.
-    #[test]
-    fn a_done_spec_with_no_analyze_block_is_grandfathered() {
-        let tmp = tempdir().unwrap();
-        seed_feature(tmp.path(), "done", Some(CLEAN_REVIEW), None);
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/plan.md"),
-            "# Demo Plan\n",
-        );
-        write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(
-            !families(&result)
-                .iter()
-                .any(|(f, _)| *f == "analyze-state-drift"),
-            "{:?}",
-            families(&result)
-        );
-    }
-
-    #[test]
-    fn a_done_spec_with_a_null_analyze_last_run_is_drift() {
-        let tmp = tempdir().unwrap();
-        seed_feature(
-            tmp.path(),
-            "done",
-            Some(CLEAN_REVIEW),
-            Some("  last-run: null\n  blocking: false"),
-        );
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/plan.md"),
-            "# Demo Plan\n",
-        );
-        write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(
-            families(&result)
-                .iter()
-                .any(|(f, sev)| *f == "analyze-state-drift" && *sev == "blocking")
-        );
-    }
-
-    #[test]
-    fn a_done_spec_with_blocking_analyze_findings_is_drift() {
-        let tmp = tempdir().unwrap();
-        seed_feature(
-            tmp.path(),
-            "done",
-            Some(CLEAN_REVIEW),
-            Some(
-                "  last-run: 2026-07-10T00:00:00Z\n  hard-fail: 1\n  blocking-findings: 2\n  blocking: true",
-            ),
-        );
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/plan.md"),
-            "# Demo Plan\n",
-        );
-        write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(
-            families(&result)
-                .iter()
-                .any(|(f, sev)| *f == "analyze-state-drift" && *sev == "blocking")
-        );
-    }
-
-    /// Advisory findings and unexamined targets are recorded in the block and
-    /// deliberately never gate — the asymmetry with review-state drift's
-    /// treatment of an outstanding SHOULD.
-    #[test]
-    fn advisory_and_unexamined_counts_are_not_analyze_drift() {
-        let tmp = tempdir().unwrap();
-        seed_feature(
-            tmp.path(),
-            "done",
-            Some(CLEAN_REVIEW),
-            Some(
-                "  last-run: 2026-07-10T00:00:00Z\n  advisory: 9\n  unexamined: 5\n  blocking: false",
-            ),
-        );
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/plan.md"),
-            "# Demo Plan\n",
-        );
-        write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(
-            !families(&result)
-                .iter()
-                .any(|(f, _)| *f == "analyze-state-drift")
-        );
-    }
 
     const OWED: &str =
         "  dispositions:\n    fixed: 0\n    routed: 0\n    discarded: 0\n    undispositioned: 2";
@@ -2070,45 +1876,28 @@ mod tests {
     }
 
     #[test]
-    fn disposition_drift_follows_analyze_state_drift() {
+    fn disposition_drift_follows_review_state_drift() {
         let tmp = tempdir().unwrap();
         seed_done_with(
             tmp.path(),
             "done",
-            &format!("{CLEAN_REVIEW}\n{OWED}"),
-            "  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc\n  hard-fail: 1\n  blocking-findings: 0\n  advisory: 0\n  unexamined: 0\n  blocking: true",
+            &format!(
+                "{}\n{OWED}",
+                CLEAN_REVIEW.replace("blocking: false", "blocking: true")
+            ),
+            CLEAN_ANALYZE,
         );
         let result = run(&args(), tmp.path()).unwrap();
         let order: Vec<&str> = result.findings.iter().map(|f| f.family.as_str()).collect();
-        let analyze_at = order
+        let review_at = order
             .iter()
-            .position(|f| *f == "analyze-state-drift")
+            .position(|f| *f == "review-state-drift")
             .unwrap();
         let disposition_at = order
             .iter()
             .position(|f| *f == "disposition-drift")
             .unwrap();
-        assert!(analyze_at < disposition_at, "{order:?}");
-    }
-
-    /// A spec below `done` is exempt: the block populates lazily on the first
-    /// analyze run, exactly as `review:` does.
-    #[test]
-    fn an_in_progress_spec_without_an_analyze_block_is_not_drift() {
-        let tmp = tempdir().unwrap();
-        seed_feature(tmp.path(), "in-progress", Some(CLEAN_REVIEW), None);
-        write(
-            tmp.path(),
-            &format!("specs/{FEATURE}/plan.md"),
-            "# Demo Plan\n",
-        );
-        write(tmp.path(), &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
-        let result = run(&args(), tmp.path()).unwrap();
-        assert!(
-            !families(&result)
-                .iter()
-                .any(|(f, _)| *f == "analyze-state-drift")
-        );
+        assert!(review_at < disposition_at, "{order:?}");
     }
 
     const GOOD_TASKS: &str = "# Demo Tasks\n\n\

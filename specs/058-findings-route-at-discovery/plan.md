@@ -449,6 +449,7 @@ would close a cycle with 058's own links.
 | 022 | Three superseded scenarios; inbox fields in the data model | `scenarios/*.md`, `data-model.md`, `spec.md` | review + analyze |
 | 047 | Its premise, that analyze findings persist to the inbox | `spec.md` | review (record shape only) + analyze |
 | 050 | The `findings-route-by-scope` edge cases | `scenarios/findings-route-by-scope.md`, `spec.md` | review + analyze |
+| 054 | AC10's `check-artifacts` family count (added by task 42, which moved `analyze-state-drift` out) | `spec.md` | review + analyze |
 | 057 | `captured-issues` and the `## Captured issues` section | `data-model.md`, `spec.md` | review + analyze |
 
 Every reopened spec needs a review run, including 008 and 047 whose durable

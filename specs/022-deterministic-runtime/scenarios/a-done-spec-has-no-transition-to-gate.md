@@ -10,7 +10,7 @@ section: "Follow-on scenarios"
 
 So the completing flip stales the record by construction. Verified on 047 seconds after its own transition: the gate had returned `passed: true`, `set-status` moved `in-progress → done`, and the next call returned `blocked: analysis is stale — 1 artifact(s) changed since it ran: specs/047-analyze-findings-durability/spec.md`. The analysis was not wrong and the record was not neglected; the spec simply finished, and finishing edits the spec.
 
-Nothing is broken today. The gate is invoked at the transition, and the family that audits `done` specs — `analyze-state-drift` — deliberately checks the two states that gate rather than freshness. The reachable defect is a confusing one: re-running `/{project}:implement` against a finished spec reports a stale analysis and directs the operator to re-run `/{project}:analyze` on work that is complete. Following that advice writes a fresh record, which the next `set-status`-free run then reports as current — so the advice appears to work, which is worse than advice that plainly fails.
+Nothing is broken today. The gate is invoked at the transition, and the check that audits `done` specs — analyze-state drift, which `/{project}:analyze` judges from the record it writes since 058 — deliberately checks the state that gates rather than freshness. The reachable defect is a confusing one: re-running `/{project}:implement` against a finished spec reports a stale analysis and directs the operator to re-run `/{project}:analyze` on work that is complete. Following that advice writes a fresh record, which the next `set-status`-free run then reports as current — so the advice appears to work, which is worse than advice that plainly fails.
 
 ## Behavior
 

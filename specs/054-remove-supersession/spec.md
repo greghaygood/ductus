@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [050-constitution, 052-spec-supersession-and-consolidation]
 next-criterion: 27
 ---
@@ -21,6 +21,11 @@ The cost of carrying it was real and had barely begun to be paid: a command, a f
 The machinery shipped in [052 — Spec supersession and consolidation](../052-spec-supersession-and-consolidation/spec.md) — the declaration and its annotation, plus the reconciliation pass that followed — and has not been used. **No spec in the corpus carries a `supersedes:` key.** The one sunset banner in the corpus — on `005-workflows`, written when `043-workflows-sunset` removed the feature — was hand-authored before any of this existed, which is itself the evidence that the prose convention never needed a command, a key, a primitive, or a check to produce it. Removing the machinery now costs no migration and no corpus rewrite; removing it after adoption would cost both.
 
 `/{project}:consolidate` shipped in the same spec and **stays**. It is the operation that removes the dead reference rather than annotating it.
+
+> **AC10's family count is restated by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).**
+> `check-artifacts` gained `disposition-drift` and lost `analyze-state-drift`,
+> which `/{project}:analyze` now judges from the record it writes. The count is
+> nine again, with a different membership; AC10 is annotated.
 
 ## What replaces it
 
@@ -105,7 +110,7 @@ Two adopter-side non-events, stated so their absence is deliberate rather than o
 - [x] AC7: `write-supersession-annotation` and `read-supersession-pair` are absent from all five registration sites, and `cargo test --test mcp` passes with the manifest set-equal to the registry
 - [x] AC8: The `classifyClaims` extension point and its request, response, and claim types are gone, and no extension point remains without a caller
 - [x] AC9: `validate-frontmatter` contains no `supersedes` validation path
-- [x] AC10: `check-artifacts` runs eight residual deterministic families, `supersession-reciprocity` is returned by no code path, and `analyze.md`'s enumeration and count match the implementation. **The count has since grown to nine** — `analyze-state-drift` was added with the durable `analyze:` record, after this spec removed the supersession family. The requirement is what this criterion actually asserts and it still holds exactly: the runtime emits nine families, `analyze.md` enumerates nine and says "nine", and `supersession-reciprocity` is returned by no code path. Only the literal number was a snapshot of the day
+- [x] AC10: `check-artifacts` runs eight residual deterministic families, `supersession-reciprocity` is returned by no code path, and `analyze.md`'s enumeration and count match the implementation. **The count has since grown to nine** — `analyze-state-drift` was added with the durable `analyze:` record, after this spec removed the supersession family. The requirement is what this criterion actually asserts and it still holds exactly: the runtime emits nine families, `analyze.md` enumerates nine and says "nine", and `supersession-reciprocity` is returned by no code path. Only the literal number was a snapshot of the day. **Changed by 058**: `disposition-drift` joined and `analyze-state-drift` left, so the count is nine again with a different membership.
 - [x] AC11: `cargo build`, `cargo clippy`, and the full `cargo test` suite pass with no dead-code or unused-import warnings from the removal
 - [x] AC12: `help.md`, `docs/slash-commands.md`, and `README.md` document sixteen commands with no `/supersede` among them, and `scripts/gen-help-tables.sh` carries no supersede entry
 - [x] AC13: The installer manifest carries no `supersede.md` row, and every hardcoded command count in `framework/bootstrap/ductus.md` and `framework/bootstrap/govern.md` reads sixteen rather than seventeen
