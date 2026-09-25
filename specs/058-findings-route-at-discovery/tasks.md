@@ -1,6 +1,6 @@
 # 058 — Findings route at discovery Tasks
 
-Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runtime work, verified through the built binary rather than the MCP tools, which answer with the binary the session started on. Task 23 is the restart point. No pipeline command that consumes a changed primitive runs before it.
+Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runtime work, verified through the built binary rather than the MCP tools, which answer with the binary the session started on. Task 23 is the restart point. No pipeline command that consumes a changed primitive runs before it. After task 28, 058 itself still needs `/ductus:review` and `/ductus:analyze` (both records carrying `dispositions:`) and its completion gate, and then the `0.53.0` release in [plan.md](plan.md) §Release — bumped and tagged in the same sitting, per the `AGENTS.md` release entry.
 
 ## 1. Record shapes: `dispositions` and `decisions`
 
@@ -199,7 +199,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 24. Discharge 047 and 008
 
-- [ ] Reopen each with `set-status` (`from: done`); correct every claim 058 falsifies (047's inbox-persistence premise and its capture criteria; 008's adoption-audit inbox write); add a blockquote signpost linking to [058](spec.md)
+- [ ] Reopen each with `set-status` (`from: done`); correct every claim 058 falsifies (047's inbox-persistence premise and its capture criteria; 008's adoption-audit inbox write); add a blockquote signpost linking to [058](spec.md). Measured 2026-09-25, re-derive before editing: 008's is `spec.md`'s brownfield-audit section (the inbox-item format, its dedup, the `security audit items added` summary line, and the rejected-alternative paragraph that argues for the inbox) plus AC22 and AC26; 047's is `spec.md` (7 hits for the capture-era shapes, the two anchor links among them)
 - [ ] Re-point 047 `spec.md`'s two `#automatic-issue-capture` links to the constitution section task 12 renamed
 - [ ] Re-run `/ductus:review` and `/ductus:analyze` on each so both records carry `dispositions:`; return each to `done` through `check-review-gate`
 
@@ -207,7 +207,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 25. Discharge 020 and 057
 
-- [ ] Reopen; correct `review.md`'s and `analysis.md`'s field and section tables in each data model and every `spec.md` claim naming `captured-issues` or `## Captured issues`; add blockquote signposts
+- [ ] Reopen; correct `review.md`'s and `analysis.md`'s field and section tables in each data model and every `spec.md` claim naming `captured-issues` or `## Captured issues`; add blockquote signposts. Measured 2026-09-25: 020 has 5 hits in `data-model.md` and 2 in `spec.md`; 057 has 6 in `data-model.md` and 2 in `spec.md`
 - [ ] Re-run review and analyze on each; return each to `done`
 
 - **Done when**: both are `done` through their gates, and 058's gate reports them discharged.
@@ -215,14 +215,14 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 ## 26. Discharge 050
 
 - [ ] 050 is already `in-progress`: it was reopened in `c421d0e1` for scenario `report-outcomes-not-edits` (its task 24, done). Skip the reopen, and let this return to `done` cover both
-- [ ] Annotate `scenarios/findings-route-by-scope.md`'s chore and no-spec-in-progress edge cases as superseded by 058, and add the signpost to `spec.md`
+- [ ] Annotate `scenarios/findings-route-by-scope.md`'s chore and no-spec-in-progress edge cases as superseded by 058, and add the signpost to `spec.md`. Measured 2026-09-25: 4 capture-era hits in that scenario and 2 in `spec.md`. Task 22 (`f0716c7a`) also re-keyed a Family 38 row in 050's `plan.md` to `AGENTS.md`'s reworded machinery-observation entry, so 050's analysis is stale on `plan.md` as well; the analyze re-run below covers it
 - [ ] Re-run review and analyze; return to `done`
 
 - **Done when**: 050 is `done` through its gate, and 058's gate reports it discharged.
 
 ## 27. Discharge 022
 
-- [ ] Reopen; mark `review-observations-write-through`, `the-inbox-row`, and `the-analyze-record-states-what-it-captured` superseded by 058; correct every other 022 scenario and data-model entry naming the inbox window, the standing row, or `captured-issues`; add the `spec.md` signpost
+- [ ] Reopen; mark `review-observations-write-through`, `the-inbox-row`, and `the-analyze-record-states-what-it-captured` superseded by 058; correct every other 022 scenario and data-model entry naming the inbox window, the standing row, or `captured-issues`; add the `spec.md` signpost. Measured 2026-09-25, excluding the `captured during scenario authoring` boilerplate: `data-model.md` (20 hits), `spec.md` (AC31 and the `captured-issues` sentence near it), and scenarios `the-committed-tree-horizon`, `a-review-states-what-it-read`, `the-promotion-coverage-line` (its inbox-row Resolved Question), `coverage-expansion-primitives`, `review-scope-parse-fidelity`, and `review-runtime-acceleration`. The hits in `primitive-robustness-hardening`, `spec-side-parser-hardening`, and `resolve-references-cli-exec-wiring` record that an item was tracked in the inbox — history, not a falsified contract
 - [ ] Re-run review, recording the changed contracts as `examined` against the full `scope`, and state in the Summary that the remaining scenarios were not re-read; re-run analyze; return to `done`
 
 - **Done when**: 022 is `done` through its gate with a truthful `examined`, and 058's gate reports every declared impact discharged.
