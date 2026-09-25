@@ -67,7 +67,7 @@ It is **not** a copy of `review:`, and the two differences are the design:
 
 ## The grandfather rule, and why it is not a hiding place
 
-Every `done` spec written before the record exists without one — 54 of them at introduction. The drift family exempts them.
+Every `done` spec written before the record exists without one — 54 of them at introduction. The drift family exempted them. Since 058 the CI template's analyze-record check does: `/{project}:analyze` now judges drift from the record it writes, so it never meets a missing one.
 
 [046](../../046-scenario-open-question-visibility/spec.md) refused precisely this shape of exemption, on the grounds that a sanctioned hiding place is worse than the gap it papers over, and the criterion-label check backfilled the corpus rather than grandfathering it. So the precedent runs *against* exempting, and the exemption needs its difference stated rather than assumed.
 

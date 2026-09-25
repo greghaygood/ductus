@@ -500,3 +500,9 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Bump the repo-root `version`, `runtime/Cargo.toml` and `runtime/CHANGELOG.md` together, then tag `ductus-v<version>` in the same sitting
 
 - **Done when**: a criterion asserting a path was never created is exempted whole and its paths recorded as `not-a-live-claim`; the predicate is clause-scoped, word-matched and order-sensitive, with tests pinning each; the phrase count stays fourteen and Family 18 18a–18d are untouched; 045 data-model and `analyze.md` both carry the group; both directions are proven by probe; `cargo test` and `cargo clippy --release --all-targets -- -D warnings` are clean; the release is cut only after 022 returns to `done`; and the corpus sweep's measured effect is recorded in the scenario, over-exemptions included.
+
+## 123. Implement scenario: exec-analyze-derives-its-list-seeds
+
+- [ ] Implement the behavior described in `scenarios/exec-analyze-derives-its-list-seeds.md`
+
+- **Done when**: `ductus exec analyze` completes on a session written by `write-session` when only `analyzed-at` and `analyzed-against` are passed as arguments; a seeded `rule-files` or `paths` is used as given, so `analyze-basic`'s golden does not move; tests cover each derived list and the seeded override; and `cargo test --release --locked` and `clippy -D warnings` pass.

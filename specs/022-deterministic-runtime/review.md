@@ -1,17 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-25T21:07:41Z
-reviewed-against: 59d75dcb19fd21dbad1023fffdffd8696cfd2ed6
-diff-base: 5a9f69ae8b470b9ed840104df62e43bbf2b55dab
+last-run: 2026-09-25T23:14:05Z
+reviewed-against: 39856db620fc3891be9e2d0bd757407fe5a85de5
+diff-base: 92b4b18a5812e9c8fe9f1707f62acd052f0620c7
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 1
-scope: 35
+examined: 4
+scope: 55
 skipped-passes: []
 reviewed-digest:
-  data-model.md: bfc874cd56ab8ab81eaaed11ae0222deb95defd6256c0e0a191a5141cdcc9eac
-  scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
+  data-model.md: c6e2e9b97839765c5275d1be4d1a5f860bad60cd323b47cb967fca1805d05517
+  scenarios/a-done-spec-has-no-transition-to-gate.md: 416012217fd035c450f1709db7c36b314b6ef6bf652ec3b8bb2d2cd78e333c34
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 52a49fff9ad4f3493a9d7f2daf51df20d3ac1f58776015ed64450b46d8a60154
@@ -106,7 +106,7 @@ reviewed-digest:
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
   scenarios/waiver-processing-order.md: 0adb750e651d94ac8bcf06dd0dfbba84cd937c09817035e913ec08b77687f8e8
-  scenarios/write-analysis-and-the-second-gate.md: 4dcad43e3acb56aaa9bcf5504e24e38f7c62405e5d29af8b762ccf10ffddb5c6
+  scenarios/write-analysis-and-the-second-gate.md: 0ed8f4e01c20469ebf6a5bfb524ebe3e6f0babf4049902dc9cbde0e8fd8b72fa
   scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
   scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
   scenarios/write-session-primitive.md: 88b1f94a05bf09e168b9fcc30a82cecf6886ee750dcb44d333545dbff44fc1de
@@ -125,13 +125,13 @@ dispositions:
 
 ## Summary
 
-Re-review for 058 task 34, scoped to the one contract this reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. No observations.
+Re-review for 058 task 42, scoped to the contract that reopen changed, plus task 40's append-inbox and performReview sync. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. No observations.
 
-**What changed.** `data-model.md`, at four places: the `check-artifacts` registry now reads "Ten families" and adds `disposition-drift` (blocking; a `done` spec whose `review.md` counts undispositioned findings; silent for a map-less record; `analysis.md` judged by `/ductus:analyze` from the record it writes); the `append-inbox` sentence now says a caller still passing `dedup-prefix` is refused on MCP and the CLI and ignored only by the exec interpreter; the `write-analysis` 058 note says each finding's `tier` is required and names `decision-key`; and a new `process-decisions` entry records its args, result, and matched/expired/retained semantics.
+**What changed.** `data-model.md`'s `check-artifacts` registry reads "Nine families": `disposition-drift` is in and `analyze-state-drift` is out, and **no family judges `analysis.md`**, because `/ductus:analyze` judges both its dispositions and its state from the record it writes. AC22's 058 annotation and the spec's 058 signpost say the same. `write-analysis-and-the-second-gate` gains a "Changed by 058" note, and `a-done-spec-has-no-transition-to-gate` names analyze-state drift as the check `/{project}:analyze` makes on its new record, over the state that gates. Task 40's sync, committed in 91507c99 before this diff base, was read too: `append-inbox`'s bullet scan counts and does not dedup, and a `performReview` observation carries `text` and `path` alone.
 
-**Scope, and what was not re-read.** `diff-base` 5a9f69ae (the parent of the commit 022 re-entered `in-progress` at), 35 in scope, examined **1**: `data-model.md`, read at the four changed places. **The remaining scenarios under this spec were not re-read**; the recorded digest covers them as they are on disk, unchanged by this reopen. `spec.md` changed only in its status line. The rest of the scope is this spec's historical Affected Files and 058's `tasks.md`. Each statement was checked against the code at 59d75dcb: `check_disposition_drift` and the module doc in `check_artifacts.rs`; `reject_unknown_fields` in `mcp/server.rs` and the built CLI's refusal of `--dedup-prefix`; `ProcessDecisionsArgs`/`ProcessDecisionsResult`, `DecisionRef`'s serialization, and `process_decisions.rs`'s `flatten_line` comparison; and the `write-analysis` input schema's required `tier` and `decision-key`.
+**Scope, and what was not re-read.** `diff-base` 92b4b18a (the parent of 39856db6, where 022 re-entered `in-progress`). 55 files in scope; examined **4**: `spec.md` (the 058 signpost and AC22), `data-model.md` (the `check-artifacts` registry, the `append-inbox` entry, and the `performReview` observations paragraph), and the two annotated scenarios. **The rest of the scope was not re-read.** That includes this spec's other scenarios, which the digest covers as they are on disk and this reopen did not change, the runtime and command files 058 task 42 changed (058's own review covers them), and 047's, 054's, and 058's artifacts. Each claim was checked against the code at 39856db6. `check_artifacts.rs` emits nine family names, none of them `analyze-state-drift`, and its module doc says `analysis.md` is judged by no family. `framework/commands/analyze.md` §Analyze state drift judges the record written after step 19. `append_inbox.rs` counts bullets and has no dedup path. `PassObservation` in `schema/extensions.rs` has `text` and `path` fields only.
 
-**Passes.** Security, reuse, and efficiency had no subject: prose. Quality: each corrected statement matches the code. Simplicity: the new entry mirrors `process-waivers`' shape rather than restating 058's data model.
+**Passes.** Security, reuse, and efficiency had nothing to check, because the changes are prose. Quality: every changed statement matches the code, and the one family count (nine) agrees across the registry, AC22, the signpost, and the scenario note. Simplicity: each annotation states the change once and points to where the check now lives, rather than restating 058's rationale.
 
 ## MUST violations (blocking)
 

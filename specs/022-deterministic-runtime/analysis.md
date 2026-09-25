@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-25T21:14:00Z
-analyzed-against: 59d75dcb19fd21dbad1023fffdffd8696cfd2ed6
+last-run: 2026-09-25T23:14:57Z
+analyzed-against: 39856db620fc3891be9e2d0bd757407fe5a85de5
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 0
 analyzed-digest:
-  data-model.md: bfc874cd56ab8ab81eaaed11ae0222deb95defd6256c0e0a191a5141cdcc9eac
+  data-model.md: c6e2e9b97839765c5275d1be4d1a5f860bad60cd323b47cb967fca1805d05517
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 381122c88c89a6a027f8e94f263ce687018a9489869432e290c930301f458e8a
-  scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
+  review.md: 97de0d0dd730f6ae0c95379d11cbe2335618d9e2d563e981807af0581949860f
+  scenarios/a-done-spec-has-no-transition-to-gate.md: 416012217fd035c450f1709db7c36b314b6ef6bf652ec3b8bb2d2cd78e333c34
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 52a49fff9ad4f3493a9d7f2daf51df20d3ac1f58776015ed64450b46d8a60154
@@ -105,18 +105,18 @@ analyzed-digest:
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
   scenarios/waiver-processing-order.md: 0adb750e651d94ac8bcf06dd0dfbba84cd937c09817035e913ec08b77687f8e8
-  scenarios/write-analysis-and-the-second-gate.md: 4dcad43e3acb56aaa9bcf5504e24e38f7c62405e5d29af8b762ccf10ffddb5c6
+  scenarios/write-analysis-and-the-second-gate.md: 0ed8f4e01c20469ebf6a5bfb524ebe3e6f0babf4049902dc9cbde0e8fd8b72fa
   scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
   scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
   scenarios/write-session-primitive.md: 88b1f94a05bf09e168b9fcc30a82cecf6886ee750dcb44d333545dbff44fc1de
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: a398037b021740bd658bfdf3e9d7dcfb835be85ddf204a6b3a2d36434b69b869
+  spec.md: e51b02bec5198078c0e5ead2f527e62b0d04809cdfd40d7dd018e114810f7380
   tasks.md: 5c4079f6e3c27ce62fc64b1e70b9785b3794620e252fe50fa259f77cbf82f1ff
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -126,7 +126,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -146,4 +146,4 @@ dispositions:
 
 ## Fixed in this run
 
-- decision-drift — AC22 says check-artifacts runs nine families and the 058 signpost omits process-decisions and disposition-drift; 058 made it ten — `specs/022-deterministic-runtime/spec.md` — **fixed**
+*None.*

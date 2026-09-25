@@ -1,17 +1,17 @@
 ---
 spec: 047-analyze-findings-durability
-last-run: 2026-09-25T14:33:17Z
-reviewed-against: aea28e92da8ddda1cef10f1869e98ccc4f824bc8
-diff-base: 52de7ca211ade2801b52e8dd96a8b30d6a569ccd
+last-run: 2026-09-25T23:39:46Z
+reviewed-against: 39856db620fc3891be9e2d0bd757407fe5a85de5
+diff-base: 92b4b18a5812e9c8fe9f1707f62acd052f0620c7
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 examined: 2
-scope: 7
+scope: 27
 skipped-passes: []
 reviewed-digest:
   scenarios/analyze-record-freshness.md: 825f3b4cbe5d780f4d170ff0cbc2bea347d2dfc06c4aacc8c44504ed26f48cfd
-  scenarios/analyze-run-durability.md: 69a78c9c7ba564c943f130195384de5d1d020eea7cf4ed747e9f1770edaddd07
+  scenarios/analyze-run-durability.md: f186704c8fb9758c749a01ee92415dd0def86147f0e5ecad08f114638278b47c
 blocking: false
 dispositions:
   fixed: 1
@@ -24,15 +24,15 @@ dispositions:
 
 ## Summary
 
-Re-review for spec 058's cross-spec discharge (058 task 24). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run.
+Re-review for 058 task 42, scoped to the contract that reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run.
 
-**What changed.** 058 reversed this spec's capture half: `/ductus:analyze` no longer appends findings to the inbox, and each live finding is fixed, routed, or discarded in the run that finds it. `spec.md` gains a second signpost naming the reversal and what survives (the run record, the second gate, the digest freshness check, AC9–AC15); §Behavior and §Constitution amendment are annotated rather than rewritten, since they are the design 058 replaced; AC1–AC7 are annotated in place; each Resolved Question gains a 058 sub-bullet; and both `#automatic-issue-capture` links now point at `#finding-dispositions`.
+**What changed.** `scenarios/analyze-run-durability.md` gains a "Changed by 058" note under **The drift family**: `analyze-state-drift` left `check-artifacts`, because read during detection it judged the record the run was about to replace. `/{project}:analyze` now judges analyze-state drift from the record it writes, which always carries `last-run`, so the check reports a `done` spec whose new record is blocking. `spec.md` changed only in its status line.
 
-**Observation, fixed.** The `analyze-run-durability` scenario's Resolved Questions still said the inbox is where the findings live and that `--fix` is the only path that mutates an audited artifact. Both were falsified by 058. With confirmation, each gained a 058 sub-bullet, matching `spec.md`. That edit changes a durable contract, so this record's digest covers it.
+**The observation.** Directly below the note, the grandfather section still said "The drift family exempts them". Task 42 corrected that same sentence in `scripts/audit/analyze-record-backlog.sh`, `framework/commands/audit.md`, and `scripts/audit/README.md`: since 058 the CI template's analyze-record check (`framework/templates/ci/adopter-generators.yml`, the `analyze-exempt` high-water mark) is what exempts them. The sentence now says the drift family exempted them and names the CI check as what exempts them since 058. The quality pass was re-run over the edited section and found nothing further.
 
-**Scope.** `diff-base` 52de7ca2, 7 in scope, examined **2**: this spec's `spec.md` and `scenarios/analyze-run-durability.md`, both read in full. The five unread: `specs/008-security-rules/spec.md` is 008's own discharge and is reviewed there; `specs/058-findings-route-at-discovery/tasks.md` is 058's; `framework/constitution.md`, `framework/commands/analyze.md`, and its `.claude/` mirror are this spec's historical Affected Files, unchanged since the diff base, and their current text was checked only in the regions the annotations cite (Finding dispositions; analyze.md's scope boundary and steps 16–20). `analyze-record-freshness.md` was not re-read; its one capture-era mention describes review's output before 047 and is history.
+**Scope, and what was not re-read.** `diff-base` 92b4b18a (the parent of 39856db6, where 047 re-entered `in-progress`). 27 files in scope; examined **2**: the scenario (the drift-family note and the grandfather section beside it) and `spec.md`, grep-checked for any other place naming the drift family or the grandfather rule (AC10 and AC11 name neither the family nor its exemption mechanism). **The rest of the scope was not re-read.** That includes this spec's other scenarios and the runtime, command, and audit files 058 task 42 changed, which 058's own review covers. The note was checked against the code at 39856db6: `check_artifacts.rs` emits no `analyze-state-drift`, and `framework/commands/analyze.md` §Analyze state drift judges the record written after step 19.
 
-**Passes.** Security, reuse, and efficiency had no subject: prose in one spec and one scenario. Quality, against `quality-cross.md`: each annotation was checked against the shipped behavior it claims. Simplicity: annotation over rewrite keeps the replaced design readable without restating 058.
+**Passes.** Security, reuse, and efficiency had nothing to check, because the changes are prose. Quality: the note matches the code, and the one stale sentence is fixed. Simplicity: the note states the change once and points to where the check now lives.
 
 ## MUST violations (blocking)
 
@@ -52,7 +52,7 @@ Re-review for spec 058's cross-spec discharge (058 task 24). 0 MUST, 0 SHOULD, 0
 
 ## Observations
 
-- convention: two Resolved Questions in analyze-run-durability still stated capture-era behavior 058 falsified — `specs/047-analyze-findings-durability/scenarios/analyze-run-durability.md` — **fixed**
+- convention: the grandfather section still names the drift family as what exempts done specs predating the record; since 058 the CI template's analyze-record check does — `specs/047-analyze-findings-durability/scenarios/analyze-run-durability.md:70` — **fixed**
 
 ## Skipped passes
 
