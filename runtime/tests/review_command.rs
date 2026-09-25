@@ -3,8 +3,11 @@
 //! Parses the shipped `framework/commands/review.md` and asserts it walks the
 //! review-runtime-acceleration procedure end-to-end: `compute-review-scope` →
 //! `discover-rule-files` → five `performReview` passes → `process-waivers` →
-//! `write-review`. `process-waivers` runs after the passes so waivers are
-//! classified against real findings (spec 022 scenario
+//! two host-responsibility steps (process decisions, fix and route; spec 058)
+//! → `write-review`. The two are prose the exec walker no-ops by design, which
+//! is what records an exec run's observations as undispositioned rather than
+//! deciding them with nobody to confirm. `process-waivers` runs after the
+//! passes so waivers are classified against real findings (spec 022 scenario
 //! waiver-processing-order) — the pre-pass ordering mass-expired every waiver
 //! against an empty `fired` set. This is the parity check for the command
 //! rewrite (spec 022 scenario review-runtime-acceleration, tasks 45g/45i) —
@@ -56,7 +59,9 @@ fn review_command_parses_to_the_expected_procedure() {
         ("6", "extension:performReview"),
         ("7", "extension:performReview"),
         ("8", "primitive:process-waivers"),
-        ("9", "primitive:write-review"),
+        ("9", "prose"),
+        ("10", "prose"),
+        ("11", "primitive:write-review"),
     ]
     .into_iter()
     .map(|(n, k)| (n.to_string(), k.to_string()))

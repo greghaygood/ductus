@@ -123,9 +123,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 14. `review.md`
 
-- [ ] Add a process-decisions step and a fix-and-route step before `write-review`; step 9 passes dispositioned observations (each with `decision-key` when process-decisions matched it), `expired-decisions`, and `decided-by`; the writer derives new decisions from the routed and discarded observations itself
-- [ ] Remove the inbox read from Scope Boundaries and Inputs, the `captured-issues` fields from both frontmatter examples, the `## Captured issues` skeleton entry, §Captured issues, the write-through half of §Observations, and §The inbox row with the `captured` output line
-- [ ] Replace review.md's "do not invent frontmatter fields to track dispositions" warning with a pointer to `dispositions:`
+- [x] Add a process-decisions step and a fix-and-route step before `write-review`; step 9 passes dispositioned observations (each with `decision-key` when process-decisions matched it), `expired-decisions`, and `decided-by`; the writer derives new decisions from the routed and discarded observations itself
+- [x] Remove the inbox read from Scope Boundaries and Inputs, the `captured-issues` fields from both frontmatter examples, the `## Captured issues` skeleton entry, §Captured issues, the write-through half of §Observations, and §The inbox row with the `captured` output line
+- [x] Replace review.md's "do not invent frontmatter fields to track dispositions" warning with a pointer to `dispositions:`
 
 - **Done when**: `review.md` names no inbox write, and its skeleton matches what `write-review` renders.
 
