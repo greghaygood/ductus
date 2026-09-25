@@ -56,6 +56,13 @@ Written to `specs/NNN-feature/review.md` — one review artifact per spec, regar
 The run record, and since 057 the **only** copy of it. Written in the order
 below on every run.
 
+> **Changed by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).**
+> `captured-issues` is gone: observations are no longer written to the inbox,
+> so the run has nothing to count there. The record carries a `dispositions:`
+> map counting what the run did with its observations, and a `decisions:` list
+> storing each routed or discarded one beside `waivers:`. The shapes of both are
+> recorded in [058's data model](../058-findings-route-at-discovery/data-model.md).
+
 ```yaml
 ---
 spec: 020-code-review
@@ -66,7 +73,6 @@ diff-base: <sha of the parent of the in-progress transition commit>
 must-violations: 0
 should-violations: 3
 low-confidence: 2
-captured-issues: 0
 examined: 8
 scope: 11
 skipped-passes: []
@@ -74,7 +80,18 @@ reviewed-digest:
   data-model.md: <sha256>
   scenarios/waiver-expiry.md: <sha256>
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 1
+  discarded: 0
+  undispositioned: 0
 waivers: []                          # omitted entirely when empty
+decisions:                           # omitted entirely when empty
+  - key: "convention: retry backoff is hard-coded — `src/retry.ts`"
+    outcome: routed
+    target: specs/020-code-review/scenarios/retry-config.md
+    decided-at: 2026-05-10T14:32:00Z
+    decided-by: dev@example.com
 ---
 ```
 
@@ -88,14 +105,15 @@ waivers: []                          # omitted entirely when empty
 | `must-violations` | integer ≥ 0 | yes | Post-waiver count. |
 | `should-violations` | integer ≥ 0 | yes | Advisory severity count. |
 | `low-confidence` | integer ≥ 0 | yes | Quality-pass findings below 80 confidence. Excluded from `must-violations`. |
-| `captured-issues` | integer ≥ 0 | yes | Findings this run appended to the inbox. |
 | `examined` | integer ≥ 0 | no | How many in-scope files the five passes actually **read**. Recorded as absent rather than zero when unstated — an unstated claim and a stated zero are different. Added by 022; see AC15. |
 | `scope` | integer ≥ 0 | yes | The denominator `examined` is asserted against, derived by `write-review` rather than supplied. Always written, because it was always computed. Added by 022. |
 | `skipped-passes` | list of strings | yes | Empty when no flag restricts dimensions. Permitted values: `security`, `reuse`, `quality`, `efficiency`, `simplicity`. |
 | `reviewed-digest` | map of path → sha256 | yes | Per-path digest of the spec's **durable contracts** (`scenarios/*.md` and `data-model.md`) as the run read them. What freshness is computed from. Always written, empty map included — *digest taken over a spec with no durable contracts* must stay distinct from *pre-digest record*, which reports freshness as undeterminable rather than current. Added by 022. |
 | `reviewed-unreadable` | list of strings | no | Durable contracts that exist but could not be read, recorded rather than digested as empty. Omitted when none. |
 | `blocking` | boolean | yes | MUST equal `must-violations > 0`. Derived by `write-review`, never accepted from the caller. Read by `/ductus:implement`, `/ductus:analyze`, the CI template. |
+| `dispositions` | map: `fixed`, `routed`, `discarded`, `undispositioned` → integer ≥ 0 | yes | What the run did with its **observations**; MUST and SHOULD violations keep their own counts. Derived by `write-review` from each observation's disposition, and always written with all four counts. A record without it predates dispositions, and the pre-done gate blocks an `in-progress` spec on it. Replaced `captured-issues` in 058. |
 | `waivers` | list of waiver records | no | Omitted entirely when empty. Schema above is open per §text-first-artifacts. |
+| `decisions` | list of decision records | no | Stored routed and discarded observation decisions, keyed on the observation's rendered line, each with `outcome`, `target` or `reason`, `decided-at`, and `decided-by`. Omitted entirely when empty. Open-schema like `waivers`. Added by 058. |
 
 **Validation severity** (per [§text-first-artifacts Frontmatter Schema](../../framework/constitution.md#frontmatter-schema) →
 **Audit records**, which has declared both records since 057):
@@ -117,8 +135,7 @@ result.
 | `## SHOULD violations (advisory)` | Always (empty when none) |
 | `## Low-confidence findings` | Always (empty when none) |
 | `## Waived findings` | Always (empty when none) |
-| `## Captured issues` | Always (empty when none). Added by 047 |
-| `## Observations` | Always (empty when none). Reviewer observations that map to no loaded rule; each is appended to the inbox by the same `write-review` call. Added by 022 |
+| `## Observations` | Always (empty when none). Reviewer observations that map to no loaded rule, each rendered beside its disposition: fixed, routed with its target, discarded with its reason, or undispositioned. Nothing is written to the inbox. Added by 022; dispositions by 058, which also removed the section 047 had added beside this one to list inbox captures |
 | `## Skipped passes` | Always (empty when none) |
 | `## Unexamined governance` | Always (empty when none). Added by 055 |
 

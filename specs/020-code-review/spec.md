@@ -1,6 +1,6 @@
 ---
 spec: 020-code-review
-status: done
+status: in-progress
 dependencies: []
 next-criterion: 16
 ---
@@ -18,7 +18,8 @@ Adds `/ductus:review`, a verb-named slash command that audits implementation cod
 > `spec.md` and from the spec template, and made a residual block a **Blocking**
 > validation finding rather than an open-schema extra. The record's *fields* are
 > unchanged in substance and gained the three that had lived only in `review.md`
-> (`diff-base`, `captured-issues`, `skipped-passes`); the one rename is
+> (`diff-base`, `captured-issues`, `skipped-passes`; 058 has since replaced
+> `captured-issues` with a `dispositions:` map); the one rename is
 > `reviewed-at` → `last-run`, so the pair that used to be spelled two ways for
 > one instant is spelled once. The schema is now declared in the constitution's
 > [§text-first-artifacts Frontmatter Schema](../../framework/constitution.md#frontmatter-schema) → **Audit records**, which is canonical for it; this spec's
@@ -223,11 +224,20 @@ waivers:                              # optional, omitted when empty
 ---
 ```
 
-The merged record also carries the fields that had lived only on `review.md`'s
+The merged record also carried the fields that had lived only on `review.md`'s
 side — `diff-base`, `captured-issues`, `skipped-passes` — plus `examined`,
 `scope` and `reviewed-digest`, which 022 added later. No field was dropped in
 the merge; where both copies carried a key, the spec block's value won, because
 it was the copy every gate actually read.
+
+> **Changed by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).**
+> `captured-issues` is gone, with the inbox write it counted. Each observation
+> is fixed, routed, or discarded with its reason in the run that finds it, and
+> the record counts those outcomes in a `dispositions:` map (`fixed`, `routed`,
+> `discarded`, `undispositioned`) and stores each routed or discarded decision
+> in a `decisions:` list beside `waivers:`. The pre-done gate blocks an
+> `in-progress` spec while `undispositioned` is above zero, and while the record
+> has no map at all. [data-model.md](data-model.md) records both fields.
 
 When any waiver's `file` no longer exists or `rule` is no longer triggered
 at that location, the waiver is dropped on the next `/ductus:review` run and

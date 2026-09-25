@@ -207,7 +207,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 25. Discharge 020 and 057
 
-- [ ] Reopen; correct `review.md`'s and `analysis.md`'s field and section tables in each data model and every `spec.md` claim naming `captured-issues` or `## Captured issues`; add blockquote signposts. Measured 2026-09-25: 020 has 5 hits in `data-model.md` and 2 in `spec.md`; 057 has 6 in `data-model.md` and 2 in `spec.md`
+- [x] Reopen; correct `review.md`'s and `analysis.md`'s field and section tables in each data model and every `spec.md` claim naming `captured-issues` or `## Captured issues`; add blockquote signposts. Measured 2026-09-25: 020 has 5 hits in `data-model.md` and 2 in `spec.md`; 057 has 6 in `data-model.md` and 2 in `spec.md`
 - [ ] Re-run review and analyze on each; return each to `done`
 
 - **Done when**: both are `done` through their gates, and 058's gate reports them discharged.
