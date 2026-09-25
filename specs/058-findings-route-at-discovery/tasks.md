@@ -162,9 +162,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 19. Docs and README
 
-- [ ] `docs/analyze.md`: the write list, the record table, the body skeleton, and the closing example
-- [ ] `docs/slash-commands.md`: `/groom`'s "a chore left alone"; `/status` mentions the inbox row
-- [ ] `README.md`: the incidental-capture sentence and the log and groom rows
+- [x] `docs/analyze.md`: the write list, the record table, the body skeleton, and the closing example
+- [x] `docs/slash-commands.md`: `/groom`'s "a chore left alone"; `/status` mentions the inbox row
+- [x] `README.md`: the incidental-capture sentence and the log and groom rows
 
 - **Done when**: none of the three states that review, analyze, or implement writes to the inbox.
 

@@ -79,8 +79,8 @@ Each entry below says what the command **does**; the section it links to says wh
   - [`/fold`](docs/slash-commands.md#fold--the-branch-scoped-staging-directory-after-migrating-its-content) — merge a branch-scoped spec into its durable home and remove the staging directory
   - [`/consolidate`](docs/slash-commands.md#consolidate--an-entire-spec-directory) — re-point every reference to a replaced spec, then remove it
 - **Brownfield — absorb existing reality**
-  - [`/log`](docs/slash-commands.md#log--one-raw-line-in-specsinboxmd) — add an item to `specs/inbox.md` to be picked up later with `/groom`
-  - [`/groom`](docs/slash-commands.md#groom--every-inbox-item-routed-to-its-real-home) — walk the inbox and route each item to a rule, a spec, a scenario, a chore, or discard
+  - [`/log`](docs/slash-commands.md#log--one-raw-line-in-specsinboxmd) — add a todo you capture by hand to `specs/inbox.md`, to be picked up later with `/groom`
+  - [`/groom`](docs/slash-commands.md#groom--every-inbox-item-routed-to-its-real-home) — walk the inbox and route each item to a rule, a spec, a scenario, a chore done in the pass, or discard
 - **Orient**
   - [`/target`](docs/slash-commands.md#target--the-sessions-working-feature) — set the feature the other commands act on
   - [`/status`](docs/slash-commands.md#status--the-pipeline-view-of-every-feature) — show every feature's pipeline status and what is holding it back
@@ -183,7 +183,7 @@ You don't need to clone `ductus` or rewrite history to adopt it. Install the com
 - Let those specs gain precision incrementally through bug fixes, enhancements, and `/clarify`.
 - Drop raw items into `specs/inbox.md` with `/log` without breaking flow, and route them later with `/groom`.
 
-Adoption spreads by feature area, not in a big bang. The *brownfield backlog* in `inbox.md` drains toward empty as that happens — but the file itself stays: capturing incidental findings is an ongoing role, not a migration phase ([§brownfield-inbox](framework/constitution.md#brownfield-inbox)).
+Adoption spreads by feature area, not in a big bang. The *brownfield backlog* in `inbox.md` drains toward empty as that happens — but the file itself stays: it is where people log todos, an ongoing role rather than a migration phase. Nothing a pipeline run finds is written there. `/review`, `/analyze`, and `/implement` fix, route, or discard each of their own findings in the run that found it, so a spec cannot reach `done` while one waits somewhere no gate reads ([§brownfield-inbox](framework/constitution.md#brownfield-inbox)).
 
 ### Bugs are unwritten scenarios
 

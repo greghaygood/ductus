@@ -93,13 +93,13 @@ Reach for it only when the source spec no longer describes anything true. A spec
 
 ### `/log` — one raw line in `specs/inbox.md`
 
-**Reach for it when you notice something mid-task and do not want to derail to deal with it.** No triage, no routing, no decision — that is `/groom`'s job, later.
+**Reach for it when you notice something mid-task and do not want to derail to deal with it.** No triage, no routing, no decision — that is `/groom`'s job, later. It is the inbox's only writer: `/review`, `/analyze`, and `/implement` fix, route, or discard their own findings in the run that found them, so the inbox holds only what you logged.
 
 ### `/groom` — every inbox item routed to its real home
 
 **Reach for it when the inbox has accumulated and you are ready to decide where each item belongs.**
 
-It walks the list one item at a time and routes each: a rule for a cross-cutting concern, a new spec, a scenario under an existing spec, a chore left alone, or a discard. Each route is confirmed before anything is written, and a `done` spec is reopened when an item lands under it.
+It walks the list one item at a time and routes each: a rule for a cross-cutting concern, a new spec, a scenario under an existing spec, a chore done in the same pass, or a discard. Each route is confirmed before anything is written, and a `done` spec is reopened when an item lands under it.
 
 ## Orient
 
@@ -109,7 +109,7 @@ It walks the list one item at a time and routes each: a rule for a cross-cutting
 
 ### `/status` — the pipeline view of every feature
 
-**Reach for it when you need to answer "where is everything?"** A dashboard of every feature's progress, or a focused view of the current target — including which specs are blocked, which carry unresolved scenario questions, and which have a pending fold.
+**Reach for it when you need to answer "where is everything?"** A dashboard of every feature's progress, or a focused view of the current target — including which specs are blocked, which carry unresolved scenario questions, and which have a pending fold — and, on every run, how many items stand in the inbox and how old the oldest is.
 
 ### `/link` — a registered sibling service, so cross-service references resolve
 
