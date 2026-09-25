@@ -1,15 +1,14 @@
 ---
 spec: 050-constitution
-diff-base: a9bf694567eeb66d3c4fbbef874754b71f780f65
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-15T18:22:57Z
-reviewed-against: 84218ec14fb01780ebc1c907f3b5e229896212d0
+last-run: 2026-09-25T18:29:44Z
+reviewed-against: 79ddf0eb12df2d2bc3273436786fb7f0e93b9c42
+diff-base: f5ddd6f01496fb7225af87ad65d2d6c5465c687e
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 8
-scope: 8
+examined: 3
+scope: 78
+skipped-passes: []
 reviewed-digest:
   scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
   scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
@@ -18,29 +17,29 @@ reviewed-digest:
   scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
   scenarios/a-retired-filename-leaves-a-decision-record.md: f84a3177744eb03a859d82a4017495c24bcf24466448b7c49ad1a253147ab581
   scenarios/completion-claims-carry-no-caveats.md: 2b2e43f4cea73ba9c81dc21848b5c668e1db5bf6a5e3becd7467ce025c4179c4
-  scenarios/findings-route-by-scope.md: f18d999fbe4045c1bd2a894e108e243bf3f578a220a1ebc0bcafb78e1e486bb7
+  scenarios/findings-route-by-scope.md: a29ba00826b6109390c701ebd3eabdd8a1bd687f972f77339e57b629c6122226
   scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
   scenarios/knowledge-routes-by-population-not-by-kind.md: 0e934ea65cbaf2bf31acc4f45c461bfb868be45deb5aa9fa6601c59b8c003c5c
+  scenarios/report-outcomes-not-edits.md: caf13342d7fe0a5af4108024cf424ab921030c896f0743307cf5111be2e163ab
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 050-constitution
 
 ## Summary
 
-Five passes over all 8 in-scope files, each read in full this session: `AGENTS.md` (180 lines, in 15 byte-bounded ranges), `framework/constitution.md` (765 lines, in 8), `specs/045-decision-state-drift-detection/spec.md`, and 050's `spec.md`, `plan.md`, `tasks.md`, the new `scenarios/a-measurement-states-its-method-and-units.md`, plus `specs/inbox.md`. `examined: 8` of `scope: 8` — nothing was folded in on confidence rather than reading. All 11 rule files `discover-rule-files` reports under `selected` were loaded in full before the passes ran.
+Review of 050's reopen (c421d0e1, scenario `report-outcomes-not-edits`) together with spec 058's cross-spec discharge (058 task 26). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. No observations.
 
-Scope is markdown only — no source file is in it — so the surface-specific rule sets (security-backend/frontend, api-backend, concurrency, observability, reliability, performance-backend/frontend, accessibility, configuration-cross) verify design-time commitments this change makes none of: it introduces no endpoint, no credential, no persisted data, no configuration key, no UI. That is stated as a bounded claim, not as a clean sweep: those rules were read and found to have no subject here, which is different from having been checked and passed.
+**What changed.** Two durable contracts. `scenarios/report-outcomes-not-edits.md` is new: an agent's chat replies report outcomes rather than reproducing edits, with the rule as a §pipeline-boundaries bullet. The constitution carries that bullet once, and the scenario's edge cases (asked-for changes, approval gates, failures, locations, durable artifacts) match it. `scenarios/findings-route-by-scope.md` is annotated for 058: a signpost opens its Behavior, and its chore, no-spec-in-progress, and spanning-finding edge cases say what 058 superseded. `spec.md` annotates AC15 and opens its Acceptance Criteria with a 058 signpost. `plan.md`'s Family 38 row was re-keyed in 058 task 22 to `AGENTS.md`'s reworded machinery-observation entry, and that entry's lead phrase matches it.
 
-`quality-cross.md` is the file with a live subject, and `QUAL-CLAIM-001` is the rule the change is most exposed to, since its own content is about claims. Three checks: the constitution bullet states plainly that its disposition rests on re-derivation rather than on any gate; the scenario's Edge Cases state outright that nothing enforces the rule and *why* a gate could not — a comparison of `examined` against `scope` cannot know whether a Summary's denominator matches the primitive's; and the coverage figures written into `plan.md` and `specs/inbox.md` carry their method inline (top-level bullets per level-two heading, in-scope sections only) rather than as bare numbers. A rule requiring stated method whose own landing recorded unstated numbers would have been the defect it describes.
+**Scope.** `diff-base` f5ddd6f0, 78 in scope, examined **3**: `spec.md` and both changed scenarios, read in full. The window is wide because it opens at the commit before 050's reopen, which is also where 058's implementation began. Five of the 78 are 050's own files; of the rest, `framework/constitution.md` and `AGENTS.md` were checked only at the new §pipeline-boundaries bullet, §brownfield-inbox Finding dispositions, and the re-keyed entry, and everything else is 058's runtime, command, doc, and discharge work (plus 045's spec, a historical Affected File), reviewed under 058. Of 050's own, `plan.md` was checked only at the re-keyed row, and `tasks.md` is not reviewed.
 
-Reuse: verified by search rather than assumed, before writing. `units`, `denominator` and `method` appear nowhere in the constitution; §grounding's *Cite what you consulted* binds the **source** only; §design-principles' check-that-cannot-run governs a check that did not run, not a measurement that ran with an unstated denominator. So this is a gap, not a second copy. On the other side of the same rule, the one `AGENTS.md` entry that stated it generally is reduced to a pointer rather than left as a parallel statement, per §drift-prevention's *referencing means a pointer, never a copy*.
-
-Simplicity: one bullet in an existing section, no new heading and no new `<!-- §anchor -->`, which is 050 §Resolved Questions' bullets-not-sections default and leaves AC10's anchor set untouched.
-
-Two things this pass changed that were not in the task as written, both recorded where they bind rather than here. The entry reduced to a pointer is row 22 of `plan.md`'s `#### Second round — promote`, so the new rule **discharges** one of that round's 26 in substance; the row moved to `#### Second round — already promoted in substance` and the round now reads 25 / 1 / 2 / 16, still summing to 44, with `specs/inbox.md` carrying the same delta. And one of the six corollary entries left in place does carry a general clause (*a measurement is a claim, and its scope is part of the claim*); the decision to keep it, and the line that decides such cases, is recorded in the scenario's Edge Cases rather than left for the next reader to re-derive.
-
-Two measurements re-derived rather than quoted, both agreeing with the record: `AGENTS.md` holds **119** rule-bearing bullets (Workflow 49, Gotchas 59, Boundaries 3, Design Principles 8), and the inbox item's claim of *six* entries stating the rule is an undercount — there are **seven**, all seven verified to carry the attributed fragment. The undercount is noted in the scenario as the rule failing on its own proposing record.
+**Passes.** Security, reuse, and efficiency had no subject: prose. Quality: each annotation was checked against the constitution section it names. Simplicity: annotation keeps the scenario's reasoning readable without restating 058.
 
 ## MUST violations (blocking)
 
@@ -55,10 +54,6 @@ Two measurements re-derived rather than quoted, both agreeing with the record: `
 *None.*
 
 ## Waived findings
-
-*None.*
-
-## Captured issues
 
 *None.*
 
