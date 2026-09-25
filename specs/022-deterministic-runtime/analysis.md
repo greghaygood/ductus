@@ -1,18 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-18T00:29:09Z
-analyzed-against: 489c11459f2d790c18aa1c823845b60d07efe883
+last-run: 2026-09-25T18:52:34Z
+analyzed-against: c0337b3b4162811f5f7cf4562cf8ae111286474b
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 2
-captured-issues: 0
+unexamined: 0
 analyzed-digest:
-  data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
+  data-model.md: 57244d2180c1ad3d60a6581d744e385df807e8b1db6afd93815bd040c6be0409
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: e1aeff8f452b39e134dae5b6dd0cfc402d40d9ce4427ddcef692d722b92f81cd
+  review.md: e3f0f0f1b0973487d201d1c001bdfcbeaf5dee88b7736cf4278ac22ce04fc76d
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
-  scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
+  scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 52a49fff9ad4f3493a9d7f2daf51df20d3ac1f58776015ed64450b46d8a60154
   scenarios/an-empty-scope-flag-does-not-decide-the-denominator.md: 13366f629fea7637c497bbb44d7e1ed798500ff3c445e03eb560bb021032117b
@@ -35,7 +34,7 @@ analyzed-digest:
   scenarios/config-resolution-single-probe.md: fc602eb6f2d64f6d1956da411b809af3a53a0c91b26dd198f6b1af61e3347ab4
   scenarios/config-sourced-paths-and-the-traversal-boundary.md: 5ce4f8c45bdfd56606b9a977431e06683f4f38904742f96c358e6b6c5828b30e
   scenarios/constitution-excerpts-as-skill-resources.md: 56192a1689b5afe2bfc51928c27b7d567518816b79c8df0a50250bd3328a8e86
-  scenarios/coverage-expansion-primitives.md: 9b3012b53236aa7012b33a56b03b798595fd0c137dbf3d8ba0b6fdec7fcf2b88
+  scenarios/coverage-expansion-primitives.md: ff05928a8b09b6b921b3336de678002385bdca65140b6d889978a748e5d1720a
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
@@ -52,7 +51,7 @@ analyzed-digest:
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
   scenarios/frontmatter-severity-tiers-on-both-sides.md: c8b6d454ddb4476f57de9c4f8c5f53ad11d948ea5a4e3a7ac4b2bbe0d3d2a5e3
   scenarios/govern-bootstrap.md: 090bdd6076d1118b15f59c806b49bfd37037fb2b60ecdd33d01580018ca7b770
-  scenarios/groom-command-acceleration.md: 59a13672e9f2936610d37d086cba0e34f3342958c513233ac252a4c83d7b85f2
+  scenarios/groom-command-acceleration.md: 778e3712b938a3eaca5c1d87ab7fea331a23a5825c9054dbee5f4e13e890579d
   scenarios/host-protocol-conformance.md: 13c3a2d89eedf4f79e66c9d4e8e97a9b7361e6fd1fa340a76c46730c28e4d542
   scenarios/implement-completion-gate.md: a8f63be47e1f9d8d1c694ce7e3bb189eda669cd05b94884ae1f06d0d246fd8cc
   scenarios/link-adjacent-drift-family.md: 235f5563d2b089d9f926dbb9c234c09a3f4bd502d89ba401db0c65d0c0c351fe
@@ -76,17 +75,17 @@ analyzed-digest:
   scenarios/resolve-references-cli-exec-wiring.md: 3ddff8ea493af57fdacb9fab644d33ae95e766cfe7b7d5b11a27d7f083ce5c59
   scenarios/review-base-includes-the-transition-commit.md: bead0e5e5973049144a0e5fe0dda38ef508234b9db469aee91d7c1d71ca1dfd2
   scenarios/review-exec-wiring.md: 93a1adbbf6f81d20d99ea0bca31c59891fdbc7c21fdde6f2da0cb76b547f9b46
-  scenarios/review-gate-unexaminable-contracts.md: 09b482435eb651225500523ee3026a568023e4734da14722b0910584b77f49c9
-  scenarios/review-observations-write-through.md: abbb178a3784b17314fe1a0f8e414a2718ea32cb8ee06191d1242ec93599c177
-  scenarios/review-runtime-acceleration.md: 480099e1b3d86ca28a6133162c5fe3555b1bee0c2e539c529985668472387869
-  scenarios/review-scope-parse-fidelity.md: aacc1429dd36c837b609a1551ef4692cb071c6bbff4ee010a7cdba486e17fdb8
+  scenarios/review-gate-unexaminable-contracts.md: 47e4e856922bdb730d9d265d2b611ca100438f8eb385b51e05f4e57b6c1e30b1
+  scenarios/review-observations-write-through.md: bee4a7433fc65faa54d9f9e2449bc7642d11ffc2125f8873bef6212ac516ee9d
+  scenarios/review-runtime-acceleration.md: 0b80c97eccff6e7b04db0e2dcb13889750bec79def6fe2d842aebec4838b2d12
+  scenarios/review-scope-parse-fidelity.md: a4f5f0c2bb499777c644cfa7400a39d29e3aa63eaab7be4ff2025c06d8acafb8
   scenarios/review-scope-plan-affected-table-format.md: 33a2f84bf8d9a83375018cadd42a21ab11f2969eb8f1f311fed1530f5065c156
   scenarios/review-scope-union.md: 36b9dd7bcd4981778fc5316172b2bbff58c4df4d2e9e1e3563e9e16c132d5392
   scenarios/review-staleness-gate.md: 919af7b8a614890999b624820ade743f5a257e2adc0d905ee855f8a8b25c912a
   scenarios/review-staleness-on-done-specs.md: e5090cf7fc1529f5763a91365e372980a9c61e9cef738dc24656ccd74fc5b7cc
   scenarios/runtime-primitive-structural-bugs.md: 7fb973b4c5ef5c0268df24996c585f9bf70465f4f7e36ad237d129894f5fd366
   scenarios/runtime-review-019-hardening.md: 9b759c9ce4fc57702e28d764179dcae7b7df9d04dc99ac166b3c0726cf3f9449
-  scenarios/scaffolding-primitives.md: e004025fdbac0d7a85a3d802ea2ec006109ff18619982f4d4eca7d95fff32a2b
+  scenarios/scaffolding-primitives.md: e03523cb215de6f69d82e17f3c1cbb05a8155b0c4d524899ae3892d3737810d0
   scenarios/scenario-open-question-signal.md: bd9e127f09f6aa34417ee912f71a05f0205607b28c799944017a196943b7e129
   scenarios/scenario-question-parser-fix.md: bdcaf5f9bb7d0ff795d6e3a6a5045a79afc63b55d8ce4b3331f807c337bf2ada
   scenarios/severity-is-a-closed-set-not-a-string.md: 45be56aee78248f76087357bcbd807f21515e208e7e6ee5ab8865a924b2bb5d5
@@ -95,13 +94,13 @@ analyzed-digest:
   scenarios/skipscanner-inline-code-exemption.md: ab402c94a437b19b1b9bdd5a58ad3303d6bb67e9822041520522e3a066c43ab5
   scenarios/spec-side-parser-hardening.md: c42a4c32403c47bef48849fedb76c75714048c7dcfd28b89625be702c716490e
   scenarios/specify-routes-before-scaffolding.md: e008baae7f44f2d4ea73d45df18dd6e1f2cc435cdc5562fd8c148494a6d0c520
-  scenarios/the-analyze-record-states-what-it-captured.md: fcad22569e3a107e457789362ce5e730d80e4a035db59c4cfc4810c9c14a2c96
+  scenarios/the-analyze-record-states-what-it-captured.md: 7993c8cd3e8665c62944bd06708dddeeebd766e4e45c97c16cb2fb4f61f6ef92
   scenarios/the-cli-surface-nothing-pins.md: f63de14533aeb6b2c77f33421af289633e0fded63e795f219b82bfa30f071c8c
-  scenarios/the-committed-tree-horizon.md: 5f76019d817bd400d1e28f3622419376187b474a9064ce5a45c3c8637d2d424c
+  scenarios/the-committed-tree-horizon.md: 20857abb817761824891eb284ed1f89e7455a413f3d7a83a25f029c7a256534b
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
   scenarios/the-cross-spec-impact-gate.md: 73f85422945ba170b5ba5394fddff078026684693de49e06874574b53ea67eb0
-  scenarios/the-inbox-row.md: 58d356dddec37f5a770fc51e85668351999b9f701aa6d43631a0aecf411d1edd
-  scenarios/the-promotion-coverage-line.md: 9de217ea4ee337bae7f793914c0e703d085091064d186a1d1a776782f4edb55e
+  scenarios/the-inbox-row.md: f29a57dc733dfbaa62b54a94ca7486cb7fbc2c93d4a4e6ded07ab8714483ae04
+  scenarios/the-promotion-coverage-line.md: 151e741fad3c4f953d85e14d3183fed27ef08bcce0cbd9b42ed7bc89e22fba29
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
@@ -113,18 +112,21 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: 22f81c709736fe15a2ec56e728c1716bc9565db3130f341323bbcd42b87299fc
+  spec.md: f3ab0a5fce49cca7e7425bd28630625604e85717f9834d6765411dabe5b4ef10
   tasks.md: 5c4079f6e3c27ce62fc64b1e70b9785b3794620e252fe50fa259f77cbf82f1ff
-unexamined-by-reason:
-  not-a-live-claim: 2
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Analysis — 022-deterministic-runtime
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -140,8 +142,8 @@ blocking: false
 
 ## Unexamined targets
 
-- not-a-live-claim: 2
+*None — every target was examined.*
 
-## Captured issues
+## Fixed in this run
 
 *None.*
