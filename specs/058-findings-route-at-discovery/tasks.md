@@ -114,10 +114,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 13. `analyze.md`
 
-- [ ] Replace step 16 with host-responsibility steps: process decisions, fix and route (gated per write, no discard for hard-fail or blocking, `--all` grouped by spec with a leave-the-rest choice), and re-run detection when anything was written
-- [ ] Step 17 passes `findings` (each with tier, family, message, path, `live`, and disposition), `expired-decisions` from process-decisions, and `decided-by` (`git config user.email`); the writer derives new decisions from the routed and discarded live findings itself
-- [ ] Add `disposition-drift` to the `--fix` triggers in the frontmatter description, Purpose, Scope Boundaries, and step 18; add a markdown-only "Disposition drift" section
-- [ ] Rewrite §Finding capture (durability) as §Finding dispositions, and the Purpose and Scope Boundaries write lists
+- [x] Replace step 16 with host-responsibility steps: process decisions, fix and route (gated per write, no discard for hard-fail or blocking, `--all` grouped by spec with a leave-the-rest choice), and re-run detection when anything was written
+- [x] Step 17 passes `findings` (each with tier, family, message, path, `live`, and disposition), `expired-decisions` from process-decisions, and `decided-by` (`git config user.email`); the writer derives new decisions from the routed and discarded live findings itself
+- [x] Add `disposition-drift` to the `--fix` triggers in the frontmatter description, Purpose, Scope Boundaries, and step 18; add a markdown-only "Disposition drift" section
+- [x] Rewrite §Finding capture (durability) as §Finding dispositions, and the Purpose and Scope Boundaries write lists
 
 - **Done when**: `analyze.md` names no inbox write, and its walk states the detect → decide → re-check → record → render order.
 

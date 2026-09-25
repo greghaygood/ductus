@@ -1,9 +1,10 @@
 //! `check-artifacts` — the residual deterministic check families from
 //! `/ductus:analyze`'s markdown-only reference, mechanized for one feature.
 //!
-//! Owns nine families (spec 022, scenarios analyze-artifact-checks,
+//! Owns ten families (spec 022, scenarios analyze-artifact-checks,
 //! scenario-open-question-signal, link-adjacent-drift-family,
-//! criterion-path-existence-family, and criterion-label-assignment). Each
+//! criterion-path-existence-family, and criterion-label-assignment; spec 047
+//! for analyze-state drift; spec 058 for disposition drift). Each
 //! family MIRRORS
 //! `framework/commands/analyze.md`'s markdown-only reference — severity
 //! tiers and skip rules come from the reference, the primitive introduces
