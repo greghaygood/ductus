@@ -131,9 +131,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 15. `implement.md`
 
-- [ ] Walk step 5: an issue outside the spec becomes a disposition task through `append-task` with `dedup-title`; working a disposition task fixes, routes, or discards it, with a discard's reason written on the task
-- [ ] Steps 7, 13, and 15, and markdown-only gate step 6: drop `inbox-additions` and the `inbox` row; list the pending disposition tasks
-- [ ] Remove the inbox write-boundary carve-out from Scope Boundaries and `§brownfield-inbox (Automatic issue capture)` from the Reference line; add the two new gate blocks to the gate-order text
+- [x] Walk step 5: an issue outside the spec becomes a disposition task through `append-task` with `dedup-title`; working a disposition task fixes, routes, or discards it, with a discard's reason written on the task
+- [x] Steps 7, 13, and 15, and markdown-only gate step 6: drop `inbox-additions` and the `inbox` row; list the pending disposition tasks
+- [x] Remove the inbox write-boundary carve-out from Scope Boundaries and `§brownfield-inbox (Automatic issue capture)` from the Reference line; add the two new gate blocks to the gate-order text
 
 - **Done when**: `implement.md` names no inbox write, and the completion summary lists disposition tasks.
 
