@@ -201,7 +201,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 - [x] Reopen each with `set-status` (`from: done`); correct every claim 058 falsifies (047's inbox-persistence premise and its capture criteria; 008's adoption-audit inbox write); add a blockquote signpost linking to [058](spec.md). Measured 2026-09-25, re-derive before editing: 008's is `spec.md`'s brownfield-audit section (the inbox-item format, its dedup, the `security audit items added` summary line, and the rejected-alternative paragraph that argues for the inbox) plus AC22 and AC26; 047's is `spec.md` (7 hits for the capture-era shapes, the two anchor links among them)
 - [x] Re-point 047 `spec.md`'s two `#automatic-issue-capture` links to the constitution section task 12 renamed
-- [ ] Re-run `/ductus:review` and `/ductus:analyze` on each so both records carry `dispositions:`; return each to `done` through `check-review-gate`
+- [x] Re-run `/ductus:review` and `/ductus:analyze` on each so both records carry `dispositions:`; return each to `done` through `check-review-gate`
 
 - **Done when**: `check-review-gate` passes for both and returns them to `done`, and 058's gate reports 008 and 047 discharged.
 
