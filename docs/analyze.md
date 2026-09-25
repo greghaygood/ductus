@@ -177,7 +177,7 @@ The completion gate blocks while `undispositioned` is above zero. That is not a 
 
 ### `decisions`
 
-Detection is stateless, so a finding decided in one run fires again in the next — a routed one until its routed work lands. Each routed or discarded decision is stored here, keyed `{family} — {message}`, and a later run that produces the same key counts the finding under the stored outcome without asking again. A stored decision whose finding no longer fires is pruned; a run that left targets unexamined retains it instead, since its finding may simply not have been looked at. A reworded finding is a new finding. A list that does not parse is reported by `validate-frontmatter`, and the writer refuses to write over it rather than read it as empty.
+Detection is stateless, so a finding decided in one run fires again in the next — a routed one until its routed work lands. Each routed or discarded decision is stored here, keyed `{family} — {message}`, and a later run that produces the same key counts the finding under the stored outcome without asking again. A stored decision whose finding no longer fires is pruned; a run that could not read a target retains it instead, since its finding may simply not have been looked at. A target excluded by construction (`not-a-live-claim`, `ships-to-adopter`, `root-absent`) does not count: it recurs on every run, and counting it would keep the decision forever. A reworded finding is a new finding. A list that does not parse is reported by `validate-frontmatter`, and the writer refuses to write over it rather than read it as empty.
 
 ## The report body
 

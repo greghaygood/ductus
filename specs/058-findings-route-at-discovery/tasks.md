@@ -304,7 +304,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 36. Implement scenario: only-unreadable-targets-retain-decisions
 
-- [ ] Implement the behavior described in `scenarios/only-unreadable-targets-retain-decisions.md`
+- [x] Implement the behavior described in `scenarios/only-unreadable-targets-retain-decisions.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested: analyze.md step 16 and docs/analyze.md set restricted only for could-not-be-read skip reasons, and the class list is named once
 
