@@ -4,6 +4,16 @@ section: "Follow-on scenarios"
 
 # The-analyze-record-states-what-it-captured
 
+> **Superseded 2026-09-25 by [058 — Findings route at discovery](../../058-findings-route-at-discovery/spec.md).** `captured-issues` is gone
+> from the analyze record, with the inbox capture it counted. The need this
+> scenario named, that a run producing five findings and landing none must not
+> be byte-identical to one that landed all five, is now met by a `dispositions:`
+> map (`fixed`, `routed`, `discarded`, `undispositioned`). Unlike
+> `captured-issues`, it is derived by `write-analysis` rather than stated by the
+> caller: a live finding the call does not itemize counts as undispositioned,
+> so an omission can never read as handled. And it is gated on: the pre-done
+> gate blocks while `undispositioned` is above zero.
+
 ## Context
 
 [§brownfield-inbox](../../../framework/constitution.md#brownfield-inbox) requires that a findings-producing command *record* what it found rather than only printing it, and names `/{project}:analyze` as the case: *"A findings-producing command that discards its findings is the failure the Design Principles rule names directly."*

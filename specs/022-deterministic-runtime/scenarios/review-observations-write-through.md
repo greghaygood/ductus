@@ -4,6 +4,19 @@ section: "Follow-on scenarios"
 
 # Review-observations-write-through
 
+> **Superseded 2026-09-25 by [058 — Findings route at discovery](../../058-findings-route-at-discovery/spec.md).** `write-review` no longer
+> writes observations to the inbox. The `observations` array, the
+> `## Observations` section, and the rule that an observation never enters the
+> violation counts or `blocking` all stand. What replaced the write-through is
+> a disposition: each observation carries one (fixed, routed with its target,
+> discarded with its reason, or undispositioned), the section renders it beside
+> the observation, the record counts them in a `dispositions:` map, and a
+> routed or discarded one is stored under `decisions:`. The property this
+> scenario existed for survives in a stronger form: an observation cannot go
+> unrecorded, and an undecided one now blocks `done`. The write-through
+> Behavior, its edge cases, and its Resolved Question below describe the
+> design 058 replaced.
+
 ## Context
 
 `/{project}:review`'s five passes bucket every finding into MUST, SHOULD, low-confidence or waived, and `write-review` renders exactly that set. A reviewer who notices something real that maps to **no loaded rule** has nowhere structured to put it. The command is explicit that inventing a rule is not the answer — *"Do not flag patterns that are not in the loaded rules"* — so the observation lands in the free-text Summary, which `write-review` regenerates wholesale on the next run. It is also per-spec, so a cross-cutting observation filed there is both erased and misfiled.

@@ -4,6 +4,20 @@ section: "Follow-on scenarios"
 
 # The-inbox-row
 
+> **Superseded in part 2026-09-25 by [058 — Findings route at discovery](../../058-findings-route-at-discovery/spec.md).** The row survives
+> and moved. `write-review` and `diff-cross-spec` no longer report
+> `inbox-standing`, and the row left `/{project}:review` and the
+> `/{project}:implement` completion summary. `dashboard` reports it, and
+> `/{project}:status` renders it on every run in the same four states, still a
+> notice and never a gate. The window half is gone too: no run writes to the
+> inbox, so there is no Captured issues section or `inbox-additions` list to
+> sit beside it. The rejection of a bare count in `/{project}:status` below was
+> reversed for the reason 058 gives: once no finding can reach the inbox, the
+> count is of a person's logged todos, which have no bearing on the spec a
+> review or implementation run is working on and belong in the project-wide
+> view. The standing count, the never-omitted rule, the `git blame` age, and
+> the no-file state are unchanged.
+
 ## Context
 
 Nothing reports how deep the inbox is. `dashboard` does not read it, `/{project}:status` does not mention it, `check-review-gate` does not consult it, and no `scripts/audit/` family touches it. The two surfaces that show it at all are both **window-scoped**: `/{project}:review`'s **Captured issues** section lists inbox lines added since its `diff-base`, and `/{project}:implement`'s completion summary lists `diff-cross-spec`'s `inbox-additions`, computed from the feature's first commit. Both answer *"what was captured while this feature was open"*. Neither answers *"what is outstanding"*, so an item older than the current feature is invisible by construction.

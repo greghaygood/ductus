@@ -431,7 +431,10 @@ Args:
   "analyzed-against": "abc123", "hard-fail": 0, "blocking-findings": 0,
   "advisory": 8,
   "unexamined-by-reason": { "not-a-live-claim": 79, "root-absent": 26 },
-  "captured-issues": ["convention: link-adjacent-drift — ... — specs/042-widget/spec.md"]
+  "findings": [{ "tier": "advisory", "family": "link-adjacent-drift",
+    "message": "...", "path": "specs/042-widget/spec.md",
+    "disposition": { "outcome": "discarded", "reason": "..." } }],
+  "decided-by": "dev@example.com"
 }
 ```
 
@@ -439,10 +442,18 @@ Result:
 
 ```json
 { "spec-path": "specs/042-widget/spec.md", "blocking": false, "unexamined": 105, "replaced": true,
-  "captured-issues": 1 }
+  "dispositions": { "fixed": 0, "routed": 0, "discarded": 1, "undispositioned": 7 } }
 ```
 
 Writes `specs/{feature}/analysis.md` — the run's record in that file's frontmatter plus the report body's fixed skeleton — the durable record that `/{project}:analyze` ran, and what `check-review-gate` reads to hold a spec out of `done` until it has. It wrote a `analyze:` block into `spec.md` frontmatter until spec 057 gave each audit record one home. Splices without disturbing sibling keys, and refuses a spec whose frontmatter does not parse rather than recording a clean run into it.
+
+> **`captured-issues` was replaced by `findings` in [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).**
+> Each finding arrives with its tier and disposition. The writer derives a
+> `dispositions:` map, counting a live finding the call does not itemize as
+> undispositioned, and stores each routed or discarded finding under
+> `decisions:`, keyed `{family} — {message}`. It refuses a discard on a
+> hard-fail or blocking finding, and requires `decided-by` when a decision is
+> new. [058's data model](../058-findings-route-at-discovery/data-model.md) records the shapes.
 
 **Two values are derived, never accepted**, for the same reason: a field a caller can contradict is a field that will eventually be contradicted.
 
@@ -662,6 +673,12 @@ The scenario-open-question-signal scenario adds two per-spec fields (spec 046):
 
 `scenario-open-question-count` is the total unresolved questions across the spec's scenarios, and `scenarios-with-questions` names the scenarios carrying them in shared scenario order. Both are distinct from `open-question-count`, which stays spec-body-only; the two signals are never summed. They drive three rendering changes: the existing Scenarios column gains a `{count} ({n} open)` suffix when non-zero (unchanged otherwise, so the glance table grows no ninth column), the Next Action cell overrides to `clarify (scenario)`, and a callout below the table names every affected spec with its carrying scenarios — no cap, since a truncated list reads as "these are the ones needing attention" while hiding others. When a spec is in recovery state *and* carries scenario questions, `clarify (recovery)` wins the cell — it is the more upstream defect — but **both** callouts render, because the scenario questions still need resolving after the recovery walk.
 
+058 ([058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md)) adds one top-level field, `inbox-standing`, moved from `write-review` and `diff-cross-spec` (see **The inbox row** below), and `rendered-markdown` gains an `Inbox:` line as the last line of the counts-and-callouts block:
+
+```json
+{ "inbox-standing": { "state": "clean", "outstanding": 0, "path": "specs/inbox.md" } }
+```
+
 The full pipeline view pre-rendered as one markdown fragment, in `/ductus:status`'s documented order: preamble, dashboard table, counts and callouts, and the cross-service references readout (blocks separated by blank lines; the readout omitted when no spec declares references). The runtime resolves each spec's `references:` index internally for the readout — the same classification `resolve-references` exposes, with the matched service's `description` appended from the `[services]` registry — so one `dashboard` call covers the whole view on the runtime path. `/{project}:…` next actions and callout texts substitute the adopter's `[host] project` namespace. Returned data the host may restyle, never stdout printing (§runtime-boundary: no user-facing rendering owned by the runtime); the structured fields stay authoritative for hosts that render their own view. The canonical piece-by-piece formats live in `/ductus:status`'s Rendering reference, which is also the markdown-only path.
 
 ### `resolve-feature` — resolve an identifier to a feature directory
@@ -777,6 +794,10 @@ The deterministic surface behind `/ductus:implement`'s completion gate, which th
 7. **`review-stale`** — the recorded review no longer describes the spec's **durable contracts**. See **Record freshness** below.
 8. **`not-analyzed`** (`analysis.md` absent, or its `last-run` missing or null) and 9. **`analyze-findings`** (`blocking: true`) — the analyze record, read from `analysis.md` (spec 057; a `analyze:` block in `spec.md` frontmatter before it), with the same undeterminable third state. Ordered after every `review:` check because the pipeline is `review → analyze → done`: a spec whose review is missing or failing has not reached the point where analysis is the next thing owed, and naming the later gate for an earlier defect sends a contributor to the wrong command. An **advisory** analyze finding never blocks — that tier is made of checks introduced advisory with their own published promotion criteria, and gating here would promote all of them at once (spec 047; scenario `write-analysis-and-the-second-gate`).
 10. **`analyze-stale`** — the recorded analysis no longer describes the spec's **analyze subjects**. See **Record freshness** below.
+11. **`record-predates-dispositions`** — `review.md` or `analysis.md` has no `dispositions:` map, so it predates finding dispositions; absence is not zero. The message names the record, review before analysis, and the command to re-run.
+12. **`undispositioned-findings`** — either record's `dispositions.undispositioned` is above zero. The message names the count per record and the command that dispositions them. The block asks for a decision, not a fix: discarding a false positive with its reason clears it.
+
+Checks 11 and 12 were added by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md) and sit after every other review and analyze check, because each of those names a more upstream defect.
 
 Each staleness check is ordered last within its half, because it is the weakest claim of its group: the others say a record is missing or failing, these say a passing record is out of date.
 
@@ -861,24 +882,26 @@ Result:
 {
   "first-commit": "b39f2727dc6939ad145ede1830205e0d122075d3",
   "current-head": "550c8ddc33e6895da0ce6c81fa6f6e2c42049e9f",
-  "cross-spec-paths": ["specs/007-sibling/spec.md"],
-  "inbox-additions": ["- security: token logged in plaintext — src/auth.rs (captured during 042)"],
-  "inbox-standing": { "state": "outstanding", "outstanding": 6, "oldest": "2026-05-19", "path": "specs/inbox.md" }
+  "cross-spec-paths": ["specs/007-sibling/spec.md"]
 }
 ```
 
-The deterministic filter `/ductus:implement` steps 7 and 12 previously re-derived by hand per task (step 12's prose self-declared "no primitive owns this filter yet"). Diffs the feature's first spec-dir commit — the same base `derive-boundary` computes, through the shared revwalk helper — against the **working tree** (index and untracked files included), scoped to the spec root: `cross-spec-paths` lists changed paths outside the feature's own directory (sorted; `{specs-root}/inbox.md` excluded), and `inbox-additions` lists the bullet lines added to the inbox in the window (shared bullet grammar, so structural additions — heading, blanks on a brand-new file — never report as captured items). The working-tree diff is why the per-task summary (step 7, which fires before the task's commit) sees the run's uncommitted captures and sibling edits; on a clean tree the result equals the documented `git diff <first-commit>..HEAD -- {specs-root}/` form (step 12). Read-only; both lists empty is the no-impact domain outcome.
+The deterministic filter `/ductus:implement` steps 7 and 12 previously re-derived by hand per task (step 12's prose self-declared "no primitive owns this filter yet"). Diffs the feature's first spec-dir commit — the same base `derive-boundary` computes, through the shared revwalk helper — against the **working tree** (index and untracked files included), scoped to the spec root: `cross-spec-paths` lists changed paths outside the feature's own directory (sorted; `{specs-root}/inbox.md` excluded, since it holds what a person logs, which is no spec's impact). The working-tree diff is why the per-task summary (step 7, which fires before the task's commit) sees the run's uncommitted sibling edits; on a clean tree the result equals the documented `git diff <first-commit>..HEAD -- {specs-root}/` form (step 12). Read-only; an empty list is the no-impact domain outcome.
 
-`inbox-standing` is the **standing** backlog — what is outstanding now — and is a different question from `inbox-additions`, which is this feature's window. See **The inbox row** below; both are reported because the window one cannot cover for the other.
+> **Two fields were removed by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).** `inbox-additions` listed
+> the inbox bullets added in the window, and `inbox-standing` reported the
+> standing backlog. No run writes to the inbox any longer, so there is no
+> window to report, and the standing count moved to `dashboard`. The
+> Resolved-fork paragraph below records the window as it was.
 
-Resolved fork (scenario open question): a separate primitive rather than a mode on `derive-boundary` — the two results share only the diff base (boundary globs versus sibling-paths + inbox lines), so they share the `first_commit_for_prefix` walk as a `pub(crate)` helper instead of a result-shape union. `/ductus:review`'s captured-issues section stays on `compute-review-scope`, whose window starts at the in-progress transition — review wants the current work window, not the feature's whole history. Those additions are derived from the **working tree**, as the bullets present now that were absent at the diff base: a capture made during the work being reviewed is by definition uncommitted, and the earlier `base..HEAD` line diff reported none of them, so the section whose purpose is to surface mid-task captures at the gate could not see them (scenario `the-committed-tree-horizon`). Comparing bullet *sets* rather than diff lines is also what the line-diff implementation converged on by filtering additions against the post-image — restoring the shipped `<!-- Rules: … -->` guidance block once reported ~30 "captured issues", one per comment line. The base is the transition commit's **parent**: `base..HEAD` excludes the base's own changes, and the reopen flow commits `/ductus:amend`'s back-edge flip together with the work it authorises, so a base *at* the transition excluded the whole subject (scenario `review-base-includes-the-transition-commit`).
+Resolved fork (scenario open question): a separate primitive rather than a mode on `derive-boundary` — the two results share only the diff base (boundary globs versus sibling paths, plus inbox lines until 058), so they share the `first_commit_for_prefix` walk as a `pub(crate)` helper instead of a result-shape union. `/ductus:review`'s captured-issues section stayed on `compute-review-scope` until 058 removed it, whose window starts at the in-progress transition — review wants the current work window, not the feature's whole history. Those additions are derived from the **working tree**, as the bullets present now that were absent at the diff base: a capture made during the work being reviewed is by definition uncommitted, and the earlier `base..HEAD` line diff reported none of them, so the section whose purpose is to surface mid-task captures at the gate could not see them (scenario `the-committed-tree-horizon`). Comparing bullet *sets* rather than diff lines is also what the line-diff implementation converged on by filtering additions against the post-image — restoring the shipped `<!-- Rules: … -->` guidance block once reported ~30 "captured issues", one per comment line. The base is the transition commit's **parent**: `base..HEAD` excludes the base's own changes, and the reopen flow commits `/ductus:amend`'s back-edge flip together with the work it authorises, so a base *at* the transition excluded the whole subject (scenario `review-base-includes-the-transition-commit`).
 
 ### `append-inbox` — append one bullet to the inbox
 
 Args:
 
 ```json
-{ "text": "security: token logged in plaintext — src/auth.rs (captured during 022)", "dedup-prefix": "security: token logged" }
+{ "text": "security: token logged in plaintext — src/auth.rs", "dedup-prefix": "security: token logged" }
 ```
 
 Result:
@@ -985,22 +1008,44 @@ The request gains an optional `candidates` array carrying `derive-routing-candid
 Args (the observations half only; the findings/waivers/scope arguments are unchanged):
 
 ```json
-{ "observations": [{ "text": "perf: the config file is re-read on every primitive call", "path": "runtime/src/schema/paths.rs" }] }
+{ "observations": [{ "text": "perf: the config file is re-read on every primitive call", "path": "runtime/src/schema/paths.rs",
+  "disposition": { "outcome": "routed", "target": "specs/022-deterministic-runtime/tasks.md" } }],
+  "decided-by": "dev@example.com" }
 ```
 
 Result (the observations half only):
 
 ```json
-{ "observations": 1, "observations-captured": 1 }
+{ "observations": 1, "dispositions": { "fixed": 0, "routed": 1, "discarded": 0, "undispositioned": 0 } }
 ```
 
-An **observation** is something the reviewer judged real that maps to no loaded rule, so it cannot be a finding. `path` is optional. Observations never enter `must-violations` / `should-violations` / `low-confidence`, never affect `blocking`, and never change the exit code; they render in their own `## Observations` report section, which sits after `## Captured issues` and before `## Skipped passes` and emits `*None.*` when empty like every other section. The report frontmatter is unchanged — no `observations:` key — so a run with no observations produces a byte-identical report to one written before this addendum.
+An **observation** is something the reviewer judged real that maps to no loaded rule, so it cannot be a finding. `path` is optional. Observations never enter `must-violations` / `should-violations` / `low-confidence`, never affect `blocking`, and never change the exit code; they render in their own `## Observations` report section, which sits after `## Waived findings` and before `## Skipped passes` and emits `*None.*` when empty like every other section. The report frontmatter carries no `observations:` key.
 
-**Recording is capture.** The same call appends one bullet per observation to `{specs-root}/inbox.md` in the form ``- [ ] {text} — `{path}` (captured during review of {feature})`` (the path clause dropped when absent), via the `append-inbox` primitive rather than a second append implementation, dedup-guarded on that whole rendered line so a re-run over an unchanged repo appends nothing. `observations` counts what the report rendered; `observations-captured` counts what was newly appended, so a caller can tell *nothing to capture* from *capture ran and everything was already there*. The inbox write happens **before** `review.md` is written and an I/O failure fails the whole call: a report whose section claims a capture that did not happen is the defect this write-through removes (QUAL-CLAIM-001), and the reverse order would reintroduce it one level down. Observation `text` and `path` carry `append-inbox`'s single-line rule, screened up front so a rejection touches no artifact.
+> **Recording is disposition since [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).** Each observation
+> carries a disposition (fixed, routed with its target, discarded with its
+> reason, or undispositioned by default), the section renders it beside the
+> observation, the record counts the four outcomes in a `dispositions:` map,
+> and a newly routed or discarded observation is stored under `decisions:`.
+> Nothing is written to the inbox, so `observations-captured` is gone. The
+> write-through paragraph below describes the design 058 replaced; scenario
+> `review-observations-write-through` is marked superseded.
+
+**Recording was capture.** The same call appends one bullet per observation to `{specs-root}/inbox.md` in the form ``- [ ] {text} — `{path}` (captured during review of {feature})`` (the path clause dropped when absent), via the `append-inbox` primitive rather than a second append implementation, dedup-guarded on that whole rendered line so a re-run over an unchanged repo appends nothing. `observations` counts what the report rendered; `observations-captured` counts what was newly appended, so a caller can tell *nothing to capture* from *capture ran and everything was already there*. The inbox write happens **before** `review.md` is written and an I/O failure fails the whole call: a report whose section claims a capture that did not happen is the defect this write-through removes (QUAL-CLAIM-001), and the reverse order would reintroduce it one level down. Observation `text` and `path` carry `append-inbox`'s single-line rule, screened up front so a rejection touches no artifact.
 
 `performReview`'s response carries a matching optional `observations` array, accumulated across passes exactly as `findings` is and filtered out of later passes' request payloads by the same rule; without that leg the section would render `*None.*` on every run whether or not the reviewer had any. Defined by `scenarios/review-observations-write-through.md`; requiring spec [017 — Derive, Don't Ask](../017-derive-dont-ask/spec.md) AC25.
 
 ### The inbox row — `inbox-standing` on `write-review` and `diff-cross-spec` (addendum)
+
+> **Moved by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).** `write-review` and `diff-cross-spec` no
+> longer return `inbox-standing`; `dashboard` does, and `/{project}:status`
+> renders it as an `Inbox:` line on every run in the same four states, still a
+> notice and never a gate. The window this addendum contrasts it with is gone,
+> since no run writes to the inbox. The rejection of a bare count in
+> `/{project}:status` at the end of this addendum was reversed for the reason
+> 058 gives: with no finding able to reach the inbox, the count is of a
+> person's logged todos, which have no bearing on the spec a review or
+> implementation run is working on. The field's shape, the `git blame` age,
+> the no-file state, and the notice-not-gate rule are unchanged.
 
 Result (the standing half only; identical on both primitives):
 
@@ -1028,7 +1073,7 @@ Arg (caller-supplied numerator) and result (both halves):
 
 `write-review` recorded no denominator, so a review whose five passes read the whole scope and found nothing and a review whose passes never ran produced **byte-identical** records — same `0/0/0`, same `reviewed-digest`, same `blocking: false`. `check-review-gate`, Family 19, the review-block-agreement family (Family 31, retired with the record's second home by spec 057) and a reader were all equally unable to separate them. `write-analysis` has required `unexamined` since [047](../047-analyze-findings-durability/spec.md) for exactly this reason; the reasoning was written for the analyze half and never carried across (scenario `a-review-states-what-it-read`).
 
-The asymmetry between the two fields is the design. **`scope` is derived by the primitive**, resolving `compute-review-scope` against the run's own `diff-base` — the same discipline that already derives `blocking`, `reviewed-digest`, `inbox-standing` and the Unexamined-governance section, and for the same reason: a caller that supplied it could shrink the subject to match whatever it read. **`examined` is the caller's claim**, because how many files the passes actually read is the one thing only the host knows.
+The asymmetry between the two fields is the design. **`scope` is derived by the primitive**, resolving `compute-review-scope` against the run's own `diff-base` — the same discipline that already derives `blocking`, `reviewed-digest`, `inbox-standing` (since moved to `dashboard` by 058) and the Unexamined-governance section, and for the same reason: a caller that supplied it could shrink the subject to match whatever it read. **`examined` is the caller's claim**, because how many files the passes actually read is the one thing only the host knows.
 
 Both are written to `review.md`'s frontmatter — and, until spec 057 left the record one home, to the spec's `review:` block as well, which is what gave Family 31 two sides to compare. An **unstated** `examined` is recorded as absent, never as a computed zero: a claim never made and a claim that came back empty are different facts, the same distinction §grounding draws between *could not examine* and *examined and found nothing*.
 
@@ -1043,7 +1088,7 @@ A record predating the field carries neither key, so there is no denominator to 
 Args:
 
 ```json
-{ "item": "security: token logged in plaintext — src/auth.rs (captured during 022)" }
+{ "item": "security: token logged in plaintext — src/auth.rs" }
 ```
 
 Result:

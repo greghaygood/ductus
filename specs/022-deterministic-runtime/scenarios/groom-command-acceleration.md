@@ -14,7 +14,7 @@ The spec's third deferred follow-on, never shipped: `/ductus:groom` remains lega
 
 ## Edge Cases
 
-- A chore item is left in place (no write, no route) exactly as the constitution's inbox rules require.
+- A chore item is left in place (no write, no route) exactly as the constitution's inbox rules require. **Superseded since**: the constitution's inbox rules now say to fix a chore rather than park it, so groom does a chore in the pass and removes it, and leaves it in place only when the fix is blocked or turns out not to be mechanical.
 - An item routing to a spec that does not exist directs the user to `/ductus:specify` and moves on, as today.
 - Inbox item removal remains a host edit (`Edit` on `specs/inbox.md`) until the scaffolding-primitives scenario's `append-inbox`/inbox tooling covers removal — prose stays the owner of that line-level edit on both paths.
 

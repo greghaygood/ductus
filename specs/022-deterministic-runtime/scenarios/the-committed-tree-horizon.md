@@ -20,6 +20,11 @@ Why it survived this long: it bites less often than the analyze half did. Only `
 
 ## Behavior
 
+> **The `captured-issues` half was removed by [058 — Findings route at discovery](../../058-findings-route-at-discovery/spec.md).** No run writes
+> to the inbox, so `compute-review-scope` computes no inbox window. The
+> `compute-review-scope` bullet and the no-inbox edge case below describe what
+> was removed; the digest half stands.
+
 **Both checks compare what was examined, not where `HEAD` was.** The record carries a digest of the content the command actually read, and the check is a digest comparison. `reviewed-against` and `diff-base` stay in their records as provenance.
 
 - **`write-review`** records a digest of the review's **durable contracts** — the `scenarios/*.md` and `data-model.md` files `stale_review_block` compares — taken from disk as the review read them. The subject set is unchanged; only the reference point moves. `review.md` and `spec.md` stay outside it for the reason they always have: `write-review` touches both, so counting them would stale every review the instant it was recorded. **Spec 057 stopped it touching `spec.md`**, so that half of the reason has lapsed; the exclusion is kept anyway, because widening it would stale every review on any spec-body edit.
