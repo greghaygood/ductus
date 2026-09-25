@@ -139,10 +139,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 16. The other commands
 
-- [ ] `amend.md`: the chore guard, its routing row, and its output message fix the chore rather than redirecting to `/{project}:log`
-- [ ] `groom.md`: correct the step-2 "leave it in the inbox" chore line
-- [ ] `status.md`: the output includes the `Inbox:` line `dashboard` renders
-- [ ] `help.md` and `log.md`: describe the inbox as the place for manually captured todos
+- [x] `amend.md`: the chore guard, its routing row, and its output message fix the chore rather than redirecting to `/{project}:log`
+- [x] `groom.md`: correct the step-2 "leave it in the inbox" chore line
+- [x] `status.md`: the output includes the `Inbox:` line `dashboard` renders
+- [x] `help.md` and `log.md`: describe the inbox as the place for manually captured todos
 
 - **Done when**: none of the five describes automatic capture or a chore parked in the inbox by a run.
 

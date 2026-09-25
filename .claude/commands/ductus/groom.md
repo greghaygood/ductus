@@ -69,7 +69,7 @@ For each item, walk the steps in order; the first matching step names the route.
 **Step 2: Does a spec exist for this behavior?** (route: `spec`, no matched feature)
 
 - Search `specs/` for a feature directory that covers this area.
-- If no spec exists — recommend creating one via `/ductus:specify`. Ask the user whether to create the spec now or skip this item. (If the item is a chore rather than a feature gap — see Step 4 — it never needs a spec; leave it in the inbox.)
+- If no spec exists — recommend creating one via `/ductus:specify`. Ask the user whether to create the spec now or skip this item. (If the item is a chore rather than a feature gap — see Step 4 — it never needs a spec; do it in this pass and remove it.)
 
 **Step 3: Is the spec ambiguous or incomplete?** (route: `spec`, matched feature)
 
