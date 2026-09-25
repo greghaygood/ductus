@@ -214,8 +214,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 26. Discharge 050
 
-- [ ] 050 is already `in-progress`: it was reopened in `c421d0e1` for scenario `report-outcomes-not-edits` (its task 24, done). Skip the reopen, and let this return to `done` cover both
-- [ ] Annotate `scenarios/findings-route-by-scope.md`'s chore and no-spec-in-progress edge cases as superseded by 058, and add the signpost to `spec.md`. Measured 2026-09-25: 4 capture-era hits in that scenario and 2 in `spec.md`. Task 22 (`f0716c7a`) also re-keyed a Family 38 row in 050's `plan.md` to `AGENTS.md`'s reworded machinery-observation entry, so 050's analysis is stale on `plan.md` as well; the analyze re-run below covers it
+- [x] 050 is already `in-progress`: it was reopened in `c421d0e1` for scenario `report-outcomes-not-edits` (its task 24, done). Skip the reopen, and let this return to `done` cover both
+- [x] Annotate `scenarios/findings-route-by-scope.md`'s chore and no-spec-in-progress edge cases as superseded by 058, and add the signpost to `spec.md`. Measured 2026-09-25: 4 capture-era hits in that scenario and 2 in `spec.md`. Task 22 (`f0716c7a`) also re-keyed a Family 38 row in 050's `plan.md` to `AGENTS.md`'s reworded machinery-observation entry, so 050's analysis is stale on `plan.md` as well; the analyze re-run below covers it
 - [ ] Re-run review and analyze; return to `done`
 
 - **Done when**: 050 is `done` through its gate, and 058's gate reports it discharged.

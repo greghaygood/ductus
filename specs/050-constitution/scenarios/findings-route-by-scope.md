@@ -14,6 +14,18 @@ The rule was first written as an `AGENTS.md` entry, which is the failure this sp
 
 ## Behavior
 
+> **Superseded in part by [058 — Findings route at discovery](../../058-findings-route-at-discovery/spec.md).**
+> The three tiers stand, and so does what the rule does not license, but the
+> third tier no longer ends at the inbox. A finding outside the spec gets one
+> of three dispositions: fixed, routed to an artifact the pre-`done` gate
+> reads, or discarded with its reason. `/{project}:implement` first records it
+> as a disposition task on the targeted spec. Two claims below no longer hold:
+> a finding outside the spec is not captured, and a chore a run finds is fixed
+> in that run rather than left as an inbox item. The subsection is now
+> §brownfield-inbox Finding dispositions, and its *Scope decides the
+> destination* bullet carries this rule. The chore, no-spec-in-progress, and
+> spanning-finding edge cases are annotated in place.
+
 §brownfield-inbox's Automatic issue capture carries a bullet stating that scope decides the destination and that the inbox is only for findings with no home. It names three tiers explicitly: a finding inside the current **task** is fixed in the task; a finding inside the current **spec** but outside the task is written to that spec's `tasks.md` as a new unchecked task; a finding outside the spec is captured to the inbox.
 
 The reason is stated with the rule, because the rule reads as an exception to capture unless the reader can see why it is not one: an in-progress spec *is* the home the inbox exists to find, so an item that starts and ends at the same spec pays a full routing loop for nothing. Visibility is unchanged either way — a task added mid-implementation is surfaced in the `/{project}:implement` completion summary the same way a capture is, which is the backstop the capture rule relies on.
@@ -25,11 +37,11 @@ The section's closing sentence, which promised that discoveries reach the inbox,
 ## Edge Cases
 
 - **The finding is a missing requirement, not a defect.** Still routed to the spec, but through `/{project}:amend` as a scenario or spec edit — the task is what implements it. The durability test in §bug-handling is untouched; a task is a work item, never the record.
-- **The finding is a chore.** Project maintenance with no feature home goes to the inbox even when it surfaced in the middle of spec work. Proximity to the current spec is not the test; ownership is.
+- **The finding is a chore.** Project maintenance with no feature home goes to the inbox even when it surfaced in the middle of spec work. Proximity to the current spec is not the test; ownership is. **Superseded by 058**: a chore a run finds is fixed in that run (§bug-handling), so it never reaches the inbox; only a chore a person logs by hand lives there until it is done. Ownership is still the test for where a non-chore finding goes.
 - **The finding is about the pipeline's own machinery.** Belongs to no spec, and the standing rule against frontfilling still governs it — it is discarded unless it blocks the current work, not relocated into `tasks.md`.
-- **No spec is in progress.** There is no in-between tier to route to, so the inbox is the destination and capture behaves exactly as before.
+- **No spec is in progress.** There is no in-between tier to route to, so the inbox is the destination and capture behaves exactly as before. **Superseded by 058**: no finding a run produces goes to the inbox, whatever the targeted spec's status. It gets a disposition in that run, and the inbox holds only what a person logs with `/{project}:log`.
 - **The finding arrives after the spec has closed.** The scope test still applies, but reaching the spec now costs the `done → in-progress` back-edge; that is the intended price and is cheap, not a reason to prefer the inbox.
-- **A finding that spans the in-progress spec and another one.** Split it: the part this spec owns becomes a task, the remainder is captured. A single item covering both would be routed by `/{project}:groom` to the spec that is already handling half of it.
+- **A finding that spans the in-progress spec and another one.** Split it: the part this spec owns becomes a task, the remainder is captured. A single item covering both would be routed by `/{project}:groom` to the spec that is already handling half of it. **Superseded by 058** in its second half: the remainder is fixed, routed, or discarded on its own rather than captured.
 
 ## Open Questions
 
