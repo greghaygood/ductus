@@ -337,12 +337,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 40. Correct the prose the second review found stale
 
-- [ ] `analyze.md` step 17, the constitution's Three dispositions bullet, and 058's own `spec.md` §Three dispositions: a route to a spec that is `done`, the spec in hand included, reopens it
-- [ ] 058 `data-model.md` and `plan.md`: disposition-drift judges `review.md` only; `restricted` is set only by a could-not-be-read skip reason or an unresolved constitution; the malformed and duplicate entries' survival names the two pruning cases the review discarded (an all-empty entry, a duplicate whose key expires or is re-decided); a decision is new unless its key and outcome are stored; `inbox_standing.rs` is not doc-only; and `invalidate-review` nulls `captured-issues` for the records that still carry it (task 39)
+- [x] `analyze.md` step 17, the constitution's Three dispositions bullet, and 058's own `spec.md` §Three dispositions: a route to a spec that is `done`, the spec in hand included, reopens it
+- [x] 058 `data-model.md` and `plan.md`: disposition-drift judges `review.md` only; `restricted` is set only by a could-not-be-read skip reason or an unresolved constitution; the malformed and duplicate entries' survival names the two pruning cases the review discarded (an all-empty entry, a duplicate whose key expires or is re-decided); a decision is new unless its key and outcome are stored; `inbox_standing.rs` is not doc-only; and `invalidate-review` nulls `captured-issues` for the records that still carry it (task 39)
 - [ ] 022 `data-model.md`'s `append-inbox` entry: bullet scanning counts and does not dedup; a mechanical sync, after which 022's review record is refreshed (no reopen)
-- [ ] `docs/analyze.md` §decisions points to the reason-class table instead of restating it, and names the unresolved-constitution case
-- [ ] `framework/bootstrap/ductus-procedure.md`: a gap returns as a finding that is fixed or routed, and a SHOULD-tier gap may also be discarded
-- [ ] `review.md` markdown-only step 1.3: observations supplied to an empty-scope run are dispositioned before the record is written
+- [x] `docs/analyze.md` §decisions points to the reason-class table instead of restating it, and names the unresolved-constitution case
+- [x] `framework/bootstrap/ductus-procedure.md`: a gap returns as a finding that is fixed or routed, and a SHOULD-tier gap may also be discarded
+- [x] `review.md` markdown-only step 1.3: observations supplied to an empty-scope run are dispositioned before the record is written
 
 - **Done when**: each named passage agrees with the runtime, the scenarios, and the other commands, 022's review is current, and full markdownlint and `scripts/audit/run-all.sh` pass
 

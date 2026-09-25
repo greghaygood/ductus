@@ -72,13 +72,22 @@ decisions:
   routed work landed.
 - **Retained.** The key did not fire, but the run did not evaluate its source:
   a review with a pass that did not run (a dimension-restricting flag, or an
-  empty scope), or an analysis with unexamined targets. The entry is
-  re-rendered unchanged.
+  empty scope), or an analysis that could not read a target it meant to
+  examine (a skipped target in the *could not be read* class) or could not
+  resolve a registered shared constitution. A target excluded by construction
+  does not count
+  ([only-unreadable-targets-retain-decisions](scenarios/only-unreadable-targets-retain-decisions.md)).
+  The entry is re-rendered unchanged.
 - **Malformed.** A required field is missing, or the outcome's companion field
-  (`target` or `reason`) is missing. It produces a notice, is never pruned, and
-  applies to nothing.
-- **Duplicate key.** The first entry applies; each duplicate produces a notice
-  and none is pruned.
+  (`target` or `reason`) is missing. It produces a notice, is never expired, and
+  applies to nothing. An entry with no fields at all is the one exception: it
+  holds no decision to lose, so a re-render drops it, as it drops an all-empty
+  waiver.
+- **Duplicate key.** Keys compare flattened to one line, as the writers store
+  them. The first entry applies; each duplicate produces a notice and is never
+  applied. It is dropped when its key expires or is decided again, as a
+  duplicate waiver goes with its key, because a new decision replaces every
+  stored entry for that key.
 - **Unparseable list.** `validate-frontmatter` reports it as a hard failure
   naming the file, and the writers refuse to write rather than treat it as
   empty. So does a record whose frontmatter does not parse at all, since its
@@ -186,7 +195,7 @@ again. A spent section never matches.
 | `feature` | string | Feature directory under the spec root. |
 | `record` | `review` \| `analysis` | Which record's `decisions:` to read. |
 | `fired` | list of strings | This run's finding keys (MCP only, as `process-waivers`' `fired` is). |
-| `restricted` | bool | The run did not evaluate every source: a review pass did not run, or an analysis target went unexamined. |
+| `restricted` | bool | The run did not evaluate every source: a review pass did not run, or an analysis could not read a target it meant to examine or could not resolve a registered shared constitution. |
 
 | Result field | Type | Notes |
 | --- | --- | --- |
@@ -207,9 +216,11 @@ predates (review, then analysis), then undispositioned (review, then analysis).
 
 ## New `check-artifacts` family — `disposition-drift`
 
-At `done`, `Blocking`, one finding per record whose `undispositioned` is above
-zero, with `path` = `spec.md`. A record without a `dispositions:` map produces
-nothing. `/{project}:analyze --fix` reverts a spec it names from `done` to
+At `done`, `Blocking`, one finding when `review.md`'s `undispositioned` is
+above zero, with `path` = `spec.md`. A record without a `dispositions:` map
+produces nothing. `analysis.md` is not judged here: `/{project}:analyze` judges
+it after writing it, from the record it wrote
+([analysis-drift-judges-the-record-it-writes](scenarios/analysis-drift-judges-the-record-it-writes.md)). `/{project}:analyze --fix` reverts a spec it names from `done` to
 `in-progress`.
 
 ## `DashboardResult.inbox-standing`

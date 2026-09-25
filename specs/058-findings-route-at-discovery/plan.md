@@ -83,15 +83,17 @@ not wait for it: `/{project}:review` calls `process-waivers` at step 8, before
   - `fired`: this run's finding keys;
   - `restricted`: true when a review had a pass that did not run (a
     dimension-restricting flag, or an empty scope that skipped them all), or
-    an analysis left a target unexamined.
+    an analysis could not read a target it meant to examine or could not
+    resolve a registered shared constitution
+    (scenario `only-unreadable-targets-retain-decisions`).
 - **Result:**
   - `matched`: stored decisions whose key fired, each with its outcome and
     target or reason;
   - `expired`: stored decisions whose key did not fire on an unrestricted run;
   - `retained`: stored decisions whose key did not fire on a restricted run;
   - `notices`.
-- **Malformed entries** are reported and never pruned. Duplicates warn, and the
-  first one wins.
+- **Malformed entries** are reported and never expired. Duplicates warn, and
+  the first one wins. The data model names the two cases a re-render drops.
 
 Both rules match `review.md` §Malformed and duplicate waivers
 (`framework/commands/review.md:703-722`).
@@ -105,8 +107,8 @@ The writers then take:
   (`git config user.email`).
 
 There is no `new-decisions` list. Each writer derives its new decisions from
-the findings it is handed: every routed or discarded live finding whose key,
-outcome, and target or reason are not already stored becomes an entry, stamped
+the findings it is handed: every routed or discarded live finding whose key
+and outcome are not already stored becomes an entry, stamped
 with the run's own timestamp (`reviewed-at` or `analyzed-at`) as `decided-at`
 and with `decided-by` as its author. `decided-by` is required only when at
 least one entry is new. Deriving the list, rather than accepting it, means the
@@ -138,10 +140,10 @@ to reproduce.
 - **Remove the captured-issues window.** Delete `WriteReviewArgs.captured_issues`
   (`primitives.rs:529`), the `captured-issues:` frontmatter line
   (`write_review.rs:492`), and the `## Captured issues` section with
-  `render_captured` (`:562-565`, `:661-679`). `invalidate-review` drops
-  `captured-issues` from the scalars it nulls
-  (`runtime/src/primitives/invalidate_review.rs:110`). Its keep-every-other-key
-  rule already preserves `decisions:`.
+  `render_captured` (`:562-565`, `:661-679`). `invalidate-review` nulls
+  `dispositions:` with the run's other counts, and keeps nulling
+  `captured-issues` for the pre-058 records that still carry it. Its
+  keep-every-other-key rule already preserves `decisions:`.
 - **Observations carry their disposition.** `ReviewObservation`
   (`primitives.rs:459-468`) gains:
   - `disposition`, a `Disposition`: an outcome (`DispositionOutcome`:
@@ -272,8 +274,10 @@ distinguishing conditions by message text. A separate `disposition-drift`
 family instead gives `--fix` a family key to trigger on:
 
 - It applies at `done` only.
-- It reads **both** records, because the gate reads both and a `done` spec with
-  undispositioned review observations is the same residue.
+- It reads `review.md` only. `analysis.md` is judged by `/{project}:analyze`
+  after it writes that record, from the record it wrote, because a finding
+  read from the record a run is about to replace could never clear (scenario
+  `analysis-drift-judges-the-record-it-writes`).
 - It is `Blocking`.
 - A record without a map produces nothing, the same grandfathering as the
   analyze-state drift family (`check_artifacts.rs:605-607`).
@@ -480,7 +484,7 @@ gain it too (`framework/bootstrap/configure/claude.md:119-120`, `auggie.md:107-1
 | `runtime/src/primitives/compute_review_scope.rs` | Modify | Drop the captured-issues window |
 | `runtime/src/primitives/diff_cross_spec.rs` | Modify | Drop inbox additions and standing |
 | `runtime/src/primitives/dashboard.rs` | Modify | Inbox standing and its rendered row |
-| `runtime/src/primitives/inbox_standing.rs` | Modify | Doc only: its caller is now `dashboard` |
+| `runtime/src/primitives/inbox_standing.rs` | Modify | Its caller is now `dashboard`; the age dates each bullet by its text against `HEAD`'s blame |
 | `runtime/src/primitives/check_review_gate.rs` | Modify | Two new blocks; doc corrections |
 | `runtime/src/primitives/check_artifacts.rs` | Modify | `disposition-drift` family |
 | `runtime/src/primitives/append_task.rs` | Modify | `dedup-title` |

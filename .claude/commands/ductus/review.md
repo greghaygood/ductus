@@ -139,7 +139,11 @@ The numbered Instructions above are the deterministic path — the runtime's pri
 3. Build the file scope per [Inputs](#inputs). If the resolved scope is
    empty (no implementation files yet), write a `review.md` recording 0
    findings across all five passes, `blocking: false`, and exit `0` — there
-   is nothing to review yet. Skip steps 4–5 and the rest of this run.
+   is nothing to review yet. Skip steps 4–5 and the rest of this run, except
+   that an observation the reviewer supplies is still dispositioned, as
+   **Observations** under [4. Write `review.md`](#4-write-reviewmd) describes,
+   before the record is written: the reviewer's judgment is the input, not
+   the diff.
    **Distinguish an empty scope from a scope you could not read.** A tool
    that returns an error, a size-cap notice, or a saved-output pointer has
    told you nothing about the scope; resolve it by another route and read

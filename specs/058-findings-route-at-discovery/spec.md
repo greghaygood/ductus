@@ -79,6 +79,9 @@ The three dispositions:
    chosen by the groom decision tree. `groom.md` stays its single canonical
    statement, and each command references it rather than restating it:
    - **The spec in hand:** a task on its `tasks.md`, a scenario, or a body edit.
+     If it is `done` — a review or analyze run can examine a finished spec — it
+     is reopened `done → in-progress` as below, so the routed work does not sit
+     unchecked on a spec no gate reads.
    - **Another existing spec:** a scenario or body edit on that spec. If it is
      `done`, it is reopened `done → in-progress`, and the confirmation names the
      reopen before it happens, as `/{project}:groom`'s does.
