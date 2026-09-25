@@ -36,7 +36,7 @@ The following gates **still fire and pause** even with `--auto` on:
 - Pipeline completion gate (in-progress → done) — confirmation required per §pipeline-boundaries. (The planned → in-progress transition is *not* gated: invoking the command is the user's approval to start work — see step 4.)
 - Stuck-detection events — auto mode does not power through cycles.
 - Out-of-bounds file writes — modifying a file outside the runtime boundary still requires user notification.
-- Spec edits, plan edits, or new tasks discovered mid-implement.
+- Spec edits, plan edits, or new tasks discovered mid-implement — **except a disposition task** (`Disposition out-of-spec finding: …`, walk step 5). Appending one is a record, not a change of plan, so `--auto` records it and keeps working, as step 5 says; the run pauses when it reaches the task, because working it confirms each fix, route, or discard. A task that implements a fix inside the targeted spec is a new task and still pauses.
 - Risky actions per the agent's safety rules (destructive ops, secrets, force pushes, etc.).
 
 Default is unset — without the flag, the user confirms each task as today.

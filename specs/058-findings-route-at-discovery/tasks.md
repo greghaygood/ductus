@@ -316,6 +316,6 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 38. Implement scenario: auto-records-disposition-tasks-without-pausing
 
-- [ ] Implement the behavior described in `scenarios/auto-records-disposition-tasks-without-pausing.md`
+- [x] Implement the behavior described in `scenarios/auto-records-disposition-tasks-without-pausing.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented: implement.md's --auto gate list excepts appending a disposition task and still pauses to work one
