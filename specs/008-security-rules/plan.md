@@ -102,6 +102,12 @@ Each edge case maps directly to a checkbox in the command's check list, so viola
 
 ### Brownfield audit lives in ductus, not `/{project}:analyze`
 
+> **Changed by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).**
+> The audit's sink below is gone: it reports each gap under its spec and writes
+> nothing, so steps 4 and 5 and the inbox rationale describe the design as first
+> built. The trigger and the per-rule logic are unchanged. The current contract
+> is `spec.md` §Brownfield Adoption.
+
 When `/ductus` lands rule files in a project with existing `specs/NNN-*/` directories, it runs a one-time audit and writes findings to `specs/inbox.md`. The adopter then walks the inbox via `/{project}:groom`. This reuses 011's brownfield infrastructure rather than introducing baseline files or suppression mechanisms.
 
 `framework/bootstrap/ductus.md` gains a new top-level section, **Security audit (brownfield)**, slotted after **Shared Files** (where the manifest deposits the rule files) and before **Per-Agent Scaffolding**. The section's logic:
