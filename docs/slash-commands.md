@@ -40,7 +40,7 @@ MUST violations keep the spec out of `done` until they are fixed or waived with 
 
 **Reach for it when something is out of sync and you want to know what.** A task list that no longer matches the plan, a ticked criterion whose file is gone, a spec at `done` with a blocking review.
 
-Unlike `/review`, it audits artifacts against *each other* rather than against code, and it runs at any time. It is also the pipeline's second gate: every run writes `analysis.md` — its counts in that file's frontmatter, its findings in the body — and `/implement` will not write `done` until that record exists and reports nothing blocking. Read-only on what it audits; `--fix` reverts a `done` spec drifted by review state or unresolved scenario questions, and `--all` scans every feature. Full reference: **[docs/analyze.md](analyze.md)**.
+Unlike `/review`, it audits artifacts against *each other* rather than against code, and it runs at any time. It is also the pipeline's second gate: every run writes `analysis.md` — its counts in that file's frontmatter, its findings in the body — and `/implement` will not write `done` until that record exists, reports nothing blocking, and leaves no finding undispositioned. Detection is read-only on what it audits; then each live finding is fixed, routed, or discarded with its reason, and each fix or route writes only after you confirm it. `--fix` reverts a `done` spec drifted by review state, unresolved scenario questions, or undispositioned findings, and `--all` scans every feature, grouping its proposals by spec. Full reference: **[docs/analyze.md](analyze.md)**.
 
 ## Refine — adjust a spec's artifacts
 

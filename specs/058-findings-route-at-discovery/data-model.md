@@ -107,8 +107,9 @@ one keeps the finding blocking until the re-check no longer produces it.
 `append-inbox`'s dedup guard existed for `/{project}:implement`'s auto-capture
 and the adoption security audit, the two writers 058 removed; `/{project}:log`
 never passed it, so it had no caller left. A caller that still passes
-`dedup-prefix` is not refused, because no args struct denies unknown fields:
-the field is ignored and the append always happens.
+`dedup-prefix` is refused on MCP and the CLI, which reject an unknown argument
+by name; only the exec interpreter, which binds a primitive's arguments from a
+wider context, ignores it, and the append then always happens.
 
 A record written before 058 that carries `captured-issues` still parses,
 because neither record struct denies unknown fields. The key is dropped the

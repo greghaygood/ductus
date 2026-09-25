@@ -59,6 +59,8 @@ With no ductus runtime registered, the host performs the same walk and the same 
 
 For each item, walk the steps in order; the first matching step names the route.
 
+`/{project}:review`, `/{project}:analyze`, and `/{project}:implement` walk this same tree to route a **finding** (§brownfield-inbox, Finding dispositions). Two branches read differently for a finding, because the inbox is not a disposition: where an item would be left in the inbox, a finding is routed to a new spec created through `/{project}:specify`'s procedure or discarded with its reason; and a finding against a rule file the project does not own — managed by `/ductus` and not pinned — is discarded with that reason, since the next update overwrites any amendment.
+
 **Step 1: Is this a cross-cutting concern with no covering rule?** (route: `rule`)
 
 - Apply the four-indicator promotion checklist (§rules in `.ductus/constitution.md`): cross-cutting, citable, governance-recognized category, generalizable wording. If the item qualifies, recommend promoting it to a rule.

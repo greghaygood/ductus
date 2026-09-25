@@ -283,16 +283,16 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 34. Correct the prose the 058 review found stale
 
-- [ ] 058 `data-model.md`: a caller still passing `dedup-prefix` is refused on MCP and the CLI (unknown arguments are rejected) and ignored only by the exec interpreter
+- [x] 058 `data-model.md`: a caller still passing `dedup-prefix` is refused on MCP and the CLI (unknown arguments are rejected) and ignored only by the exec interpreter
 - [ ] Reopen 022 (`from: done`): its `data-model.md` gains a `process-decisions` entry and the `disposition-drift` check-artifacts family ("Nine families" is ten), and its `dedup-prefix` sentence says refused, not ignored; re-run review and analyze; return 022 to done
-- [ ] `docs/slash-commands.md` /analyze section and `README.md`'s Analyze bullet describe dispositions, the three `--fix` triggers, and the undispositioned block
-- [ ] `AGENTS.md`: the inbox-queue entry's corollary no longer says passes grow the inbox
-- [ ] `review.md` Blocking semantics: the gate order matches `check-review-gate`
-- [ ] `implement.md`: a route reopens the target only when it is `done`, and Scope Boundaries admits reading the spec a disposition routes to, as review.md and analyze.md do
-- [ ] `analyze.md`: an unparseable `decisions:` list asks about each finding until it is repaired (as the spec says); the markdown-only Frontmatter schema section names that hard fail; steps 9/16 say what to do when process-decisions errors
-- [ ] Constitution: the chore paragraph does not contradict disposition tasks, and the exec sentence says exec matches no stored decision
-- [ ] `groom.md`: for a finding, the tree's leave-in-inbox branch is not a disposition, and a finding against an unpinned managed rule file is discarded with that reason
-- [ ] `status.md`: the markdown-only path renders the inbox age as undeterminable without git
+- [x] `docs/slash-commands.md` /analyze section and `README.md`'s Analyze bullet describe dispositions, the three `--fix` triggers, and the undispositioned block
+- [x] `AGENTS.md`: the inbox-queue entry's corollary no longer says passes grow the inbox
+- [x] `review.md` Blocking semantics: the gate order matches `check-review-gate`
+- [x] `implement.md`: a route reopens the target only when it is `done`, and Scope Boundaries admits reading the spec a disposition routes to, as review.md and analyze.md do
+- [x] `analyze.md`: an unparseable `decisions:` list asks about each finding until it is repaired (as the spec says); the markdown-only Frontmatter schema section names that hard fail; steps 9/16 say what to do when process-decisions errors
+- [x] Constitution: the chore paragraph does not contradict disposition tasks, and the exec sentence says exec matches no stored decision
+- [x] `groom.md`: for a finding, the tree's leave-in-inbox branch is not a disposition, and a finding against an unpinned managed rule file is discarded with that reason
+- [x] `status.md`: the markdown-only path renders the inbox age as undeterminable without git
 
 - **Done when**: each named passage agrees with the runtime and the constitution, 022 is done through its gate, and full markdownlint and `scripts/audit/run-all.sh` pass
 
