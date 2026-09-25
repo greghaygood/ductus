@@ -62,23 +62,28 @@ pub fn run(args: &ProcessDecisionsArgs, repo: &Path) -> Result<ProcessDecisionsR
     let mut result = ProcessDecisionsResult::default();
     let mut seen: Vec<String> = Vec::new();
     for (index, entry) in stored.iter().enumerate() {
-        let Some(decision) = entry.to_ref() else {
-            let field = entry.defect().unwrap_or("outcome");
-            result.notices.push(format!(
-                "malformed decision at {file} decisions[{index}]: missing or invalid '{field}'"
-            ));
-            continue;
+        let decision = match entry.to_ref() {
+            Ok(decision) => decision,
+            Err(field) => {
+                result.notices.push(format!(
+                    "malformed decision at {file} decisions[{index}]: missing or invalid '{field}'"
+                ));
+                continue;
+            }
         };
-        if seen.contains(&decision.key) {
+        // Keys compare flattened, as the writers store them and `merge`
+        // compares them, so a hand-edited key is one decision to every reader.
+        let key = flatten_line(&decision.key);
+        if seen.contains(&key) {
             result.notices.push(format!(
                 "duplicate decision: {} — entry [{index}] ignored",
                 decision.key
             ));
             continue;
         }
-        seen.push(decision.key.clone());
+        seen.push(key.clone());
 
-        if fired.iter().any(|key| key == &flatten_line(&decision.key)) {
+        if fired.contains(&key) {
             result.matched.push(decision);
         } else if args.restricted {
             result.notices.push(format!(
@@ -248,6 +253,34 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.matched.len(), 1);
+        assert_eq!(result.notices.len(), 1);
+        assert!(result.notices[0].starts_with("duplicate decision:"));
+    }
+
+    /// A key hand-edited with surrounding spaces is the same key: it matches
+    /// the finding it names, and a second entry for that key is a duplicate,
+    /// exactly as `merge` judges them when it rewrites the list.
+    #[test]
+    fn keys_compare_flattened_for_matching_and_duplicates() {
+        let padded = ROUTED.replace(
+            "\"grounding — plan.md cites a missing path\"",
+            "\" grounding — plan.md cites a missing path \"",
+        );
+        let tmp = repo_with("analysis.md", &format!("{padded}{ROUTED}"));
+        let result = run(
+            &args(
+                DecisionRecord::Analysis,
+                &["grounding — plan.md cites a missing path"],
+                false,
+            ),
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.matched.len(), 1);
+        assert_eq!(
+            result.matched[0].key,
+            " grounding — plan.md cites a missing path "
+        );
         assert_eq!(result.notices.len(), 1);
         assert!(result.notices[0].starts_with("duplicate decision:"));
     }

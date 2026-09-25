@@ -1197,14 +1197,15 @@ pub(crate) fn validate_no_traversal(path: &str) -> Result<()> {
 
 /// Reject a text value carrying an embedded newline or carriage return, or
 /// any other character that is not plain single-line text: a control
-/// character other than tab, or one of the Unicode line breaks YAML also
-/// treats as a break (see [`is_line_hazard`]).
+/// character other than tab, one of the Unicode line breaks YAML also treats
+/// as a break, or a noncharacter the YAML reader refuses (see
+/// [`is_line_hazard`]).
 ///
 /// Such a value, interpolated verbatim into a markdown or YAML artifact,
 /// would inject document structure (a phantom heading, a new frontmatter
 /// key) or leave a file the YAML reader refuses outright — it rejects raw
-/// control characters, so one stored decision would make a whole record
-/// unreadable (spec 058). `primitive`/`argument` name the offending field.
+/// control characters and noncharacters, so one stored decision would make a
+/// whole record unreadable (spec 058). `primitive`/`argument` name the offending field.
 /// Shared by every primitive that splices caller-supplied text into a file it
 /// writes.
 pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str) -> Result<()> {
@@ -1220,19 +1221,20 @@ pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str)
     }
     if value.chars().any(is_line_hazard) {
         return Err(reject(
-            "control characters and Unicode line breaks would inject document structure \
-             or leave a record the YAML reader refuses; supply plain single-line text",
+            "control characters, Unicode line breaks, and noncharacters would inject document \
+             structure or leave a record the YAML reader refuses; supply plain single-line text",
         ));
     }
     Ok(())
 }
 
 /// A character that is not plain single-line text: a control character other
-/// than tab (C0, DEL, C1 — `U+0085` among them), or `U+2028` / `U+2029`, which
-/// YAML treats as line breaks. The YAML reader refuses raw control characters,
-/// and a line break inside a plain scalar ends it.
+/// than tab (C0, DEL, C1 — `U+0085` among them), `U+2028` / `U+2029`, which
+/// YAML treats as line breaks, or the noncharacters `U+FFFE` / `U+FFFF`. The
+/// YAML reader refuses raw control characters and both noncharacters (they sit
+/// outside its printable set), and a line break inside a plain scalar ends it.
 pub(crate) fn is_line_hazard(c: char) -> bool {
-    (c.is_control() && c != '\t') || matches!(c, '\u{2028}' | '\u{2029}')
+    (c.is_control() && c != '\t') || matches!(c, '\u{2028}' | '\u{2029}' | '\u{FFFE}' | '\u{FFFF}')
 }
 
 /// `value` as one line of plain text: every [`is_line_hazard`] character
@@ -1252,9 +1254,10 @@ pub(crate) fn flatten_line(value: &str) -> String {
 /// `- ` marker, with an optional task-list checkbox (`[ ]`/`[x]`/`[X]`)
 /// stripped via the shared [`checkbox::parse_checkbox_line`] grammar so the
 /// plain `- text` and the checkbox `- [ ] text` forms both resolve to their
-/// content. `None` for a non-bullet line. Shared by `append-inbox` (dedup
-/// match) and `remove-inbox-item` (removal match) so the two agree on bullet
-/// identity.
+/// content. `None` for a non-bullet line. The one definition of bullet
+/// identity: [`iter_bullets`] reads bullets through it, so the inbox count,
+/// `remove-inbox-item`'s removal match, and the dashboard's inbox row agree on
+/// what an item's text is.
 pub(crate) fn bullet_text(line: &str) -> Option<String> {
     if let Some((_checked, text)) = checkbox::parse_checkbox_line(line) {
         return Some(text);
@@ -1272,8 +1275,8 @@ pub(crate) fn bullet_text(line: &str) -> Option<String> {
 /// write is atomic — it surfaces only when a human reads the file.
 ///
 /// Delegates to [`bullet_text`] rather than matching separately, so the
-/// write side and `append-inbox`'s dedup read side can never disagree about
-/// which inputs carry a marker. Strips **one** marker: the failure mode is a
+/// write side and the read side — [`iter_bullets`], which `remove-inbox-item`
+/// matches against — can never disagree about which inputs carry a marker. Strips **one** marker: the failure mode is a
 /// single doubling, and stripping to exhaustion would eat legitimate content
 /// from text that genuinely begins with a dash.
 pub(crate) fn strip_bullet_marker(text: &str) -> String {
@@ -1284,9 +1287,10 @@ pub(crate) fn strip_bullet_marker(text: &str) -> String {
 /// skipping fenced code blocks and HTML-comment regions via [`SkipScanner`].
 /// The inbox template embeds `- ` lines inside its `<!-- Rules: … -->`
 /// guidance comment; without comment-awareness those would be miscounted as
-/// items and could even be matched for removal. Shared by `append-inbox`
-/// (dedup + count) and `remove-inbox-item` (removal + count) so both agree
-/// on which lines are real bullets.
+/// items and could even be matched for removal. Shared by the inbox count
+/// `append-inbox` reports, `remove-inbox-item`'s removal, the dashboard's
+/// inbox row, and `check-promotion-coverage`'s entry walk, so all agree on
+/// which lines are real bullets.
 pub(crate) fn iter_bullets(content: &str) -> impl Iterator<Item = (usize, String)> + '_ {
     let mut skip = SkipScanner::default();
     content.lines().enumerate().filter_map(move |(idx, line)| {
@@ -3653,10 +3657,10 @@ mod tests {
         assert!(!spans.iter().any(|s| s.contains(&outside)));
     }
 
-    /// Single-line text is plain text: a control character other than tab, or
-    /// a Unicode line break, is refused — the YAML reader refuses a raw control
-    /// character, so one stored in a record makes the record unreadable
-    /// (spec 058). Tab stays legal.
+    /// Single-line text is plain text: a control character other than tab, a
+    /// Unicode line break, or a noncharacter is refused — the YAML reader
+    /// refuses a raw control character or noncharacter, so one stored in a
+    /// record makes the record unreadable (spec 058). Tab stays legal.
     #[test]
     fn single_line_text_refuses_control_characters_and_line_breaks() {
         for bad in [
@@ -3667,6 +3671,8 @@ mod tests {
             "a\u{85}b",
             "a\u{2028}b",
             "a\u{2029}b",
+            "a\u{fffe}b",
+            "a\u{ffff}b",
         ] {
             assert!(
                 validate_single_line("p", "arg", bad).is_err(),
@@ -3675,6 +3681,7 @@ mod tests {
         }
         assert!(validate_single_line("p", "arg", "a\tb — `c`: d").is_ok());
         assert_eq!(flatten_line(" a\u{1b}b\nc\u{2028}d\t "), "a b c d");
+        assert_eq!(flatten_line("non\u{ffff}char"), "non char");
     }
 }
 

@@ -715,6 +715,19 @@ mod tests {
         )
         .unwrap();
         assert!(other.appended);
+        // Exact, not normalized (data model): a title differing only in case
+        // or inner whitespace is a different title and appends.
+        for variant in [
+            "Disposition out-of-spec finding: Handle leak",
+            "Disposition out-of-spec finding:  handle leak",
+        ] {
+            assert!(
+                run(&disposition_args(variant), tmp.path())
+                    .unwrap()
+                    .appended,
+                "{variant:?} must append"
+            );
+        }
     }
 
     #[test]

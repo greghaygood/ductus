@@ -366,30 +366,22 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         }
         // `performReview` runs once per pass; accumulate each pass's
         // findings and observations into the shared context keys so a later
-        // `write-review` step consumes the union across all passes. Both
-        // arrays accumulate identically — an observation is a pass output the
-        // reviewer judged real but that matched no loaded rule, and it reaches
-        // `write-review` by this same route. The walker has no operator to
-        // disposition it, so it is recorded undispositioned (spec 058).
+        // `write-review` step consumes the union across all passes. An
+        // observation is a pass output the reviewer judged real but that
+        // matched no loaded rule, and it reaches `write-review` by this same
+        // route — in `PassObservation`'s shape, text and path alone, since
+        // a pass has no disposition to give. The walker has no operator to
+        // disposition it, so it is recorded undispositioned (spec 058, AC26).
         if identifier == "performReview" {
             for key in payload::PERFORM_REVIEW_ACCUMULATORS {
                 let Some(Value::Array(items)) = response.get(*key) else {
                     continue;
                 };
-                let mut items = items.clone();
-                // An observation's disposition is decided by an operator in the
-                // fix-and-route step, which the walker no-ops: a disposition or
-                // matched decision key the reviewer's response supplies is not
-                // one, so it is dropped and the observation is recorded
-                // undispositioned (spec 058, AC26).
-                if *key == "observations" {
-                    for item in &mut items {
-                        if let Value::Object(observation) = item {
-                            observation.remove("disposition");
-                            observation.remove("decision-key");
-                        }
-                    }
-                }
+                let items = if *key == "observations" {
+                    pass_observations(items)
+                } else {
+                    items.clone()
+                };
                 match self.context.get_mut(*key) {
                     Some(Value::Array(existing)) => existing.extend(items),
                     _ => {
@@ -824,6 +816,19 @@ fn dispatch_primitive(
 /// missing `results` array, an absent verdict for the index, or an explicit
 /// `met: false` all yield `false` — the completion gate flips only criteria
 /// the response confirms (data-model §verifyCriteria).
+/// A `performReview` pass's observations in
+/// [`extensions::PassObservation`]'s shape — text and path — whatever else the
+/// host's response carried, so nothing a pass volunteers reaches
+/// `write-review` as a disposition. The response was validated against that
+/// shape before this runs, so every item deserializes.
+fn pass_observations(items: &[Value]) -> Vec<Value> {
+    items
+        .iter()
+        .filter_map(|item| serde_json::from_value::<extensions::PassObservation>(item.clone()).ok())
+        .filter_map(|observation| serde_json::to_value(observation).ok())
+        .collect()
+}
+
 fn criterion_verified_met(verify: &Value, criterion_index: Option<&Value>) -> bool {
     let Some(index) = criterion_index.and_then(Value::as_u64) else {
         return false;
@@ -1162,12 +1167,14 @@ mod tests {
         );
     }
 
-    /// An exec run has no operator to disposition an observation, so a
-    /// disposition the reviewer's response supplies is dropped and the
-    /// observation is recorded undispositioned (spec 058, AC26) — never as
-    /// `fixed` without a gate.
+    /// An exec run has no operator to disposition an observation, and a pass
+    /// has no disposition to give, so the walker carries an observation's text
+    /// and path alone: one the reviewer's response marks `fixed` is recorded
+    /// undispositioned (spec 058, AC26) — never as `fixed` without a gate —
+    /// and a malformed disposition no longer fails the run over a field the
+    /// walker would not use.
     #[test]
-    fn perform_review_dispositions_are_dropped_on_the_exec_path() {
+    fn perform_review_dispositions_are_not_carried_on_the_exec_path() {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().join("specs/001-x");
         std::fs::create_dir_all(&dir).unwrap();
@@ -1193,7 +1200,7 @@ mod tests {
                 },
             ],
         };
-        let responses = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[],\"observations\":[{\"text\":\"perf: slow\",\"path\":\"a.rs\",\"disposition\":{\"outcome\":\"fixed\"},\"decision-key\":\"perf: slow — `a.rs`\"}]}}\n";
+        let responses = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"findings\":[],\"observations\":[{\"text\":\"perf: slow\",\"path\":\"a.rs\",\"disposition\":{\"outcome\":\"fixed\"},\"decision-key\":\"perf: slow — `a.rs`\"},{\"text\":\"bug: odd\",\"disposition\":{\"outcome\":\"wontfix\"}}]}}\n";
         let mut context = Map::new();
         context.insert("feature".into(), Value::String("001-x".into()));
         context.insert(
@@ -1215,7 +1222,7 @@ mod tests {
         let review = std::fs::read_to_string(dir.join("review.md")).unwrap();
         assert!(
             review.contains(
-                "dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 1\n"
+                "dispositions:\n  fixed: 0\n  routed: 0\n  discarded: 0\n  undispositioned: 2\n"
             ),
             "{review}"
         );

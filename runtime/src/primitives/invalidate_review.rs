@@ -102,8 +102,11 @@ fn invalidate_record_artifact(
 ) -> Result<()> {
     // `dispositions` goes with the run's other counts: a record reading
     // `last-run: null` that still carried the invalidated run's disposition
-    // counts would state outcomes of a run it says never happened.
-    const SCALARS: [&str; 14] = [
+    // counts would state outcomes of a run it says never happened. So does
+    // `captured-issues`, for the same reason: no writer emits it since spec
+    // 058, but a record written before then still carries it until its next
+    // review.
+    const SCALARS: [&str; 15] = [
         "last-run",
         "reviewed-against",
         "diff-base",
@@ -117,6 +120,7 @@ fn invalidate_record_artifact(
         "reviewed-unreadable",
         "blocking",
         "dispositions",
+        "captured-issues",
         "waivers",
     ];
 
@@ -251,6 +255,26 @@ mod tests {
         assert!(!record.contains("fixed: 1"), "{record}");
         assert!(record.contains("decisions:"), "{record}");
         assert!(record.contains("reason: not this spec"), "{record}");
+    }
+
+    /// A record written before spec 058 still carries its run's
+    /// `captured-issues` count, and it goes with the other counts: left beside
+    /// `last-run: null`, it would state a result of a run the record says
+    /// never happened.
+    #[test]
+    fn a_pre_058_captured_issues_count_goes_with_the_run() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_spec(tmp.path(), "050-alpha", SPEC);
+        fs::write(
+            tmp.path().join("specs/050-alpha/review.md"),
+            "---\nspec: 050-alpha\nlast-run: 2026-08-01T00:00:00Z\nmust-violations: 0\n\
+             captured-issues: 3\nblocking: false\n---\n\n# Review — 050-alpha\n",
+        )
+        .unwrap();
+        run(&args("050-alpha"), tmp.path()).unwrap();
+        let record = review_md(tmp.path());
+        assert!(!record.contains("captured-issues"), "{record}");
+        assert!(record.contains("last-run: null"), "{record}");
     }
 
     /// A waiver is an operator's recorded judgement about a finding.

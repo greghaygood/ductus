@@ -856,49 +856,58 @@ pub(crate) fn render_waivers_at(block: &mut String, waivers: &[RawWaiverFull], b
     }
     let _ = writeln!(block, "{base}waivers:");
     for waiver in waivers {
-        let fields = [
-            ("rule", waiver.rule.as_deref()),
-            ("file", waiver.file.as_deref()),
-            ("reason", waiver.reason.as_deref()),
-            ("waived-at", waiver.waived_at.as_deref()),
-            ("waived-by", waiver.waived_by.as_deref()),
-        ];
-        let mut first = true;
-        for (key, value) in fields {
-            if let Some(value) = value {
-                let indent = if first {
-                    format!("{base}  - ")
-                } else {
-                    format!("{base}    ")
-                };
-                let _ = writeln!(block, "{indent}{key}: {}", yaml_string(value));
-                first = false;
-            }
-        }
-        for (key, value) in &waiver.extra {
-            let indent = if first {
-                format!("{base}  - ")
-            } else {
-                format!("{base}    ")
-            };
-            let indent = indent.as_str();
-            render_extra_field(block, indent, key, value);
-            first = false;
-        }
+        render_list_entry(
+            block,
+            base,
+            &[
+                ("rule", waiver.rule.as_deref()),
+                ("file", waiver.file.as_deref()),
+                ("reason", waiver.reason.as_deref()),
+                ("waived-at", waiver.waived_at.as_deref()),
+                ("waived-by", waiver.waived_by.as_deref()),
+            ],
+            &waiver.extra,
+        );
     }
 }
 
-/// Append one adopter-authored waiver field, preserving it across the
-/// re-render. Scalars render inline (matching the known-field style); a
+/// Append one entry of a record's list at `base` indent: its known fields in
+/// order, each absent one omitted, then every adopter-authored extra verbatim
+/// (§text-first-artifacts' open-schema rule). The one entry renderer for every
+/// list an audit record carries — `review.md`'s `waivers:` and both records'
+/// `decisions:` (spec 058) — so their quoting and nesting cannot drift apart.
+pub(crate) fn render_list_entry(
+    block: &mut String,
+    base: &str,
+    fields: &[(&str, Option<&str>)],
+    extra: &std::collections::BTreeMap<String, serde_norway::Value>,
+) {
+    let mut first = true;
+    let mut indent = || {
+        let indent = if first {
+            format!("{base}  - ")
+        } else {
+            format!("{base}    ")
+        };
+        first = false;
+        indent
+    };
+    for (key, value) in fields {
+        if let Some(value) = value {
+            let _ = writeln!(block, "{}{key}: {}", indent(), yaml_string(value));
+        }
+    }
+    for (key, value) in extra {
+        render_extra_field(block, &indent(), key, value);
+    }
+}
+
+/// Append one adopter-authored field of a list entry, preserving it across
+/// the re-render. Scalars render inline (matching the known-field style); a
 /// nested value is serialized as a YAML block indented under the key. Extras
 /// always follow the required scalar fields, so the continuation indent
-/// (`      `) is the normal case.
-pub(crate) fn render_extra_field(
-    block: &mut String,
-    indent: &str,
-    key: &str,
-    value: &serde_norway::Value,
-) {
+/// (`    `) is the normal case.
+fn render_extra_field(block: &mut String, indent: &str, key: &str, value: &serde_norway::Value) {
     use serde_norway::Value;
     // Adopter-controlled key: quote it so a key like `@owner`, `weird: key`, or
     // a bare-numeric string key survives the round-trip instead of corrupting
@@ -919,12 +928,13 @@ pub(crate) fn render_extra_field(
         }
         other => {
             // Non-scalar (sequence/mapping) — serialize and re-indent each
-            // line under the key. The key sits at column 6 (both `    - ` and
-            // `      ` are 6 columns wide before the key), so children must
-            // start at column 8 to nest *under* the key rather than becoming
-            // its siblings. serde_norway preserves the value's internal
-            // relative indentation, so a constant 8-space base offset keeps
-            // the whole structure correctly nested. The common case is scalars.
+            // line under the key. The key sits at the indent's width — column
+            // 4 in the top-level lists, where `  - ` and `    ` are both 4 wide
+            // — so children starting at column 8 nest *under* the key rather
+            // than becoming its siblings. serde_norway preserves the value's
+            // internal relative indentation, so a constant 8-space base offset
+            // keeps the whole structure correctly nested. The common case is
+            // scalars.
             let _ = writeln!(block, "{indent}{key}:");
             let serialized = serde_norway::to_string(other).unwrap_or_default();
             for line in serialized.lines() {
@@ -934,32 +944,33 @@ pub(crate) fn render_extra_field(
     }
 }
 
-/// Emit a YAML scalar for text that MUST round-trip as a string — double-quotes
-/// when a plain scalar would be syntactically ambiguous (empty, surrounding
-/// whitespace, an indicator lead, a `: ` / ` #` sequence, a trailing colon, or
-/// an embedded quote/newline) OR when the plain form would re-parse as a
-/// non-string (a bare `1234` / `true` / `null` / `~`).
+/// Emit a YAML scalar for text that MUST round-trip as the identical string —
+/// double-quotes when a plain scalar would be syntactically ambiguous (empty,
+/// surrounding whitespace, an indicator lead, a `: ` sequence, a trailing
+/// colon, or an embedded quote) OR when the plain form would not read back as
+/// the same string: a bare `1234` / `true` / `null` / `~` retypes, and a `#`
+/// after a space or a tab opens a comment that truncates it.
 ///
-/// Used for every value in the rendered `review:` block — both the known
-/// waiver fields (`rule` / `file` / `reason` / `waived-at` / `waived-by`) and
-/// the open-schema adopter extras — because both are written straight to
-/// `spec.md` and read back by the next `RawWaiver` parse. An extra **key**
-/// like `@owner` or `weird: key`, an extra string **value** like `"1234"`, or a
-/// known `reason` that happened to read `true` or `1234` would otherwise render
-/// unquoted and either corrupt the frontmatter or retype the value. Simple
-/// timestamps (`waived-at`), shas, rule IDs, emails, and paths stay unquoted:
-/// they parse back as strings (`serde_norway` has no timestamp type) and a
-/// mid-value colon does not trip `needs_quote`, so quoting them here would be
-/// no-op churn.
+/// Used for every string value in the waiver and decision lists that
+/// `review.md` and `analysis.md` carry in their frontmatter — the known fields
+/// and the open-schema adopter extras alike — because each is read back by the
+/// next run's parse, and a decision key must come back byte for byte to match
+/// the finding it was stored for. An extra **key** like `@owner` or
+/// `weird: key`, an extra string **value** like `"1234"`, or a known `reason`
+/// that happened to read `true` or `1234` would otherwise render unquoted and
+/// either corrupt the frontmatter or retype the value. Simple timestamps
+/// (`waived-at`), shas, rule IDs, emails, and paths stay unquoted: they read
+/// back unchanged (`serde_norway` has no timestamp type), so quoting them here
+/// would be no-op churn.
 ///
 /// A value carrying a control character or a Unicode line break is always
 /// quoted, and every such character is escaped: the YAML reader refuses a raw
 /// control character, so a single one left bare would make the whole record
 /// unreadable (spec 058). `serde_json` escapes C0 characters but not DEL, C1,
-/// `U+2028` or `U+2029`, so those are escaped here — YAML's double-quoted
-/// `\u` escape reads back the same character.
+/// `U+2028`, `U+2029`, `U+FFFE` or `U+FFFF`, so those are escaped here —
+/// YAML's double-quoted `\u` escape reads back the same character.
 pub(crate) fn yaml_string(value: &str) -> String {
-    if needs_quote(value) || reparses_as_nonstring(value) {
+    if needs_quote(value) || !reads_back_identically(value) {
         let quoted = serde_json::to_string(value).unwrap_or_else(|_| format!("\"{value}\""));
         quoted
             .chars()
@@ -976,11 +987,16 @@ pub(crate) fn yaml_string(value: &str) -> String {
     }
 }
 
-/// Whether the plain scalar `value` re-parses (via the same YAML reader that
-/// reads the spec back) as a non-string — an integer, float, bool, or null —
-/// so it must be quoted to keep its string identity across the round-trip.
-fn reparses_as_nonstring(value: &str) -> bool {
-    serde_norway::from_str::<serde_norway::Value>(value).is_ok_and(|parsed| !parsed.is_string())
+/// Whether the plain scalar `value` reads back, through the same YAML reader
+/// that reads the record, as exactly `value`. It does not when it retypes (an
+/// integer, float, bool, or null), when a comment truncates it (`#` after a
+/// space or a tab), or when it does not parse at all — and each of those must
+/// be quoted to keep the value intact across the round-trip.
+fn reads_back_identically(value: &str) -> bool {
+    matches!(
+        serde_norway::from_str::<serde_norway::Value>(value),
+        Ok(serde_norway::Value::String(parsed)) if parsed == value
+    )
 }
 
 /// YAML plain-scalar indicator characters: a value leading with one of these
@@ -991,12 +1007,7 @@ fn needs_quote(value: &str) -> bool {
     if value.is_empty() || value != value.trim() || value.chars().any(super::is_line_hazard) {
         return true;
     }
-    if value.contains(": ")
-        || value.contains(" #")
-        || value.contains('\n')
-        || value.contains('"')
-        || value.ends_with(':')
-    {
+    if value.contains(": ") || value.contains('"') || value.ends_with(':') {
         return true;
     }
     YAML_INDICATORS.contains(&value.as_bytes()[0])
@@ -2044,6 +2055,25 @@ mod tests {
         assert_eq!(yaml_string("null"), "\"null\"");
     }
 
+    /// A `#` after a space or a tab opens a YAML comment, so a plain value
+    /// carrying one would read back truncated — and a stored decision key
+    /// that does not come back byte for byte never matches its finding again.
+    /// Each is quoted, and reads back intact.
+    #[test]
+    fn a_comment_opener_is_quoted_so_the_value_reads_back() {
+        for value in [
+            "plan.md cites issue\t#12 as closed",
+            "why\t#not",
+            "see issue #12",
+        ] {
+            let rendered = yaml_string(value);
+            let parsed: String = serde_norway::from_str(&rendered).unwrap();
+            assert_eq!(parsed, value, "round-trip of {value:?} via {rendered:?}");
+        }
+        // A `#` inside a word is not a comment, so the value stays plain.
+        assert_eq!(yaml_string("issue#12"), "issue#12");
+    }
+
     /// Register one `[constitutions.*]` entry pointing at `path` in a spec repo.
     fn with_constitution(tmp: &TempDir, alias: &str, path: &str) {
         let cfg = tmp.path().join(".ductus");
@@ -2233,6 +2263,8 @@ mod tests {
             "para\u{2029}graph",
             "next\u{85}line",
             "del\u{7f}ete",
+            "non\u{fffe}char",
+            "non\u{ffff}char",
         ] {
             let rendered = yaml_string(value);
             assert!(
@@ -2262,6 +2294,47 @@ mod tests {
                 if argument == "observations[0].text"
         ));
         assert!(!tmp.path().join("specs/001-x/review.md").exists());
+    }
+
+    /// A noncharacter is refused like a control character: the YAML reader
+    /// refuses `U+FFFE` and `U+FFFF` outright, so one stored in a decision
+    /// would leave the whole record unreadable.
+    #[test]
+    fn an_observation_carrying_a_noncharacter_is_refused() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.decided_by = Some("dev@example.com".into());
+        args.observations = vec![dispositioned(
+            "other: noise",
+            DispositionOutcome::Discarded,
+            Some("false\u{ffff}positive"),
+        )];
+        assert!(matches!(
+            run(&args, tmp.path()),
+            Err(PrimitiveError::InvalidArgument { .. })
+        ));
+        assert!(!tmp.path().join("specs/001-x/review.md").exists());
+    }
+
+    /// A tab-then-`#` in an observation's text and its discard reason reads
+    /// back intact, so the stored key matches the same observation next run.
+    /// Written plain, YAML read it as a comment and truncated both.
+    #[test]
+    fn a_decision_carrying_a_comment_opener_reads_back() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let mut args = base_args("001-x");
+        args.decided_by = Some("dev@example.com".into());
+        args.observations = vec![dispositioned(
+            "bug: issue\t#12 reopens",
+            DispositionOutcome::Discarded,
+            Some("why\t#not"),
+        )];
+        run(&args, tmp.path()).unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        let stored = decisions::read_decisions(&dir, "review.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].key.as_deref(), Some("bug: issue\t#12 reopens"));
+        assert_eq!(stored[0].reason.as_deref(), Some("why\t#not"));
     }
 
     /// A blank timestamp would stamp every new decision with a blank
@@ -2296,7 +2369,7 @@ mod tests {
             decisions::read_decisions(&tmp.path().join("specs/001-x"), "review.md").unwrap();
         assert_eq!(stored.len(), 1);
         assert_eq!(stored[0].key.as_deref(), Some("other: machinery"));
-        assert_eq!(stored[0].defect(), None);
+        assert!(stored[0].to_ref().is_ok());
     }
 
     /// Two observations sharing a key are one finding: one stored decision,

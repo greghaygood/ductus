@@ -19,7 +19,8 @@
 //! make logging a todo expensive. The row changes what the operator knows at
 //! the moment they decide, and withholds nothing.
 
-use std::path::Path;
+use std::collections::{HashMap, VecDeque};
+use std::path::{Path, PathBuf};
 
 use git2::Repository;
 
@@ -80,37 +81,99 @@ pub(crate) fn standing(repo: &Path) -> InboxStanding {
 /// rewrite the whole file atomically on every call, so any whole-file signal
 /// would reset a surviving line's date on the next unrelated capture.
 ///
-/// The blame is of the **working-tree** `content`, layered on the committed
-/// history with `blame_buffer`, because the bullet indexes come from the
-/// working tree. Blaming the committed file alone paired those indexes with
-/// committed lines, so after an uncommitted removal — routinely, right after
-/// `/{project}:groom` — every later bullet read the date of a line above it
-/// (spec 058). A line not yet committed carries no date and is skipped: it is
-/// newer than every committed one, so it cannot be the oldest.
+/// Each working-tree bullet is dated **by its text** against the committed
+/// file's blame, never by its line number. The bullets come from the working
+/// tree and the blame from `HEAD`, so pairing them by position shifted every
+/// bullet below an uncommitted removal onto the line above it — right after
+/// `/{project}:groom`, the row reported the removed item's date. Blaming the
+/// working-tree bytes as a buffer fixed that and broke two other cases: under
+/// `core.autocrlf` the working file is CRLF and the blob LF, so every line
+/// read as uncommitted, and libgit2's buffer blame misplaces a deletion that
+/// follows an insertion (spec 058). A text match is immune to both: a trailing
+/// `\r` is trimmed on each side, a line whose text `HEAD` does not hold is
+/// uncommitted and carries no date (it is newer than every committed line, so
+/// it cannot be the oldest), and repeated texts pair in file order.
 ///
-/// `None` when it cannot be determined — a shallow clone with no history to
-/// blame, a file not yet committed, every bullet uncommitted, a blame that
+/// A **shallow clone** attributes every line older than its cut to the
+/// boundary commit, whose date is then a confident answer for lines it did
+/// not write, so a boundary hunk carries no date there. In a full clone the
+/// boundary is the root commit and its date is real. The blamed path is
+/// relative to the git work tree, which is not the project root when the
+/// project lives in a subdirectory of its repository.
+///
+/// `None` when it cannot be determined — no repository, a file not yet
+/// committed, every bullet uncommitted or behind a shallow cut, a blame that
 /// fails for any other reason. That is reported as *undeterminable* by the
 /// caller rather than silently dropped or defaulted to today. **This reads git
 /// history**, so a CI job running it needs `fetch-depth: 0`
 /// (§design-principles).
 fn oldest_bullet_date(repo: &Path, rel: &str, content: &str, bullets: &[usize]) -> Option<String> {
     let repository = Repository::discover(repo).ok()?;
-    let committed = repository.blame_file(Path::new(rel), None).ok()?;
-    let blame = committed.blame_buffer(content.as_bytes()).ok()?;
+    let blamed = workdir_relative(&repository, &repo.join(rel))?;
+    let committed = committed_text(&repository, &blamed)?;
+    let blame = repository.blame_file(&blamed, None).ok()?;
+    let shallow = repository.is_shallow();
+
+    let mut line_dates: Vec<Option<i64>> = vec![None; committed.lines().count()];
+    for hunk in blame.iter() {
+        if shallow && hunk.is_boundary() {
+            continue;
+        }
+        let date = hunk.final_signature().map_or_else(
+            || {
+                repository
+                    .find_commit(hunk.final_commit_id())
+                    .ok()
+                    .map(|commit| commit.author().when().seconds())
+            },
+            |signature| Some(signature.when().seconds()),
+        );
+        // `final_start_line` is 1-based.
+        let first = hunk.final_start_line().saturating_sub(1);
+        for slot in line_dates.iter_mut().skip(first).take(hunk.lines_in_hunk()) {
+            *slot = date;
+        }
+    }
+
+    let mut dated: HashMap<&str, VecDeque<Option<i64>>> = HashMap::new();
+    for (line, date) in committed.lines().zip(line_dates) {
+        dated
+            .entry(line.trim_end_matches('\r'))
+            .or_default()
+            .push_back(date);
+    }
+    let lines: Vec<&str> = content.lines().collect();
     bullets
         .iter()
-        // `iter_bullets` yields 0-based line indexes; blame is 1-based.
-        .filter_map(|idx| blame.get_line(idx + 1))
-        .map(|hunk| hunk.final_commit_id())
-        .filter(|commit| !commit.is_zero())
-        // Read from the commit rather than the hunk's `final_signature`: libgit2
-        // leaves that unset on the hunks a buffer blame carries over from the
-        // committed history. The author time is what it held.
-        .filter_map(|commit| repository.find_commit(commit).ok())
-        .map(|commit| commit.author().when().seconds())
+        .filter_map(|&idx| {
+            let text = lines.get(idx)?.trim_end_matches('\r');
+            dated.get_mut(text)?.pop_front()?
+        })
         .min()
         .map(format_utc_date)
+}
+
+/// `path` relative to the repository's work tree — what `blame_file` and the
+/// tree lookup take — or `None` when it lies outside it or cannot be resolved.
+/// The parent is canonicalized rather than the file, so an inbox that is a
+/// symlink is blamed under its own name.
+fn workdir_relative(repository: &Repository, path: &Path) -> Option<PathBuf> {
+    let workdir = repository.workdir()?.canonicalize().ok()?;
+    let parent = path.parent()?.canonicalize().ok()?;
+    Some(parent.strip_prefix(&workdir).ok()?.join(path.file_name()?))
+}
+
+/// The file's text at `HEAD`, or `None` when `HEAD` does not hold it.
+fn committed_text(repository: &Repository, path: &Path) -> Option<String> {
+    let tree = repository.head().ok()?.peel_to_tree().ok()?;
+    let blob = tree
+        .get_path(path)
+        .ok()?
+        .to_object(repository)
+        .ok()?
+        .peel_to_blob()
+        .ok()?;
+    String::from_utf8(blob.content().to_vec()).ok()
 }
 
 /// Format a Unix timestamp as `YYYY-MM-DD` in UTC.
@@ -247,11 +310,11 @@ mod tests {
         );
     }
 
-    /// The bullet indexes come from the working tree, so the blame must be of
-    /// the working tree too. Blaming only the committed file shifted every
-    /// bullet below an uncommitted removal onto the line above it — right
-    /// after `/groom` removes the oldest item, the row reported that removed
-    /// item's date as the queue's oldest (spec 058).
+    /// The bullets come from the working tree and the blame from `HEAD`, so
+    /// they are paired by text, never by line number. Pairing by position
+    /// shifted every bullet below an uncommitted removal onto the line above
+    /// it — right after `/groom` removes the oldest item, the row reported that
+    /// removed item's date as the queue's oldest (spec 058).
     #[test]
     fn an_uncommitted_removal_does_not_shift_the_oldest_date() {
         let tmp = tempdir().unwrap();
@@ -273,17 +336,99 @@ mod tests {
     }
 
     /// A bullet not yet committed has no date, and it is newer than every
-    /// committed one, so it is skipped rather than read as the oldest.
+    /// committed one, so it is skipped rather than read as the oldest. Paired
+    /// by position, the committed `- y` sat at the uncommitted bullet's line
+    /// and the older comment below it at `- y`'s, so the row reported the
+    /// comment's date.
     #[test]
-    fn an_uncommitted_bullet_is_not_the_oldest() {
+    fn an_uncommitted_bullet_takes_no_committed_line_s_date() {
         let tmp = tempdir().unwrap();
         let repo = Repository::init(tmp.path()).unwrap();
-        seed_inbox(tmp.path(), "# Inbox\n\n- committed\n");
-        commit_all(&repo, "capture", 1_747_612_800);
-        seed_inbox(tmp.path(), "# Inbox\n\n- logged just now\n- committed\n");
+        seed_inbox(tmp.path(), "# Inbox\n\n<!-- end -->\n");
+        commit_all(&repo, "the template", 1_560_000_000);
+        seed_inbox(tmp.path(), "# Inbox\n\n- y\n<!-- end -->\n");
+        commit_all(&repo, "capture y", 1_747_612_800);
+
+        seed_inbox(
+            tmp.path(),
+            "# Inbox\n\n- logged just now\n- y\n<!-- end -->\n",
+        );
         let result = standing(tmp.path());
         assert_eq!(result.outstanding, 2);
         assert_eq!(result.oldest, Some(format_utc_date(1_747_612_800)));
+    }
+
+    /// libgit2's buffer blame misplaces a deletion that follows an insertion:
+    /// a new line above `newer` with `old` removed dated the queue by the
+    /// removed `old`. Matching by text never consults the buffer diff.
+    #[test]
+    fn an_insertion_above_a_removal_dates_the_surviving_item() {
+        let tmp = tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        seed_inbox(tmp.path(), "# Inbox\n\n- old\n");
+        commit_all(&repo, "capture old", 1_577_836_800);
+        seed_inbox(tmp.path(), "# Inbox\n\n- newer\n- old\n");
+        commit_all(&repo, "capture newer", 1_609_459_200);
+
+        seed_inbox(tmp.path(), "# Inbox\n\n- just logged\n- newer\n");
+        let result = standing(tmp.path());
+        assert_eq!(result.outstanding, 2);
+        assert_eq!(result.oldest, Some(format_utc_date(1_609_459_200)));
+    }
+
+    /// Under `core.autocrlf` the working file is CRLF while the committed blob
+    /// is LF. Blaming the working-tree bytes read every line as uncommitted,
+    /// so a clean, fully committed inbox reported its age undeterminable.
+    #[test]
+    fn a_crlf_working_tree_over_an_lf_blob_is_dated() {
+        let tmp = tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        repo.config()
+            .unwrap()
+            .set_bool("core.autocrlf", true)
+            .unwrap();
+        seed_inbox(tmp.path(), "# Inbox\r\n\r\n- old item\r\n");
+        commit_all(&repo, "capture", 1_577_836_800);
+        let blob = committed_text(&repo, Path::new("specs/inbox.md")).unwrap();
+        assert!(!blob.contains('\r'), "autocrlf must store the blob as LF");
+
+        let result = standing(tmp.path());
+        assert_eq!(result.oldest, Some(format_utc_date(1_577_836_800)));
+    }
+
+    /// A shallow clone attributes every line older than its cut to the
+    /// boundary commit, so that commit's date would be reported with
+    /// confidence for lines it did not write. It is undeterminable instead.
+    #[test]
+    fn a_shallow_clone_does_not_date_by_its_boundary_commit() {
+        let tmp = tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        seed_inbox(tmp.path(), "# Inbox\n\n- old item\n");
+        commit_all(&repo, "capture", 1_577_836_800);
+        fs::write(tmp.path().join("other.txt"), "x").unwrap();
+        commit_all(&repo, "unrelated", 1_709_164_800);
+        let head = repo.head().unwrap().target().unwrap();
+        fs::write(tmp.path().join(".git/shallow"), format!("{head}\n")).unwrap();
+        let repo = Repository::open(tmp.path()).unwrap();
+        assert!(repo.is_shallow());
+
+        let result = standing(tmp.path());
+        assert_eq!(result.outstanding, 1);
+        assert_eq!(result.oldest, None, "the cut hides the real date");
+    }
+
+    /// A project living in a subdirectory of its repository is blamed by its
+    /// path from the work tree, not from the project root.
+    #[test]
+    fn a_project_in_a_repository_subdirectory_is_dated() {
+        let tmp = tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let project = tmp.path().join("service");
+        seed_inbox(&project, "# Inbox\n\n- old item\n");
+        commit_all(&repo, "capture", 1_577_836_800);
+
+        let result = standing(&project);
+        assert_eq!(result.oldest, Some(format_utc_date(1_577_836_800)));
     }
 
     #[test]

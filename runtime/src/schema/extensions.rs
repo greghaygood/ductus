@@ -268,7 +268,25 @@ pub struct PerformReviewResponse {
     /// would render `*None.*` on every run whether or not the reviewer had
     /// any, which is the silent-degradation shape the scenario removes.
     #[serde(default)]
-    pub observations: Vec<crate::schema::primitives::ReviewObservation>,
+    pub observations: Vec<PassObservation>,
+}
+
+/// One observation as a `performReview` pass reports it: what was observed,
+/// and where. A pass does not disposition what it observes — the fix-and-route
+/// step decides that with the operator, and the exec walker no-ops it — so the
+/// response has no field for a disposition or a matched decision key, and the
+/// walker accumulates observations in this shape alone. An exec run therefore
+/// records every observation undispositioned (spec 058, AC26), and a
+/// disposition a host volunteers is neither type-checked nor carried.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PassObservation {
+    /// What was observed, as one line of prose.
+    pub text: String,
+    /// Repo-relative path (optionally `file:line`) the observation anchors to;
+    /// empty when it is not anchored to one file.
+    #[serde(default)]
+    pub path: String,
 }
 
 // -- askClarifyQuestion --------------------------------------------------------
@@ -778,11 +796,12 @@ mod tests {
         AskClarifyQuestionRequest, AskClarifyQuestionResponse, AssessSpecQualityFinding,
         AssessSpecQualityRequest, AssessSpecQualityResponse, AssessSpecQualityRule,
         ClarifyQuestion, FindingLocation, FoldRoute, FoldSourceScenario, InboxRoute,
-        PerformReviewRequest, PerformReviewResponse, PlanRelevantFile, ReviewRuleFile,
-        ReviewScopeFile, RouteFoldRequest, RouteFoldResponse, RouteInboxItemRequest,
-        RouteInboxItemResponse, RouteInboxSpec, VerifyCriteriaRequest, VerifyCriteriaResponse,
-        VerifyCriterion, VerifyCriterionResult, WriteCodeAction, WriteCodeEdit, WriteCodeRequest,
-        WriteCodeResponse, WriteCodeTask, WriteSpecBodyRequest, WriteSpecBodyResponse,
+        PassObservation, PerformReviewRequest, PerformReviewResponse, PlanRelevantFile,
+        ReviewRuleFile, ReviewScopeFile, RouteFoldRequest, RouteFoldResponse,
+        RouteInboxItemRequest, RouteInboxItemResponse, RouteInboxSpec, VerifyCriteriaRequest,
+        VerifyCriteriaResponse, VerifyCriterion, VerifyCriterionResult, WriteCodeAction,
+        WriteCodeEdit, WriteCodeRequest, WriteCodeResponse, WriteCodeTask, WriteSpecBodyRequest,
+        WriteSpecBodyResponse,
     };
     use crate::schema::primitives::ReviewFinding;
 
@@ -1257,10 +1276,9 @@ mod tests {
                 auto_fixable: false,
                 suggested_fix: String::new(),
             }],
-            observations: vec![crate::schema::primitives::ReviewObservation {
+            observations: vec![PassObservation {
                 text: "perf: config re-read per call".into(),
                 path: "runtime/src/schema/paths.rs".into(),
-                ..crate::schema::primitives::ReviewObservation::default()
             }],
         };
         let r_value: serde_json::Value = serde_json::to_value(&response).unwrap();

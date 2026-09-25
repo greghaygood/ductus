@@ -228,9 +228,12 @@ fn strip_numeric_formats(value: &mut Value) {
 /// `lint-markdown` shell out via `std::process::Command`, and
 /// `extract-archive` decompresses entire archives — the same
 /// worker-pinning hazard, so they take the same seam. The git-walk tools
-/// (`check-stuck`, `compute-review-scope`, `derive-boundary`) run a
-/// full-history `libgit2` revwalk that is likewise CPU-bound and unbounded
-/// in a large adopter repo, so they route here too. The CLI surfaces
+/// (`check-stuck`, `compute-review-scope`, `derive-boundary`,
+/// `diff-cross-spec`) run a full-history `libgit2` revwalk that is likewise
+/// CPU-bound and unbounded in a large adopter repo, so they route here too,
+/// as do `check-review-gate`, which shells out to the markdown linter and
+/// reads history for its rename exemption, and `dashboard`, which blames the
+/// inbox for its oldest item. The CLI surfaces
 /// (`main.rs` subcommands and the subprocess interpreter) call the
 /// primitives directly with no tokio runtime and are unaffected.
 async fn dispatch_blocking<T, F>(work: F) -> Result<Json<T>, String>

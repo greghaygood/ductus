@@ -81,7 +81,10 @@ decisions:
   and none is pruned.
 - **Unparseable list.** `validate-frontmatter` reports it as a hard failure
   naming the file, and the writers refuse to write rather than treat it as
-  empty.
+  empty. So does a record whose frontmatter does not parse at all, since its
+  list cannot be read either. `write-analysis` overwrites a prior
+  `analysis.md` that opens no frontmatter block: it stores no decisions, and
+  re-running `/{project}:analyze` repairs it.
 
 A hard-fail or blocking analyze finding is never stored as `discarded`, because
 the writer rejects that outcome for those tiers. A stored `routed` decision for

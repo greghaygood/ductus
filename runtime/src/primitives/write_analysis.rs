@@ -73,12 +73,22 @@ use crate::schema::primitives::{
 ///   carries a parent-directory component.
 /// - [`PrimitiveError::FeatureNotFound`] when the feature directory does not
 ///   exist.
-/// - [`PrimitiveError::Io`] when `spec.md` cannot be read or written.
-/// - [`PrimitiveError::Yaml`] when the frontmatter block is malformed —
+/// - [`PrimitiveError::InvalidArgument`] when `analyzed-at` is blank, when a
+///   finding's disposition lacks its companion or discards a `hard-fail` or
+///   `blocking` finding, when the findings contradict the tier counts, when two
+///   findings sharing a key are given different outcomes, or when a new
+///   decision has no `decided-by` — each before any write.
+/// - [`PrimitiveError::Io`] when `spec.md` or the prior `analysis.md` cannot
+///   be read, or the record cannot be written.
+/// - [`PrimitiveError::Yaml`] when `spec.md`'s frontmatter block is malformed —
 ///   never repaired here. A spec whose frontmatter does not parse is one the
 ///   analysis itself would have hard-failed on, and writing a record of a
 ///   clean run into it would be the exact inversion this primitive exists to
-///   prevent.
+///   prevent. Also when the prior `analysis.md`'s frontmatter does not parse,
+///   since the decisions it stores cannot be read and would be written over.
+/// - [`PrimitiveError::MissingFrontmatter`] when the prior `analysis.md` opens
+///   a frontmatter block that never closes. One that opens none carries no
+///   decisions and is overwritten.
 pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult> {
     validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
@@ -114,8 +124,24 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     }
     let blocking = args.hard_fail > 0 || args.blocking_findings > 0;
     let dispositions = count_dispositions(args)?;
+    // The prior record is read only for the decisions it stores. A file that
+    // opens no frontmatter block carries none, so it is overwritten, and
+    // re-running the command repairs a record damaged that way. One whose
+    // frontmatter does not parse, or never closes, is refused: its
+    // `decisions:` list cannot be read, and writing over it would drop
+    // decisions nobody can see (spec 058).
+    let analysis_path = feature_dir.join(crate::primitives::ANALYSIS_RECORD_FILE);
+    let stored =
+        match decisions::read_decisions(&feature_dir, crate::primitives::ANALYSIS_RECORD_FILE) {
+            Err(PrimitiveError::MissingFrontmatter { .. })
+                if !opens_frontmatter(&analysis_path) =>
+            {
+                Vec::new()
+            }
+            other => other?,
+        };
     let merged = decisions::merge(
-        decisions::read_decisions(&feature_dir, crate::primitives::ANALYSIS_RECORD_FILE)?,
+        stored,
         &args.expired_decisions,
         &decided_findings(&args.findings),
         &single_line(&args.analyzed_at),
@@ -183,13 +209,13 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
             .map_or_else(|| repo.to_path_buf(), std::path::Path::to_path_buf),
         crate::primitives::analyze_subjects::is_analyze_subject,
     );
-    // The artifact is written on EVERY run — clean, empty-scope, blocking
-    // alike. A later gate reads its absence as "never analyzed" (spec 057 AC5),
-    // so a run that declined to write because it had nothing to report would
-    // make "no analysis" and "a clean analysis" the same state on disk. That is
-    // the byte-identical failure `write-analysis` was built to end, one level
-    // out.
-    let analysis_path = feature_dir.join(crate::primitives::ANALYSIS_RECORD_FILE);
+    // The artifact is written on every run it is not refused — clean,
+    // empty-scope, blocking alike. A later gate reads its absence as "never
+    // analyzed" (spec 057 AC5), so a run that declined to write because it had
+    // nothing to report would make "no analysis" and "a clean analysis" the
+    // same state on disk. That is the byte-identical failure `write-analysis`
+    // was built to end, one level out. The refusals are the ones above: a spec
+    // or a prior record this run cannot read.
     let report = render_analysis(
         args,
         &Derived {
@@ -210,6 +236,12 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         replaced,
         dispositions,
     })
+}
+
+/// Whether the file at `path` opens a frontmatter block. A record that does
+/// not has nothing stored in it to preserve.
+fn opens_frontmatter(path: &Path) -> bool {
+    read_text(path).is_ok_and(|text| text.starts_with("---\n") || text.starts_with("---\r\n"))
 }
 
 /// A validation failure naming the offending argument.
@@ -1267,6 +1299,121 @@ mod tests {
             crate::primitives::load_analyze_record(&dir),
             crate::primitives::RecordLoad::Present(_)
         ));
+    }
+
+    /// A decision whose key carries a comment opener or a noncharacter comes
+    /// back so the next run can match it: the tab-then-`#` key reads back byte
+    /// for byte, and the noncharacter is flattened before it is stored. Either
+    /// one written raw left a key that expired the run after it was decided,
+    /// or a record the reader refused outright.
+    #[test]
+    fn a_decision_carrying_a_comment_opener_or_noncharacter_reads_back() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 2;
+        a.decided_by = Some("dev@example.com".into());
+        a.findings = vec![
+            finding(
+                AnalysisTier::Advisory,
+                "grounding",
+                "plan.md cites issue\t#12 as closed",
+                DispositionOutcome::Discarded,
+                Some("why\t#not"),
+            ),
+            finding(
+                AnalysisTier::Advisory,
+                "grounding",
+                "cites a non\u{ffff}char",
+                DispositionOutcome::Discarded,
+                Some("noise"),
+            ),
+        ];
+        run(&a, tmp.path()).unwrap();
+        let dir = tmp.path().join("specs/042-demo");
+        let stored = decisions::read_decisions(&dir, "analysis.md").unwrap();
+        let keys: Vec<_> = stored.iter().filter_map(|d| d.key.as_deref()).collect();
+        assert_eq!(
+            keys,
+            [
+                "grounding — plan.md cites issue\t#12 as closed",
+                "grounding — cites a non char"
+            ]
+        );
+        assert_eq!(stored[0].reason.as_deref(), Some("why\t#not"));
+        let classified = crate::primitives::process_decisions::run(
+            &crate::schema::primitives::ProcessDecisionsArgs {
+                feature: "042-demo".into(),
+                record: crate::schema::primitives::DecisionRecord::Analysis,
+                fired: keys.iter().map(|k| (*k).to_string()).collect(),
+                restricted: false,
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(classified.matched.len(), 2);
+        assert!(classified.expired.is_empty());
+    }
+
+    /// A `decision-key` the host matched to a decision that is not stored — a
+    /// stale match, or one from another record — is not a match: the finding
+    /// is a new decision, stored under that key, and needs its author like
+    /// any other.
+    #[test]
+    fn a_decision_key_naming_no_stored_decision_is_a_new_decision() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 1;
+        let mut matched = finding(
+            AnalysisTier::Advisory,
+            "grounding",
+            "plan.md cites a path, reworded",
+            DispositionOutcome::Discarded,
+            Some("noise"),
+        );
+        matched.decision_key = Some("grounding — plan.md cites a path".into());
+        a.findings = vec![matched];
+        assert!(matches!(
+            run(&a, tmp.path()),
+            Err(PrimitiveError::InvalidArgument { argument, .. }) if argument == "decided-by"
+        ));
+
+        a.decided_by = Some("dev@example.com".into());
+        run(&a, tmp.path()).unwrap();
+        let stored =
+            decisions::read_decisions(&tmp.path().join("specs/042-demo"), "analysis.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(
+            stored[0].key.as_deref(),
+            Some("grounding — plan.md cites a path")
+        );
+        assert_eq!(stored[0].decided_by.as_deref(), Some("dev@example.com"));
+    }
+
+    /// A prior `analysis.md` that opens no frontmatter block stores no
+    /// decisions, so it is overwritten: re-running the command repairs it.
+    #[test]
+    fn a_prior_record_with_no_frontmatter_is_overwritten() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let path = tmp.path().join("specs/042-demo/analysis.md");
+        fs::write(&path, "# Analysis — 042-demo\n\nhand-edited, no record\n").unwrap();
+        run(&args(), tmp.path()).unwrap();
+        assert!(fs::read_to_string(&path).unwrap().starts_with("---\n"));
+    }
+
+    /// A prior `analysis.md` whose frontmatter does not parse is refused and
+    /// left as it is: the decisions it stores cannot be read, and writing over
+    /// it would drop them unseen.
+    #[test]
+    fn a_prior_record_whose_frontmatter_does_not_parse_is_refused() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let path = tmp.path().join("specs/042-demo/analysis.md");
+        let damaged = "---\nspec: \"042-demo\nlast-run: x\n---\n\n# Analysis\n";
+        fs::write(&path, damaged).unwrap();
+        assert!(matches!(
+            run(&args(), tmp.path()),
+            Err(PrimitiveError::Yaml { .. })
+        ));
+        assert_eq!(fs::read_to_string(&path).unwrap(), damaged);
     }
 
     /// A blank timestamp would stamp every new decision with a blank

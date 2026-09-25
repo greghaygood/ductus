@@ -495,17 +495,22 @@ pub struct ProcessDecisionsArgs {
     /// so there is no sensible default to fall back on.
     #[arg(long, value_enum)]
     pub record: DecisionRecord,
-    /// This run's finding keys — `{family} — {message}` for analyze, the
-    /// observation's rendered line (or the stored key the host matched it to)
-    /// for review. MCP only, as `process-waivers`' `fired` is: the keys come
-    /// from the host's passes, which the CLI surface has no way to run.
+    /// This run's finding keys — for each finding, the stored key the host
+    /// matched it to, or else its own key: `{family} — {message}` for analyze,
+    /// the observation's rendered line for review. MCP only, as
+    /// `process-waivers`' `fired` is: the keys come from the host's passes,
+    /// which the CLI surface has no way to run.
     #[serde(default)]
     #[arg(skip)]
     pub fired: Vec<String>,
-    /// The run did not evaluate every source — a review with skipped passes,
-    /// or an analysis with unexamined targets. A non-firing decision is then
-    /// **retained** rather than expired, because its finding's source may
-    /// simply not have been looked at.
+    /// The run did not evaluate every source — a review with a pass that did
+    /// not run, or an analysis that could not read a target it meant to
+    /// examine (a skipped target in the *could not be read* class) or could
+    /// not resolve a registered shared constitution. A non-firing decision is
+    /// then **retained** rather than expired, because its finding's source may
+    /// simply not have been looked at. A target excluded by construction does
+    /// not restrict: it recurs on every run, and would retain a decision
+    /// forever.
     #[serde(default)]
     #[arg(long)]
     pub restricted: bool,
@@ -798,8 +803,9 @@ pub struct WriteReviewResult {
 
 // -- write-analysis ----------------------------------------------------------
 
-/// The tier an analyze finding was detected in.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+/// The tier an analyze finding was detected in. No `Default`: there is no
+/// meaningful default tier (see [`AnalysisFinding::tier`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum AnalysisTier {
     /// Malformed or missing required structure.
@@ -807,12 +813,11 @@ pub enum AnalysisTier {
     /// Holds the spec out of `done`.
     Blocking,
     /// Recorded; never gated on by itself.
-    #[default]
     Advisory,
 }
 
 /// One analyze finding and what the run did with it (spec 058).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct AnalysisFinding {
     /// The tier it was detected in. Required, with no default: the writer's
@@ -2654,9 +2659,11 @@ pub struct AppendTaskResult {
     /// existing file was extended.
     pub created: bool,
     /// Whether a task block was actually written. `false` is the dedup
-    /// domain outcome: a `slug` was supplied and an existing task already
-    /// points at `scenarios/{slug}.md`, so `task_number` names that task
-    /// rather than a new one and `tasks.md` is unchanged.
+    /// domain outcome, from either guard: a `slug` was supplied and an existing
+    /// task already points at `scenarios/{slug}.md`, or `dedup-title` was set
+    /// and a pending task already carries this title. Either way
+    /// `task_number` names that task rather than a new one and `tasks.md` is
+    /// unchanged.
     ///
     /// Reported rather than folded into `created` because the two answer
     /// different questions — `created` is about the *file*, this is about
@@ -3744,7 +3751,7 @@ pub struct DiffCrossSpecResult {
 
 /// Whether the project's inbox has a standing backlog, and whether it could
 /// be examined at all.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum InboxState {
     /// The inbox exists and holds no items.
@@ -3756,10 +3763,6 @@ pub enum InboxState {
     /// Deliberately not folded into [`Self::Clean`]: a project with no inbox
     /// has not been examined-and-found-empty, and rendering the two alike is
     /// the conflation the row exists to remove from the report's surface.
-    ///
-    /// The `Default`, for that same reason: a value nobody computed must read
-    /// as *not examined*, never as clean.
-    #[default]
     NoFile,
 }
 
@@ -3773,7 +3776,7 @@ pub enum InboxState {
 /// **It is a notice, never a gate** — gating on it would make logging a todo
 /// expensive, and the honest choice between a growing list and a silent one
 /// would then push toward silence (§brownfield-inbox).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct InboxStanding {
     /// The inbox's state. With [`Self::oldest`], `dashboard` renders one of
