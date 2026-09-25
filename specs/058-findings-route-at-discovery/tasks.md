@@ -298,7 +298,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 35. Implement scenario: analysis-drift-judges-the-record-it-writes
 
-- [ ] Implement the behavior described in `scenarios/analysis-drift-judges-the-record-it-writes.md`
+- [x] Implement the behavior described in `scenarios/analysis-drift-judges-the-record-it-writes.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested: a done spec whose analyze run dispositions every live finding reports no disposition drift, and one that leaves a finding undecided reports and, with --fix, reverts from the record it wrote
 
