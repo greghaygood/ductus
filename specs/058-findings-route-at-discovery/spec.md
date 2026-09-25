@@ -142,6 +142,9 @@ records the tier counts after dispositions.
   that cannot confirm, the step proposes nothing. Each live finding that
   matches no stored decision is recorded as undispositioned, so the record stays
   honest and the gate blocks `done` until an interactive run dispositions it.
+  Under `ductus exec` that is every live finding: the walker itemizes no
+  finding, so none is matched against the stored decisions either, and every
+  stored decision is retained for the next interactive run.
 - **`--all` groups proposals by spec.** Each prompt offers to leave the rest of
   that spec's findings undispositioned, so a corpus-wide run is not dozens of
   single-finding confirmations.
@@ -217,9 +220,9 @@ Anything else becomes an unchecked task on the targeted spec's `tasks.md` the
 moment it surfaces, through `append-task`:
 
 - **Inside the targeted spec:** the task implements the fix, as today.
-- **Outside the spec:** a **disposition task**, worded
-  `Disposition out-of-spec finding: {summary} — {path}`. It is no longer
-  captured to the inbox.
+- **Outside the spec:** a **disposition task**, titled
+  `Disposition out-of-spec finding: {summary}`, with the path and detail as
+  its body. It is no longer captured to the inbox.
 
 `/{project}:implement` works a disposition task like any other. It fixes the
 finding if it is a chore, routes it with confirmation, or discards it, writing
@@ -403,7 +406,8 @@ spec's links to it. Each also gets the contract change itself:
 - **An adopter inbox keeps its original guidance comment.** The inbox is
   installed once and never updated, so the header in an existing adopter's
   inbox still describes automatic capture. A registry migration replaces that
-  comment block with the new template's and leaves every item untouched.
+  comment block with the new template's, and the introduction too when it is
+  the old template's text unchanged, and leaves every item untouched.
 
 ## Acceptance Criteria
 

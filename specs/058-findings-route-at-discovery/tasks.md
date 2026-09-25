@@ -177,8 +177,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 21. Reconcile the spec, plan, and data model
 
-- [ ] Re-read [spec.md](spec.md) against the finished prose and runtime; where an implementation decision refined a detail (key shape, section names), correct the spec, plan, or data model so the three agree
-- [ ] Known deviations to reconcile. `write-review` and `write-analysis` take no `new-decisions` list: they derive new decisions from the dispositioned findings and require `decided-by` when any is new, and a re-matched decision keeps its original stamp. `write-analysis`'s `findings` entries carry no `decision-key`, because the key is always `{family} — {message}`. `ReviewObservation` gained `disposition` and `decision-key`, and `Disposition`/`DispositionOutcome`/`AnalysisFinding`/`AnalysisTier` are the schema names. plan.md (§process-decisions, §write-review, §write-analysis) and data-model.md (the Changed primitive inputs and process-decisions sections) still describe `new-decisions`
+- [x] Re-read [spec.md](spec.md) against the finished prose and runtime; where an implementation decision refined a detail (key shape, section names), correct the spec, plan, or data model so the three agree
+- [x] Known deviations to reconcile. `write-review` and `write-analysis` take no `new-decisions` list: they derive new decisions from the dispositioned findings and require `decided-by` when any is new, and a re-matched decision keeps its original stamp. `write-analysis`'s `findings` entries carry no `decision-key`, because the key is always `{family} — {message}`. `ReviewObservation` gained `disposition` and `decision-key`, and `Disposition`/`DispositionOutcome`/`AnalysisFinding`/`AnalysisTier` are the schema names. plan.md (§process-decisions, §write-review, §write-analysis) and data-model.md (the Changed primitive inputs and process-decisions sections) still describe `new-decisions`
 
 - **Done when**: the spec, plan, and data model describe one set of field names, section names, and keys.
 

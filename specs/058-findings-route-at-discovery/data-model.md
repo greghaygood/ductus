@@ -58,8 +58,8 @@ decisions:
 | `outcome` | `routed` \| `discarded` | yes | `fixed` is never stored: a fixed finding stops firing. `undispositioned` is never stored: it is the absence of a decision. |
 | `target` | string (repo-relative path) | when `routed` | The scenario, `tasks.md`, spec, or rule file the finding was routed to. |
 | `reason` | string | when `discarded` | Free text; an empty string is invalid. |
-| `decided-at` | ISO 8601 timestamp | yes | Host-provided, as `waived-at` is. |
-| `decided-by` | string (email) | yes | From `git config user.email`, as `waived-by` is. |
+| `decided-at` | ISO 8601 timestamp | yes | The run's own timestamp (`reviewed-at` or `analyzed-at`), stamped by the writer when the decision is new. A re-matched decision keeps its original. |
+| `decided-by` | string (email) | yes | The writer's `decided-by` argument — `git config user.email`, as `waived-by` is. |
 | (additional fields) | any | no | Open-schema, preserved verbatim on re-render, as waiver extras are. |
 
 **Lifecycle.** The rules mirror review waivers (`framework/commands/review.md`
@@ -71,8 +71,9 @@ decisions:
   entry is dropped on this write. For a routed finding, this is the moment the
   routed work landed.
 - **Retained.** The key did not fire, but the run did not evaluate its source:
-  a review with skipped passes, or an analysis with unexamined targets. The
-  entry is re-rendered unchanged.
+  a review with a pass that did not run (a dimension-restricting flag, or an
+  empty scope), or an analysis with unexamined targets. The entry is
+  re-rendered unchanged.
 - **Malformed.** A required field is missing, or the outcome's companion field
   (`target` or `reason`) is missing. It produces a notice, is never pruned, and
   applies to nothing.
@@ -107,26 +108,53 @@ next time its writer runs.
 
 ## Changed primitive inputs
 
+Neither writer takes a list of new decisions. Each derives them from the
+dispositioned findings it is handed — every routed or discarded live finding
+not already stored with the same outcome — and requires `decided-by` only when
+at least one is new. The shared disposition shape is `Disposition`
+(`outcome`, a `DispositionOutcome`, plus `target` and `reason`).
+
+### `write-review` args
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `observations` | list of `ReviewObservation` | Each now carries its disposition (below). |
+| `expired-decisions` | list of decision refs | From `process-decisions`' `expired`; dropped on this write. |
+| `decided-by` | string, optional | Author of this run's new decisions. Required when any observation is newly routed or discarded. |
+
 ### `ReviewObservation` — the `write-review` `observations` entry
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `text` | string | Unchanged. Single line, non-empty. |
 | `path` | string, optional | Unchanged. |
-| `disposition.outcome` | `fixed` \| `routed` \| `discarded` \| `undispositioned` | New. |
+| `disposition.outcome` | `fixed` \| `routed` \| `discarded` \| `undispositioned` | New. Defaults to `undispositioned`. |
 | `disposition.target` | string | Required when `routed`. |
 | `disposition.reason` | string | Required when `discarded`. |
 | `decision-key` | string, optional | The key of a stored decision the host matched this observation to. |
 
-### `AnalysisFinding` — the new `write-analysis` `findings` entry
+### `write-analysis` args
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `tier` | `hard-fail` \| `blocking` \| `advisory` | Tier as detected. |
+| `findings` | list of `AnalysisFinding` | Replaces `captured-issues`. |
+| `expired-decisions` | list of decision refs | From `process-decisions`' `expired`; dropped on this write. |
+| `decided-by` | string, optional | Author of this run's new decisions. Required when any live finding is newly routed or discarded. |
+
+The tier counts stay host-supplied scalars from the re-check.
+
+### `AnalysisFinding` — the new `write-analysis` `findings` entry
+
+It carries no `decision-key`: an analyze finding's key is always
+`{family} — {message}`, so there is nothing for the host to match.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `tier` | `AnalysisTier`: `hard-fail` \| `blocking` \| `advisory` | Tier as detected. |
 | `family` | string | The detecting family, e.g. `review-state-drift`, `grounding`. |
 | `message` | string | Single line. With `family`, forms the key. |
 | `path` | string | The citing artifact. |
-| `live` | bool | `false` for a finding fixed in the run and absent from the re-check. |
+| `live` | bool | `false` for a finding fixed in the run and absent from the re-check. Defaults to `true`. |
 | `disposition` | as above | `discarded` is rejected when `tier` is `hard-fail` or `blocking`. |
 
 ### `AppendTaskArgs.dedup-title`
@@ -142,7 +170,7 @@ again. A spent section never matches.
 | `feature` | string | Feature directory under the spec root. |
 | `record` | `review` \| `analysis` | Which record's `decisions:` to read. |
 | `fired` | list of strings | This run's finding keys (MCP only, as `process-waivers`' `fired` is). |
-| `restricted` | bool | The run did not evaluate every source. |
+| `restricted` | bool | The run did not evaluate every source: a review pass did not run, or an analysis target went unexamined. |
 
 | Result field | Type | Notes |
 | --- | --- | --- |
@@ -174,7 +202,7 @@ The existing `InboxStanding` (`primitives.rs:3552-3572`), moved from the
 `write-review` and `diff-cross-spec` results. `render_callouts` renders it as
 one `Inbox:` line in one of four states:
 
-- `Inbox: N items outstanding, oldest YYYY-MM-DD — run /{project}:groom to route`
-- `Inbox: N items outstanding, age undeterminable — run /{project}:groom to route`
+- `Inbox: N item(s) outstanding, oldest YYYY-MM-DD — run /{project}:groom to route`
+- `Inbox: N item(s) outstanding, age undeterminable — run /{project}:groom to route`
 - `Inbox: ✓ clean`
 - `Inbox: ? no {specs-root}/inbox.md — nothing examined`

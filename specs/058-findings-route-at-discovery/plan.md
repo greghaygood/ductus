@@ -81,8 +81,9 @@ not wait for it: `/{project}:review` calls `process-waivers` at step 8, before
   - `feature`;
   - `record`: `review` or `analysis`;
   - `fired`: this run's finding keys;
-  - `restricted`: true when a review skipped passes, or an analysis skipped
-    targets.
+  - `restricted`: true when a review had a pass that did not run (a
+    dimension-restricting flag, or an empty scope that skipped them all), or
+    an analysis left a target unexamined.
 - **Result:**
   - `matched`: stored decisions whose key fired, each with its outcome and
     target or reason;
@@ -100,12 +101,22 @@ The writers then take:
 - `expired-decisions`, applied the way `expired_waivers` is (the
   `WriteReviewArgs` field at `primitives.rs:522-524`, pruned by
   `surviving_waivers` at `write_review.rs:797-803`);
-- `new-decisions`, this run's routes and discards, each with the host-supplied
-  `decided-at` and `decided-by` values that `--waive` already supplies for
-  waivers.
+- `decided-by`, the author `--waive` already supplies for waivers
+  (`git config user.email`).
 
-A matched decision is re-rendered unchanged, and it counts toward `routed` or
-`discarded` in `dispositions:`.
+There is no `new-decisions` list. Each writer derives its new decisions from
+the findings it is handed: every routed or discarded live finding whose key,
+outcome, and target or reason are not already stored becomes an entry, stamped
+with the run's own timestamp (`reviewed-at` or `analyzed-at`) as `decided-at`
+and with `decided-by` as its author. `decided-by` is required only when at
+least one entry is new. Deriving the list, rather than accepting it, means the
+stored decisions and the rendered dispositions come from one input and cannot
+disagree.
+
+A finding re-matched to a stored decision with the same outcome keeps that
+decision's original stamp, is re-rendered unchanged, and counts toward
+`routed` or `discarded` in `dispositions:`. A finding re-decided differently
+replaces the stored entry.
 
 The key is `{family} — {message}` for analyze findings. The old capture key's
 leading `{category}` is host-assigned and exists only in prose
@@ -133,16 +144,23 @@ to reproduce.
   rule already preserves `decisions:`.
 - **Observations carry their disposition.** `ReviewObservation`
   (`primitives.rs:459-468`) gains:
-  - `disposition`: an outcome (`fixed`, `routed`, `discarded`, or
+  - `disposition`, a `Disposition`: an outcome (`DispositionOutcome`:
+    `fixed`, `routed`, `discarded`, or `undispositioned`, defaulting to
     `undispositioned`), plus a `target` for a route and a `reason` for a
     discard, each validated as required by its outcome;
   - `decision-key`: optional, naming a matched stored decision.
+
+  `WriteReviewArgs` gains `expired-decisions` and `decided-by`, per
+  §process-decisions above.
 
   `render_observations` (`:681-695`) renders the outcome and its target or
   reason beside each observation. The `dispositions:` map is computed from the
   observations; the caller never supplies it.
 - **An empty scope still records.** Observations on an empty-scope run are
   dispositioned and counted, as they were captured before.
+- **The report renders the counts.** `/{project}:review`'s stdout summary
+  gains an `observations` row, rendered on every run from the result's
+  `dispositions`, in place of the retired `captured` line and inbox row.
 
 ### `write-analysis` receives the findings, because capture was its only source of finding text
 
@@ -153,9 +171,13 @@ exists: see the 057 data model,
 With capture gone, the writer has to be given the findings.
 
 - `WriteAnalysisArgs.captured_issues` (`primitives.rs:720`) is replaced by
-  `findings`. Each entry carries `tier`, `family`, `message`, `path`, and a
-  disposition shaped as above. The list covers both passes: findings fixed in
-  the run (gone from the re-check) and live findings from the re-check.
+  `findings`, a list of `AnalysisFinding`. Each entry carries `tier` (an
+  `AnalysisTier`), `family`, `message`, `path`, `live`, and a `Disposition`
+  shaped as above. The list covers both passes: findings fixed in the run
+  (`live: false`, gone from the re-check) and live findings from the
+  re-check. There is no `decision-key`, because an analyze finding's key is
+  always `{family} — {message}`. `expired-decisions` and `decided-by` join
+  the args, per §process-decisions above.
 - **Tier counts stay host-supplied scalars from the re-check.** That contract
   is unchanged, so the exec walker's existing dispatch of `write-analysis`
   (`runtime/tests/golden/analyze-basic.jsonl:15`) still binds.
@@ -283,6 +305,10 @@ The disposition task's shape:
 - **Done when:** the finding is fixed, routed, or discarded, with a discard's
   reason written on the task.
 
+Working the task records its outcome on that body item before checking it —
+`— fixed`, `— routed to {target}`, or `— discarded: {reason}` — so the
+completion summary reads each disposition from `tasks.md` itself.
+
 ### Command procedures: the fix-and-route step is host work that `ductus exec` skips
 
 Analyze's and review's fix-and-route steps need per-finding arguments the
@@ -308,14 +334,17 @@ removed.
     - process decisions;
     - fix and route, gated per write;
     - re-run the detection steps when anything was written.
-  - Step 17 passes `findings` instead of `captured-issues`.
+  - The `write-analysis` step, now step 19, passes `findings`,
+    `expired-decisions`, and `decided-by` instead of `captured-issues`.
   - The Purpose, Scope Boundaries, frontmatter description, and
     §Finding capture (durability) (`:365-403`) are rewritten to match.
   - The renumbering moves the `write-analysis` dispatch, so
     `analyze-basic.jsonl` is re-blessed.
 - **`review.md`:**
-  - Step 9 passes dispositioned observations.
-  - A process-decisions step and a fix-and-route step precede it.
+  - A process-decisions step (9) and a fix-and-route step (10) precede
+    `write-review`, which moves to step 11 and passes dispositioned
+    observations, `expired-decisions`, and `decided-by`. The step move is
+    pinned by `runtime/tests/review_command.rs`, which is updated with it.
   - §Captured issues, §Observations' write-through (`:412-473`), and
     §The inbox row (`:763-806`) are replaced.
 - **`implement.md`:**
@@ -371,8 +400,12 @@ received.
   2. does nothing when the inbox is absent;
   3. checks idempotency: done when the leading guidance comment already equals
      the template's;
-  4. otherwise replaces the first `<!-- Rules:` comment block with the
-     template's, preserving line endings and leaving every item byte-identical.
+  4. skips a pinned inbox with a warning;
+  5. otherwise replaces the first `<!-- Rules:` comment block with the
+     template's, preserving line endings and leaving every item byte-identical;
+  6. replaces the introduction paragraph too, but only when it is the pre-058
+     template's text verbatim. That paragraph also described incidental
+     capture, and a customized one is the adopter's.
 
 ### The adoption security audit reports instead of capturing
 
