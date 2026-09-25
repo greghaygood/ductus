@@ -181,14 +181,18 @@ With capture gone, the writer has to be given the findings.
   `ReviewObservation`; absent, the key is `{family} — {message}`
   (scenario `analyze-findings-match-decisions-by-host-judgment`). `expired-decisions` and `decided-by` join
   the args, per §process-decisions above.
-- **Tier counts stay host-supplied scalars from the re-check.** That contract
-  is unchanged, so the exec walker's existing dispatch of `write-analysis`
-  (`runtime/tests/golden/analyze-basic.jsonl:15`) still binds.
-  `undispositioned` is computed as the live tier total minus the live findings
-  that carry a `routed` or `discarded` outcome. A finding the caller omits
-  therefore counts as undispositioned by construction; it can never be silently
-  counted as handled. That is also how a `ductus exec` run, which itemizes
-  nothing, records every live finding as undispositioned (AC26).
+- **Tier counts stay host-supplied scalars from the re-check.** On the exec
+  path no host supplies them, so the walker tallies them from its own
+  detection steps as it dispatches each, by the tier the step assigns
+  (`runtime/src/interpreter/analyze_tally.rs`). The existing dispatch of
+  `write-analysis` (`runtime/tests/golden/analyze-basic.jsonl:15`) bound none,
+  so every exec record read 0/0/0 whatever detection found; 058's second review
+  found it (QUAL-CLAIM-001). `undispositioned` is computed as the live tier
+  total minus the live findings that carry a `routed` or `discarded` outcome.
+  A finding the caller omits therefore counts as undispositioned by
+  construction; it can never be silently counted as handled. That, against the
+  walker's tally, is how a `ductus exec` run, which itemizes nothing, records
+  every live finding as undispositioned (AC26).
 - **AC30 is enforced in the writer.** A `discarded` outcome on a `hard-fail` or
   `blocking` finding is a validation error, raised before any write.
 - **The body skeleton:**
@@ -321,8 +325,8 @@ walker does not hold. So they are **host responsibility** steps: the primitive
 is named without backticks, under `<!-- audit:ignore-promotion -->`, per the
 `AGENTS.md` rule on backticking a primitive "only when the walker can actually
 supply its arguments". The subprocess walker no-ops such steps by design. That
-is what makes an exec run write no fix or route and record everything
-undispositioned (AC26), with no special case.
+is what makes an exec run write no fix or route, and, with the tier counts it
+tallies, record everything undispositioned (AC26).
 
 `process-decisions` is host responsibility for the same reason: its `fired`
 keys are per-finding.
@@ -491,6 +495,7 @@ gain it too (`framework/bootstrap/configure/claude.md:119-120`, `auggie.md:107-1
 | `runtime/src/primitives/invalidate_review.rs` | Modify | Drop `captured-issues` from the nulled scalars |
 | `runtime/src/primitives/validate_frontmatter.rs` | Modify | Report an unparseable `decisions:` list |
 | `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, `runtime/src/main.rs`, `runtime/src/interpreter/mod.rs` | Modify | Register and dispatch `process-decisions`; tool descriptions; comments naming the inbox |
+| `runtime/src/interpreter/analyze_tally.rs` | Create | The exec walker's tally of the tier counts an `/{project}:analyze` walk records |
 | `runtime/src/schema/extensions.rs` | Modify | `InboxRoute` docs |
 | `runtime/tests/mcp.rs`, `runtime/tests/walker.rs`, `runtime/tests/golden/{review,analyze,implement,status}-basic.jsonl` | Modify | Wire assertions and goldens for the new shapes |
 | `framework/runtime-tools.txt`, `framework/bootstrap/configure/{claude,auggie}.md` | Modify | The new tool name and its permission |

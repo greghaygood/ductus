@@ -46,6 +46,7 @@
 
 #![allow(clippy::module_name_repetitions)]
 
+mod analyze_tally;
 pub mod payload;
 
 use std::collections::HashSet;
@@ -91,6 +92,9 @@ pub struct Walker<'a, R: BufRead, W: Write> {
     reader: &'a mut R,
     writer: &'a mut W,
     request_counter: u64,
+    /// The tier counts an `/analyze` walk's detection steps produce, bound to
+    /// its `write-analysis` step; `None` for every other command.
+    analyze_tally: Option<analyze_tally::AnalyzeTally>,
 }
 
 /// Top-level outcome of [`Walker::run`].
@@ -127,6 +131,8 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             reader,
             writer,
             request_counter: 0,
+            analyze_tally: (procedure.command == "analyze")
+                .then(analyze_tally::AnalyzeTally::default),
         }
     }
 
@@ -197,8 +203,22 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             Some(step_label.clone()),
             Some(name.into()),
         )?;
-        match dispatch_primitive(name, &self.context, &self.repo) {
+        // An `/analyze` walk's record carries the tier counts its own
+        // detection steps produced (spec 058, AC26); the walk has no host to
+        // supply them.
+        let dispatched = match (&self.analyze_tally, name) {
+            (Some(tally), "write-analysis") => {
+                let mut bindings = self.context.clone();
+                tally.bind(&mut bindings);
+                dispatch_primitive(name, &bindings, &self.repo)
+            }
+            _ => dispatch_primitive(name, &self.context, &self.repo),
+        };
+        match dispatched {
             Ok(result) => {
+                if let Some(tally) = &mut self.analyze_tally {
+                    tally.record_primitive(name, &result, &self.context);
+                }
                 self.merge_primitive_result(name, result);
                 Ok(None)
             }
@@ -363,6 +383,11 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         let response = self.await_llm_response(&request_id)?;
         if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
             return Ok(Some(outcome));
+        }
+        if identifier == "assessSpecQuality"
+            && let Some(tally) = &mut self.analyze_tally
+        {
+            tally.record_assessment(&response);
         }
         // `performReview` runs once per pass; accumulate each pass's
         // findings and observations into the shared context keys so a later
@@ -686,13 +711,40 @@ fn dispatch_primitive(
     // Exec-path binding for `write-analysis`: its `findings` argument is the
     // host's itemized dispositions, which the walker never produces — the
     // fix-and-route step is host responsibility and no-ops here, so an exec
-    // run itemizes nothing and the writer counts every live finding as
-    // undispositioned (spec 058). The context's `findings` key belongs to
-    // other primitives (`check-artifacts`, `check-orphaned-references`), whose
-    // entries are not analyze findings and would fail to bind, so it never
-    // reaches this primitive.
+    // run itemizes nothing, and against the tier counts the walker tallied
+    // (see `analyze_tally`) the writer counts every live finding as
+    // undispositioned (spec 058, AC26). The context's `findings` key belongs
+    // to other primitives (`check-artifacts`, `check-orphaned-references`),
+    // whose entries are not analyze findings and would fail to bind, so it
+    // never reaches this primitive.
     if name == "write-analysis" {
         bindings.remove("findings");
+    }
+    // Exec-path binding for the spec-reading primitives `/analyze` dispatches
+    // against "the spec path": a session target's `path` is the spec
+    // *directory*, as `write-session` records it, so it is bound to the
+    // directory's `spec.md`. Before this, an exec `/analyze` over a real
+    // session failed at its first such step reading a directory.
+    if matches!(
+        name,
+        "validate-frontmatter" | "resolve-anchor" | "check-rule-ids"
+    ) && let Some(Value::String(path)) = bindings.get("path")
+        && repo.join(path).is_dir()
+    {
+        let spec = format!("{}/spec.md", path.trim_end_matches('/'));
+        bindings.insert("path".into(), Value::String(spec));
+    }
+    // Exec-path binding for `resolve-anchor`: `/analyze` step 4 resolves the
+    // spec's `§` references against the constitution's markers, not the
+    // spec's own, which would report every reference unresolved. Bound to the
+    // project's constitution when the context names no markers file.
+    if name == "resolve-anchor"
+        && !bindings.contains_key("markers-path")
+        && let Some(constitution) = [".ductus/constitution.md", "framework/constitution.md"]
+            .into_iter()
+            .find(|candidate| repo.join(candidate).is_file())
+    {
+        bindings.insert("markers-path".into(), Value::String(constitution.into()));
     }
     // Exec-path binding for `mark-criterion`: `/ductus:implement`'s completion
     // gate seeds `criterion-index`/`checked: true`, but the checkbox flip
@@ -1226,6 +1278,61 @@ mod tests {
             ),
             "{review}"
         );
+    }
+
+    /// An exec `/analyze` records the tier counts its own detection produced
+    /// and every live finding undispositioned (spec 058, AC26). It once bound
+    /// no counts, so a spec with two blocking findings was recorded 0/0/0,
+    /// clean, and fully examined. The session's `path` is the spec directory,
+    /// as `write-session` records it, and the spec-reading steps bind its
+    /// `spec.md`.
+    #[test]
+    fn an_exec_analyze_records_the_tiers_its_detection_found() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: planned\ndependencies: []\n---\n\n# x\n\n## Acceptance Criteria\n\n- [ ] it works\n",
+        )
+        .unwrap();
+        let step = |n: u32, name: &str| Step::Primitive {
+            number: StepNumber(vec![n]),
+            name: name.into(),
+            prose: String::new(),
+            location: loc(),
+        };
+        let procedure = Procedure {
+            command: "analyze".into(),
+            steps: vec![
+                step(2, "validate-frontmatter"),
+                step(8, "check-artifacts"),
+                step(19, "write-analysis"),
+            ],
+        };
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert("path".into(), Value::String("specs/001-x".into()));
+        context.insert(
+            "analyzed-at".into(),
+            Value::String("2026-09-25T00:00:00Z".into()),
+        );
+        context.insert("analyzed-against".into(), Value::String("abc1234".into()));
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            tmp.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+        let analysis = std::fs::read_to_string(dir.join("analysis.md")).unwrap();
+        // `plan.md` and `tasks.md` are both required at `planned`.
+        assert!(analysis.contains("\nblocking-findings: 2\n"), "{analysis}");
+        assert!(analysis.contains("\nblocking: true\n"), "{analysis}");
+        assert!(analysis.contains("  undispositioned: 2\n"), "{analysis}");
     }
 
     /// `write-analysis` binds no `findings` from the walker context: that key

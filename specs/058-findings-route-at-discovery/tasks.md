@@ -348,12 +348,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 41. Exec analyze records the tier counts it detected
 
-- [ ] SHOULD QUAL-CLAIM-001: as each analyze step dispatches, the exec walker tallies its results into the tier counts, by the tiering the step states, and its skipped targets into `unexamined-by-reason`, and binds them to `write-analysis`; result keys collide in the walker context, so the tally is taken at dispatch
-- [ ] The exec walker binds `validate-frontmatter` to the spec file when the session `path` is the spec directory, as `write-session` writes it, so `ductus exec analyze` runs against a real session
-- [ ] Correct the comment on `interpreter/mod.rs`'s `write-analysis` binding and `plan.md`'s claim that the existing binding supplies the counts
-- [ ] Tests: an exec run over a fixture with live blocking and advisory findings records their counts, `blocking: true`, and `undispositioned` equal to the live total; a fixture whose session `path` is the spec directory
+- [x] SHOULD QUAL-CLAIM-001: as each analyze step dispatches, the exec walker tallies its results into the tier counts, by the tiering the step states, and its skipped targets into `unexamined-by-reason`, and binds them to `write-analysis`; result keys collide in the walker context, so the tally is taken at dispatch
+- [x] The exec walker binds `validate-frontmatter` (and the other spec-reading steps, `resolve-anchor` and `check-rule-ids`) to the spec file when the session `path` is the spec directory, as `write-session` writes it, and `resolve-anchor` to the project constitution, so `ductus exec analyze` gets past them on a real session; the seeds no session carries are task 43
+- [x] Correct the comment on `interpreter/mod.rs`'s `write-analysis` binding and `plan.md`'s claim that the existing binding supplies the counts
+- [x] Tests: an exec run over a fixture with live blocking and advisory findings records their counts, `blocking: true`, and `undispositioned` equal to the live total; a fixture whose session `path` is the spec directory
 
-- **Done when**: the reproduction (a `planned` spec with no `plan.md` or `tasks.md`, for which exec wrote 0/0/0) records 2 blocking findings, `blocking: true`, and 2 undispositioned; exec analyze completes with a directory session `path`; any re-blessed golden diff is limited to what the tally changes; and `cargo test --release --locked` and `clippy -D warnings` pass
+- **Done when**: the reproduction (a `planned` spec with no `plan.md` or `tasks.md`, for which exec wrote 0/0/0) records what detection found — with `analyze-basic`'s two scripted assessments, 3 blocking, 1 advisory, `blocking: true`, and 4 undispositioned; exec analyze completes with a directory session `path` when the other seeds are present; any re-blessed golden diff is limited to what the tally changes; and `cargo test --release --locked` and `clippy -D warnings` pass
 
 ## 42. Implement scenario: analyze-state-drift-judges-the-record-it-writes
 
@@ -361,3 +361,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 - [ ] 022's `data-model.md` `check-artifacts` registry records the change, through a 022 reopen as task 34 did
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested: `check-artifacts` does not judge `analysis.md` during detection, a `done` spec whose run fixes its blocking finding records `blocking: false` and reports no drift, and one left blocking reports drift from the record it wrote
+
+## 43. Disposition out-of-spec finding: exec analyze on a bare session stops at the arguments no session carries
+
+- [ ] `runtime/src/main.rs` — `ductus exec analyze` seeds its context from the session file and string `key=value` arguments. A session written by `write-session` carries `feature`, `path`, and `set-at` alone, so once task 41 binds the spec file the walk stops at step 5 (`missing field rule-files`), and `lint-markdown`'s `paths` and `write-analysis`'s `analyzed-at` and `analyzed-against` would follow. A string seed cannot supply a list. The parity fixtures seed them all in their session file. Predates 058; exec's seed contract belongs to 022.
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
