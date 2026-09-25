@@ -1,15 +1,15 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-25T18:52:34Z
-analyzed-against: c0337b3b4162811f5f7cf4562cf8ae111286474b
+last-run: 2026-09-25T19:13:32Z
+analyzed-against: 5fce18fbb678c5e06a5950d7aeb8e75f51179325
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 0
 analyzed-digest:
-  data-model.md: 57244d2180c1ad3d60a6581d744e385df807e8b1db6afd93815bd040c6be0409
+  data-model.md: e6ff943c0587d84f4087b94dc685fd7ef4116a7dc5c64042640c5ca37a53cefe
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: e3f0f0f1b0973487d201d1c001bdfcbeaf5dee88b7736cf4278ac22ce04fc76d
+  review.md: 168e7ba75b6513473cd53b3a4ce2e446f49ddffd3322936820de7668fbe026bb
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -18,7 +18,7 @@ analyzed-digest:
   scenarios/analyze-artifact-checks.md: 5d8f5e76161fb02ff07c23d77a358349be4a04b7afae103b0136deb955c7e880
   scenarios/anchor-reference-kinds.md: 178e97f7cad2d6434284fa77f7c965635a6a85cee9bdeed7bd72c45c2c3fc9f2
   scenarios/append-inbox-comment-aware-write.md: c26a16c3be1a7e1c52eca2254061d545ec62b3b7d7c865affd1fa679d6c0ab6b
-  scenarios/append-primitive-marker-normalization.md: 42f66c331c19205f62f29d4ff2ef96a3d51ffab8aa38bf9df4ed09eeef6f8990
+  scenarios/append-primitive-marker-normalization.md: 26c5064dcdf3f697885faac80332207d079bfd7db2d14c0769254da21e5e4246
   scenarios/append-task-honours-slug-with-explicit-body.md: d831ac5fada945c565042a7216a7d7dd0fa7477efb635597901a5720926cf726
   scenarios/apply-manifest-substitution-contract.md: dfb59f607b4ac27dec233dca8c71742dbc2f139c98794829fad2cdfb8598d733
   scenarios/apply-manifest.md: e3f792134cfab148287877137d76f68879583d969b03e9dadcf7eb26df6dba20
@@ -34,7 +34,7 @@ analyzed-digest:
   scenarios/config-resolution-single-probe.md: fc602eb6f2d64f6d1956da411b809af3a53a0c91b26dd198f6b1af61e3347ab4
   scenarios/config-sourced-paths-and-the-traversal-boundary.md: 5ce4f8c45bdfd56606b9a977431e06683f4f38904742f96c358e6b6c5828b30e
   scenarios/constitution-excerpts-as-skill-resources.md: 56192a1689b5afe2bfc51928c27b7d567518816b79c8df0a50250bd3328a8e86
-  scenarios/coverage-expansion-primitives.md: ff05928a8b09b6b921b3336de678002385bdca65140b6d889978a748e5d1720a
+  scenarios/coverage-expansion-primitives.md: 4626b19eef4cff4f9ce01047b2afa6746573ec289da039cc969b8d8d37ebcd3f
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
@@ -85,7 +85,7 @@ analyzed-digest:
   scenarios/review-staleness-on-done-specs.md: e5090cf7fc1529f5763a91365e372980a9c61e9cef738dc24656ccd74fc5b7cc
   scenarios/runtime-primitive-structural-bugs.md: 7fb973b4c5ef5c0268df24996c585f9bf70465f4f7e36ad237d129894f5fd366
   scenarios/runtime-review-019-hardening.md: 9b759c9ce4fc57702e28d764179dcae7b7df9d04dc99ac166b3c0726cf3f9449
-  scenarios/scaffolding-primitives.md: e03523cb215de6f69d82e17f3c1cbb05a8155b0c4d524899ae3892d3737810d0
+  scenarios/scaffolding-primitives.md: 6bd370c11371f1ce71a87ea070df769cd654fdace168dcde363691252ae5c4d1
   scenarios/scenario-open-question-signal.md: bd9e127f09f6aa34417ee912f71a05f0205607b28c799944017a196943b7e129
   scenarios/scenario-question-parser-fix.md: bdcaf5f9bb7d0ff795d6e3a6a5045a79afc63b55d8ce4b3331f807c337bf2ada
   scenarios/severity-is-a-closed-set-not-a-string.md: 45be56aee78248f76087357bcbd807f21515e208e7e6ee5ab8865a924b2bb5d5
@@ -112,7 +112,7 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: f3ab0a5fce49cca7e7425bd28630625604e85717f9834d6765411dabe5b4ef10
+  spec.md: 41ef87915e0f16c12981fe550e7b0c42390b2ce8b498453ca6f08f5ccb4e4615
   tasks.md: 5c4079f6e3c27ce62fc64b1e70b9785b3794620e252fe50fa259f77cbf82f1ff
 blocking: false
 dispositions:
