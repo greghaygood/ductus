@@ -223,7 +223,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 ## 27. Discharge 022
 
 - [x] Reopen; mark `review-observations-write-through`, `the-inbox-row`, and `the-analyze-record-states-what-it-captured` superseded by 058; correct every other 022 scenario and data-model entry naming the inbox window, the standing row, or `captured-issues`; add the `spec.md` signpost. Measured 2026-09-25, excluding the `captured during scenario authoring` boilerplate: `data-model.md` (20 hits), `spec.md` (AC31 and the `captured-issues` sentence near it), and scenarios `the-committed-tree-horizon`, `a-review-states-what-it-read`, `the-promotion-coverage-line` (its inbox-row Resolved Question), `coverage-expansion-primitives`, `review-scope-parse-fidelity`, and `review-runtime-acceleration`. The hits in `primitive-robustness-hardening`, `spec-side-parser-hardening`, and `resolve-references-cli-exec-wiring` record that an item was tracked in the inbox — history, not a falsified contract
-- [ ] Re-run review, recording the changed contracts as `examined` against the full `scope`, and state in the Summary that the remaining scenarios were not re-read; re-run analyze; return to `done`
+- [x] Re-run review, recording the changed contracts as `examined` against the full `scope`, and state in the Summary that the remaining scenarios were not re-read; re-run analyze; return to `done`
 
 - **Done when**: 022 is `done` through its gate with a truthful `examined`, and 058's gate reports every declared impact discharged.
 
