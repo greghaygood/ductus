@@ -1,26 +1,30 @@
 ---
 spec: 057-analyze-artifact-and-record-relocation
-last-run: 2026-09-16T16:16:34Z
-analyzed-against: 52dc8ce65b02f4558dbd55bed63b20c8558dc99f
+last-run: 2026-09-25T18:26:35Z
+analyzed-against: c425c4961be1a28eab4c8eecb136de36b8c97eb2
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 0
-captured-issues: 0
 analyzed-digest:
-  data-model.md: bd1df805fef2ac01f573d300d4783c13238ba296e80553cbb769c31b5c79c473
+  data-model.md: d6a91567baa5be37074c007b462024388c36d3bce9a305cd184199e7d1e5fd20
   plan.md: ef098cb169324a364d51c7352d19f3953218921bdf46702a49f2f3a778581cda
-  review.md: 6e8b2952c0e9d9ff31a6b0d842e04b29a203752353d3d32c4d27fc12657f1b39
-  spec.md: deedf205e99d35aa70c1d496fc8f9eb8d7abf5875ade153236873d24ca6593cf
-  tasks.md: 32a140efaaf716da4a98cf61c67053dace057bc8fa95daf2950eb806119f2e8a
+  review.md: 26f96d4baad74d707f5c9ced16d6497ce57cd8f3197dfff66a44767888bf5813
+  spec.md: b7b25faf124707ef95b11506e8eb8e84d23688dbd349780e61bc29c60984f10c
+  tasks.md: 32de2dbe7d863cd4e26d1a1a8160178e246e95d981fbeeed514fad5e2fd86dc3
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Analysis — 057-analyze-artifact-and-record-relocation
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -38,6 +42,6 @@ blocking: false
 
 *None — every target was examined.*
 
-## Captured issues
+## Fixed in this run
 
 *None.*
