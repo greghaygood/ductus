@@ -1,20 +1,18 @@
 ---
 spec: 022-deterministic-runtime
-scenario: criterion-negated-creation-phrasing
-last-run: 2026-09-18T00:29:00Z
-reviewed-against: f3908206d777b95ef1efdd8f8f96c5cf6afb5a3c
-diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
+last-run: 2026-09-25T18:51:53Z
+reviewed-against: e78f93f5dac90ab49decd71e1f7189a39ba07ee5
+diff-base: db1dd99970923e8082656c37b937c37d240f79e6
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
 examined: 13
-scope: 53
+scope: 47
 skipped-passes: []
 reviewed-digest:
-  data-model.md: bb3e570e0e6d01eabba8bf8889f26628ea5869de6770192159234b3c1f438f66
+  data-model.md: 57244d2180c1ad3d60a6581d744e385df807e8b1db6afd93815bd040c6be0409
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
-  scenarios/a-review-states-what-it-read.md: 3985ad16e5a3db504512f7e4a1bf4157dd71b307d4af34b5a89839e35a6297dc
+  scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 52a49fff9ad4f3493a9d7f2daf51df20d3ac1f58776015ed64450b46d8a60154
   scenarios/an-empty-scope-flag-does-not-decide-the-denominator.md: 13366f629fea7637c497bbb44d7e1ed798500ff3c445e03eb560bb021032117b
@@ -37,7 +35,7 @@ reviewed-digest:
   scenarios/config-resolution-single-probe.md: fc602eb6f2d64f6d1956da411b809af3a53a0c91b26dd198f6b1af61e3347ab4
   scenarios/config-sourced-paths-and-the-traversal-boundary.md: 5ce4f8c45bdfd56606b9a977431e06683f4f38904742f96c358e6b6c5828b30e
   scenarios/constitution-excerpts-as-skill-resources.md: 56192a1689b5afe2bfc51928c27b7d567518816b79c8df0a50250bd3328a8e86
-  scenarios/coverage-expansion-primitives.md: 9b3012b53236aa7012b33a56b03b798595fd0c137dbf3d8ba0b6fdec7fcf2b88
+  scenarios/coverage-expansion-primitives.md: ff05928a8b09b6b921b3336de678002385bdca65140b6d889978a748e5d1720a
   scenarios/coverage-residue-cleanup.md: 04dc18f12694ed8b02821b50498c7e8ff8123993de72a27ae0d7c8722e024637
   scenarios/criterion-adopter-scope-destinations.md: a990af1fda5f383f2a48d72f11ecef45525089f432046a714fd5fdadd7a12ba3
   scenarios/criterion-label-assignment.md: 4a1a3acc5d5ddcd44a07582988e06a1b97b2339c71482ccd24765fefb33207a0
@@ -54,7 +52,7 @@ reviewed-digest:
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
   scenarios/frontmatter-severity-tiers-on-both-sides.md: c8b6d454ddb4476f57de9c4f8c5f53ad11d948ea5a4e3a7ac4b2bbe0d3d2a5e3
   scenarios/govern-bootstrap.md: 090bdd6076d1118b15f59c806b49bfd37037fb2b60ecdd33d01580018ca7b770
-  scenarios/groom-command-acceleration.md: 59a13672e9f2936610d37d086cba0e34f3342958c513233ac252a4c83d7b85f2
+  scenarios/groom-command-acceleration.md: 778e3712b938a3eaca5c1d87ab7fea331a23a5825c9054dbee5f4e13e890579d
   scenarios/host-protocol-conformance.md: 13c3a2d89eedf4f79e66c9d4e8e97a9b7361e6fd1fa340a76c46730c28e4d542
   scenarios/implement-completion-gate.md: a8f63be47e1f9d8d1c694ce7e3bb189eda669cd05b94884ae1f06d0d246fd8cc
   scenarios/link-adjacent-drift-family.md: 235f5563d2b089d9f926dbb9c234c09a3f4bd502d89ba401db0c65d0c0c351fe
@@ -78,17 +76,17 @@ reviewed-digest:
   scenarios/resolve-references-cli-exec-wiring.md: 3ddff8ea493af57fdacb9fab644d33ae95e766cfe7b7d5b11a27d7f083ce5c59
   scenarios/review-base-includes-the-transition-commit.md: bead0e5e5973049144a0e5fe0dda38ef508234b9db469aee91d7c1d71ca1dfd2
   scenarios/review-exec-wiring.md: 93a1adbbf6f81d20d99ea0bca31c59891fdbc7c21fdde6f2da0cb76b547f9b46
-  scenarios/review-gate-unexaminable-contracts.md: 09b482435eb651225500523ee3026a568023e4734da14722b0910584b77f49c9
-  scenarios/review-observations-write-through.md: abbb178a3784b17314fe1a0f8e414a2718ea32cb8ee06191d1242ec93599c177
-  scenarios/review-runtime-acceleration.md: 480099e1b3d86ca28a6133162c5fe3555b1bee0c2e539c529985668472387869
-  scenarios/review-scope-parse-fidelity.md: aacc1429dd36c837b609a1551ef4692cb071c6bbff4ee010a7cdba486e17fdb8
+  scenarios/review-gate-unexaminable-contracts.md: 47e4e856922bdb730d9d265d2b611ca100438f8eb385b51e05f4e57b6c1e30b1
+  scenarios/review-observations-write-through.md: bee4a7433fc65faa54d9f9e2449bc7642d11ffc2125f8873bef6212ac516ee9d
+  scenarios/review-runtime-acceleration.md: 0b80c97eccff6e7b04db0e2dcb13889750bec79def6fe2d842aebec4838b2d12
+  scenarios/review-scope-parse-fidelity.md: a4f5f0c2bb499777c644cfa7400a39d29e3aa63eaab7be4ff2025c06d8acafb8
   scenarios/review-scope-plan-affected-table-format.md: 33a2f84bf8d9a83375018cadd42a21ab11f2969eb8f1f311fed1530f5065c156
   scenarios/review-scope-union.md: 36b9dd7bcd4981778fc5316172b2bbff58c4df4d2e9e1e3563e9e16c132d5392
   scenarios/review-staleness-gate.md: 919af7b8a614890999b624820ade743f5a257e2adc0d905ee855f8a8b25c912a
   scenarios/review-staleness-on-done-specs.md: e5090cf7fc1529f5763a91365e372980a9c61e9cef738dc24656ccd74fc5b7cc
   scenarios/runtime-primitive-structural-bugs.md: 7fb973b4c5ef5c0268df24996c585f9bf70465f4f7e36ad237d129894f5fd366
   scenarios/runtime-review-019-hardening.md: 9b759c9ce4fc57702e28d764179dcae7b7df9d04dc99ac166b3c0726cf3f9449
-  scenarios/scaffolding-primitives.md: e004025fdbac0d7a85a3d802ea2ec006109ff18619982f4d4eca7d95fff32a2b
+  scenarios/scaffolding-primitives.md: e03523cb215de6f69d82e17f3c1cbb05a8155b0c4d524899ae3892d3737810d0
   scenarios/scenario-open-question-signal.md: bd9e127f09f6aa34417ee912f71a05f0205607b28c799944017a196943b7e129
   scenarios/scenario-question-parser-fix.md: bdcaf5f9bb7d0ff795d6e3a6a5045a79afc63b55d8ce4b3331f807c337bf2ada
   scenarios/severity-is-a-closed-set-not-a-string.md: 45be56aee78248f76087357bcbd807f21515e208e7e6ee5ab8865a924b2bb5d5
@@ -97,13 +95,13 @@ reviewed-digest:
   scenarios/skipscanner-inline-code-exemption.md: ab402c94a437b19b1b9bdd5a58ad3303d6bb67e9822041520522e3a066c43ab5
   scenarios/spec-side-parser-hardening.md: c42a4c32403c47bef48849fedb76c75714048c7dcfd28b89625be702c716490e
   scenarios/specify-routes-before-scaffolding.md: e008baae7f44f2d4ea73d45df18dd6e1f2cc435cdc5562fd8c148494a6d0c520
-  scenarios/the-analyze-record-states-what-it-captured.md: fcad22569e3a107e457789362ce5e730d80e4a035db59c4cfc4810c9c14a2c96
+  scenarios/the-analyze-record-states-what-it-captured.md: 7993c8cd3e8665c62944bd06708dddeeebd766e4e45c97c16cb2fb4f61f6ef92
   scenarios/the-cli-surface-nothing-pins.md: f63de14533aeb6b2c77f33421af289633e0fded63e795f219b82bfa30f071c8c
-  scenarios/the-committed-tree-horizon.md: 5f76019d817bd400d1e28f3622419376187b474a9064ce5a45c3c8637d2d424c
+  scenarios/the-committed-tree-horizon.md: 20857abb817761824891eb284ed1f89e7455a413f3d7a83a25f029c7a256534b
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
   scenarios/the-cross-spec-impact-gate.md: 73f85422945ba170b5ba5394fddff078026684693de49e06874574b53ea67eb0
-  scenarios/the-inbox-row.md: 58d356dddec37f5a770fc51e85668351999b9f701aa6d43631a0aecf411d1edd
-  scenarios/the-promotion-coverage-line.md: 9de217ea4ee337bae7f793914c0e703d085091064d186a1d1a776782f4edb55e
+  scenarios/the-inbox-row.md: f29a57dc733dfbaa62b54a94ca7486cb7fbc2c93d4a4e6ded07ab8714483ae04
+  scenarios/the-promotion-coverage-line.md: 151e741fad3c4f953d85e14d3183fed27ef08bcce0cbd9b42ed7bc89e22fba29
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
@@ -116,21 +114,26 @@ reviewed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
 blocking: false
+dispositions:
+  fixed: 1
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 022-deterministic-runtime
 
 ## Summary
 
-Five passes over the sixth exemption group — a clause-scoped predicate for a criterion asserting a path was never created, its canonical record in 045, its adopter-facing restatement, and Family 18's 18e arm binding the three — re-run over the measurement this pass demanded. **0 MUST, 0 SHOULD outstanding.**
+Re-review for spec 058's cross-spec discharge (058 task 27), scoped to the contracts the reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run.
 
-**Grounding is what this pass added.** The scenario claimed a precision fix from the *shape* of the change, which is inference presented as analysis. Measured instead, both binaries over all 55 specs: **0 `criterion-path-existence` findings before, 0 after** — no true positive lost, none gained. The skipped set moves (`not-a-live-claim` 109 → 118, `ships-to-adopter` 12 → 9, `root-absent` unchanged) because an exempted criterion records every path it names, including ones that resolve and were previously recorded nowhere. **14 criteria newly match the predicate and 4 match for a reason other than a path's creation** — 012 AC11, this spec's own AC27, 025 AC9, 051 AC14, each putting a negator ahead of a creation verb inside one clause while negating something that is not a path coming into existence. None costs a finding today; each is a criterion whose live paths go unchecked if they later disappear. That rate is now stated in the scenario rather than implied, which is the difference between the record this spec's own contracts demand and a claim about a shape.
+**What changed.** 058 moved findings from the inbox to dispositions, so 022's contracts naming the inbox window, the standing row, or `captured-issues` were corrected. Three scenarios are marked superseded with a dated blockquote naming what replaced them: `review-observations-write-through`, `the-inbox-row` (which records its rejected /status count as reversed), and `the-analyze-record-states-what-it-captured`. Six are corrected where they name the removed shapes, plus `scaffolding-primitives`, which the re-check found beyond the measured list; `review-gate-unexaminable-contracts` now counts eleven gate checks. `data-model.md` updates `write-analysis`, `check-review-gate` (checks 11 and 12), `diff-cross-spec`, the observations and inbox-row addenda, and the `dashboard` addendum. `spec.md` gains a 058 signpost, and AC26 and AC31 are annotated. `groom-command-acceleration`'s chore edge case, stale from an earlier rule change, was fixed as 058's disposition task 29.
 
-Three findings were surfaced by earlier passes and fixed in `a0036cbd`: 18e skipped a consumer whose derivation came back empty, a silent pass in the exact shape the family exists to refuse; 18b and 18e each carried a copy of the Rust string-literal parser; and the predicate allocated a Vec per clause where one pass carrying a boolean says the same thing.
+**Observation, fixed.** `groom-command-acceleration` still listed a *chore-stays* route and said inbox removal remains a host edit; groom now does a chore in the pass, and `remove-inbox-item` performs removal. Both were annotated in place with confirmation.
 
-**Security** — nothing reached; no I/O, no path resolution, no process execution added. **Reuse** — no clause splitter existed to delegate to. **Efficiency** — one allocation-free pass over a criterion's words, short-circuiting on the first match. **Simplicity** — the em-dash refinement was measured before being rejected: it moves 2 of the 4 over-exemptions, cannot reach the other 2 without semantic judgment §runtime-boundary places at an extension point, and for zero findings it would move the splitter toward the clause rule 045 measured and rejected. **Quality** — each of the three rules keeping the predicate from collapsing into `was created` is pinned by a test, including the cross-clause counter-case.
+**Scope, and what was not re-read.** `diff-base` db1dd999, 47 in scope, examined **13**: the twelve changed scenarios, read in full, and `data-model.md`, read at every section the reopen touched (`write-analysis`, `dashboard`, `check-review-gate`, `diff-cross-spec`, `append-inbox`, the observations and inbox-row addenda, `examined`/`scope`) rather than end to end. **The remaining scenarios under this spec were not re-read**; the recorded digest covers them as they are on disk, unchanged by this reopen. `spec.md` was checked at its signpost and at AC26 and AC31 only. The rest of the scope is this spec's historical Affected Files, unchanged by this discharge, plus 058's `tasks.md`. The new shapes were checked against the code that produces them: `write_analysis.rs`'s `render_analysis`, `ReviewGateBlock` in `runtime/src/schema/primitives.rs`, `check_review_gate.rs`'s two new messages, and `dashboard.rs`'s `render_inbox_line` placement.
 
-**What these passes read: 13 of 47 in-scope files** — the runtime change, the three restatements, the audit family and its README entry, and the six spec artifacts carrying the contract. **Not read, and named rather than folded into the numerator:** the CI workflows, `README.md`, `framework/bootstrap/ductus.md`, the other command sources, the `runtime/src/{interpreter,mcp,parser,schema}` and `runtime/tests` subtrees, 022's `plan.md` and `data-model.md`, and 022's other 99 scenarios. This is a scoped review of one scenario, not a pass over 022's contracts.
+**Passes.** Security, reuse, and efficiency had no subject: prose in scenarios and a data model. Quality: each corrected statement was checked against the code it describes. Simplicity: superseded scenarios are marked rather than deleted, so their reasoning stays readable where 058 reused or reversed it.
 
 ## MUST violations (blocking)
 
@@ -148,13 +151,9 @@ Three findings were surfaced by earlier passes and fixed in `a0036cbd`: 18e skip
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- convention: groom-command-acceleration still listed a chore-stays route and called inbox removal a host edit — `specs/022-deterministic-runtime/scenarios/groom-command-acceleration.md` — **fixed**
 
 ## Skipped passes
 
