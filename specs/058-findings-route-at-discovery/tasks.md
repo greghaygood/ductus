@@ -1,6 +1,6 @@
 # 058 — Findings route at discovery Tasks
 
-Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runtime work, verified through the built binary rather than the MCP tools, which answer with the binary the session started on. Task 23 is the restart point. No pipeline command that consumes a changed primitive runs before it. Tasks 32–38 were routed back into 058 by its own first review (`3b22bc77`); tasks 32, 33, 35, and 37 changed the runtime, so a session's MCP server must be running a binary built after them (`runtime/target/release/ductus` was rebuilt from `d02c521f`). Task 34's 022 subtask is the one left: 022 is `in-progress`, its data-model corrections are committed (`d02c521f`), and it still needs its review, its analysis, and its return to `done`. After that, 058 needs a fresh `/ductus:review` (the `3b22bc77` record is stale: its 30 routed decisions should expire now that the work has landed, and its 4 discards should match), `/ductus:analyze`, and its completion gate, and then the `0.53.0` release in [plan.md](plan.md) §Release — bumped and tagged in the same sitting, per the `AGENTS.md` release entry.
+Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runtime work, verified through the built binary rather than the MCP tools, which answer with the binary the session started on. Task 23 is the restart point. No pipeline command that consumes a changed primitive runs before it. Tasks 32–38 were routed back into 058 by its own first review (`3b22bc77`) and are done. Tasks 39–42 were routed in by its second review, which records four SHOULD violations that hold `done` until fixed. Tasks 39 and 41 change the runtime, and so does 42, so a session's MCP server must run a binary built after them before any review or analyze consumes it. Task 40 is prose, including a mechanical sync of 022's `append-inbox` entry and a refresh of 022's review. Task 42 implements a new scenario and reopens 022 for its registry. After them, 058 needs a fresh `/ductus:review`, whose stored decisions for these tasks should expire as the work lands, then `/ductus:analyze`, its completion gate, and the `0.53.0` release in [plan.md](plan.md) §Release, bumped and tagged in the same sitting per the `AGENTS.md` release entry.
 
 ## 1. Record shapes: `dispositions` and `decisions`
 
@@ -319,3 +319,45 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 - [x] Implement the behavior described in `scenarios/auto-records-disposition-tasks-without-pausing.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented: implement.md's --auto gate list excepts appending a disposition task and still pauses to work one
+
+## 39. Fix the second review's record hazards, inbox age, and runtime residue
+
+- [ ] SHOULD QUAL-GROUND-001: add U+FFFE and U+FFFF to `is_line_hazard`, so `validate_single_line` refuses them, `flatten_line` flattens them, and `yaml_string` escapes them; test that a decision carrying each is refused or re-reads cleanly
+- [ ] SHOULD QUAL-GROUND-001: `yaml_string` quotes any value whose unquoted form does not re-parse to the identical string (tab-then-`#` included), replacing the `" #"` test and the type-only re-parse check; test a key and a reason carrying tab-then-`#`
+- [ ] SHOULD QUAL-GROUND-001: date each working-tree inbox bullet by its text against HEAD's blame (trailing `\r` trimmed), so a CRLF inbox under `core.autocrlf` and an insertion above a removal (libgit2's buffer-blame misplacement) are dated correctly and an uncommitted line carries no date; a shallow clone's boundary hunks carry no date; the blame path is workdir-relative, so a project in a subdirectory of its repo is dated; test each case, and replace `an_uncommitted_bullet_is_not_the_oldest` with a test the old algorithm fails
+- [ ] `invalidate-review` nulls `captured-issues` again, for the pre-058 records that still carry it; test it
+- [ ] `performReview`'s response takes an observation's `text` and `path` only, so exec neither validates nor strips a disposition; drop the strip in `interpreter/mod.rs`
+- [ ] Remove dead code: the unused `Default` on `AnalysisFinding`, `AnalysisTier`, `InboxStanding`, and `InboxState` (and the doc paragraph justifying it), `needs_quote`'s unreachable newline test, and the unreachable fallbacks around `to_ref` (return the defect from it)
+- [ ] One equality rule for a stored decision: `process-decisions`, `merge`, and the in-run conflict check compare the flattened key and the outcome, and a re-decision is not lost to an ignored duplicate entry; test a hand-edited key with surrounding spaces, and two observations matched to one stored discard with differing reasons
+- [ ] Correct the stale runtime docs: `ProcessDecisionsArgs.restricted` (could-not-be-read reasons and an unresolved constitution) and `fired` (analyze fires a matched key too), `AppendTaskResult.appended` (`dedup-title` also returns `false`), the append-inbox dedup mentions in `primitives/mod.rs`, `write-analysis`'s `# Errors`, `yaml_string`'s context, `render_extra_field`'s indent, `decisions::render`'s shared-rendering claim, and `dispatch_blocking`'s tool list
+- [ ] `write-analysis`: a prior `analysis.md` with no frontmatter carries no decisions and is overwritten; one whose frontmatter does not parse is refused, and 058's data model and the writer's doc say so
+- [ ] Tests: a `decision-key` naming no stored decision is stored under that key and requires `decided-by`; an all-empty decision entry; `dedup-title` against a title differing only in case or whitespace
+
+- **Done when**: each SHOULD's reproduction fails before its fix and passes after (a decision carrying U+FFFF or tab-then-`#` re-reads intact; a committed CRLF inbox under `core.autocrlf` reports its oldest date), no item above is dead or documented as doing what it does not, and `cargo test --release --locked` and `clippy -D warnings` pass
+
+## 40. Correct the prose the second review found stale
+
+- [ ] `analyze.md` step 17 and the constitution's Three dispositions bullet: a route to a spec that is `done`, the spec in hand included, reopens it
+- [ ] 058 `data-model.md` and `plan.md`: disposition-drift judges `review.md` only; `restricted` is set only by a could-not-be-read skip reason or an unresolved constitution; the malformed and duplicate entries' survival names the two pruning cases the review discarded (an all-empty entry, a duplicate whose key expires or is re-decided); a decision is new unless its key and outcome are stored; `inbox_standing.rs` is not doc-only
+- [ ] 022 `data-model.md`'s `append-inbox` entry: bullet scanning counts and does not dedup; a mechanical sync, after which 022's review record is refreshed (no reopen)
+- [ ] `docs/analyze.md` §decisions points to the reason-class table instead of restating it, and names the unresolved-constitution case
+- [ ] `framework/bootstrap/ductus-procedure.md`: a gap returns as a finding that is fixed or routed, and a SHOULD-tier gap may also be discarded
+- [ ] `review.md` markdown-only step 1.3: observations supplied to an empty-scope run are dispositioned before the record is written
+
+- **Done when**: each named passage agrees with the runtime, the scenarios, and the other commands, 022's review is current, and full markdownlint and `scripts/audit/run-all.sh` pass
+
+## 41. Exec analyze records the tier counts it detected
+
+- [ ] SHOULD QUAL-CLAIM-001: as each analyze step dispatches, the exec walker tallies its results into the tier counts, by the tiering the step states, and its skipped targets into `unexamined-by-reason`, and binds them to `write-analysis`; result keys collide in the walker context, so the tally is taken at dispatch
+- [ ] The exec walker binds `validate-frontmatter` to the spec file when the session `path` is the spec directory, as `write-session` writes it, so `ductus exec analyze` runs against a real session
+- [ ] Correct the comment on `interpreter/mod.rs`'s `write-analysis` binding and `plan.md`'s claim that the existing binding supplies the counts
+- [ ] Tests: an exec run over a fixture with live blocking and advisory findings records their counts, `blocking: true`, and `undispositioned` equal to the live total; a fixture whose session `path` is the spec directory
+
+- **Done when**: the reproduction (a `planned` spec with no `plan.md` or `tasks.md`, for which exec wrote 0/0/0) records 2 blocking findings, `blocking: true`, and 2 undispositioned; exec analyze completes with a directory session `path`; any re-blessed golden diff is limited to what the tally changes; and `cargo test --release --locked` and `clippy -D warnings` pass
+
+## 42. Implement scenario: analyze-state-drift-judges-the-record-it-writes
+
+- [ ] Implement the behavior described in `scenarios/analyze-state-drift-judges-the-record-it-writes.md`
+- [ ] 022's `data-model.md` `check-artifacts` registry records the change, through a 022 reopen as task 34 did
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested: `check-artifacts` does not judge `analysis.md` during detection, a `done` spec whose run fixes its blocking finding records `blocking: false` and reports no drift, and one left blocking reports drift from the record it wrote
