@@ -253,3 +253,69 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 - [x] Reopen 022 and update its append-inbox contract: `data-model.md`'s append-inbox section, and the `scaffolding-primitives` and `append-primitive-marker-normalization` scenarios; re-run review and analyze; return 022 to done
 
 - **Done when**: no code, schema, test, or live doc names append-inbox's dedup-prefix or deduped except as a recorded removal, `cargo test --release --locked` passes, and 022 is done through its gate
+
+## 32. Fix the disposition runtime's correctness defects the 058 review found
+
+- [ ] SHOULD QUAL-GROUND-001: reject C0/C1 control characters and the YAML line breaks (U+0085, U+2028, U+2029) in single-line arguments (`validate_single_line`), flatten them in `write_analysis`'s `single_line`, and test that a decision record carrying them is refused or re-reads cleanly
+- [ ] `exec analyze`: `write-analysis` must not bind another primitive's `findings` from the walker context (`check-orphaned-references` returns one); exec itemizes nothing
+- [ ] exec `performReview`: a disposition or `decision-key` the host's response supplies is dropped, so an exec run records every observation undispositioned (AC26)
+- [ ] `decisions::merge`: collapse this run's fresh decisions by key, refusing conflicting outcomes for one key; match a stored decision on key and outcome, as the data model says, keeping its original stamp
+- [ ] Refuse a blank `decision-key` (fall back to the observation line) and a blank `reviewed-at`/`analyzed-at`, so no writer stores an entry its reader calls malformed
+- [ ] Make `AnalysisFinding.tier` required, so an untagged finding cannot slip a discard past the hard-fail/blocking refusal
+- [ ] Share one disposition-to-decision conversion (`Disposition` on the schema) so `write-review` and `write-analysis` apply one newline policy and a stored analyze key matches the host's fired key
+- [ ] `append-task` `dedup-title`: use `split_numbered_heading` and the shared checkbox grammar, and match a title ending in `#` against the heading the renderer wrote
+- [ ] `invalidate-review`: drop the stale `dispositions:` map with the other run scalars
+- [ ] Inbox age: blame the working-tree content (`blame_buffer`), not HEAD, so an uncommitted edit cannot shift bullet lines onto other commits; uncommitted lines carry no date
+- [ ] The no-file inbox row says the file is unreadable when it exists but cannot be read
+- [ ] Run `dashboard`'s blame through `dispatch_blocking` on the MCP server, as other history walks are
+
+- **Done when**: each defect has a test that fails before its fix and passes after, `cargo test --release --locked` and `clippy -D warnings` pass, and a decision carrying ESC or U+2028 never leaves a record unreadable
+
+## 33. Remove 058's dead code and stale runtime docs; add the missing tests
+
+- [ ] Remove `Dispositions::total`, the inert `--decided-by` CLI flags on `write-review` and `write-analysis`, and `process-decisions`' dead `let … else` branch (one `match entry.to_ref()`); make `process-decisions`' `fired` `#[arg(skip)]` as `process-waivers`' is, and drop `DecisionRecord`'s `#[default]` if nothing needs it
+- [ ] Drop the leftover `show_untracked_content(true)` in `diff_cross_spec.rs` if `include_untracked` alone surfaces untracked paths (test it)
+- [ ] Fix `main.rs`'s `append-inbox` help (no dedup), and `dashboard.rs`'s misattached doc comment and `render_callouts` doc (it renders the Inbox line)
+- [ ] Share the `dispositions:` frontmatter block and the disposition suffix rendering between `write-review` and `write-analysis`
+- [ ] Add an MCP call-and-assert test for `process-decisions`, and schema round-trip tests pinning the kebab-case wire names of `Dispositions`, `DecisionRef`, `ProcessDecisionsArgs`/`Result`, `AnalysisFinding`, and `ReviewObservation`'s new fields
+
+- **Done when**: no 058 item is dead or documented as doing what it does not, the new tests pass, and `cargo test --release --locked` and `clippy -D warnings` pass
+
+## 34. Correct the prose the 058 review found stale
+
+- [ ] 058 `data-model.md`: a caller still passing `dedup-prefix` is refused on MCP and the CLI (unknown arguments are rejected) and ignored only by the exec interpreter
+- [ ] Reopen 022 (`from: done`): its `data-model.md` gains a `process-decisions` entry and the `disposition-drift` check-artifacts family ("Nine families" is ten), and its `dedup-prefix` sentence says refused, not ignored; re-run review and analyze; return 022 to done
+- [ ] `docs/slash-commands.md` /analyze section and `README.md`'s Analyze bullet describe dispositions, the three `--fix` triggers, and the undispositioned block
+- [ ] `AGENTS.md`: the inbox-queue entry's corollary no longer says passes grow the inbox
+- [ ] `review.md` Blocking semantics: the gate order matches `check-review-gate`
+- [ ] `implement.md`: a route reopens the target only when it is `done`, and Scope Boundaries admits reading the spec a disposition routes to, as review.md and analyze.md do
+- [ ] `analyze.md`: an unparseable `decisions:` list asks about each finding until it is repaired (as the spec says); the markdown-only Frontmatter schema section names that hard fail; steps 9/16 say what to do when process-decisions errors
+- [ ] Constitution: the chore paragraph does not contradict disposition tasks, and the exec sentence says exec matches no stored decision
+- [ ] `groom.md`: for a finding, the tree's leave-in-inbox branch is not a disposition, and a finding against an unpinned managed rule file is discarded with that reason
+- [ ] `status.md`: the markdown-only path renders the inbox age as undeterminable without git
+
+- **Done when**: each named passage agrees with the runtime and the constitution, 022 is done through its gate, and full markdownlint and `scripts/audit/run-all.sh` pass
+
+## 35. Implement scenario: analysis-drift-judges-the-record-it-writes
+
+- [ ] Implement the behavior described in `scenarios/analysis-drift-judges-the-record-it-writes.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested: a done spec whose analyze run dispositions every live finding reports no disposition drift, and one that leaves a finding undecided reports and, with --fix, reverts from the record it wrote
+
+## 36. Implement scenario: only-unreadable-targets-retain-decisions
+
+- [ ] Implement the behavior described in `scenarios/only-unreadable-targets-retain-decisions.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested: analyze.md step 16 and docs/analyze.md set restricted only for could-not-be-read skip reasons, and the class list is named once
+
+## 37. Implement scenario: analyze-findings-match-decisions-by-host-judgment
+
+- [ ] Implement the behavior described in `scenarios/analyze-findings-match-decisions-by-host-judgment.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested: AnalysisFinding carries an optional decision-key that write-analysis keys by, and analyze.md step 16 matches findings to stored decisions by host judgment
+
+## 38. Implement scenario: auto-records-disposition-tasks-without-pausing
+
+- [ ] Implement the behavior described in `scenarios/auto-records-disposition-tasks-without-pausing.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented: implement.md's --auto gate list excepts appending a disposition task and still pauses to work one
