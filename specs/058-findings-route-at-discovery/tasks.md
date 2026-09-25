@@ -310,7 +310,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 37. Implement scenario: analyze-findings-match-decisions-by-host-judgment
 
-- [ ] Implement the behavior described in `scenarios/analyze-findings-match-decisions-by-host-judgment.md`
+- [x] Implement the behavior described in `scenarios/analyze-findings-match-decisions-by-host-judgment.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested: AnalysisFinding carries an optional decision-key that write-analysis keys by, and analyze.md step 16 matches findings to stored decisions by host judgment
 

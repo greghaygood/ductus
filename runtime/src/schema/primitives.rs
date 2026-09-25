@@ -836,6 +836,14 @@ pub struct AnalysisFinding {
     /// bypass the gate does not have.
     #[serde(default)]
     pub disposition: Disposition,
+    /// The key of a stored decision the host matched this finding to via
+    /// `process-decisions`. A host-worded message does not reproduce byte for
+    /// byte across runs, so the host matches a new finding to the stored
+    /// decision describing the same issue, as `/ductus:review` does for
+    /// observations (scenario `analyze-findings-match-decisions-by-host-judgment`).
+    /// Absent or blank means the finding's own `{family} — {message}` is its key.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decision_key: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -5878,10 +5886,12 @@ mod tests {
                 target: None,
                 reason: None,
             },
+            decision_key: Some("grounding — earlier wording".into()),
         };
         let v = serde_json::to_value(&finding).unwrap();
         assert_eq!(v["tier"], "hard-fail");
         assert_eq!(v["live"], false);
+        assert_eq!(v["decision-key"], "grounding — earlier wording");
         assert_eq!(v["disposition"]["outcome"], "fixed");
         assert_eq!(round_trip(&finding), finding);
 

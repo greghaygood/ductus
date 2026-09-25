@@ -341,10 +341,20 @@ fn decided_findings(findings: &[AnalysisFinding]) -> Vec<DecisionRef> {
         .collect()
 }
 
-/// The stored-decision key for an analyze finding: the deterministic half of
-/// the old capture key. The capture key's leading `{category}` was assigned by
-/// the host when it wrote the bullet, so it does not reproduce across runs.
+/// The stored-decision key for an analyze finding: the stored decision the
+/// host matched it to, when it supplied one, else its own
+/// `{family} — {message}` — the deterministic half of the old capture key,
+/// whose leading `{category}` was assigned by the host when it wrote the
+/// bullet and did not reproduce across runs.
 fn finding_key(finding: &AnalysisFinding) -> String {
+    if let Some(key) = finding
+        .decision_key
+        .as_deref()
+        .map(single_line)
+        .filter(|key| !key.is_empty())
+    {
+        return key;
+    }
     format!(
         "{} — {}",
         single_line(&finding.family),
@@ -704,6 +714,7 @@ mod tests {
                 reason: (outcome == DispositionOutcome::Discarded)
                     .then(|| companion.unwrap_or_default().to_string()),
             },
+            decision_key: None,
         }
     }
 
@@ -1282,5 +1293,51 @@ mod tests {
             "disposition": { "outcome": "discarded", "reason": "noise" },
         }));
         assert!(parsed.is_err(), "an untagged finding must be refused");
+    }
+
+    /// A host-worded message drifts between runs, so the host matches a new
+    /// finding to the stored decision describing the same issue and passes its
+    /// key. The finding is stored — and re-matched — under that key, keeping
+    /// the original stamp, rather than asked about again under new wording
+    /// (scenario `analyze-findings-match-decisions-by-host-judgment`).
+    #[test]
+    fn a_matched_decision_key_keys_the_finding() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut first = args();
+        first.advisory = 1;
+        first.decided_by = Some("first@example.com".into());
+        first.findings = vec![finding(
+            AnalysisTier::Advisory,
+            "grounding",
+            "plan.md asserts the cache is warm without a source",
+            DispositionOutcome::Discarded,
+            Some("the plan names the source two lines down"),
+        )];
+        run(&first, tmp.path()).unwrap();
+        let dir = tmp.path().join("specs/042-demo");
+        let stored = decisions::read_decisions(&dir, "analysis.md").unwrap();
+        let original = stored[0].key.clone().unwrap();
+
+        let mut second = args();
+        second.analyzed_at = "2026-09-26T00:00:00Z".into();
+        second.advisory = 1;
+        let mut reworded = finding(
+            AnalysisTier::Advisory,
+            "grounding",
+            "plan.md claims a warm cache with no citation",
+            DispositionOutcome::Discarded,
+            Some("the plan names the source two lines down"),
+        );
+        reworded.decision_key = Some(original.clone());
+        second.findings = vec![reworded];
+        run(&second, tmp.path()).unwrap();
+        let stored = decisions::read_decisions(&dir, "analysis.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].key.as_deref(), Some(original.as_str()));
+        assert_eq!(
+            stored[0].decided_by.as_deref(),
+            Some("first@example.com"),
+            "a re-matched decision keeps its original stamp"
+        );
     }
 }

@@ -180,7 +180,11 @@ firing.
 - **`analysis.md`** stores analyze decisions, keyed on `{family} — {message}`.
   That is the deterministic part of the key the inbox capture used. The
   capture key's leading `{category}` was assigned by the host when it wrote the
-  bullet, so it does not reproduce across runs and is left out.
+  bullet, so it does not reproduce across runs and is left out. Many messages
+  are worded by the host too, so the host matches each new finding to the
+  stored decision that describes the same issue, as it does for review
+  observations
+  ([analyze-findings-match-decisions-by-host-judgment](scenarios/analyze-findings-match-decisions-by-host-judgment.md)).
 - **`review.md`** stores observation decisions beside its existing waivers,
   keyed on the observation's text and path. Observation text is the reviewer's
   own wording, so the host matches a new observation against the stored
@@ -194,8 +198,8 @@ it under the stored outcome without asking. A stored decision whose finding no
 longer fires is pruned on the next run, as an expired review waiver is. For a
 routed finding, that is the moment the routed work lands. A run that did not
 evaluate a finding's source retains the decision rather than pruning it, as a
-dimension-restricted review retains a waiver. Changing a finding's message
-changes its key, so a reworded finding is a new finding and is asked about
+dimension-restricted review retains a waiver. A reworded finding that the
+host does not match to its stored decision is a new finding and is asked about
 again.
 
 ### `/{project}:review`

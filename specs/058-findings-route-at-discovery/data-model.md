@@ -153,17 +153,21 @@ The tier counts stay host-supplied scalars from the re-check.
 
 ### `AnalysisFinding` — the new `write-analysis` `findings` entry
 
-It carries no `decision-key`: an analyze finding's key is always
-`{family} — {message}`, so there is nothing for the host to match.
+Its optional `decision-key` names the stored decision the host matched the
+finding to, because many analyze messages are host-worded and do not
+reproduce byte for byte (scenario
+`analyze-findings-match-decisions-by-host-judgment`). Absent, the key is
+`{family} — {message}`.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `tier` | `AnalysisTier`: `hard-fail` \| `blocking` \| `advisory` | Tier as detected. |
+| `tier` | `AnalysisTier`: `hard-fail` \| `blocking` \| `advisory` | Tier as detected. Required: the discard refusal reads it, so no default is safe. |
 | `family` | string | The detecting family, e.g. `review-state-drift`, `grounding`. |
 | `message` | string | Single line. With `family`, forms the key. |
 | `path` | string | The citing artifact. |
 | `live` | bool | `false` for a finding fixed in the run and absent from the re-check. Defaults to `true`. |
 | `disposition` | as above | `discarded` is rejected when `tier` is `hard-fail` or `blocking`. |
+| `decision-key` | string, optional | The key of a stored decision the host matched this finding to. A blank one is no key. |
 
 ### `AppendTaskArgs.dedup-title`
 

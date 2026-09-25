@@ -175,8 +175,9 @@ With capture gone, the writer has to be given the findings.
   `AnalysisTier`), `family`, `message`, `path`, `live`, and a `Disposition`
   shaped as above. The list covers both passes: findings fixed in the run
   (`live: false`, gone from the re-check) and live findings from the
-  re-check. There is no `decision-key`, because an analyze finding's key is
-  always `{family} — {message}`. `expired-decisions` and `decided-by` join
+  re-check. An optional `decision-key` names a matched stored decision, as on
+  `ReviewObservation`; absent, the key is `{family} — {message}`
+  (scenario `analyze-findings-match-decisions-by-host-judgment`). `expired-decisions` and `decided-by` join
   the args, per §process-decisions above.
 - **Tier counts stay host-supplied scalars from the re-check.** That contract
   is unchanged, so the exec walker's existing dispatch of `write-analysis`
