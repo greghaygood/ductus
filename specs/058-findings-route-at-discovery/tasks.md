@@ -250,6 +250,6 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 - [x] Drop `dedup-prefix` from `AppendInboxArgs` and `deduped` from `AppendInboxResult`, the dedup branch and its helper in `append_inbox.rs`, the MCP tool description, and the tests that exercise them; reword the module and struct docs that named the removed callers
 - [x] Record the removal in 058's `data-model.md` Removed fields table; the 0.53.0 `runtime/CHANGELOG.md` section records it at release, since a 0.53.0 heading ahead of the version bump fails audit Family 20
-- [ ] Reopen 022 and update its append-inbox contract: `data-model.md`'s append-inbox section, and the `scaffolding-primitives` and `append-primitive-marker-normalization` scenarios; re-run review and analyze; return 022 to done
+- [x] Reopen 022 and update its append-inbox contract: `data-model.md`'s append-inbox section, and the `scaffolding-primitives` and `append-primitive-marker-normalization` scenarios; re-run review and analyze; return 022 to done
 
 - **Done when**: no code, schema, test, or live doc names append-inbox's dedup-prefix or deduped except as a recorded removal, `cargo test --release --locked` passes, and 022 is done through its gate
