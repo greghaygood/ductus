@@ -1,6 +1,6 @@
 ---
 title: "008-security-rules — spec"
-status: done
+status: in-progress
 dependencies: [007-govern-workflow]
 tags: [security, format]
 next-criterion: 29
@@ -116,7 +116,13 @@ Rules with a **runtime or infrastructure dimension** (e.g., "TLS must be enabled
 
 ## Brownfield Adoption
 
-When `/ductus` installs the security rule files in a project that already has feature specs, the adopter inherits a backlog: existing specs were written before these rules existed and almost certainly do not address all of them. To avoid dumping that backlog directly on `/{project}:analyze` (where it would block the next pipeline gate), 008 hooks into the existing brownfield workflow defined by 011 — bugs and findings flow through `specs/inbox.md` and are routed via `/{project}:groom`.
+> **Changed by [058 — Findings route at discovery](../058-findings-route-at-discovery/spec.md).**
+> The audit no longer writes to `specs/inbox.md`. It reports each finding
+> under the spec it belongs to and writes nothing, and `/{project}:analyze`
+> dispositions each gap when it next runs on that spec. The trigger and the
+> audit logic are unchanged. AC22, AC25, AC26, and AC27 are annotated in place.
+
+When `/ductus` installs the security rule files in a project that already has feature specs, the adopter inherits a backlog: existing specs were written before these rules existed and almost certainly do not address all of them. To avoid dumping that backlog directly on `/{project}:analyze` (where it would block the next pipeline gate on every legacy spec at once), the audit reports it at adoption and writes nothing. Each gap names its spec, and `/{project}:analyze` finds it again, and dispositions it, when that spec is next worked on.
 
 ### Trigger
 
@@ -133,46 +139,40 @@ For each newly created rule file:
 
 1. Load the rule file, applying the same integrity checks `/{project}:analyze` uses (well-formed headings, required fields, valid IDs, no duplicates). If the file fails to load, ductus reports the load failure and skips the audit for that file — same posture as `/{project}:analyze`.
 2. For each MUST/MUST NOT and SHOULD/SHOULD NOT rule whose Verification trigger fires against any artifact under a feature spec directory (`spec.md`, `plan.md`, scenario files), produce a finding.
-3. Append each finding to `specs/inbox.md` as a new item.
+3. Report each finding under the spec it belongs to. The audit writes no file.
 
-### Inbox item format
+### Finding format
 
-Each finding becomes a one-line inbox item:
+Each finding is reported as one line, grouped under its spec:
 
 ```text
-- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}
+{Rule ID}: {affected artifact path} does not address — {one-line summary}
 ```
 
 Examples:
 
 ```text
-- [ ] BE-AUTHN-001: specs/004-user-login/spec.md does not name a memory-hard password hashing algorithm
-- [ ] FE-XSS-001: specs/007-comment-rendering/spec.md does not specify an output encoding strategy
+BE-AUTHN-001: specs/004-user-login/spec.md does not name a memory-hard password hashing algorithm
+FE-XSS-001: specs/007-comment-rendering/spec.md does not specify an output encoding strategy
 ```
 
-Prefixing every line with the rule ID makes related findings group naturally during `/{project}:groom` and gives the adopter a stable handle for cross-referencing.
+Prefixing every line with the rule ID makes related findings group naturally and gives the adopter a stable handle for cross-referencing.
 
 ### Idempotency
 
-Audit findings are deduplicated against existing inbox content. Before appending, ductus scans `specs/inbox.md` for any line beginning with `- [ ] {Rule ID}: {affected artifact path}` (the line up to the first em-dash). If a matching line exists, the new finding is skipped. This makes the audit safe to re-run if a user deletes and re-installs a rule file or otherwise re-triggers the "newly created" path.
-
-Inbox items already grommed by the user (lines that have been removed or rewritten by `/{project}:groom`) are not re-emitted — once the adopter has triaged a finding, `ductus` does not resurrect it.
+The audit writes nothing, so it is safe to re-run if a user deletes and re-installs a rule file or otherwise re-triggers the "newly created" path: a re-run reports the gaps again and duplicates nothing.
 
 ### Reporting
 
-After the audit completes, ductus's post-scaffolding output gains a new line in the summary:
+After the audit completes, ductus's post-scaffolding output gains a block headed `Security audit: {N} gap(s) in {M} existing spec(s) — nothing was written.` It lists every finding under its spec, with no cap, because a truncated list reads as the complete one. It then says that each gap resurfaces when `/{project}:analyze` next runs on its spec, and that `/{project}:log` tracks one sooner. Every command is rendered in the adopted agent's own invocation form.
 
-```text
-{N} security audit items added to specs/inbox.md. Run /{project}:groom to triage.
-```
-
-When `N == 0` (no new findings), the line is omitted.
+When `N == 0` (no findings), the block is omitted.
 
 ### Why not block the analyze gate instead?
 
-A simpler alternative would be: `/{project}:analyze` runs on existing specs after ductus adoption and emits errors as usual. Rejected — for brownfield projects, that produces an immediate analyze failure that blocks every pipeline gate until the adopter fixes dozens of legacy specs. The inbox model gives the adopter a real-world path: triage at their own pace, treating each finding as a backlog item rather than a release blocker.
+A simpler alternative would be: `/{project}:analyze` runs on existing specs after ductus adoption and emits errors as usual. Rejected — for brownfield projects, that produces an immediate analyze failure that blocks every pipeline gate until the adopter fixes dozens of legacy specs. Reporting at adoption shows the adopter the whole backlog, and each gap then reaches `/{project}:analyze` only when its spec is next worked on, so adoption spreads through the areas being touched rather than stalling every spec at once. The accepted cost is that a legacy spec nobody touches is never re-checked.
 
-The inbox approach also reuses 011's existing groom workflow rather than inventing baseline files or suppression mechanisms — there is one place backlog items live (`specs/inbox.md`) and one tool to process them (`/{project}:groom`), regardless of whether the source is a bug report, a brownfield spec gap, or a security audit finding.
+The first version of this section wrote each finding to `specs/inbox.md`, so that one place held the backlog and `/{project}:groom` processed it. 058 reversed that: no gate reads the inbox, so a finding parked there could wait while its spec reached `done`. An adopter who wants a specific finding tracked before its spec is next worked on can `/{project}:log` it.
 
 ## Constitution Reference
 
@@ -238,12 +238,12 @@ How `/{project}:analyze` behaves when the inputs are unusual:
 
 ### Brownfield Adoption
 
-- [x] AC22: On a ductus run where a security rule file is newly created AND the spec root holds at least one feature spec directory (either numbering form per §numbering), ductus audits the existing specs against the rule and writes one inbox item per finding to `specs/inbox.md`
+- [x] AC22: On a ductus run where a security rule file is newly created AND the spec root holds at least one feature spec directory (either numbering form per §numbering), ductus audits the existing specs against the rule and writes one inbox item per finding to `specs/inbox.md` — **Superseded by 058**: the audit still runs on this trigger, and it reports each finding under its spec instead of writing an inbox item. Nothing is written.
 - [x] AC23: On a greenfield run (no existing feature spec directories in the spec root), the audit is silently skipped
 - [x] AC24: On a routine re-run (rule files already present), the audit is silently skipped
-- [x] AC25: Inbox items follow the format `- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}`
-- [x] AC26: Audit findings are deduplicated against existing inbox content (no duplicate items emitted on re-trigger)
-- [x] AC27: Ductus's post-scaffolding output reports the count of new audit items added (omitted when zero)
+- [x] AC25: Inbox items follow the format `- [ ] {Rule ID}: {affected artifact path} does not address — {one-line summary}` — **Superseded by 058**: no inbox item is written. Each reported finding keeps this format without its leading checkbox.
+- [x] AC26: Audit findings are deduplicated against existing inbox content (no duplicate items emitted on re-trigger) — **Superseded by 058**: the audit writes nothing, so a re-trigger re-reports its findings and duplicates nothing. There is no inbox content to deduplicate against.
+- [x] AC27: Ductus's post-scaffolding output reports the count of new audit items added (omitted when zero) — **Superseded by 058**: no item is added. The output reports how many gaps were found and in how many specs, lists each finding under its spec, and is still omitted when there are none.
 
 ### Constitution Reference
 
