@@ -170,8 +170,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 20. `AGENTS.md`
 
-- [ ] Rewrite or retire the capture-era entries: "`done` is not the same as *discharged*", the machinery-observation entry, "The inbox is a queue to drain", the two-disposals entry, the in-progress-spec entry, the "Record" spans five destinations entry, and the `captured-issues` data-model entry; keep historical Reason clauses as history
-- [ ] Record the restart-before-pipeline ordering for this spec's runtime work only if a new learning surfaced, rather than duplicating the existing entry
+- [x] Rewrite or retire the capture-era entries: "`done` is not the same as *discharged*", the machinery-observation entry, "The inbox is a queue to drain", the two-disposals entry, the in-progress-spec entry, the "Record" spans five destinations entry, and the `captured-issues` data-model entry; keep historical Reason clauses as history
+- [x] Record the restart-before-pipeline ordering for this spec's runtime work only if a new learning surfaced, rather than duplicating the existing entry
 
 - **Done when**: no entry describes automatic inbox capture as current behavior.
 
