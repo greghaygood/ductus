@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-25T19:13:11Z
-reviewed-against: f8c056facbe03c19d614b5faa6bb4acff4f5318b
-diff-base: c025607b2963aaeccea4a0f262dc80321e35523e
+last-run: 2026-09-25T21:07:41Z
+reviewed-against: 59d75dcb19fd21dbad1023fffdffd8696cfd2ed6
+diff-base: 5a9f69ae8b470b9ed840104df62e43bbf2b55dab
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 4
-scope: 37
+examined: 1
+scope: 35
 skipped-passes: []
 reviewed-digest:
-  data-model.md: e6ff943c0587d84f4087b94dc685fd7ef4116a7dc5c64042640c5ca37a53cefe
+  data-model.md: bfc874cd56ab8ab81eaaed11ae0222deb95defd6256c0e0a191a5141cdcc9eac
   scenarios/a-done-spec-has-no-transition-to-gate.md: 5ab9b7fd0c744ef6708a81618b9f9a6b40293abede83085b3f751b5b1c5a488b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -125,13 +125,13 @@ dispositions:
 
 ## Summary
 
-Re-review for 058 task 31, scoped to the contracts this reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. No observations.
+Re-review for 058 task 34, scoped to the one contract this reopen changed. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. No observations.
 
-**What changed.** 058 removed `append-inbox`'s `dedup-prefix` argument and `deduped` result: their only callers were `/ductus:implement`'s auto-capture and the adoption security audit, which 058 had already removed, and `/ductus:log` never passed it. `data-model.md`'s append-inbox section drops both from its JSON and says what an old caller now gets (the argument is ignored, since no args struct denies unknown fields). `scaffolding-primitives` marks the dedup clause and its edge case removed; `append-primitive-marker-normalization` says its normalize-before-dedup rule now governs `append-question` alone, while `append-inbox` still strips a caller-supplied marker from `text`; `coverage-expansion-primitives` notes that the `deduped` field it cites is gone; `spec.md`'s 058 signpost names the removal.
+**What changed.** `data-model.md`, at four places: the `check-artifacts` registry now reads "Ten families" and adds `disposition-drift` (blocking; a `done` spec whose `review.md` counts undispositioned findings; silent for a map-less record; `analysis.md` judged by `/ductus:analyze` from the record it writes); the `append-inbox` sentence now says a caller still passing `dedup-prefix` is refused on MCP and the CLI and ignored only by the exec interpreter; the `write-analysis` 058 note says each finding's `tier` is required and names `decision-key`; and a new `process-decisions` entry records its args, result, and matched/expired/retained semantics.
 
-**Scope, and what was not re-read.** `diff-base` c025607b, 37 in scope, examined **4**: the three changed scenarios, read in full, and `data-model.md`, read at its `append-inbox` section rather than end to end. **The remaining scenarios under this spec were not re-read**; the recorded digest covers them as they are on disk, unchanged by this reopen. `spec.md` was checked at its signpost only. The rest of the scope is this spec's historical Affected Files. Each statement was checked against `runtime/src/primitives/append_inbox.rs` and `AppendInboxArgs`/`AppendInboxResult` as committed in c025607b.
+**Scope, and what was not re-read.** `diff-base` 5a9f69ae (the parent of the commit 022 re-entered `in-progress` at), 35 in scope, examined **1**: `data-model.md`, read at the four changed places. **The remaining scenarios under this spec were not re-read**; the recorded digest covers them as they are on disk, unchanged by this reopen. `spec.md` changed only in its status line. The rest of the scope is this spec's historical Affected Files and 058's `tasks.md`. Each statement was checked against the code at 59d75dcb: `check_disposition_drift` and the module doc in `check_artifacts.rs`; `reject_unknown_fields` in `mcp/server.rs` and the built CLI's refusal of `--dedup-prefix`; `ProcessDecisionsArgs`/`ProcessDecisionsResult`, `DecisionRef`'s serialization, and `process_decisions.rs`'s `flatten_line` comparison; and the `write-analysis` input schema's required `tier` and `decision-key`.
 
-**Passes.** Security, reuse, and efficiency had no subject: prose. Quality: each corrected statement matches the code. Simplicity: the removed guard is annotated where each scenario named it rather than deleted from the reasoning that motivated it.
+**Passes.** Security, reuse, and efficiency had no subject: prose. Quality: each corrected statement matches the code. Simplicity: the new entry mirrors `process-waivers`' shape rather than restating 058's data model.
 
 ## MUST violations (blocking)
 

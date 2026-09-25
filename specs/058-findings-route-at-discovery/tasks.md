@@ -284,7 +284,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 ## 34. Correct the prose the 058 review found stale
 
 - [x] 058 `data-model.md`: a caller still passing `dedup-prefix` is refused on MCP and the CLI (unknown arguments are rejected) and ignored only by the exec interpreter
-- [ ] Reopen 022 (`from: done`): its `data-model.md` gains a `process-decisions` entry and the `disposition-drift` check-artifacts family ("Nine families" is ten), and its `dedup-prefix` sentence says refused, not ignored; re-run review and analyze; return 022 to done
+- [x] Reopen 022 (`from: done`): its `data-model.md` gains a `process-decisions` entry and the `disposition-drift` check-artifacts family ("Nine families" is ten), and its `dedup-prefix` sentence says refused, not ignored; re-run review and analyze; return 022 to done
 - [x] `docs/slash-commands.md` /analyze section and `README.md`'s Analyze bullet describe dispositions, the three `--fix` triggers, and the undispositioned block
 - [x] `AGENTS.md`: the inbox-queue entry's corollary no longer says passes grow the inbox
 - [x] `review.md` Blocking semantics: the gate order matches `check-review-gate`
