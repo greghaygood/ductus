@@ -101,6 +101,14 @@ one keeps the finding blocking until the re-check no longer produces it.
 | `write-review` result | `observations-captured`, `inbox-standing` | `dispositions` |
 | `write-analysis` args | `captured-issues` | `findings` |
 | `write-analysis` result | `captured-issues` | `dispositions` |
+| `append-inbox` args | `dedup-prefix` | — |
+| `append-inbox` result | `deduped` | — |
+
+`append-inbox`'s dedup guard existed for `/{project}:implement`'s auto-capture
+and the adoption security audit, the two writers 058 removed; `/{project}:log`
+never passed it, so it had no caller left. A caller that still passes
+`dedup-prefix` is not refused, because no args struct denies unknown fields:
+the field is ignored and the append always happens.
 
 A record written before 058 that carries `captured-issues` still parses,
 because neither record struct denies unknown fields. The key is dropped the

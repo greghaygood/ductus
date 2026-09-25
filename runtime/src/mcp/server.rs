@@ -820,7 +820,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "append-inbox",
-        description = "Append one `- [ ] {text}` checkbox bullet to {specs-root}/inbox.md (atomic write), creating the file when missing. With `dedup-prefix` supplied, an existing bullet starting with the prefix suppresses the append and the result reports deduped: true. Returns item-count, the total inbox bullets (comment/fence-aware) after the call."
+        description = "Append one `- [ ] {text}` checkbox bullet to {specs-root}/inbox.md (atomic write), creating the file when missing. The surface behind /ductus:log, the inbox's only producer. Returns item-count, the total inbox bullets (comment/fence-aware) after the call."
     )]
     async fn append_inbox(
         &self,

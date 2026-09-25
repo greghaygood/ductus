@@ -3796,9 +3796,8 @@ pub struct InboxStanding {
 // -- append-inbox --------------------------------------------------------------
 
 /// Args for `append-inbox`. Appends one `- {text}` bullet to
-/// `{specs-root}/inbox.md`, creating the file when missing. The optional
-/// `dedup-prefix` makes the append idempotent for auto-capture callers
-/// (the bootstrap audit's dedup-by-prefix contract).
+/// `{specs-root}/inbox.md`, creating the file when missing. The surface
+/// behind `/ductus:log`, the inbox's only producer.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct AppendInboxArgs {
@@ -3808,14 +3807,6 @@ pub struct AppendInboxArgs {
     /// rejected (structure injection into inbox.md).
     #[arg(long)]
     pub text: String,
-    /// Optional dedup guard: when an existing inbox bullet's text starts
-    /// with this prefix, nothing is written and the result reports
-    /// `deduped: true`. Compared against marker-stripped bullet text, so a
-    /// leading marker on the prefix is stripped too — otherwise the prefix
-    /// would match nothing and the guard would silently no-op.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
-    pub dedup_prefix: Option<String>,
 }
 
 /// Result for `append-inbox`.
@@ -3826,12 +3817,8 @@ pub struct AppendInboxResult {
     pub path: String,
     /// Whether the inbox file was created by this invocation.
     pub created: bool,
-    /// `true` when `dedup-prefix` matched an existing bullet and no write
-    /// happened.
-    pub deduped: bool,
     /// Total real (comment/fence-aware) inbox bullets after this call — the
-    /// count `/ductus:log` reports without hand-counting. On a `deduped` no-op
-    /// this is the pre-existing total.
+    /// count `/ductus:log` reports without hand-counting.
     pub item_count: u32,
 }
 
@@ -5808,29 +5795,22 @@ mod tests {
     fn append_inbox_round_trip() {
         use super::{AppendInboxArgs, AppendInboxResult};
         let args = AppendInboxArgs {
-            text: "security: token logged in plaintext — src/auth.rs (captured during 022)".into(),
-            dedup_prefix: Some("security: token logged".into()),
+            text: "security: token logged in plaintext — src/auth.rs".into(),
         };
         let value: serde_json::Value = serde_json::to_value(&args).unwrap();
-        assert_eq!(value["dedup-prefix"], "security: token logged");
+        assert_eq!(
+            value["text"],
+            "security: token logged in plaintext — src/auth.rs"
+        );
         assert_eq!(round_trip(&args), args);
-
-        // Absent dedup-prefix omits the field.
-        let bare = AppendInboxArgs {
-            text: "x".into(),
-            dedup_prefix: None,
-        };
-        let v: serde_json::Value = serde_json::to_value(&bare).unwrap();
-        assert!(!v.as_object().unwrap().contains_key("dedup-prefix"));
 
         let result = AppendInboxResult {
             path: "specs/inbox.md".into(),
             created: false,
-            deduped: true,
             item_count: 3,
         };
         let rv: serde_json::Value = serde_json::to_value(&result).unwrap();
-        assert_eq!(rv["deduped"], true);
+        assert!(rv.get("deduped").is_none());
         assert_eq!(rv["item-count"], 3);
         assert_eq!(round_trip(&result), result);
     }

@@ -239,3 +239,17 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 - [x] specs/022-deterministic-runtime/scenarios/groom-command-acceleration.md — its edge case says "A chore item is left in place (no write, no route) exactly as the constitution's inbox rules require", but groom now does a chore in the pass and removes it (groom.md step 3 chore route and step 8), as §brownfield-inbox's "When an item routes to a chore, fix it" rule requires. Stale since that rule changed, not since 058. — fixed
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
+
+## 30. Disposition out-of-spec finding: 010's implement-offers-the-next-step names captured issues in the per-task summary
+
+- [x] specs/010-agent-autonomy/scenarios/implement-offers-the-next-step.md — its Context says a default-mode /implement per-task summary renders "the task processed, cross-spec impact, captured issues, a reminder to commit". Since 058 the summary lists disposition tasks, not captured issues. The line opens "Today,", narrating the state that motivated the scenario, and it is not one of AC23's shapes. — discarded: the Context narrates the pre-058 state that motivated the scenario rather than stating a live contract or pointing at a removed name, and reopening 010 for one historical sentence is not worth a review and analysis cycle (operator decision, 2026-09-25)
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
+
+## 31. Remove append-inbox's dead dedup-prefix
+
+- [x] Drop `dedup-prefix` from `AppendInboxArgs` and `deduped` from `AppendInboxResult`, the dedup branch and its helper in `append_inbox.rs`, the MCP tool description, and the tests that exercise them; reword the module and struct docs that named the removed callers
+- [x] Record the removal in 058's `data-model.md` Removed fields table; the 0.53.0 `runtime/CHANGELOG.md` section records it at release, since a 0.53.0 heading ahead of the version bump fails audit Family 20
+- [ ] Reopen 022 and update its append-inbox contract: `data-model.md`'s append-inbox section, and the `scaffolding-primitives` and `append-primitive-marker-normalization` scenarios; re-run review and analyze; return 022 to done
+
+- **Done when**: no code, schema, test, or live doc names append-inbox's dedup-prefix or deduped except as a recorded removal, `cargo test --release --locked` passes, and 022 is done through its gate

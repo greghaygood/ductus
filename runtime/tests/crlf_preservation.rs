@@ -258,7 +258,6 @@ fn append_inbox_preserves_crlf() {
     primitives::append_inbox::run(
         &AppendInboxArgs {
             text: "a newly appended item".into(),
-            dedup_prefix: None,
         },
         repo,
     )

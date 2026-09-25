@@ -306,7 +306,6 @@ fn append_inbox_writes_under_configured_root() {
     let result = primitives::append_inbox::run(
         &AppendInboxArgs {
             text: "rooted item".into(),
-            dedup_prefix: None,
         },
         tmp.path(),
     )

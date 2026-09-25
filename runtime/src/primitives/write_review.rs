@@ -49,20 +49,19 @@ use crate::schema::primitives::{
 use crate::schema::severity::ReviewSeverity;
 /// Reject any scalar field that would inject document structure.
 ///
-/// Scalars are spliced verbatim into `review.md` frontmatter and the spec's
-/// `review:` block, so an embedded newline would add a top-level key (a
-/// spoofed `status:`, say) and corrupt pipeline state. Multi-line prose fields
-/// — summary, finding bodies, captured issues — are markdown body content and
-/// are deliberately not screened; waiver fields are separately quoted through
-/// `yaml_string`.
+/// Scalars are spliced verbatim into `review.md` frontmatter, so an embedded
+/// newline would add a top-level key (a spoofed `status:`, say) and corrupt
+/// pipeline state. Multi-line prose fields — the summary and finding bodies —
+/// are markdown body content and are deliberately not screened; waiver fields
+/// are separately quoted through `yaml_string`.
 fn validate_scalar_fields(args: &WriteReviewArgs) -> Result<()> {
     super::validate_no_traversal(&args.feature)?;
     // Scalar fields spliced verbatim into review.md frontmatter must be
     // single-line: an embedded newline would inject a top-level frontmatter
     // key (e.g. a spoofed `blocking:`) into the record and corrupt what every
-    // gate reads from it. Multi-line prose fields (summary,
-    // finding bodies, captured issues) are markdown body content and are not
-    // screened here. Waiver fields are separately quoted via `yaml_string`.
+    // gate reads from it. Multi-line prose fields (the summary and finding
+    // bodies) are markdown body content and are not screened here. Waiver
+    // fields are separately quoted via `yaml_string`.
     let single_line =
         |argument: &str, value: &str| super::validate_single_line("write-review", argument, value);
     single_line("feature", &args.feature)?;

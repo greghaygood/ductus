@@ -1,9 +1,10 @@
 //! `append-inbox` — append one bullet to `{specs-root}/inbox.md`.
 //!
-//! The single deterministic surface behind `/ductus:log`, `/ductus:implement`'s
-//! auto-capture rule, and the bootstrap security audit's dedup-by-prefix
-//! append (spec 022, scenario scaffolding-primitives) — each of which
-//! previously hand-rolled the same atomic append.
+//! The single deterministic surface behind `/ductus:log`, the inbox's only
+//! producer (spec 022, scenario scaffolding-primitives). It once also served
+//! `/ductus:implement`'s auto-capture and the bootstrap security audit, whose
+//! dedup-by-prefix guard it carried; spec 058 removed both writers, and the
+//! guard with them.
 //!
 //! Creation: when `inbox.md` is missing, the file is created from the
 //! project inbox template at `framework/templates/project/inbox.md` when
@@ -13,24 +14,20 @@
 //! adoption — so the heading fallback is the common adopter-side create.
 //!
 //! Form: entries are written as checkboxes — `- [ ] {text}` — matching the
-//! inbox template's documented forms (manual `/ductus:log` entries, auto-captured
-//! findings, and audit findings are all `- [ ]`) and the constitution's
+//! inbox template's documented entry form and the constitution's
 //! §bug-handling ("tracked as a checkbox … resolved by being done, then
-//! removed"). Dedup and removal strip the checkbox marker, so both forms
-//! still compare by content.
+//! removed"). A caller-supplied leading marker is stripped so it cannot
+//! double, and removal strips the checkbox marker too, so both forms compare
+//! by content.
 //!
-//! Dedup: with `dedup-prefix` supplied, an existing bullet whose text
-//! starts with the prefix suppresses the append and the result reports
-//! `deduped: true`. Bullet scanning is comment/fence-aware (the inbox
-//! template's `<!-- Rules: … -->` guidance embeds `- ` lines that are not
-//! items), and text is read after stripping the `- ` marker and an optional
-//! checkbox (`[ ]` / `[x]`), so the prefix matches both the checkbox form
-//! this primitive writes and any legacy plain `- {text}` bullet.
+//! Counting is comment/fence-aware: the inbox template's `<!-- Rules: … -->`
+//! guidance embeds `- ` lines that are not items, so `item-count` uses the
+//! shared bullet grammar rather than counting list markers.
 
 use std::path::Path;
 
 use crate::primitives::{
-    PrimitiveError, Result, SkipScanner, bullet_text, count_inbox_bullets, iter_bullets, rel_path,
+    PrimitiveError, Result, SkipScanner, bullet_text, count_inbox_bullets, rel_path,
     strip_bullet_marker, write_atomic,
 };
 use crate::schema::paths;
@@ -50,20 +47,10 @@ const PROJECT_TEMPLATE: &str = "framework/templates/project/inbox.md";
 ///
 /// Returns [`PrimitiveError::InvalidArgument`] when `text` is empty,
 /// whitespace-only, or carries an embedded newline (structure injection
-/// into `inbox.md`, matching `append-task`'s single-line rule), or when
-/// `dedup-prefix` is supplied empty (it would match every bullet).
+/// into `inbox.md`, matching `append-task`'s single-line rule).
 /// Filesystem failures surface as [`PrimitiveError::Io`].
 pub fn run(args: &AppendInboxArgs, repo: &Path) -> Result<AppendInboxResult> {
     validate_text(&args.text)?;
-    if let Some(prefix) = &args.dedup_prefix
-        && prefix.is_empty()
-    {
-        return Err(PrimitiveError::InvalidArgument {
-            primitive: "append-inbox".into(),
-            argument: "dedup-prefix".into(),
-            reason: "empty prefix would match every bullet; omit the argument to skip dedup".into(),
-        });
-    }
 
     let root = paths::Paths::load(repo).specs_root;
     let inbox_path = repo.join(&root).join("inbox.md");
@@ -79,32 +66,12 @@ pub fn run(args: &AppendInboxArgs, repo: &Path) -> Result<AppendInboxResult> {
         }
     };
 
-    // Dedup applies only against a pre-existing file — a template base
-    // has no real bullets to dedup against (its placeholder bullet must
-    // not suppress the very first append).
-    // `has_bullet_with_prefix` compares against marker-stripped bullet text,
-    // so a marker-bearing prefix would match nothing and the guard would
-    // silently no-op — the guard /{project}:analyze's finding capture relies
-    // on for idempotence. Normalize the prefix the same way as the text.
-    if !created
-        && let Some(prefix) = &args.dedup_prefix
-        && has_bullet_with_prefix(&existing, &strip_bullet_marker(prefix))
-    {
-        return Ok(AppendInboxResult {
-            path: rel_path(&inbox_path, repo),
-            created: false,
-            deduped: true,
-            item_count: count_inbox_bullets(&existing),
-        });
-    }
-
     let new_content = append_bullet(&existing, &strip_bullet_marker(&args.text));
     write_atomic(&inbox_path, &new_content)?;
 
     Ok(AppendInboxResult {
         path: rel_path(&inbox_path, repo),
         created,
-        deduped: false,
         item_count: count_inbox_bullets(&new_content),
     })
 }
@@ -139,14 +106,8 @@ fn creation_base(repo: &Path) -> String {
         .unwrap_or_else(|_| FALLBACK_HEADING.to_string())
 }
 
-/// `true` when any real (comment/fence-aware) bullet's text starts with
-/// `prefix`.
-fn has_bullet_with_prefix(content: &str, prefix: &str) -> bool {
-    iter_bullets(content).any(|(_, text)| text.starts_with(prefix))
-}
-
 /// Append `- [ ] {text}` (the checkbox inbox form) to `content` at a
-/// position the comment/fence-aware read side ([`iter_bullets`] /
+/// position the comment/fence-aware read side ([`super::iter_bullets`] /
 /// [`count_inbox_bullets`]) will count.
 ///
 /// The write side must agree with the read side about what counts as inbox
@@ -229,11 +190,8 @@ mod tests {
     use std::fs;
     use tempfile::tempdir;
 
-    fn args(text: &str, dedup_prefix: Option<&str>) -> AppendInboxArgs {
-        AppendInboxArgs {
-            text: text.into(),
-            dedup_prefix: dedup_prefix.map(Into::into),
-        }
+    fn args(text: &str) -> AppendInboxArgs {
+        AppendInboxArgs { text: text.into() }
     }
 
     fn read_inbox(repo: &Path) -> String {
@@ -249,10 +207,9 @@ mod tests {
             "# Inbox\n\n- [ ] first item\n",
         )
         .unwrap();
-        let result = run(&args("second item", None), tmp.path()).unwrap();
+        let result = run(&args("second item"), tmp.path()).unwrap();
         assert_eq!(result.path, "specs/inbox.md");
         assert!(!result.created);
-        assert!(!result.deduped);
         assert_eq!(result.item_count, 2);
         assert_eq!(
             read_inbox(tmp.path()),
@@ -263,9 +220,8 @@ mod tests {
     #[test]
     fn creates_missing_inbox_with_heading_fallback() {
         let tmp = tempdir().unwrap();
-        let result = run(&args("first item", None), tmp.path()).unwrap();
+        let result = run(&args("first item"), tmp.path()).unwrap();
         assert!(result.created);
-        assert!(!result.deduped);
         assert_eq!(result.item_count, 1);
         assert_eq!(read_inbox(tmp.path()), "# Inbox\n\n- [ ] first item\n");
     }
@@ -279,7 +235,7 @@ mod tests {
             "# Inbox\n\nCapture queue prose.\n\n<!-- Rules -->\n",
         )
         .unwrap();
-        let result = run(&args("first item", None), tmp.path()).unwrap();
+        let result = run(&args("first item"), tmp.path()).unwrap();
         assert!(result.created);
         assert_eq!(
             read_inbox(tmp.path()),
@@ -299,7 +255,7 @@ mod tests {
             "# Inbox\n\n<!-- Rules:\n     - not an item\n     - also not an item\n-->\n",
         )
         .unwrap();
-        let result = run(&args("real item", None), tmp.path()).unwrap();
+        let result = run(&args("real item"), tmp.path()).unwrap();
         assert_eq!(result.item_count, 1, "comment bullets must not be counted");
     }
 
@@ -316,7 +272,7 @@ mod tests {
             "# Inbox\n\n- [ ] first\n<!-- dangling note, never closed\nmore comment text\n",
         )
         .unwrap();
-        let result = run(&args("second", None), tmp.path()).unwrap();
+        let result = run(&args("second"), tmp.path()).unwrap();
         assert_eq!(
             result.item_count, 2,
             "the appended bullet must be counted, not swallowed by the comment"
@@ -347,7 +303,7 @@ mod tests {
             "# Inbox\n\n- [ ] first\n```\n- [ ] fenced, not an item\n",
         )
         .unwrap();
-        let result = run(&args("second", None), tmp.path()).unwrap();
+        let result = run(&args("second"), tmp.path()).unwrap();
         assert_eq!(result.item_count, 2);
         let content = read_inbox(tmp.path());
         assert!(
@@ -361,163 +317,34 @@ mod tests {
         let tmp = tempdir().unwrap();
         fs::create_dir_all(tmp.path().join("specs")).unwrap();
         fs::write(tmp.path().join("specs/inbox.md"), "# Inbox\n").unwrap();
-        run(&args("item", None), tmp.path()).unwrap();
+        run(&args("item"), tmp.path()).unwrap();
         assert_eq!(read_inbox(tmp.path()), "# Inbox\n\n- [ ] item\n");
     }
 
     #[test]
-    fn dedup_prefix_match_suppresses_write_and_reports_deduped() {
-        let tmp = tempdir().unwrap();
-        fs::create_dir_all(tmp.path().join("specs")).unwrap();
-        let before = "# Inbox\n\n- [ ] SEC-BE-014: spec.md does not address — token logging\n";
-        fs::write(tmp.path().join("specs/inbox.md"), before).unwrap();
-        let result = run(
-            &args(
-                "SEC-BE-014: spec.md does not address — token logging (rerun)",
-                Some("SEC-BE-014:"),
-            ),
-            tmp.path(),
-        )
-        .unwrap();
-        assert!(result.deduped);
-        assert!(!result.created);
-        assert_eq!(read_inbox(tmp.path()), before, "no write on dedup");
-    }
-
-    #[test]
-    fn dedup_prefix_matches_plain_bullet_form_too() {
-        let tmp = tempdir().unwrap();
-        fs::create_dir_all(tmp.path().join("specs")).unwrap();
-        fs::write(
-            tmp.path().join("specs/inbox.md"),
-            "# Inbox\n\n- perf: slow scan on startup\n",
-        )
-        .unwrap();
-        let result = run(&args("perf: slow scan again", Some("perf:")), tmp.path()).unwrap();
-        assert!(result.deduped);
-    }
-
-    /// `has_bullet_with_prefix` compares against marker-stripped bullet
-    /// text, so a marker-bearing `dedup-prefix` would match nothing and the
-    /// guard would silently no-op — re-running an audit would append
-    /// duplicates. Both arguments are normalized the same way.
-    #[test]
-    fn marker_bearing_text_and_dedup_prefix_are_normalized() {
+    fn caller_supplied_marker_does_not_double() {
         let tmp = tempdir().unwrap();
         fs::create_dir_all(tmp.path().join("specs")).unwrap();
         fs::write(tmp.path().join("specs/inbox.md"), "# Inbox\n").unwrap();
-
-        run(&args("- [ ] SEC-BE-014: token logging", None), tmp.path()).unwrap();
+        run(&args("- [ ] SEC-BE-014: token logging"), tmp.path()).unwrap();
         assert_eq!(
             read_inbox(tmp.path()),
             "# Inbox\n\n- [ ] SEC-BE-014: token logging\n",
             "caller-supplied marker must not double"
         );
-
-        let result = run(
-            &args(
-                "SEC-BE-014: token logging (rerun)",
-                Some("- [ ] SEC-BE-014:"),
-            ),
-            tmp.path(),
-        )
-        .unwrap();
-        assert!(result.deduped, "marker-bearing prefix must still match");
-    }
-
-    #[test]
-    fn dedup_prefix_without_match_appends_normally() {
-        let tmp = tempdir().unwrap();
-        fs::create_dir_all(tmp.path().join("specs")).unwrap();
-        fs::write(
-            tmp.path().join("specs/inbox.md"),
-            "# Inbox\n\n- [ ] other item\n",
-        )
-        .unwrap();
-        let result = run(&args("new item", Some("new item")), tmp.path()).unwrap();
-        assert!(!result.deduped);
-        assert!(read_inbox(tmp.path()).contains("- [ ] new item\n"));
-    }
-
-    #[test]
-    fn dedup_uses_shared_checkbox_grammar_for_no_space_variant() {
-        // `- [x]no-space` is NOT a valid checkbox in the shared grammar, so
-        // its bullet text is the literal `[x]…` — a dedup prefix targeting
-        // the checkbox *content* must not match it. This closes the
-        // divergence where the old hand-rolled strip accepted the malformed
-        // form while the read/mark side rejected it.
-        let tmp = tempdir().unwrap();
-        fs::create_dir_all(tmp.path().join("specs")).unwrap();
-        fs::write(
-            tmp.path().join("specs/inbox.md"),
-            "# Inbox\n\n- [x]SEC-1: malformed checkbox item\n",
-        )
-        .unwrap();
-        let result = run(&args("SEC-1: real capture", Some("SEC-1:")), tmp.path()).unwrap();
-        assert!(
-            !result.deduped,
-            "malformed checkbox must not dedup by checkbox-content prefix"
-        );
-    }
-
-    #[test]
-    fn dedup_ignores_non_bullet_lines() {
-        let tmp = tempdir().unwrap();
-        fs::create_dir_all(tmp.path().join("specs")).unwrap();
-        // The prefix text appears in prose, not in a bullet — no dedup.
-        fs::write(
-            tmp.path().join("specs/inbox.md"),
-            "# Inbox\n\nsecurity: mentioned in prose only.\n",
-        )
-        .unwrap();
-        let result = run(
-            &args("security: real capture", Some("security:")),
-            tmp.path(),
-        )
-        .unwrap();
-        assert!(!result.deduped);
-    }
-
-    #[test]
-    fn dedup_does_not_fire_on_template_placeholder_at_creation() {
-        let tmp = tempdir().unwrap();
-        fs::create_dir_all(tmp.path().join("framework/templates/project")).unwrap();
-        fs::write(
-            tmp.path().join("framework/templates/project/inbox.md"),
-            "# Inbox\n\n- [ ] {Brief description of the issue}\n",
-        )
-        .unwrap();
-        // Prefix would match the template's placeholder bullet; creation
-        // must still append.
-        let result = run(&args("{Brief item}", Some("{Brief")), tmp.path()).unwrap();
-        assert!(result.created);
-        assert!(!result.deduped);
-        assert!(read_inbox(tmp.path()).contains("- [ ] {Brief item}\n"));
     }
 
     #[test]
     fn rejects_empty_and_multiline_text() {
         let tmp = tempdir().unwrap();
         for bad in ["", "   ", "line one\nline two", "cr\rline"] {
-            let err = run(&args(bad, None), tmp.path()).unwrap_err();
+            let err = run(&args(bad), tmp.path()).unwrap_err();
             assert!(
                 matches!(err, PrimitiveError::InvalidArgument { .. }),
                 "expected InvalidArgument for {bad:?}"
             );
         }
         assert!(!tmp.path().join("specs/inbox.md").exists());
-    }
-
-    #[test]
-    fn rejects_empty_dedup_prefix() {
-        let tmp = tempdir().unwrap();
-        let err = run(&args("item", Some("")), tmp.path()).unwrap_err();
-        match err {
-            PrimitiveError::InvalidArgument { argument, .. } => {
-                assert_eq!(argument, "dedup-prefix");
-            }
-            other => panic!("expected InvalidArgument, got {other:?}"),
-        }
     }
 
     #[test]
@@ -528,7 +355,7 @@ mod tests {
             "[paths]\nspecs-root = \"governance\"\n",
         )
         .unwrap();
-        let result = run(&args("routed item", None), tmp.path()).unwrap();
+        let result = run(&args("routed item"), tmp.path()).unwrap();
         assert_eq!(result.path, "governance/inbox.md");
         assert!(tmp.path().join("governance/inbox.md").is_file());
         assert!(!tmp.path().join("specs").exists());
