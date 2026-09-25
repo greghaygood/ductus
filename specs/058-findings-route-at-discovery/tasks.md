@@ -184,9 +184,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 22. Goldens, mirrors, and the audit
 
-- [ ] Re-bless `analyze-basic`, `implement-basic`, and `status-basic` with `BLESS=1 cargo test --release --locked --test parity <test_name>`, reading each diff to confirm it contains only the intended changes. `review-basic` was already re-blessed in `c4b21ff4`, where its only change was the removed `captured-issues` key. The pre-commit hook runs the full `cargo test`, parity included, so a commit that changes a golden's stream re-blesses it in that same commit
-- [ ] Commit through the pre-commit hook so the `.claude/commands/ductus/` mirrors and help tables regenerate
-- [ ] Run `cargo test --release --locked`, `scripts/audit/run-all.sh`, and full markdown lint
+- [x] Re-bless `analyze-basic`, `implement-basic`, and `status-basic` with `BLESS=1 cargo test --release --locked --test parity <test_name>`, reading each diff to confirm it contains only the intended changes. `review-basic` was already re-blessed in `c4b21ff4`, where its only change was the removed `captured-issues` key. The pre-commit hook runs the full `cargo test`, parity included, so a commit that changes a golden's stream re-blesses it in that same commit
+- [x] Commit through the pre-commit hook so the `.claude/commands/ductus/` mirrors and help tables regenerate
+- [x] Run `cargo test --release --locked`, `scripts/audit/run-all.sh`, and full markdown lint
 
 - **Done when**: all three pass on a clean tree.
 
