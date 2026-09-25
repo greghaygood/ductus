@@ -148,9 +148,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 17. Inbox template, this repository's inbox, and the migration
 
-- [ ] `framework/templates/project/inbox.md`: drop the incidental-capture role, the chores-left-in-place line, and forms 2 and 3
-- [ ] `specs/inbox.md`: the same header change
-- [ ] Add the `inbox-guidance-refresh` entry to `framework/migrations.toml` (`introduced_in = "0.53.0"`) and `framework/migrations/inbox-guidance-refresh.md`: resolve the spec root, skip an absent inbox, check idempotency first, replace only the leading `<!-- Rules:` comment, and preserve line endings and every item
+- [x] `framework/templates/project/inbox.md`: drop the incidental-capture role, the chores-left-in-place line, and forms 2 and 3
+- [x] `specs/inbox.md`: the same header change
+- [x] Add the `inbox-guidance-refresh` entry to `framework/migrations.toml` (`introduced_in = "0.53.0"`) and `framework/migrations/inbox-guidance-refresh.md`: resolve the spec root, skip an absent inbox, check idempotency first, replace only the leading `<!-- Rules:` comment, and preserve line endings and every item
 
 - **Done when**: running the procedure twice over a fixture inbox with items changes only the header on the first run and nothing on the second, and Family 10 passes.
 
