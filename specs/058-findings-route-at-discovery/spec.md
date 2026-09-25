@@ -45,11 +45,14 @@ spec could reach `done` while findings that belonged to it sat in the inbox,
 indistinguishable on disk from a spec with nothing outstanding. The operator
 kept finding them after the transition. The costliest case was `055`: an
 obligation owed to `050` was moved to the inbox at 055's completion gate, and
-`ductus-v0.47.0` was published before anyone noticed it.
+`ductus-v0.47.0` was published before anyone noticed it, as the
+[`AGENTS.md`](../../AGENTS.md) entry *`done` is not the same as discharged*
+records.
 
 The volume came from the machines. On 2026-09-13, 20 items stood open, and 14
-of them had been captured by `/{project}:review` or `/{project}:analyze` passes.
-A person's `/{project}:log` entries were a minority of their own backlog.
+of them had been captured by `/{project}:review` or `/{project}:analyze` passes,
+as the [`AGENTS.md`](../../AGENTS.md) entry *The inbox is a queue to drain*
+records. A person's `/{project}:log` entries were a minority of their own backlog.
 
 The constitution sanctioned the gap. §design-principles listed "an inbox item"
 among the ways to *record [outstanding work] where the pipeline will surface it
@@ -440,7 +443,7 @@ spec's links to it. Each also gets the contract change itself:
 - [x] AC23: A repo-wide search for the automatic-capture shape — `captured during` bullets, `inbox-additions`, a `Captured issues` section, or an `append-inbox` call outside `/{project}:log` — returns no hit outside this spec, Resolved Questions sections, signposts, and git history.
 - [x] AC24: Full markdown lint passes across every file the change touches.
 - [x] AC25: `check-review-gate` blocks `in-progress → done` while `review.md` or `analysis.md` records one or more undispositioned findings, names the count and the command that dispositions them, and checks this only after every existing review and analyze check has passed.
-- [x] AC26: `/{project}:analyze` runs its fix-and-route step on every invocation without a flag. Under `ductus exec` it writes no fix or route, and records each live finding that matches no stored decision as undispositioned.
+- [ ] AC26: `/{project}:analyze` runs its fix-and-route step on every invocation without a flag. Under `ductus exec` it writes no fix or route, and records each live finding that matches no stored decision as undispositioned.
 - [x] AC27: `/{project}:analyze` reports a `done` spec whose `analysis.md` or `review.md` records undispositioned findings as drift, and with `--fix` reverts it `done → in-progress` through `set-status` with `from: done`.
 - [x] AC28: `/{project}:analyze --all` groups fix-and-route proposals by spec, and each prompt offers to leave that spec's remaining findings undispositioned.
 - [x] AC29: `check-review-gate` blocks an `in-progress` spec whose `review.md` or `analysis.md` has no `dispositions:` map, and names the command to re-run. A record written before this change that carries `captured-issues` still parses, and `/{project}:analyze` does not report a `done` spec's map-less record as drift.
