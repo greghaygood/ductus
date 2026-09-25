@@ -1,34 +1,38 @@
 ---
 spec: 047-analyze-findings-durability
-last-run: 2026-09-16T16:06:53Z
-reviewed-against: f31e83063c111fad72c93d9cc2d1737eb7943aa6
-diff-base: 2a4779c0104d26c62f75acceb311ee61c8e822cd
+last-run: 2026-09-25T14:33:17Z
+reviewed-against: aea28e92da8ddda1cef10f1869e98ccc4f824bc8
+diff-base: 52de7ca211ade2801b52e8dd96a8b30d6a569ccd
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
-examined: 3
-scope: 8
+examined: 2
+scope: 7
 skipped-passes: []
 reviewed-digest:
   scenarios/analyze-record-freshness.md: 825f3b4cbe5d780f4d170ff0cbc2bea347d2dfc06c4aacc8c44504ed26f48cfd
-  scenarios/analyze-run-durability.md: 7719db590c1b78447332523a3725c1d05faa64abb0950d43aedeff50ed3648a2
+  scenarios/analyze-run-durability.md: 69a78c9c7ba564c943f130195384de5d1d020eea7cf4ed747e9f1770edaddd07
 blocking: false
+dispositions:
+  fixed: 1
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 047-analyze-findings-durability
 
 ## Summary
 
-Third recording for spec 057, and the third is the AC7 fix rather than the relocation. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers.
+Re-review for spec 058's cross-spec discharge (058 task 24). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run.
 
-**Why a third.** Pass one (task 18) corrected the record-location claims in `spec.md` and `analyze-record-freshness.md`. Pass two (task 19) caught `analyze-run-durability.md`, which the location classifier could not see because it names no file. This one follows a **code** change: recording the analyses for those very passes surfaced that 057's AC7 was only half-met — `subject_digest` excised `analysis.md`'s frontmatter and digested its body, which the same `write-analysis` call rewrites, so any run whose report changed staled itself and converged only on a second identical run. Measured on `020-code-review`. The fix excludes `analysis.md` from the subject set outright, and this spec's `analyze-record-freshness` scenario is where that rule lives.
+**What changed.** 058 reversed this spec's capture half: `/ductus:analyze` no longer appends findings to the inbox, and each live finding is fixed, routed, or discarded in the run that finds it. `spec.md` gains a second signpost naming the reversal and what survives (the run record, the second gate, the digest freshness check, AC9–AC15); §Behavior and §Constitution amendment are annotated rather than rewritten, since they are the design 058 replaced; AC1–AC7 are annotated in place; each Resolved Question gains a 058 sub-bullet; and both `#automatic-issue-capture` links now point at `#finding-dispositions`.
 
-**The correction is to the rule's history, not just its statement.** The subject-set list drops `analysis.md`, and the paragraph tracing the exclusion now records both widenings with the reason that forced each: block surgery on `spec.md` while the record lived there, then the whole file once the record moved and excising only its frontmatter proved insufficient. The reason is identical across all three forms, which is what carried it — a record written after its subjects are read can never digest itself. `review.md` stays a subject, and the new unit test `the_review_record_remains_a_subject` pins that asymmetry rather than leaving it to prose.
+**Observation, fixed.** The `analyze-run-durability` scenario's Resolved Questions still said the inbox is where the findings live and that `--fix` is the only path that mutates an audited artifact. Both were falsified by 058. With confirmation, each gained a 058 sub-bullet, matching `spec.md`. That edit changes a durable contract, so this record's digest covers it.
 
-**Scope.** `diff-base` 2a4779c0, 8 in scope, examined **3**: this spec's `spec.md`, `tasks.md` and `analyze-record-freshness.md`, all read in full. The five unread are named. `framework/constitution.md` (Frontmatter Schema, Validation Severity), `framework/commands/analyze.md` (the record-writing step) and `022`'s `data-model.md` and `spec.md` (the digest section and signpost) were read only in the regions this review's claims rest on, each confirmed against the live file and none read end to end. `.claude/commands/ductus/analyze.md` is the generated mirror of a source that was not fully read either.
+**Scope.** `diff-base` 52de7ca2, 7 in scope, examined **2**: this spec's `spec.md` and `scenarios/analyze-run-durability.md`, both read in full. The five unread: `specs/008-security-rules/spec.md` is 008's own discharge and is reviewed there; `specs/058-findings-route-at-discovery/tasks.md` is 058's; `framework/constitution.md`, `framework/commands/analyze.md`, and its `.claude/` mirror are this spec's historical Affected Files, unchanged since the diff base, and their current text was checked only in the regions the annotations cite (Finding dispositions; analyze.md's scope boundary and steps 16–20). `analyze-record-freshness.md` was not re-read; its one capture-era mention describes review's output before 047 and is history.
 
-**Passes.** Security, reuse and efficiency had no subject — prose in one durable contract. Quality, against `quality-cross.md`, is the pass that produced the underlying finding rather than this correction: a record that stales itself is a gate with a false positive, and the plan's own text says that is the gate people route around. Simplicity: the whole-file exclusion is the smaller rule than a partial excision, and it deleted `strip_record_frontmatter` along with the path it existed for.
+**Passes.** Security, reuse, and efficiency had no subject: prose in one spec and one scenario. Quality, against `quality-cross.md`: each annotation was checked against the shipped behavior it claims. Simplicity: annotation over rewrite keeps the replaced design readable without restating 058.
 
 ## MUST violations (blocking)
 
@@ -46,13 +50,9 @@ Third recording for spec 057, and the third is the AC7 fix rather than the reloc
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- convention: two Resolved Questions in analyze-run-durability still stated capture-era behavior 058 falsified — `specs/047-analyze-findings-durability/scenarios/analyze-run-durability.md` — **fixed**
 
 ## Skipped passes
 

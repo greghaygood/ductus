@@ -52,8 +52,9 @@ hidden until I run another comprehensive audit.*
 
 The constitution already required capture — [§brownfield-inbox Automatic issue
 capture](../../framework/constitution.md#finding-dispositions), which 058
-replaced with Finding dispositions, said issues an agent surfaces MUST be captured, not dropped, and named `/{project}:implement`
-and `/{project}:review` as the surfacing gates. Two things were missing.
+replaced with Finding dispositions, said issues an agent surfaces MUST be
+captured, not dropped, and named `/{project}:implement` and `/{project}:review`
+as the surfacing gates. Two things were missing.
 `/{project}:analyze` was not among those gates, and the section addressed an
 agent noticing something *incidental to other work* — not a command whose
 **primary output is findings**. A command that exists to produce findings and
@@ -170,4 +171,4 @@ are unchanged in substance.
 - **Should capture be limited to advisory findings, since blocking ones already halt the pipeline?** **Resolved: no — capture every surviving finding.** Blocking findings do get acted on, but they are equally lost when a session ends before anyone acts, and a partially-audited repo is precisely where the record matters most. The distinction also would not survive contact with `--all`, where a blocking finding on one spec sits beside advisory findings on forty-six others. Severity raises salience, not routing — the constitution's own words.
   - **Carried into `058-findings-route-at-discovery`.** Every live finding, in every tier, gets a disposition rather than a capture, for the reason given here. A hard-fail or blocking finding cannot be discarded, because it already gates `done`.
 - **Does appending to the inbox break analyze's read-only contract?** **Resolved: no, and the dedup guard is what makes that true.** `/{project}:analyze` is read-only with respect to the artifacts it audits — specs, plans, tasks, scenarios, frontmatter — and this change touches none of them. It writes only the backlog file whose documented purpose is receiving exactly this. Because each append is dedup-guarded, a second run against an unchanged repo writes nothing at all, so the command stays idempotent in the sense operators rely on. `--fix` remains the only flag that mutates a spec.
-  - **Superseded by `058-findings-route-at-discovery`.** The inbox append is gone, and analyze now writes to artifacts it audits, but only after detection and only with confirmation. Its fix-and-route step proposes each fix or route and writes it after `gate-confirm`. Detection stays read-only, `--fix` is still the only flag, and `--fix` still only reverts a drifted `done` spec's status.
+  - **Superseded by `058-findings-route-at-discovery`.** The inbox append is gone, and analyze now writes to artifacts it audits, but only after detection and only with confirmation. Its fix-and-route step proposes each fix or route and writes it after `gate-confirm`. Detection stays read-only, and `--fix` is still the only flag that mutates a spec: it reverts a drifted `done` spec's status and edits no content.
