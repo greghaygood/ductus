@@ -2,6 +2,28 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.54.0] — 2026-09-26
+
+### Added
+
+- **A waiver's `file` may list several paths.** A rule waived in several
+  files for one reason took one `review.md` waiver entry per file, each
+  repeating the rule, the reason, `waived-at` and `waived-by`; the duplicates
+  could not even be merged by hand, because a list in `file` failed the whole
+  `waivers:` parse and halted `/{project}:review`. `process-waivers`,
+  `write-review` and `invalidate-review` now read `file` as one path or a list
+  of them, and each listed path is its own `(rule, file)` anchor: it applies,
+  expires, is retained and is deduplicated on its own. `process-waivers`
+  still returns one `WaiverRef` per anchor, so its result shape is unchanged.
+  When an anchor expires, `write-review` removes only that path and drops the
+  entry with its last one, keeping every other field and adopter extra; it
+  writes one path as a scalar and several as a quoted block list, so a record
+  that never used a list is byte-identical. An empty list or a blank path is
+  `missing 'file'`, and a list item that is not a string fails the parse, as
+  any mistyped field does. Paths are matched literally, never expanded as
+  patterns. Specs 020 (`waiver-file-lists`) and 022
+  (`process-waivers-file-lists`).
+
 ## [0.53.0] — 2026-09-26
 
 Three specs ship together. Spec 058 makes every finding a run produces get a

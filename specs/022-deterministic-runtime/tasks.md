@@ -515,6 +515,6 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Prune per path in `write-review`, dropping an entry left with no path, and render one path as a scalar and several as a quoted block list
 - [x] Prove `invalidate-review` round-trips a list
 - [x] Confirm each new test fails with its behavior reverted, and say how
-- [ ] Carry the change into the next release's `runtime/CHANGELOG.md` section when the version is bumped; a heading ahead of the bump fails audit Family 20
+- [x] Carry the change into the next release's `runtime/CHANGELOG.md` section when the version is bumped; a heading ahead of the bump fails audit Family 20
 
 - **Done when**: a waiver whose `file` is a list is classified, pruned and re-rendered per anchor by `process-waivers`, `write-review` and `invalidate-review`; a one-path record is byte-identical to today's; tests cover each behavior and edge case in the scenario and each fails with its behavior reverted; and `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings` and `cargo test --release --locked` are clean.
