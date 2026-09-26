@@ -22,8 +22,10 @@ use crate::schema::status::ALLOWED_STATUSES;
 /// # Errors
 ///
 /// Returns [`crate::primitives::PrimitiveError::Io`] when the file cannot
-/// be read or [`crate::primitives::PrimitiveError::MissingFrontmatter`]
-/// when no `---` fence pair is present. YAML parse failures surface as
+/// be read, [`crate::primitives::PrimitiveError::MissingFrontmatter`]
+/// when no opening `---` fence is present, or
+/// [`crate::primitives::PrimitiveError::UnclosedFrontmatter`] when no closing
+/// one follows it. YAML parse failures surface as
 /// findings, not operational errors.
 pub fn run(args: &ValidateFrontmatterArgs, repo: &Path) -> Result<ValidateFrontmatterResult> {
     let path = resolve_path(repo, &args.path);

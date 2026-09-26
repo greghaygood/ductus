@@ -11,7 +11,7 @@ The change has three layers, landed in dependency order:
    gates `done` on undispositioned findings.
 2. **The framework prose.** Commands, the constitution, templates, docs, and
    `AGENTS.md` all change to state the new contract.
-3. **The cross-spec discharge.** Six `done` specs are reopened, each has the
+3. **The cross-spec discharge.** Seven `done` specs are reopened, each has the
    claims 058 falsifies corrected, and each is returned to `done` through gates
    that only the new runtime has.
 
@@ -72,7 +72,7 @@ The host must know which findings already carry a stored decision *before* the
 fix-and-route step. Otherwise it asks questions that were already answered. So
 classification cannot wait for the writer, just as waiver classification does
 not wait for it: `/{project}:review` calls `process-waivers` at step 8, before
-`write-review` at step 9 (`framework/commands/review.md:121-122`).
+`write-review` at step 11 (`framework/commands/review.md`, §Instructions).
 
 `process-decisions` mirrors `process-waivers`
 (`runtime/src/primitives/process_waivers.rs:70-120`):
@@ -268,12 +268,16 @@ description (`runtime/src/mcp/server.rs:793-794`), gains the two checks.
 
 ### A new `disposition-drift` family, rather than a new condition inside analyze-state drift
 
-`check_analyze_drift` (`runtime/src/primitives/check_artifacts.rs:595-630`)
-emits every condition under one family name, `analyze-state-drift`. `--fix` has
-never reverted on that family: its only triggers are review-state drift and
-scenario open questions (`framework/commands/analyze.md:2`, `:18`, `:92`).
+When this was decided, `check-artifacts` carried an `analyze-state-drift`
+family (`check_analyze_drift`) that emitted every analyze-record condition
+under that one name. `--fix` never reverted on that family. Its only triggers
+were review-state drift and scenario open questions. Task 42 later removed that
+family. `/{project}:analyze` now judges analyze-state drift after step 19, from
+the record it has just written, and `--fix` still does not revert on it
+(`runtime/src/primitives/check_artifacts.rs`, module doc;
+`framework/commands/analyze.md`, §Analyze state drift).
 
-Adding the undispositioned condition to that family would leave the host
+Adding the undispositioned condition to that family would have left the host
 distinguishing conditions by message text. A separate `disposition-drift`
 family instead gives `--fix` a family key to trigger on:
 
@@ -283,14 +287,15 @@ family instead gives `--fix` a family key to trigger on:
   read from the record a run is about to replace could never clear (scenario
   `analysis-drift-judges-the-record-it-writes`).
 - It is `Blocking`.
-- A record without a map produces nothing, the same grandfathering as the
-  analyze-state drift family (`check_artifacts.rs:605-607`).
+- A record without a map produces nothing: it predates the field, and a
+  backfilled map would assert dispositions nobody made
+  (`check_disposition_drift` in `check_artifacts.rs`).
 
 `--fix` reverts on it through the host's guarded `set-status`, as it does for
 the other two triggers. The revert stays host-side, because `check-artifacts`
-has no write path (`primitives.rs:3653-3657`). `analyze.md` gains a
-markdown-only "Disposition drift" section, and the stale family-order doc at
-`primitives.rs:3716-3719` is corrected in passing.
+has no write path (`CheckArtifactsArgs` takes only `feature`). `analyze.md`
+gains a markdown-only "Disposition drift" section, and the stale family-order
+doc on `CheckArtifactsResult.findings` is corrected in passing.
 
 ### `append-task` gains an opt-in title dedup, so disposition tasks stay idempotent
 
@@ -455,7 +460,7 @@ would close a cycle with 058's own links.
 Every reopened spec needs a review run, including 008 and 047 whose durable
 contracts do not change. That is AC29: a reopened spec whose `review.md`
 predates dispositions is blocked until review re-runs. It is the upgrade cost
-Resolved Question 5 accepted, paid here on six specs. A review whose only work
+Resolved Question 5 accepted, paid here on seven specs. A review whose only work
 is writing the new record shape is recorded truthfully with a small `examined`
 against its `scope`. That is the disposition `AGENTS.md` already prescribes for
 022's digest repair. 022's full re-review remains its own decision to spend and
@@ -493,7 +498,7 @@ gain it too (`framework/bootstrap/configure/claude.md:119-120`, `auggie.md:107-1
 | `runtime/src/primitives/check_review_gate.rs` | Modify | Two new blocks; doc corrections |
 | `runtime/src/primitives/check_artifacts.rs` | Modify | `disposition-drift` family |
 | `runtime/src/primitives/append_task.rs` | Modify | `dedup-title` |
-| `runtime/src/primitives/invalidate_review.rs` | Modify | Drop `captured-issues` from the nulled scalars |
+| `runtime/src/primitives/invalidate_review.rs` | Modify | Remove `dispositions` with the run's other counts; keep removing `captured-issues` for pre-058 records |
 | `runtime/src/primitives/validate_frontmatter.rs` | Modify | Report an unparseable `decisions:` list |
 | `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, `runtime/src/main.rs`, `runtime/src/interpreter/mod.rs` | Modify | Register and dispatch `process-decisions`; tool descriptions; comments naming the inbox |
 | `runtime/src/interpreter/analyze_tally.rs` | Create | The exec walker's tally of the tier counts an `/{project}:analyze` walk records |
@@ -508,7 +513,7 @@ gain it too (`framework/bootstrap/configure/claude.md:119-120`, `auggie.md:107-1
 | `framework/bootstrap/ductus-procedure.md` | Modify | The audit reports instead of capturing |
 | `docs/analyze.md`, `docs/slash-commands.md`, `README.md` | Modify | User-facing descriptions |
 | `AGENTS.md` | Modify | Retire or rewrite the capture-era entries |
-| `specs/{008,020,022,047,050,057}-*/` | Modify | Cross-spec discharge |
+| `specs/{008,020,022,047,050,054,057}-*/` | Modify | Cross-spec discharge |
 | `version`, `runtime/Cargo.toml`, `runtime/Cargo.lock`, `runtime/CHANGELOG.md` | Modify | Release `0.53.0` |
 
 ## Data Model
@@ -519,7 +524,7 @@ See [data-model.md](data-model.md).
 
 - **Blocking on a missing `dispositions:` map, rather than a notice.** It costs
   every spec that is `in-progress` at upgrade, and every spec reopened
-  afterwards, a review and an analyze run. The six discharges here pay it. It
+  afterwards, a review and an analyze run. The seven discharges here pay it. It
   was accepted, because reading absence as zero passes exactly the old run
   whose findings went to the inbox unseen.
 - **A separate `disposition-drift` family instead of extending
@@ -538,8 +543,9 @@ See [data-model.md](data-model.md).
   an alias would keep a measurement of the wrong thing alive.
 - **Rejected: a rewrite migration for existing records.** Records parse
   unchanged. Rewriting them would fabricate a `dispositions:` map for runs that
-  never dispositioned anything, the same fabrication the analyze-state drift
-  family's grandfather rule refuses (`check_artifacts.rs:570-588`).
+  never dispositioned anything. The analyze record refuses the same
+  fabrication: a `done` spec with no `analysis.md` is exempted, not backfilled
+  (`scripts/audit/analyze-record-backlog.sh`, header comment).
 - **Known limitation: a legacy spec nobody touches is never re-checked for the
   adoption audit's gaps.** This is accepted in the spec's adoption-audit
   section.

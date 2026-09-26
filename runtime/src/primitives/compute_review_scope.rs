@@ -12,6 +12,10 @@
 //!   files modified since `diff-base`. Both, because either alone can omit
 //!   what the review exists to look at.
 //!
+//! The project need not sit at its git repository's root: history is read by
+//! each path from the work tree, and the files modified since the base are
+//! reported from the project root, as the plan names them.
+//!
 //! It no longer reports an inbox window. Nothing captures findings to the
 //! inbox any more (spec 058), so its additions over a review window say
 //! nothing about the work being reviewed.
@@ -49,7 +53,11 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
         });
     }
     let repository = Repository::discover(repo)?;
-    let spec_rel = format!("{}/{}/spec.md", layout.specs_root, args.feature);
+    // History names every path from the git work tree, and a project need not
+    // sit at its repository's root. Asked by the path from the project root, a
+    // project in a subdirectory found no transition and reviewed nothing.
+    let prefix = history_prefix(&repository, repo);
+    let spec_rel = format!("{prefix}{}/{}/spec.md", layout.specs_root, args.feature);
 
     let diff_base = match &args.since {
         // An explicit base is used verbatim. No parent walk: an operator naming
@@ -80,7 +88,7 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
     let modified_since = if diff_base.is_empty() {
         Vec::new()
     } else {
-        diff_since(&repository, &diff_base)?
+        diff_since(&repository, &diff_base, &prefix)?
     };
 
     let plan_affected = read_plan_affected(&feature_dir);
@@ -127,8 +135,24 @@ fn transition_parent(repository: &Repository, sha: &str) -> Result<String> {
     })
 }
 
-/// Diff `base_sha..HEAD`: the sorted set of changed file paths.
-fn diff_since(repo: &Repository, base_sha: &str) -> Result<Vec<String>> {
+/// The project directory's path from the git work tree, as the `/`-joined
+/// prefix a history path carries: empty at the work tree's root, else ending
+/// in `/`. Empty too when the position cannot be resolved (a repository with
+/// no work tree), which reads history from the root as before.
+fn history_prefix(repository: &Repository, repo: &Path) -> String {
+    let mut prefix = String::new();
+    for part in super::workdir_prefix(repository, repo).iter().flatten() {
+        prefix.push_str(&part.to_string_lossy());
+        prefix.push('/');
+    }
+    prefix
+}
+
+/// Diff `base_sha..HEAD`: the sorted set of changed file paths inside the
+/// project, named from the project root as the plan names them. `prefix` is
+/// the project's [`history_prefix`]; a change outside the project directory
+/// is another project's work and is left out.
+fn diff_since(repo: &Repository, base_sha: &str, prefix: &str) -> Result<Vec<String>> {
     let base_tree = repo.find_commit(Oid::from_str(base_sha)?)?.tree()?;
     let head_tree = repo.head()?.peel_to_commit()?.tree()?;
 
@@ -138,8 +162,10 @@ fn diff_since(repo: &Repository, base_sha: &str) -> Result<Vec<String>> {
     diff.foreach(
         &mut |delta, _| {
             let path = delta.new_file().path().or_else(|| delta.old_file().path());
-            if let Some(path) = path {
-                files.insert(path.to_string_lossy().into_owned());
+            if let Some(path) = path
+                && let Some(inside) = path.to_string_lossy().strip_prefix(prefix)
+            {
+                files.insert(inside.to_string());
             }
             true
         },
@@ -385,6 +411,40 @@ mod tests {
         assert!(result.diff_base.is_empty());
         assert!(result.scope.is_empty());
         assert!(result.modified_since.is_empty());
+    }
+
+    /// A project need not sit at its repository's root. History names its
+    /// spec by the path from the work tree, so reading it by the path from the
+    /// project root found no transition and returned an empty base and scope.
+    /// The files modified since are reported from the project root, as the
+    /// plan names them; a change outside the project is not its work.
+    #[test]
+    fn a_project_in_a_repository_subdirectory_resolves_its_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let project = tmp.path().join("service");
+        let spec_path = project.join("specs/001-x/spec.md");
+        write(&spec_path, &spec("planned"));
+        commit_all(&repo, "feat: plan");
+        write(&spec_path, &spec("in-progress"));
+        let sha = commit_all(&repo, "chore: begin");
+        write(&project.join("src/a.rs"), "fn a() {}\n");
+        write(&tmp.path().join("other/x.rs"), "fn x() {}\n");
+        commit_all(&repo, "feat: implement");
+
+        let result = run(&args("001-x", None), &project).unwrap();
+        let parent = repo
+            .find_commit(Oid::from_str(&sha).unwrap())
+            .unwrap()
+            .parent(0)
+            .unwrap()
+            .id()
+            .to_string();
+        assert_eq!(result.diff_base, parent);
+        assert_eq!(
+            result.modified_since,
+            vec!["specs/001-x/spec.md".to_string(), "src/a.rs".to_string()]
+        );
     }
 
     #[test]

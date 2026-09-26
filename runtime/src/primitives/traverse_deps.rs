@@ -33,8 +33,9 @@ use crate::schema::status::COMPATIBLE_STATUSES;
 /// # Errors
 ///
 /// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory
-/// is absent, [`PrimitiveError::Io`] / [`PrimitiveError::MissingFrontmatter`]
-/// on read or parse failures of the feature's own `spec.md`, and
+/// is absent, [`PrimitiveError::Io`] / [`PrimitiveError::MissingFrontmatter`] /
+/// [`PrimitiveError::UnclosedFrontmatter`] on read or parse failures of the
+/// feature's own `spec.md`, and
 /// [`PrimitiveError::Yaml`] when its frontmatter is malformed. Missing or
 /// malformed dependency specs are reported as findings, not errors;
 /// likewise the cycle walker tolerates missing or malformed downstream

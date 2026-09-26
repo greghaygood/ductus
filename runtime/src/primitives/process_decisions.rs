@@ -35,10 +35,15 @@ use crate::schema::primitives::{
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature has no
-/// `spec.md`, [`PrimitiveError::Yaml`] when the record's `decisions:` list
-/// does not parse — never an empty result, which would re-ask every settled
-/// question — or [`PrimitiveError::Io`] on read failure.
+/// Returns [`PrimitiveError::InvalidPath`] when `feature` is empty, absolute,
+/// or carries a parent-directory component, [`PrimitiveError::FeatureNotFound`]
+/// when the feature has no `spec.md`, [`PrimitiveError::UnclosedFrontmatter`]
+/// when the record's frontmatter block never closes,
+/// [`PrimitiveError::Yaml`] when its frontmatter or `decisions:` list does
+/// not parse — never an empty result, which would re-ask every settled
+/// question — or [`PrimitiveError::Io`] on read failure. An absent record, or
+/// one that opens no frontmatter block, holds no decisions: the writers
+/// overwrite such a file.
 pub fn run(args: &ProcessDecisionsArgs, repo: &Path) -> Result<ProcessDecisionsResult> {
     super::validate_no_traversal(&args.feature)?;
     let layout = paths::Paths::load(repo);
@@ -294,6 +299,36 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result, ProcessDecisionsResult::default());
+    }
+
+    /// A record that opens no frontmatter block holds no decisions — as
+    /// `write-analysis` and `write-review`, which overwrite such a record,
+    /// read it — rather than refusing the run.
+    #[test]
+    fn a_record_without_frontmatter_holds_no_decisions() {
+        for record in [DecisionRecord::Analysis, DecisionRecord::Review] {
+            let tmp = repo_with("analysis.md", "");
+            let dir = tmp.path().join("specs/001-x");
+            std::fs::write(dir.join("analysis.md"), "# Analysis\n\nhand-edited\n").unwrap();
+            std::fs::write(dir.join("review.md"), "# Review\n\nhand-edited\n").unwrap();
+            let result = run(&args(record, &["anything"], false), tmp.path()).unwrap();
+            assert_eq!(result, ProcessDecisionsResult::default());
+        }
+    }
+
+    /// A frontmatter block that opens and never closes may hold decisions
+    /// nobody can read, so it is refused and named as unclosed.
+    #[test]
+    fn a_record_whose_frontmatter_never_closes_is_refused() {
+        let tmp = repo_with("analysis.md", "");
+        std::fs::write(
+            tmp.path().join("specs/001-x/analysis.md"),
+            format!("---\nspec: 001-x\ndecisions:\n{ROUTED}\n# Analysis\n"),
+        )
+        .unwrap();
+        let error = run(&args(DecisionRecord::Analysis, &[], false), tmp.path()).unwrap_err();
+        assert!(error.to_string().contains("never closes"), "{error}");
+        assert!(matches!(error, PrimitiveError::UnclosedFrontmatter { .. }));
     }
 
     #[test]

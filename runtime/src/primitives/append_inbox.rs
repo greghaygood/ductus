@@ -47,10 +47,11 @@ const PROJECT_TEMPLATE: &str = "framework/templates/project/inbox.md";
 ///
 /// Returns [`PrimitiveError::InvalidArgument`] when `text` is empty,
 /// whitespace-only, or carries an embedded newline (structure injection
-/// into `inbox.md`, matching `append-task`'s single-line rule).
+/// into `inbox.md`) — the rule `remove-inbox-item` applies too, so every
+/// bullet written here can be removed (see [`super::validate_inbox_text`]).
 /// Filesystem failures surface as [`PrimitiveError::Io`].
 pub fn run(args: &AppendInboxArgs, repo: &Path) -> Result<AppendInboxResult> {
-    validate_text(&args.text)?;
+    super::validate_inbox_text("append-inbox", "text", &args.text)?;
 
     let root = paths::Paths::load(repo).specs_root;
     let inbox_path = repo.join(&root).join("inbox.md");
@@ -74,29 +75,6 @@ pub fn run(args: &AppendInboxArgs, repo: &Path) -> Result<AppendInboxResult> {
         created,
         item_count: count_inbox_bullets(&new_content),
     })
-}
-
-/// Reject empty or multi-line bullet text. The bullet renders as a
-/// one-line `- [ ] {text}` entry; an embedded newline would smuggle extra
-/// markdown structure into `inbox.md` (same rule as `append-task`).
-fn validate_text(text: &str) -> Result<()> {
-    if text.trim().is_empty() {
-        return Err(PrimitiveError::InvalidArgument {
-            primitive: "append-inbox".into(),
-            argument: "text".into(),
-            reason: "text is empty".into(),
-        });
-    }
-    if text.contains('\n') || text.contains('\r') {
-        return Err(PrimitiveError::InvalidArgument {
-            primitive: "append-inbox".into(),
-            argument: "text".into(),
-            reason: "embedded newlines would inject markdown structure into inbox.md; \
-                     supply single-line text"
-                .into(),
-        });
-    }
-    Ok(())
 }
 
 /// Base content for a freshly-created inbox: the project template's

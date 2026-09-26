@@ -50,9 +50,10 @@ use crate::schema::primitives::{AnalyzeBlock, RecordFreshness};
 /// `/{project}:analyze` writes this file, so it is the command's **output**,
 /// exactly as `review.md` is `/{project}:review`'s and is excluded from
 /// [`is_durable_contract`] for the identical stated reason. Nothing reads its
-/// body: its readers — the pre-done gate, and `/{project}:analyze` judging
-/// drift from the record it has just written — read the record in its
-/// frontmatter.
+/// body: its readers — the pre-done gate, `write-review`'s analyze-freshness
+/// row, `read-spec`, `validate-frontmatter`, `process-decisions` and
+/// `write-analysis` reading its stored decisions, and `/{project}:analyze`
+/// judging drift from the record it has just written — read its frontmatter.
 ///
 /// Spec 057 first excluded only that frontmatter, which is the half the record
 /// moved with. That left the **body** digested, and `write-analysis` rewrites

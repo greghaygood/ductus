@@ -19,6 +19,7 @@ use crate::schema::primitives::{
 /// Returns [`PrimitiveError::FeatureNotFound`] when `specs/<feature>/` does
 /// not exist, [`PrimitiveError::Io`] on filesystem failures,
 /// [`PrimitiveError::MissingFrontmatter`] when the spec lacks `---` fences,
+/// [`PrimitiveError::UnclosedFrontmatter`] when its block never closes,
 /// or [`PrimitiveError::Yaml`] when the frontmatter is not valid YAML.
 pub fn run(args: &ReadSpecArgs, repo: &Path) -> Result<ReadSpecResult> {
     super::validate_no_traversal(&args.feature)?;

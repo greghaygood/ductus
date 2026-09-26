@@ -105,6 +105,12 @@ pub enum PrimitiveError {
         /// Path of the offending file.
         path: PathBuf,
     },
+    /// File opens a `---` frontmatter block that no closing `---` line ends.
+    #[error("frontmatter in {path} opens with `---` but never closes")]
+    UnclosedFrontmatter {
+        /// Path of the offending file.
+        path: PathBuf,
+    },
     /// `next-criterion` frontmatter is present but not a positive integer.
     /// Refused rather than repaired: a corrupted counter may mean a retired
     /// `AC{n}` label was already reissued, and silently rewriting it would
@@ -623,16 +629,22 @@ pub(crate) fn read_recorded_waivers<T: serde::de::DeserializeOwned>(
 ///
 /// The one reader for every list an audit record carries beside its counts —
 /// `review.md`'s `waivers:`, and both records' `decisions:` (spec 058). Each
-/// of those lives outside the record struct so that a malformed *entry* is a
-/// reportable notice rather than a whole-record parse failure, which means
-/// each needs a reader of its own; owning the location here is what keeps
+/// list is read apart from the record struct, so a list that will not parse
+/// leaves the record itself readable. Within a list, each caller's entry
+/// shape makes every known field an optional string, so an entry missing a
+/// field deserializes and the caller reports it; an entry that is not a
+/// mapping, or a known field holding a non-string such as `reason: [a, b]`,
+/// does not, and fails the whole list. Owning the location here is what keeps
 /// those readers from disagreeing about it.
 ///
-/// An absent file or an absent key yields an empty list: no record, or a
-/// record with nothing decided, is a state. A key whose value will not
-/// deserialize into the list is an error, **never** an empty list — a
-/// `decisions:` list that silently read as empty would re-ask every settled
-/// question, and a `waivers:` list that did would silently re-block.
+/// An absent file, a file that opens no frontmatter block, or an absent key
+/// yields an empty list: no record, or a record with nothing decided, is a
+/// state, and `write-review` and `write-analysis` overwrite such a file whole.
+/// A block that never closes is [`PrimitiveError::UnclosedFrontmatter`], and
+/// a key whose value will not deserialize into the list is
+/// [`PrimitiveError::Yaml`] — errors, **never** an empty list: a `decisions:`
+/// list that silently read as empty would re-ask every settled question, and
+/// a `waivers:` list that did would silently re-block.
 pub(crate) fn read_recorded_list<T: serde::de::DeserializeOwned>(
     feature_dir: &Path,
     file: &str,
@@ -643,7 +655,11 @@ pub(crate) fn read_recorded_list<T: serde::de::DeserializeOwned>(
         return Ok(Vec::new());
     }
     let content = read_text(&path)?;
-    let (fm_text, _body) = split_frontmatter(&content, &path)?;
+    let fm_text = match split_frontmatter(&content, &path) {
+        Ok((fm_text, _body)) => fm_text,
+        Err(PrimitiveError::MissingFrontmatter { .. }) => return Ok(Vec::new()),
+        Err(other) => return Err(other),
+    };
     serde::de::DeserializeSeed::deserialize(
         KeyedList::<T> {
             key,
@@ -733,8 +749,10 @@ pub(crate) const REVIEW_RECORD_FILE: &str = "review.md";
 pub(crate) const ANALYSIS_RECORD_FILE: &str = "analysis.md";
 
 /// Split a markdown file's content into its frontmatter YAML block and the
-/// body that follows. Returns an error if no `---` opening fence is present
-/// or no closing fence is found.
+/// body that follows. Returns [`PrimitiveError::MissingFrontmatter`] when no
+/// `---` opening fence is present and [`PrimitiveError::UnclosedFrontmatter`]
+/// when no closing `---` line follows it. The closing fence may be the file's
+/// last line with no newline after it.
 pub(crate) fn split_frontmatter<'a>(content: &'a str, path: &Path) -> Result<(&'a str, &'a str)> {
     let (fm_text, body, _fm_offset) = split_frontmatter_with_offset(content, path)?;
     Ok((fm_text, body))
@@ -777,7 +795,15 @@ pub(crate) fn split_frontmatter_with_offset<'a>(
             ));
         }
     }
-    Err(PrimitiveError::MissingFrontmatter { path: path.into() })
+    // No closing line ends in a newline, so the only candidate left is a
+    // closing fence that ends the file.
+    if after_open == "---" {
+        return Ok(("", "", fm_offset));
+    }
+    if let Some(fm_text) = after_open.strip_suffix("\n---") {
+        return Ok((fm_text, "", fm_offset));
+    }
+    Err(PrimitiveError::UnclosedFrontmatter { path: path.into() })
 }
 
 /// Read a UTF-8 file, surfacing path context on failure.
@@ -1226,6 +1252,58 @@ pub(crate) fn validate_single_line(primitive: &str, argument: &str, value: &str)
         ));
     }
     Ok(())
+}
+
+/// Reject inbox bullet text that is empty, whitespace-only, or spans lines:
+/// the one rule `append-inbox` and `remove-inbox-item` both apply, so any
+/// bullet the one writes, the other can remove.
+///
+/// Deliberately narrower than [`validate_single_line`], in the direction of
+/// the inbox rather than the YAML records. `inbox.md` is markdown that no YAML
+/// reader parses, so the control characters and noncharacters that rule
+/// refuses leave nothing unreadable here, and markdown ends a line only at
+/// `\n` or `\r`, so U+2028 and the other Unicode breaks inject no structure.
+/// `remove-inbox-item` writes no caller text at all; it only matches it.
+/// Holding removal to the YAML rule refused text `append-inbox` had written,
+/// which left that bullet removable by hand only, and tightening
+/// `append-inbox` instead would refuse a todo for no protection.
+pub(crate) fn validate_inbox_text(primitive: &str, argument: &str, text: &str) -> Result<()> {
+    let reject = |reason: String| PrimitiveError::InvalidArgument {
+        primitive: primitive.into(),
+        argument: argument.into(),
+        reason,
+    };
+    if text.trim().is_empty() {
+        return Err(reject(format!("{argument} is empty")));
+    }
+    if text.contains('\n') || text.contains('\r') {
+        return Err(reject(
+            "an inbox bullet is one line, and embedded newlines would inject markdown \
+             structure into inbox.md; supply single-line text"
+                .into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Where the directory `dir` sits inside `repository`'s work tree: its path
+/// from the work tree, empty when `dir` is the work tree itself, or `None`
+/// when the repository has no work tree, `dir` cannot be resolved, or it lies
+/// outside the work tree.
+///
+/// Git history, the index, and a diff name every path from the work tree, and
+/// a project need not sit at its repository's root. A project in a
+/// subdirectory names its files from the project root, so it prefixes this
+/// before asking history about them.
+pub(crate) fn workdir_prefix(repository: &git2::Repository, dir: &Path) -> Option<PathBuf> {
+    let workdir = repository.workdir()?.canonicalize().ok()?;
+    Some(
+        dir.canonicalize()
+            .ok()?
+            .strip_prefix(&workdir)
+            .ok()?
+            .to_path_buf(),
+    )
 }
 
 /// A character that is not plain single-line text: a control character other
@@ -3333,6 +3411,46 @@ mod tests {
         assert_eq!(fm, "");
         assert_eq!(body, "");
         assert_eq!(offset, "---\r\n".len());
+    }
+
+    /// A closing fence on the file's last line needs no newline after it: a
+    /// line is a line whether or not the file ends in one.
+    #[test]
+    fn split_frontmatter_accepts_a_closing_fence_ending_the_file() {
+        let path = Path::new("spec.md");
+        assert_eq!(
+            split_frontmatter("---\nstatus: x\n---", path).unwrap(),
+            ("status: x", "")
+        );
+        assert_eq!(
+            split_frontmatter("---\r\nstatus: x\r\n---", path).unwrap(),
+            ("status: x\r", "")
+        );
+        assert_eq!(split_frontmatter("---\n---", path).unwrap(), ("", ""));
+        // An earlier closing fence still closes the block.
+        assert_eq!(
+            split_frontmatter("---\nstatus: x\n---\nbody\n---", path).unwrap(),
+            ("status: x", "body\n---")
+        );
+    }
+
+    /// A file that opens no block and one whose block never closes are two
+    /// defects, and each error names its own.
+    #[test]
+    fn a_missing_and_an_unclosed_frontmatter_are_named_apart() {
+        let path = Path::new("spec.md");
+        let missing = split_frontmatter("# Title\n", path).unwrap_err();
+        assert!(
+            missing.to_string().contains("no leading `---`"),
+            "{missing}"
+        );
+        assert!(matches!(missing, PrimitiveError::MissingFrontmatter { .. }));
+        let unclosed = split_frontmatter("---\nstatus: x\n\n# Title\n", path).unwrap_err();
+        assert!(unclosed.to_string().contains("never closes"), "{unclosed}");
+        assert!(matches!(
+            unclosed,
+            PrimitiveError::UnclosedFrontmatter { .. }
+        ));
     }
 
     #[test]

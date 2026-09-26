@@ -38,10 +38,10 @@ use crate::schema::primitives::{InvalidateReviewArgs, InvalidateReviewResult};
 ///
 /// Returns [`PrimitiveError::InvalidPath`] when `feature` carries a
 /// parent-directory component, [`PrimitiveError::FeatureNotFound`] when the
-/// feature directory is missing, [`PrimitiveError::MissingFrontmatter`] when
-/// the spec has no `---` fences, [`PrimitiveError::Yaml`] when the
-/// frontmatter does not parse, or [`PrimitiveError::Io`] for filesystem
-/// failures.
+/// feature directory is missing, [`PrimitiveError::UnclosedFrontmatter`] when
+/// `review.md`'s frontmatter block never closes, [`PrimitiveError::Yaml`] when
+/// its frontmatter or `waivers:` list does not parse, or [`PrimitiveError::Io`]
+/// for filesystem failures.
 ///
 /// A spec that records no current review is **not** an error — it is
 /// `invalidated: false`, already in the state this primitive produces.

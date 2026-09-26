@@ -107,39 +107,41 @@ fn validate_scalar_fields(args: &WriteReviewArgs) -> Result<()> {
         if let Some(key) = observation.decision_key.as_deref() {
             single_line(&format!("observations[{idx}].decision-key"), key)?;
         }
-        let disposition = &observation.disposition;
-        match disposition.outcome {
-            DispositionOutcome::Routed => {
-                let argument = format!("observations[{idx}].disposition.target");
-                let target = nonblank(disposition.target.as_deref())
-                    .ok_or_else(|| invalid(argument.clone(), "a route names its target"))?;
-                single_line(&argument, target)?;
-            }
-            DispositionOutcome::Discarded => {
-                let argument = format!("observations[{idx}].disposition.reason");
-                let reason = nonblank(disposition.reason.as_deref())
-                    .ok_or_else(|| invalid(argument.clone(), "a discard states its reason"))?;
-                single_line(&argument, reason)?;
-            }
-            DispositionOutcome::Fixed | DispositionOutcome::Undispositioned => {}
+        if let Some((argument, companion)) = decisions::require_companion(
+            "write-review",
+            &format!("observations[{idx}].disposition"),
+            &observation.disposition,
+        )? {
+            single_line(&argument, companion)?;
         }
     }
     Ok(())
-}
-
-/// The trimmed value, when there is one and it is not blank.
-fn nonblank(value: Option<&str>) -> Option<&str> {
-    value.map(str::trim).filter(|v| !v.is_empty())
 }
 
 /// Execute the `write-review` primitive.
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature has no
-/// `spec.md`, [`PrimitiveError::MissingFrontmatter`] when that file has no
-/// frontmatter block, [`PrimitiveError::Yaml`] when the frontmatter fails to
-/// parse, or [`PrimitiveError::Io`] on read/write failure.
+/// Every refusal lands before any write.
+///
+/// - [`PrimitiveError::InvalidPath`] when `feature` is empty, absolute, or
+///   carries a parent-directory component.
+/// - [`PrimitiveError::InvalidArgument`] when a scalar argument, an
+///   observation's text, path, or `decision-key`, or a route's target or a
+///   discard's reason carries a line break or another character that is not
+///   plain single-line text; when `reviewed-at` or an observation's text is
+///   blank; when a route names no target or a discard states no reason; when
+///   two observations sharing a key are given different outcomes; or when a
+///   new decision has no `decided-by`.
+/// - [`PrimitiveError::FeatureNotFound`] when the feature has no `spec.md`.
+/// - [`PrimitiveError::MissingFrontmatter`] when `spec.md` has no frontmatter
+///   block, and [`PrimitiveError::UnclosedFrontmatter`] when the block in
+///   `spec.md` or the prior `review.md` never closes. A prior `review.md`
+///   that opens no block records no waivers or decisions and is overwritten.
+/// - [`PrimitiveError::Yaml`] when `spec.md`'s frontmatter fails to parse, or
+///   the prior `review.md`'s frontmatter, `waivers:`, or `decisions:` list
+///   does.
+/// - [`PrimitiveError::Io`] on read/write failure.
 pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
     validate_scalar_fields(args)?;
     let root = paths::Paths::load(repo).specs_root;
@@ -230,6 +232,13 @@ pub fn run(args: &WriteReviewArgs, repo: &Path) -> Result<WriteReviewResult> {
         })?;
     let surviving = surviving_waivers(&feature_dir, args)?;
     let dispositions = count_dispositions(&args.observations);
+    decisions::one_outcome_per_key(args.observations.iter().map(|observation| {
+        (
+            observation_key(observation),
+            observation.disposition.outcome,
+        )
+    }))
+    .map_err(|refusal| refusal.into_error("write-review", "observations", "an observation"))?;
     let decisions = decisions::merge(
         decisions::read_decisions(&feature_dir, super::REVIEW_RECORD_FILE)?,
         &args.expired_decisions,
@@ -382,18 +391,21 @@ fn count_dispositions(observations: &[ReviewObservation]) -> Dispositions {
     counts
 }
 
-/// The routed and discarded observations, as the decisions they store. The key
-/// is the stored decision the host matched the observation to, else — when
-/// no key was supplied, or a blank one — the observation's own rendered line.
+/// The routed and discarded observations, as the decisions they store.
 fn decided_observations(observations: &[ReviewObservation]) -> Vec<DecisionRef> {
     observations
         .iter()
         .filter_map(|observation| {
-            let key = nonblank(observation.decision_key.as_deref())
-                .map_or_else(|| observation_line(observation), str::to_string);
-            decisions::decision_for(&observation.disposition, &key)
+            decisions::decision_for(&observation.disposition, &observation_key(observation))
         })
         .collect()
+}
+
+/// The observation's key: the stored decision the host matched it to, else —
+/// when no key was supplied, or a blank one — its own rendered line.
+fn observation_key(observation: &ReviewObservation) -> String {
+    decisions::nonblank(observation.decision_key.as_deref())
+        .map_or_else(|| observation_line(observation), str::to_string)
 }
 
 /// The observation as one line of prose: its text, with the anchoring path
@@ -827,9 +839,14 @@ fn surviving_waivers(feature_dir: &Path, args: &WriteReviewArgs) -> Result<Vec<R
 }
 
 /// Whether a waiver's `(rule, file)` anchor is in the expired set.
+///
+/// Only the anchor is compared. A waiver missing another field, which
+/// `process-waivers` reports as malformed and never lists as expired, is
+/// still pruned here when its anchor is one an expired waiver names. A
+/// waiver missing its rule or file names no anchor, so it is never pruned.
 fn is_expired(waiver: &RawWaiverFull, expired: &[crate::schema::primitives::WaiverRef]) -> bool {
     let (Some(rule), Some(file)) = (waiver.rule.as_deref(), waiver.file.as_deref()) else {
-        return false; // malformed waivers are never pruned
+        return false; // no anchor to match
     };
     expired
         .iter()
@@ -2383,10 +2400,15 @@ mod tests {
             dispositioned("other: twice", DispositionOutcome::Discarded, Some("noise")),
             dispositioned("other: twice", DispositionOutcome::Discarded, Some("noise")),
         ];
-        run(&args, tmp.path()).unwrap();
+        let result = run(&args, tmp.path()).unwrap();
         let stored =
             decisions::read_decisions(&tmp.path().join("specs/001-x"), "review.md").unwrap();
         assert_eq!(stored.len(), 1, "one key, one stored decision");
+        // Each observation is counted, as `observations` counts it: the map
+        // counts the observations a run recorded, and both carry the one
+        // disposition their key gets.
+        assert_eq!(result.observations, 2);
+        assert_eq!(result.dispositions.discarded, 2);
 
         args.observations = vec![
             dispositioned("other: split", DispositionOutcome::Discarded, Some("noise")),
@@ -2400,5 +2422,68 @@ mod tests {
             run(&args, tmp.path()),
             Err(PrimitiveError::InvalidArgument { argument, .. }) if argument == "observations"
         ));
+    }
+
+    /// One key, one disposition, whatever the two outcomes are: routed beside
+    /// undispositioned was accepted and counted once each, so one finding
+    /// was recorded as both decided and owed.
+    #[test]
+    fn same_key_observations_with_any_two_outcomes_are_refused() {
+        use DispositionOutcome::{Discarded, Fixed, Routed, Undispositioned};
+        for (first, second) in [
+            (Routed, Undispositioned),
+            (Fixed, Undispositioned),
+            (Fixed, Discarded),
+        ] {
+            let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+            let mut args = base_args("001-x");
+            args.decided_by = Some("dev@example.com".into());
+            args.observations = [first, second]
+                .into_iter()
+                .map(|outcome| {
+                    let companion = match outcome {
+                        Routed => Some("specs/001-x/tasks.md"),
+                        Discarded => Some("noise"),
+                        Fixed | Undispositioned => None,
+                    };
+                    let mut observation = dispositioned("bug: same", outcome, companion);
+                    observation.path = "src/a.rs".into();
+                    observation
+                })
+                .collect();
+            let error = run(&args, tmp.path()).unwrap_err();
+            assert!(
+                matches!(&error, PrimitiveError::InvalidArgument { argument, .. } if argument == "observations"),
+                "{first:?} beside {second:?}: {error}"
+            );
+            assert!(!tmp.path().join("specs/001-x/review.md").exists());
+        }
+    }
+
+    /// A prior `review.md` that opens no frontmatter block records nothing —
+    /// no waivers, no decisions — so it is overwritten, as `write-analysis`
+    /// overwrites such an `analysis.md`.
+    #[test]
+    fn a_prior_review_without_frontmatter_is_overwritten() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let path = tmp.path().join("specs/001-x/review.md");
+        fs::write(&path, "# Review — 001-x\n\nhand-edited, no record\n").unwrap();
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        assert!(review_md(&tmp, "001-x").starts_with("---\n"));
+    }
+
+    /// A prior `review.md` whose frontmatter opens and never closes may hold
+    /// waivers and decisions nobody can read, so it is refused, named as
+    /// unclosed, and left as it is.
+    #[test]
+    fn a_prior_review_whose_frontmatter_never_closes_is_refused() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        let path = tmp.path().join("specs/001-x/review.md");
+        let damaged = "---\nspec: 001-x\nwaivers:\n  - rule: SEC-BE-001\n\n# Review\n";
+        fs::write(&path, damaged).unwrap();
+        let error = run(&base_args("001-x"), tmp.path()).unwrap_err();
+        assert!(error.to_string().contains("never closes"), "{error}");
+        assert!(matches!(error, PrimitiveError::UnclosedFrontmatter { .. }));
+        assert_eq!(fs::read_to_string(&path).unwrap(), damaged);
     }
 }

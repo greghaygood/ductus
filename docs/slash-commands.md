@@ -34,7 +34,7 @@ The spec reaches `done` once every task and acceptance criterion is checked and 
 
 **Reach for it before you call a feature done.** It audits the code against the project's rule files across five dimensions: security, reuse, quality, efficiency, and simplicity.
 
-MUST violations keep the spec out of `done` until they are fixed or waived with a recorded reason — so "we will fix it later" leaves a trace instead of evaporating. `--all`, `--fix`, and `--waive <rule-id> --reason "<text>"` are supported.
+MUST violations and outstanding SHOULDs keep the spec out of `done` until they are fixed or waived with a recorded reason — so "we will fix it later" leaves a trace instead of evaporating. An observation, something real that no rule covers, is instead fixed, routed to where the work belongs, or discarded with its reason, and nothing is written until you confirm it. A route can reopen a `done` spec. An observation left undispositioned holds `done` too, until a later review decides it. Nothing is written to the inbox. `--all`, `--fix`, and `--waive <rule-id> --reason "<text>"` are supported.
 
 ### `/analyze` — a report of where a feature's own artifacts disagree
 

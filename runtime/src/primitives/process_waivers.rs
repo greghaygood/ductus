@@ -12,7 +12,9 @@
 //!   the waiver is left untouched (never expired/pruned) — this honors the
 //!   contract that waivers anchored to skipped dimensions apply unchanged.
 //!   Only an unrestricted run can expire a waiver.
-//! - **malformed** — a field is missing/empty; warn and skip, never prune.
+//! - **malformed** — a field is missing/empty; warn and skip, and never
+//!   report it expired. `write-review` compares anchors only, so it still
+//!   prunes a malformed waiver whose `(rule, file)` an expired one shares.
 //! - **duplicate** — a repeated `(rule, file)` pair; only the first applies.
 //!
 //! The anchor is the `(rule, file)` pair only — line numbers are not part of
@@ -38,10 +40,13 @@ const REQUIRED_FIELDS: &[&str] = &["rule", "file", "reason", "waived-at", "waive
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature has no
-/// `spec.md`, [`PrimitiveError::MissingFrontmatter`] when that file has no
-/// frontmatter block, [`PrimitiveError::Yaml`] when the frontmatter fails to
-/// parse, or [`PrimitiveError::Io`] on read failure.
+/// Returns [`PrimitiveError::InvalidPath`] when `feature` is empty, absolute,
+/// or carries a parent-directory component, [`PrimitiveError::FeatureNotFound`]
+/// when the feature has no `spec.md`, [`PrimitiveError::UnclosedFrontmatter`]
+/// when `review.md`'s frontmatter block never closes, [`PrimitiveError::Yaml`]
+/// when its frontmatter or `waivers:` list fails to parse, or
+/// [`PrimitiveError::Io`] on read failure. An absent `review.md`, or one that
+/// opens no frontmatter block, records no waivers.
 pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResult> {
     super::validate_no_traversal(&args.feature)?;
     let layout = paths::Paths::load(repo);

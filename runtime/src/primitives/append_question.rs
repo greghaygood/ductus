@@ -66,8 +66,9 @@ const BACK_EDGE_STATUSES: [&str; 3] = ["clarified", "planned", "in-progress"];
 /// [`PrimitiveError::InvalidArgument`] when `question` is empty or
 /// multi-line, [`PrimitiveError::FeatureNotFound`] when the feature
 /// directory is missing, [`PrimitiveError::Io`] when the target artifact
-/// is unreadable, or [`PrimitiveError::MissingFrontmatter`] when it lacks
-/// `---` fences. A duplicate question is the `appended: false` domain
+/// is unreadable, [`PrimitiveError::MissingFrontmatter`] when it lacks
+/// `---` fences, or [`PrimitiveError::UnclosedFrontmatter`] when its block
+/// never closes. A duplicate question is the `appended: false` domain
 /// outcome, not an error.
 pub fn run(args: &AppendQuestionArgs, repo: &Path) -> Result<AppendQuestionResult> {
     validate_no_traversal(&args.feature)?;

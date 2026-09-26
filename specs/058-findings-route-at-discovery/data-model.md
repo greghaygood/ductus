@@ -1,9 +1,9 @@
 # 058 — Findings route at discovery Data Model
 
 The shapes 058 adds to or removes from the two audit records and the
-primitives that write them. Field shapes follow
-`runtime/src/schema/primitives.rs` — `ReviewBlock` at line 35, `AnalyzeBlock`
-at line 136 — and the waiver record in the 020 data model.
+primitives that write them. Field shapes follow `ReviewBlock` and
+`AnalyzeBlock` in `runtime/src/schema/primitives.rs`, and the waiver record in
+the 020 data model.
 
 ## `dispositions` — in both `review.md` and `analysis.md` frontmatter
 
@@ -185,8 +185,11 @@ reproduce byte for byte (scenario
 ### `AppendTaskArgs.dedup-title`
 
 `bool`, default `false`. When `true`, an existing **pending** task section whose
-title equals `title` is returned with `appended: false` rather than appended
-again. A spent section never matches.
+title equals `title` and whose checkbox items equal the ones this call would
+write is returned with `appended: false` rather than appended again. The items
+are part of the match because a disposition task's title carries only the
+finding's summary, and its `{path} — {detail}` body item is what tells two
+findings sharing a summary apart. A spent section never matches.
 
 ## New primitive: `process-decisions`
 
@@ -225,7 +228,7 @@ it after writing it, from the record it wrote
 
 ## `DashboardResult.inbox-standing`
 
-The existing `InboxStanding` (`primitives.rs:3552-3572`), moved from the
+The existing `InboxStanding` (in `primitives.rs`), moved from the
 `write-review` and `diff-cross-spec` results. `render_callouts` renders it as
 one `Inbox:` line in one of four states:
 

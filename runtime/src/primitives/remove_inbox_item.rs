@@ -20,18 +20,13 @@ use crate::schema::primitives::{RemoveInboxItemArgs, RemoveInboxItemResult};
 /// # Errors
 ///
 /// Returns [`PrimitiveError::InvalidArgument`] when `item` is empty,
-/// whitespace-only, or carries an embedded newline. Filesystem failures
-/// other than a missing inbox surface as [`PrimitiveError::Io`].
+/// whitespace-only, or carries an embedded newline — the rule `append-inbox`
+/// applies, so every bullet it writes can be removed (see
+/// [`super::validate_inbox_text`]). Filesystem failures other than a missing
+/// inbox surface as [`PrimitiveError::Io`].
 pub fn run(args: &RemoveInboxItemArgs, repo: &Path) -> Result<RemoveInboxItemResult> {
-    super::validate_single_line("remove-inbox-item", "item", &args.item)?;
+    super::validate_inbox_text("remove-inbox-item", "item", &args.item)?;
     let target = args.item.trim();
-    if target.is_empty() {
-        return Err(PrimitiveError::InvalidArgument {
-            primitive: "remove-inbox-item".into(),
-            argument: "item".into(),
-            reason: "item is empty".into(),
-        });
-    }
 
     let root = paths::Paths::load(repo).specs_root;
     let inbox_path = repo.join(&root).join("inbox.md");
@@ -218,6 +213,25 @@ mod tests {
                 "expected InvalidArgument for {bad:?}"
             );
         }
+    }
+
+    /// Any bullet `append-inbox` writes can be removed. U+2028 is no line
+    /// break to the inbox's markdown, so `append-inbox` writes it; a stricter
+    /// rule here refused the text and left that bullet removable by hand only.
+    #[test]
+    fn a_bullet_append_inbox_writes_round_trips() {
+        let tmp = tempdir().unwrap();
+        write_inbox(tmp.path(), "# Inbox\n");
+        let text = "flaky\u{2028}test";
+        crate::primitives::append_inbox::run(
+            &crate::schema::primitives::AppendInboxArgs { text: text.into() },
+            tmp.path(),
+        )
+        .unwrap();
+        let result = run(&args(text), tmp.path()).unwrap();
+        assert!(result.removed);
+        assert_eq!(result.remaining_count, 0);
+        assert_eq!(read_inbox(tmp.path()), "# Inbox\n");
     }
 
     #[test]

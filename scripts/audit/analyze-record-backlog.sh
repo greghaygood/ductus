@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # scripts/audit/analyze-record-backlog.sh — Family 37 of /audit.
 #
-# Every `done` spec that carries a review record and no analyze record — the
-# exact population the CI template's analyze-record check exempts.
+# Every `done` spec that carries a review record and no analyze record. The CI
+# template's analyze-record check exempts every `done` spec with no analyze
+# record, so this is the part of that exempt set that drains through
+# `/{project}:analyze`. A spec with neither record is counted separately (see
+# THE SUBJECT below).
 #
 # Since spec 057 each record lives in the artifact that owns it: the review
 # record in `review.md`, the analyze record in `analysis.md`, and `spec.md`

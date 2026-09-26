@@ -23,7 +23,8 @@ use crate::schema::status::ALLOWED_STATUSES;
 /// Returns [`PrimitiveError::InvalidStatus`] when `args.from` or `args.to`
 /// is outside the lifecycle set, [`PrimitiveError::FeatureNotFound`] when
 /// the feature directory is missing, [`PrimitiveError::MissingFrontmatter`]
-/// when the spec lacks `---` fences, [`PrimitiveError::StatusFieldMissing`]
+/// when the spec lacks `---` fences, [`PrimitiveError::UnclosedFrontmatter`]
+/// when its block never closes, [`PrimitiveError::StatusFieldMissing`]
 /// when no `status:` key is present, [`PrimitiveError::StatusMismatch`]
 /// when `args.from` does not match disk, or [`PrimitiveError::Io`] for
 /// filesystem failures.

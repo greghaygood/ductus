@@ -37,7 +37,8 @@ const NEXT_FIELD: &str = "next-criterion:";
 ///
 /// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory
 /// is missing, [`PrimitiveError::MissingFrontmatter`] when `spec.md` has no
-/// leading `---` block, [`PrimitiveError::InvalidNextCriterion`] when the
+/// leading `---` block, [`PrimitiveError::UnclosedFrontmatter`] when its block
+/// never closes, [`PrimitiveError::InvalidNextCriterion`] when the
 /// stored counter is not a positive integer (a corrupted counter may mean a
 /// label was already reissued, so the pass refuses rather than repairing it
 /// in place), or [`PrimitiveError::Io`] for filesystem failures.
@@ -55,8 +56,13 @@ pub fn run(args: &LabelCriteriaArgs, repo: &Path) -> Result<LabelCriteriaResult>
     let content = read_text(&spec_path)?;
     let lines: Vec<&str> = content.split_inclusive('\n').collect();
 
-    let fm = frontmatter_bounds(&lines).ok_or_else(|| PrimitiveError::MissingFrontmatter {
-        path: spec_path.clone(),
+    let fm = frontmatter_bounds(&lines).ok_or_else(|| {
+        let path = spec_path.clone();
+        if lines.first().is_some_and(|first| first.trim_end() == "---") {
+            PrimitiveError::UnclosedFrontmatter { path }
+        } else {
+            PrimitiveError::MissingFrontmatter { path }
+        }
     })?;
     let stored = read_next_criterion(&lines, &fm, &spec_path)?;
 
@@ -131,7 +137,8 @@ pub fn run(args: &LabelCriteriaArgs, repo: &Path) -> Result<LabelCriteriaResult>
 }
 
 /// Frontmatter block bounds as `(opening_index, closing_index)` over the
-/// line vector, or `None` when the file has no leading `---` fence.
+/// line vector, or `None` when the file has no leading `---` fence or no
+/// closing one.
 struct Frontmatter {
     closing: usize,
     newline: &'static str,

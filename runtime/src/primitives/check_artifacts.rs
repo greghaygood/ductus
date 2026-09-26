@@ -58,16 +58,6 @@
 //!   produces nothing here: it predates the field, and a backfilled map would
 //!   assert dispositions nobody made. `/{project}:analyze --fix` reverts on
 //!   this family by name.
-//!
-//! **`analysis.md` is judged by no family here** — neither its dispositions
-//! nor its own state (`last-run`, `blocking`). Every family runs inside
-//! `/{project}:analyze`, whose own run is about to replace that record, so a
-//! finding read from it could never clear: it is blocking, cannot be
-//! discarded, and outlives every re-run. `/{project}:analyze` judges both from
-//! the record it writes instead (scenarios
-//! `analysis-drift-judges-the-record-it-writes` and
-//! `analyze-state-drift-judges-the-record-it-writes`). The analyze-state drift
-//! family spec 047 added here is gone for that reason.
 //! - **scenario-open-questions** (blocking at `done`, advisory otherwise)
 //!   — a scenario is an organizational split of the spec, so its
 //!   unresolved questions are the spec's questions for completeness. At
@@ -97,6 +87,16 @@
 //!   that has been labelled. Assignment is `label-criteria`'s, enforcement
 //!   is this family's, because a criterion typed by hand in an editor never
 //!   touches a primitive (spec 013).
+//!
+//! **`analysis.md` is judged by no family here** — neither its dispositions
+//! nor its own state (`last-run`, `blocking`). Every family runs inside
+//! `/{project}:analyze`, whose own run is about to replace that record, so a
+//! finding read from it could never clear: it is blocking, cannot be
+//! discarded, and outlives every re-run. `/{project}:analyze` judges both from
+//! the record it writes instead (scenarios
+//! `analysis-drift-judges-the-record-it-writes` and
+//! `analyze-state-drift-judges-the-record-it-writes`). The analyze-state drift
+//! family spec 047 added here is gone for that reason.
 //!
 //! Parsing reuses the shared machinery — `split_frontmatter` for the spec
 //! frontmatter, [`crate::primitives::read_tasks`] for the task list,
@@ -128,9 +128,10 @@ use crate::schema::status::COMPATIBLE_STATUSES;
 ///
 /// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory
 /// is absent, [`PrimitiveError::MissingFrontmatter`] /
-/// [`PrimitiveError::Yaml`] when `spec.md` has no parseable frontmatter
-/// (the frontmatter-schema family is `validate-frontmatter`'s job — this
-/// primitive needs a readable `status` to classify tiers at all), or
+/// [`PrimitiveError::UnclosedFrontmatter`] / [`PrimitiveError::Yaml`] when
+/// `spec.md` has no parseable frontmatter (the frontmatter-schema family is
+/// `validate-frontmatter`'s job — this primitive needs a readable `status` to
+/// classify tiers at all), or
 /// [`PrimitiveError::Io`] on filesystem failures.
 pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResult> {
     super::validate_no_traversal(&args.feature)?;
@@ -148,8 +149,9 @@ pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResul
     // here would leave two independent notions of the spec's frontmatter in
     // one function, which is the drift the no-hand-rolled-parsers constraint
     // in the module docs exists to prevent. `read-spec` raises the same
-    // FeatureNotFound / MissingFrontmatter / Yaml / Io variants on the same
-    // file, so the documented error contract above is unchanged.
+    // FeatureNotFound / MissingFrontmatter / UnclosedFrontmatter / Yaml / Io
+    // variants on the same file, so the documented error contract above is
+    // unchanged.
     let spec = read_spec::run(
         &ReadSpecArgs {
             feature: args.feature.clone(),

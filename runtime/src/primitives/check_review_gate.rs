@@ -607,27 +607,6 @@ fn markdown_lint_block(
     }))
 }
 
-/// Gate check 0 — the spec is already at `status: done`, so there is no
-/// `in-progress → done` transition for this gate to authorize.
-///
-/// **Not `passed: true`.** A gate that reports "passed" for a spec it did not
-/// examine is the `QUAL-CLAIM-001` conflation every other check here is built
-/// to avoid, and a caller could read it as authorization to transition a spec
-/// that is already transitioned. It is its own variant, naming the state.
-///
-/// The concrete defect this closes: the completing `set-status` rewrites
-/// `spec.md`, which is one of the analyze record's subjects, so a spec's
-/// analysis is stale the instant it reaches `done`. Verified on spec 047
-/// seconds after its own transition. Re-running `/{project}:implement` against
-/// finished work therefore reported `analysis is stale — spec.md` and told the
-/// operator to re-run the analysis; following that advice wrote a fresh record
-/// and appeared to work, which is worse than advice that plainly fails.
-///
-/// Only the exact value `done` short-circuits. `status` is a required field,
-/// so an absent one already fails deserialization before this runs; a value
-/// *outside* the lifecycle set falls through and the gate runs its checks,
-/// because `validate-frontmatter` owns reporting a bad value and inferring
-/// "probably finished" from an unrecognized status would be the same unearned
 /// The blocked verdict for a spec with no completed review.
 ///
 /// Absence of the artifact and a record carrying a null `last-run` are the same
@@ -695,6 +674,27 @@ fn unreadable_record_block(
     }
 }
 
+/// Gate check 0 — the spec is already at `status: done`, so there is no
+/// `in-progress → done` transition for this gate to authorize.
+///
+/// **Not `passed: true`.** A gate that reports "passed" for a spec it did not
+/// examine is the `QUAL-CLAIM-001` conflation every other check here is built
+/// to avoid, and a caller could read it as authorization to transition a spec
+/// that is already transitioned. It is its own variant, naming the state.
+///
+/// The concrete defect this closes: the completing `set-status` rewrites
+/// `spec.md`, which is one of the analyze record's subjects, so a spec's
+/// analysis is stale the instant it reaches `done`. Verified on spec 047
+/// seconds after its own transition. Re-running `/{project}:implement` against
+/// finished work therefore reported `analysis is stale — spec.md` and told the
+/// operator to re-run the analysis; following that advice wrote a fresh record
+/// and appeared to work, which is worse than advice that plainly fails.
+///
+/// Only the exact value `done` short-circuits. `status` is a required field,
+/// so an absent one already fails deserialization before this runs; a value
+/// *outside* the lifecycle set falls through and the gate runs its checks,
+/// because `validate-frontmatter` owns reporting a bad value and inferring
+/// "probably finished" from an unrecognized status would be the same unearned
 /// conclusion in the other direction.
 fn already_done_block(status: &str, project: &str) -> Option<CheckReviewGateResult> {
     if status != "done" {

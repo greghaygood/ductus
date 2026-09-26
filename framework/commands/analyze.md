@@ -99,7 +99,7 @@ If `--all` is not present, use the feature identifier if provided, otherwise fal
 
 ## Markdown-only reference
 
-The full set of checks (frontmatter schema, spec integrity, artifact completeness, plan consistency, task consistency, scenario consistency, scenario open questions, link-adjacent decision drift, acceptance-criterion path existence, cross-spec references, review state drift, disposition drift, rule integrity, project-level consistency, severity classification, and report shape) and the finding dispositions that follow them are documented below for the markdown-only path. The numbered steps above invoke the mechanical primitives that automate the deterministic checks; the host applies the same checks against the markdown-only path when the runtime is unavailable.
+The full set of checks (frontmatter schema, spec integrity, artifact completeness, plan consistency, task consistency, scenario consistency, scenario open questions, link-adjacent decision drift, acceptance-criterion path existence, cross-spec references, review state drift, analyze state drift, disposition drift, rule integrity, project-level consistency, severity classification, and report shape) and the finding dispositions that follow them are documented below for the markdown-only path. The numbered steps above invoke the mechanical primitives that automate the deterministic checks; the host applies the same checks against the markdown-only path when the runtime is unavailable.
 
 ### Frontmatter schema (hard fail)
 

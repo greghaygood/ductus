@@ -53,6 +53,7 @@ struct IndexEntry {
 ///
 /// Returns [`PrimitiveError::Io`] when the consumer spec cannot be read,
 /// [`PrimitiveError::MissingFrontmatter`] when it has no `---` block,
+/// [`PrimitiveError::UnclosedFrontmatter`] when its block never closes,
 /// [`PrimitiveError::Yaml`] when its frontmatter is not valid YAML, or
 /// [`PrimitiveError::Toml`] when the resolved project config is present but
 /// malformed.

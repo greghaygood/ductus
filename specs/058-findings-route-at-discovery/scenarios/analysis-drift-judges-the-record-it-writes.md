@@ -24,7 +24,7 @@ A run that dispositions every live finding therefore leaves no drift behind, and
 ## Edge Cases
 
 - **A `done` spec whose prior `analysis.md` predates dispositions (no map).** Not drift, as now. The run writes a map, and from then on the rule above applies.
-- **Under `ductus exec`.** Nothing is dispositioned, so a `done` spec with any live finding records it undispositioned and is reported as drifted from the new record. That is honest, and it no longer loops: an interactive run clears it.
+- **Under `ductus exec`.** Nothing is dispositioned, so a `done` spec with any live finding gets a new record that counts it undispositioned. The exec run reports nothing: drift is judged at step 20, a host responsibility the walker skips. An interactive run reports the drift and clears it by dispositioning the finding, so it does not loop.
 - **`--all`.** Each spec is judged against its own new record, after its own write.
 - **The markdown-only path** judges the drift the same way, from the `analysis.md` it just wrote.
 

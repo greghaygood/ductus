@@ -490,9 +490,12 @@ observation counts under its stored outcome and is not asked about again. A
 stored decision nothing matched is pruned on an unrestricted run and retained
 when a pass did not run, exactly as a waiver is. A missed match costs one
 repeated question, never a silent waiver, because an unmatched decision is
-pruned rather than applied to something else. Malformed and duplicate entries
-are reported and never pruned, as waivers are (see
-[Malformed and duplicate waivers](#malformed-and-duplicate-waivers)). A
+pruned rather than applied to something else. A malformed entry is reported,
+applies to nothing, and is kept; an entry with no fields at all holds no
+decision, so a re-render drops it. A duplicate key is reported and ignored,
+and goes when its key expires or is given a new decision, because a new
+decision replaces every stored entry for its key. Waivers have their own
+rules, under [Malformed and duplicate waivers](#malformed-and-duplicate-waivers). A
 `decisions:` list that does not parse is reported by `validate-frontmatter`,
 and `write-review` refuses to write over it rather than read it as empty.
 
@@ -756,15 +759,17 @@ unchanged rather than expiring:
 
 - A waiver entry missing any of `rule`, `file`, `reason`, `waived-at`, or
   `waived-by` is **skipped** with a one-line warning naming the offending
-  entry (e.g. `malformed waiver at waivers[2]: missing 'reason'`).
-  The entry is NOT auto-removed; the operator must clean it up to silence
+  entry (e.g. `malformed waiver at review.waivers[2]: missing 'reason'`).
+  The entry is kept on the write; the operator must clean it up to silence
   the warning. Malformed entries are operator-authored state, not garbage
-  for the framework to collect.
+  for the framework to collect. Two exceptions: an entry with no fields at
+  all holds nothing to keep, so a re-render drops it; and pruning matches
+  on `(rule, file)` alone, so a malformed entry that names an expired
+  waiver's rule and file is pruned with it.
 - Two or more waivers for the same `(rule, file)` pair: **only the first
   applies**. Each duplicate emits a one-line warning
   (`duplicate waiver: rule {rule-id} at {file} — entry [N] ignored`) and is
-  NOT auto-pruned. Same reasoning: the framework treats duplicates as
-  operator state worth investigating, not silent state to clean up.
+  kept until that pair expires, when every entry for it is pruned together.
 
 The `waivers` list follows the §text-first-artifacts open-schema
 rule. Adopters MAY add fields (e.g., `co-waived-by`, `approved-by-team`,

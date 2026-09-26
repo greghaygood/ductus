@@ -12,7 +12,9 @@
 //! The lifecycle mirrors review waivers (`framework/commands/review.md`,
 //! §Per-run waiver processing): matched while the key fires, expired when an
 //! unrestricted run no longer produces it, retained when the run did not
-//! evaluate its source. A malformed entry is reported and never pruned.
+//! evaluate its source. An entry missing a required field or its companion is
+//! reported and never pruned; an entry that does not deserialize at all fails
+//! the whole list (see [`RawDecision`]).
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -27,11 +29,14 @@ use crate::schema::primitives::{
 /// The frontmatter key both records store decisions under.
 pub(crate) const DECISIONS_KEY: &str = "decisions";
 
-/// One stored decision with every field optional, so a malformed entry is a
-/// reportable notice rather than a whole-record parse failure, and so a
-/// re-render preserves the full entry. Unknown adopter-authored fields are
-/// captured by `extra` and re-emitted verbatim, the §text-first-artifacts
-/// open-schema rule the waiver list already follows (`RawWaiverFull`).
+/// One stored decision with every known field an optional string, so an entry
+/// missing a field still deserializes and [`Self::to_ref`] reports it as a
+/// notice, and so a re-render preserves the full entry. An entry that is not a
+/// mapping, or a known field holding something other than a string (`reason:
+/// [a, b]`), does not deserialize, and that fails the whole list rather than
+/// the one entry. Unknown adopter-authored fields, of any type, are captured
+/// by `extra` and re-emitted verbatim, the §text-first-artifacts open-schema
+/// rule the waiver list already follows (`RawWaiverFull`).
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
 pub(crate) struct RawDecision {
     #[serde(default)]
@@ -58,12 +63,7 @@ impl RawDecision {
     /// a discard its reason — because an entry missing it records a decision
     /// nobody can audit, which is no better than no decision.
     pub(crate) fn to_ref(&self) -> std::result::Result<DecisionRef, &'static str> {
-        let present = |value: &Option<String>| {
-            value
-                .as_deref()
-                .filter(|text| !text.trim().is_empty())
-                .map(str::to_string)
-        };
+        let present = |value: &Option<String>| nonblank(value.as_deref()).map(str::to_string);
         let key = present(&self.key).ok_or("key")?;
         let outcome = match self.outcome.as_deref().map(str::trim) {
             Some("routed") => DecisionOutcome::Routed,
@@ -85,11 +85,82 @@ impl RawDecision {
     }
 }
 
+/// `value` when it holds more than whitespace, as it was written. The one
+/// blank test the decision readers and both writers share.
+pub(crate) fn nonblank(value: Option<&str>) -> Option<&str> {
+    value.filter(|text| !text.trim().is_empty())
+}
+
+/// Check that `disposition` carries the companion its outcome requires — a
+/// route names its target, a discard states its reason — the one check both
+/// writers apply. `at` is the disposition's argument path
+/// (`observations[0].disposition`) and `primitive` the writer, for the
+/// refusal. Returns the companion, trimmed, with its argument path, so a
+/// writer can screen it further; `None` for an outcome that takes none.
+///
+/// # Errors
+///
+/// [`PrimitiveError::InvalidArgument`] naming `{at}.target` or `{at}.reason`
+/// when the companion is absent or blank.
+pub(crate) fn require_companion<'a>(
+    primitive: &str,
+    at: &str,
+    disposition: &'a Disposition,
+) -> Result<Option<(String, &'a str)>> {
+    let (field, value, rule) = match disposition.outcome {
+        DispositionOutcome::Routed => ("target", &disposition.target, "a route names its target"),
+        DispositionOutcome::Discarded => {
+            ("reason", &disposition.reason, "a discard states its reason")
+        }
+        DispositionOutcome::Fixed | DispositionOutcome::Undispositioned => return Ok(None),
+    };
+    let argument = format!("{at}.{field}");
+    match nonblank(value.as_deref()) {
+        Some(companion) => Ok(Some((argument, companion.trim()))),
+        None => Err(PrimitiveError::InvalidArgument {
+            primitive: primitive.into(),
+            argument,
+            reason: rule.into(),
+        }),
+    }
+}
+
+/// Refuse two findings that share a key but carry different outcomes.
+///
+/// One key is one finding and gets one disposition (spec 058), whatever the
+/// two outcomes are — fixed and undispositioned included — so the writer
+/// refuses rather than recording one finding as, say, both routed and owed.
+/// Findings sharing a key *and* an outcome pass: each is still counted, as the
+/// tier counts and `observations` count it, and [`merge`] stores their one
+/// decision once. `keyed` is every finding the run records, as its key and
+/// outcome; keys compare through [`same_key`].
+///
+/// # Errors
+///
+/// [`DecisionRefusal::ConflictingDecisions`] naming the first key given a
+/// second outcome.
+pub(crate) fn one_outcome_per_key(
+    keyed: impl IntoIterator<Item = (String, DispositionOutcome)>,
+) -> std::result::Result<(), DecisionRefusal> {
+    let mut seen: Vec<(String, DispositionOutcome)> = Vec::new();
+    for (key, outcome) in keyed {
+        match seen.iter().find(|(first, _)| same_key(first, &key)) {
+            Some((_, first)) if *first != outcome => {
+                return Err(DecisionRefusal::ConflictingDecisions(key));
+            }
+            Some(_) => {}
+            None => seen.push((key, outcome)),
+        }
+    }
+    Ok(())
+}
+
 /// Whether two decision keys name the same finding: equal once each is
 /// flattened to one line, the normalization every writer stores keys under.
-/// The one comparison `process-decisions` and [`merge`] both use, so a key a
-/// person hand-edited is judged the same way by the run that reads it and the
-/// run that rewrites it.
+/// The comparison [`merge`] and [`one_outcome_per_key`] use, over the
+/// normalization `process-decisions` compares keys under, so a key a person
+/// hand-edited is judged the same way by the run that reads it and the run
+/// that rewrites it.
 pub(crate) fn same_key(a: &str, b: &str) -> bool {
     flatten_line(a) == flatten_line(b)
 }
@@ -157,18 +228,18 @@ pub(crate) fn disposition_suffix(
     }
 }
 
-/// Why [`merge`] refused a run's decisions.
+/// Why a writer refused a run's decisions.
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum MergeError {
-    /// A new decision exists and no `decided-by` was supplied.
+pub(crate) enum DecisionRefusal {
+    /// A new decision exists and no `decided-by` was supplied ([`merge`]).
     DecidedByMissing,
     /// Two findings sharing this key were given different outcomes. One key
     /// is one finding and gets one disposition (spec 058), so the writer
-    /// refuses rather than choosing between them.
+    /// refuses rather than choosing between them ([`one_outcome_per_key`]).
     ConflictingDecisions(String),
 }
 
-impl MergeError {
+impl DecisionRefusal {
     /// The refusal as the writer's `InvalidArgument`: `primitive` names the
     /// writer, `list` the argument its findings arrived in, and `noun` one of
     /// them, for the message.
@@ -207,38 +278,33 @@ pub(crate) fn read_decisions(feature_dir: &Path, file: &str) -> Result<Vec<RawDe
 /// Every stored entry survives unless this run expired it or decided its key
 /// afresh; a malformed entry always survives, because an entry that cannot be
 /// read cannot be proven dead. This run's decisions are first collapsed to one
-/// per key — two findings sharing a key are one finding (spec 058) — and each
-/// is then either a **match**, the stored entry `process-decisions` applies for
-/// that key with the same outcome, kept byte-for-byte with its original
-/// companion, `decided-at`, and `decided-by`; or **new**, stamped with
-/// `decided_at` and `decided_by`, replacing every stored entry for its key.
-/// Keys compare through [`same_key`] throughout. Matching on key and outcome
-/// rather than on the companion's wording is the data model's rule: a host
-/// that restates a matched discard's reason, or normalizes a route's target
-/// path, has not made a new decision.
+/// per key, the first kept — two findings sharing a key are one finding with
+/// one outcome (spec 058), which [`one_outcome_per_key`] has already held each
+/// writer to — and each is then either a **match**, the stored entry
+/// `process-decisions` applies for that key with the same outcome, kept
+/// byte-for-byte with its original companion, `decided-at`, and `decided-by`;
+/// or **new**, stamped with `decided_at` and `decided_by`, replacing every
+/// stored entry for its key. Keys compare through [`same_key`] throughout.
+/// Matching on key and outcome rather than on the companion's wording is the
+/// data model's rule: a host that restates a matched discard's reason, or
+/// normalizes a route's target path, has not made a new decision.
 ///
 /// # Errors
 ///
-/// - [`MergeError::ConflictingDecisions`] when two of this run's decisions
-///   share a key but differ in outcome, since one key gets one disposition.
-/// - [`MergeError::DecidedByMissing`] when a new decision exists and
-///   `decided_by` is absent or blank: a decision nobody can attribute is not
-///   auditable, so the writer refuses rather than storing one.
+/// [`DecisionRefusal::DecidedByMissing`] when a new decision exists and
+/// `decided_by` is absent or blank: a decision nobody can attribute is not
+/// auditable, so the writer refuses rather than storing one.
 pub(crate) fn merge(
     stored: Vec<RawDecision>,
     expired: &[DecisionRef],
     decided: &[DecisionRef],
     decided_at: &str,
     decided_by: Option<&str>,
-) -> std::result::Result<Vec<RawDecision>, MergeError> {
+) -> std::result::Result<Vec<RawDecision>, DecisionRefusal> {
     let mut once: Vec<&DecisionRef> = Vec::new();
     for decision in decided {
-        match once.iter().find(|seen| same_key(&seen.key, &decision.key)) {
-            Some(seen) if seen.outcome != decision.outcome => {
-                return Err(MergeError::ConflictingDecisions(decision.key.clone()));
-            }
-            Some(_) => {}
-            None => once.push(decision),
+        if !once.iter().any(|seen| same_key(&seen.key, &decision.key)) {
+            once.push(decision);
         }
     }
     // The entry `process-decisions` applies for a key is the first well-formed
@@ -259,7 +325,7 @@ pub(crate) fn merge(
         .collect();
     let author = decided_by.map(str::trim).filter(|who| !who.is_empty());
     if !fresh.is_empty() && author.is_none() {
-        return Err(MergeError::DecidedByMissing);
+        return Err(DecisionRefusal::DecidedByMissing);
     }
     let dropped = |entry: &RawDecision| {
         let Ok(well_formed) = entry.to_ref() else {
@@ -506,7 +572,7 @@ mod tests {
                 "2026-09-25T00:00:00Z",
                 Some("  "),
             ),
-            Err(MergeError::DecidedByMissing)
+            Err(DecisionRefusal::DecidedByMissing)
         );
     }
 
@@ -610,9 +676,9 @@ mod tests {
     }
 
     /// Two findings sharing a key are one finding: the same decision twice is
-    /// stored once, and two different decisions for one key are refused.
+    /// stored once.
     #[test]
-    fn this_runs_decisions_collapse_by_key_and_conflicts_are_refused() {
+    fn this_runs_decisions_collapse_by_key() {
         let twice = decided("k", DecisionOutcome::Discarded, "noise");
         let merged = merge(
             Vec::new(),
@@ -623,20 +689,53 @@ mod tests {
         )
         .unwrap();
         assert_eq!(merged.len(), 1);
+    }
 
-        assert_eq!(
-            merge(
-                Vec::new(),
-                &[],
-                &[
-                    decided("k", DecisionOutcome::Discarded, "noise"),
-                    decided("k", DecisionOutcome::Routed, "specs/001-x/tasks.md"),
-                ],
-                "2026-09-25T00:00:00Z",
-                Some("dev@example.com"),
-            ),
-            Err(MergeError::ConflictingDecisions("k".into()))
-        );
+    /// One key, one disposition: two outcomes for one key are refused
+    /// whichever two they are — fixed and undispositioned store no decision,
+    /// yet still contradict a routed or discarded one. Keys compare flattened,
+    /// and a repeated outcome is no contradiction.
+    #[test]
+    fn two_outcomes_for_one_key_are_refused_whichever_they_are() {
+        use DispositionOutcome::{Discarded, Fixed, Routed, Undispositioned};
+        let all = [Fixed, Routed, Discarded, Undispositioned];
+        for first in all {
+            for second in all {
+                let verdict = one_outcome_per_key([
+                    ("k".to_string(), first),
+                    ("other".to_string(), second),
+                    (" k\n".to_string(), second),
+                ]);
+                if first == second {
+                    assert_eq!(verdict, Ok(()));
+                } else {
+                    assert_eq!(
+                        verdict,
+                        Err(DecisionRefusal::ConflictingDecisions(" k\n".into())),
+                        "{first:?} beside {second:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// A known field holding a non-string, or an entry that is not a mapping,
+    /// does not deserialize — and fails the whole list, not the one entry.
+    #[test]
+    fn a_wrong_typed_field_or_a_non_mapping_entry_fails_the_whole_list() {
+        let dir = tempfile::tempdir().unwrap();
+        let good = "  - key: k\n    outcome: discarded\n    reason: noise\n    \
+                    decided-at: 2026-09-25T00:00:00Z\n    decided-by: dev@example.com\n";
+        for bad in ["  - key: j\n    reason: [a, b]\n", "  - just a string\n"] {
+            write(dir.path(), "review.md", &format!("decisions:\n{good}{bad}"));
+            assert!(
+                matches!(
+                    read_decisions(dir.path(), "review.md"),
+                    Err(PrimitiveError::Yaml { .. })
+                ),
+                "{bad:?}"
+            );
+        }
     }
 
     /// Two observations matched to one stored discard are one finding, and a

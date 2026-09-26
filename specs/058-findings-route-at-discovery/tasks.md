@@ -370,30 +370,30 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 44. Fix the third review's runtime findings
 
-- [ ] SHOULD QUAL-CLAIM-001: `inbox_standing`'s age is undeterminable when any surviving bullet maps to a line behind a shallow cut, rather than the oldest date after the cut; test a mixed-depth shallow clone (origin 2020 and 2022 bullets, `--depth 2`)
+- [x] SHOULD QUAL-CLAIM-001: `inbox_standing`'s age is undeterminable when any surviving bullet maps to a line behind a shallow cut, rather than the oldest date after the cut; test a mixed-depth shallow clone (origin 2020 and 2022 bullets, `--depth 2`)
 - [ ] SHOULD QUAL-CLAIM-001: exec analyze records what it did not examine — the host-responsibility detection steps it skips (13–15), a `check-rule-ids` that read zero rule files while citations exist, and `check-orphaned-references`' skipped referrers — under `unexamined-by-reason`, each reason classified in `analyze.md`'s Unexamined targets; test each
 - [ ] The exec tally takes an assessment's tier case-insensitively, as validation accepts it, and does not drop a failed assessment that carries no finding; test the walker path that feeds `assessSpecQuality` responses into the tally
-- [ ] `remove-inbox-item` and `append-inbox` apply one single-line rule, so any bullet `append-inbox` writes can be removed; test a U+2028 round trip
-- [ ] `process-decisions` reads a frontmatter-less `analysis.md` as holding no decisions, as `write-analysis` does; an unclosed frontmatter is named as unclosed, not missing, and a test pins `write-analysis`' refusal of it
-- [ ] One key, one disposition: two findings sharing a key are refused whenever their outcomes differ, not only routed against discarded; test routed with undispositioned
-- [ ] `dedup-title` matches a pending task on its title and body, so two out-of-spec findings sharing a summary stay two tasks; test it
-- [ ] Inbox age: repeated bullet texts pair so that an uncommitted removal of one duplicate leaves the survivor its own date; test it
-- [ ] `compute-review-scope` resolves the spec's history path against the git work tree, so a project in a subdirectory of its repo gets its diff base (predates 058); test it
+- [x] `remove-inbox-item` and `append-inbox` apply one single-line rule, so any bullet `append-inbox` writes can be removed; test a U+2028 round trip
+- [x] `process-decisions` reads a frontmatter-less `analysis.md` as holding no decisions, as `write-analysis` does; an unclosed frontmatter is named as unclosed, not missing, and a test pins `write-analysis`' refusal of it
+- [x] One key, one disposition: two findings sharing a key are refused whenever their outcomes differ, not only routed against discarded; test routed with undispositioned
+- [x] `dedup-title` matches a pending task on its title and body, so two out-of-spec findings sharing a summary stay two tasks; test it
+- [x] Inbox age: repeated bullet texts pair so that an uncommitted removal of one duplicate leaves the survivor its own date; test it
+- [x] `compute-review-scope` resolves the spec's history path against the git work tree, so a project in a subdirectory of its repo gets its diff base (predates 058); test it
 - [ ] One constitution resolver (`.ductus/` then `framework/`) serves the exec analyze binding and `writeCode`'s excerpts
 - [ ] Cleanups: drop `PassObservation`'s unused `Default` and `Eq`; project the validated `PerformReviewResponse` once instead of re-parsing each observation; use `UNBLOCKING_STATUSES` instead of the hand-copied status list in `analyze_tally.rs`; one route/discard companion check shared by `write-review` and `write-analysis`
-- [ ] Docs: the `# Errors` sections of `write-review`, `write-analysis`, and `process-decisions`; the malformed-entry claims in `decisions.rs` and `read_recorded_list`; `pass_observations`' doc placement above `criterion_verified_met`; `tests/mcp.rs`' "three fields" doc; `already_done_block`'s split doc; `check_artifacts.rs`' `analysis.md` paragraph moved after the family list; `analyze_subjects.rs`' list of `analysis.md` readers; `AppendTaskResult.task_number` on a dedup return
+- [x] Docs: the `# Errors` sections of `write-review`, `write-analysis`, and `process-decisions`; the malformed-entry claims in `decisions.rs` and `read_recorded_list`; `pass_observations`' doc placement above `criterion_verified_met`; `tests/mcp.rs`' "three fields" doc; `already_done_block`'s split doc; `check_artifacts.rs`' `analysis.md` paragraph moved after the family list; `analyze_subjects.rs`' list of `analysis.md` readers; `AppendTaskResult.task_number` on a dedup return
 
 - **Done when**: each SHOULD's reproduction fails before its fix and passes after (a depth-2 clone holding a pre-cut bullet reads age undeterminable; exec analyze with `rule-files = []` and a citation, and any exec run, records what it did not examine), each bug above has a test that fails before its fix, no item is dead or documented as doing what it does not, and `cargo test --release --locked` and `clippy -D warnings` pass
 
 ## 45. Correct the prose the third review found stale
 
-- [ ] `review.md`'s Decisions persist and Malformed and duplicate waivers passages state what the runtime does: an all-empty entry is dropped on re-render, and a duplicate goes when its key expires or is re-decided, for decisions and waivers alike
-- [ ] 058 `plan.md`: the `invalidate_review.rs` Affected Files row, the reopened-spec count (seven, with 054), the disposition-drift decision's account of `check_analyze_drift` and its citations, and `write-review`'s step number (11)
-- [ ] 058 `data-model.md`'s stale line citations (`AnalyzeBlock`, `InboxStanding`) and `spec.md`'s "analyze's dedup key" edge case
-- [ ] The exec bullets of `analysis-drift-judges-the-record-it-writes` and `analyze-state-drift-judges-the-record-it-writes`: exec records the drift in the new record and does not report it, since step 20 is host responsibility
-- [ ] Family 37's set is a subset of what the CI template's analyze-record check exempts, not its exact population: `audit.md`, `analyze-record-backlog.sh`, `scripts/audit/README.md`, `docs/analyze.md`
-- [ ] `analyze.md`'s markdown-only list of checks names analyze state drift; `docs/analyze.md` points to `analyze.md` for the reason classes instead of carrying its own table
-- [ ] `status.md`'s shallow-clone wording follows task 44's inbox-age fix
-- [ ] `docs/slash-commands.md` and `README.md`'s `/review` entries describe observation dispositions and the `done` hold on an undispositioned one (AC19)
+- [x] `review.md`'s Decisions persist and Malformed and duplicate waivers passages state what the runtime does: an all-empty entry is dropped on re-render, and a duplicate goes when its key expires or is re-decided, for decisions and waivers alike
+- [x] 058 `plan.md`: the `invalidate_review.rs` Affected Files row, the reopened-spec count (seven, with 054), the disposition-drift decision's account of `check_analyze_drift` and its citations, and `write-review`'s step number (11)
+- [x] 058 `data-model.md`'s stale line citations (`AnalyzeBlock`, `InboxStanding`) and `spec.md`'s "analyze's dedup key" edge case
+- [x] The exec bullets of `analysis-drift-judges-the-record-it-writes` and `analyze-state-drift-judges-the-record-it-writes`: exec records the drift in the new record and does not report it, since step 20 is host responsibility
+- [x] Family 37's set is a subset of what the CI template's analyze-record check exempts, not its exact population: `audit.md`, `analyze-record-backlog.sh`, `scripts/audit/README.md`, `docs/analyze.md`
+- [x] `analyze.md`'s markdown-only list of checks names analyze state drift; `docs/analyze.md` points to `analyze.md` for the reason classes instead of carrying its own table
+- [x] `status.md`'s shallow-clone wording follows task 44's inbox-age fix
+- [x] `docs/slash-commands.md` and `README.md`'s `/review` entries describe observation dispositions and the `done` hold on an undispositioned one (AC19)
 
 - **Done when**: each named passage agrees with the runtime, the scenarios, and the other commands, AC19 holds as written, and full markdownlint and `scripts/audit/run-all.sh` pass

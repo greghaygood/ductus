@@ -104,9 +104,10 @@ pub fn run(args: &AppendTaskArgs, repo: &Path) -> Result<AppendTaskResult> {
 
     // Title dedup, opt-in (spec 058): a disposition task names a finding, not
     // a scenario, so the slug guard above cannot key on it. Only a *pending*
-    // section matches — see `pending_task_titled`.
+    // section with this title and body matches — see `pending_task_matching`.
     if args.dedup_title
-        && let Some(existing_number) = pending_task_titled(&existing, args.title.trim())
+        && let Some(existing_number) =
+            pending_task_matching(&existing, args.title.trim(), &task_items(args))
     {
         return Ok(AppendTaskResult {
             task_number: existing_number,
@@ -178,7 +179,14 @@ fn task_number_referencing_scenario(existing: &str, slug: &str) -> Option<u32> {
     None
 }
 
-/// The number of a **pending** task section titled exactly `title`, if any.
+/// The number of a **pending** task section titled exactly `title` whose
+/// checkbox items read exactly `items`, in order, if any.
+///
+/// The body is matched as well as the title because `/{project}:implement`
+/// titles a disposition task by the finding's summary and puts `{path} —
+/// {detail}` in its body: two findings can share a title, and matched on the
+/// title alone the second returned the first's number and was written
+/// nowhere. Each item compares as the checkbox grammar reads it back, trimmed.
 ///
 /// Pending means at least one unchecked checkbox inside the section. A spent
 /// section — every box checked — never matches: the same finding surfacing
@@ -186,19 +194,32 @@ fn task_number_referencing_scenario(existing: &str, slug: &str) -> Option<u32> {
 /// and checkboxes are recognized by the grammars `prune-tasks` and
 /// `read-tasks` use — [`crate::primitives::split_numbered_heading`] at the
 /// file's task level, closed by any heading at or above it, and
-/// [`crate::primitives::checkbox::find_checkbox_line`] — so a task one of them
-/// sees is the task this one sees. Fence- and comment-aware, as the numbering
-/// walk is.
-fn pending_task_titled(existing: &str, title: &str) -> Option<u32> {
+/// [`crate::primitives::checkbox::parse_checkbox_line`] — so a task one of
+/// them sees is the task this one sees. Fence- and comment-aware, as the
+/// numbering walk is.
+fn pending_task_matching(existing: &str, title: &str, items: &[String]) -> Option<u32> {
     use crate::primitives::{
         SkipScanner, TasksStructure, checkbox, detect_tasks_structure, parse_atx_heading,
         split_numbered_heading,
     };
 
+    /// A task section being walked.
+    struct Section {
+        number: u32,
+        titled: bool,
+        /// Its checkbox items, as `(checked, text)`.
+        items: Vec<(bool, String)>,
+    }
+
     // The title as the heading the renderer writes for it reads back — the
     // heading parser trims a closing `#` run, so `… C#` is compared as `… C`
     // on both sides rather than never matching itself.
     let wanted = parse_atx_heading(&format!("## {title}")).map(|(_, text)| text)?;
+    let matches = |section: &Section| {
+        section.titled
+            && section.items.iter().any(|(checked, _)| !checked)
+            && section.items.iter().map(|(_, text)| text).eq(items.iter())
+    };
     // Task sections as `prune-tasks` and `read-tasks` segment them: a task is
     // a numbered heading at the task level, and any heading at or above that
     // level closes it.
@@ -207,8 +228,7 @@ fn pending_task_titled(existing: &str, title: &str) -> Option<u32> {
         TasksStructure::Phased => 3,
     };
     let mut skip = SkipScanner::default();
-    // (number, title matches) of the task section being walked.
-    let mut current: Option<(u32, bool)> = None;
+    let mut current: Option<Section> = None;
     for line in existing.lines() {
         if skip.skip(line) {
             continue;
@@ -216,20 +236,32 @@ fn pending_task_titled(existing: &str, title: &str) -> Option<u32> {
         if let Some((level, heading)) = parse_atx_heading(line)
             && level <= task_level
         {
+            if let Some(section) = current.take()
+                && matches(&section)
+            {
+                return Some(section.number);
+            }
             current = (level == task_level)
                 .then(|| split_numbered_heading(&heading))
                 .flatten()
-                .and_then(|(number, rest)| number.parse::<u32>().ok().map(|n| (n, rest == wanted)));
+                .and_then(|(number, rest)| {
+                    number.parse::<u32>().ok().map(|number| Section {
+                        number,
+                        titled: rest == wanted,
+                        items: Vec::new(),
+                    })
+                });
             continue;
         }
-        if let Some((number, true)) = current
-            && let Some((_bracket, marker)) = checkbox::find_checkbox_line(line)
-            && line.as_bytes()[marker] == b' '
+        if let Some(section) = current.as_mut()
+            && let Some(item) = checkbox::parse_checkbox_line(line)
         {
-            return Some(number);
+            section.items.push(item);
         }
     }
-    None
+    current
+        .filter(|section| matches(section))
+        .map(|section| section.number)
 }
 
 /// Reject a single-line text argument that carries an embedded newline
@@ -276,23 +308,32 @@ fn render_task_block(number: u32, args: &AppendTaskArgs, heading_level: u8) -> S
     //
     // The "scenarios/{slug}.md" pointer mirrors the convention
     // `/ductus:amend`'s scenario branch uses.
-    if let Some(slug) = &args.slug {
-        let _ = writeln!(
-            out,
-            "- [ ] Implement the behavior described in `scenarios/{slug}.md`"
-        );
+    for item in task_items(args) {
+        let _ = writeln!(out, "- [ ] {item}");
     }
-    if let Some(items) = &args.body {
-        for item in items {
-            let _ = writeln!(out, "- [ ] {}", strip_bullet_marker(item));
-        }
-    }
-    // The `(None, None)` branch is unreachable — run() refuses that
-    // combination before calling this function. No `else` arm here so the
+    // The `(None, None)` case renders no items and is unreachable — run()
+    // refuses that combination before calling this function, so the
     // invariant is enforced by the caller, not by a panic in render code.
     out.push('\n');
     let _ = writeln!(out, "- **Done when**: {}", args.done_when.trim());
     out
+}
+
+/// The checkbox items a task block renders, in order: the `scenarios/{slug}.md`
+/// pointer when a `slug` is supplied, then each `body` item with any
+/// caller-supplied marker stripped. The one list the renderer writes and the
+/// `dedup-title` match compares.
+fn task_items(args: &AppendTaskArgs) -> Vec<String> {
+    let pointer = args
+        .slug
+        .iter()
+        .map(|slug| format!("Implement the behavior described in `scenarios/{slug}.md`"));
+    let body = args
+        .body
+        .iter()
+        .flatten()
+        .map(|item| strip_bullet_marker(item));
+    pointer.chain(body).collect()
 }
 
 /// Insert a `### N.` task into the phased `tasks.md` body. Behavior:
@@ -639,6 +680,30 @@ mod tests {
         assert_eq!(second.task_number, first.task_number);
         let tasks = fs::read_to_string(tmp.path().join("specs/042-foo/tasks.md")).unwrap();
         assert_eq!(tasks.matches("handle leak").count(), 1, "{tasks}");
+    }
+
+    /// `/{project}:implement` titles a disposition task by the finding's
+    /// summary and puts `{path} — {detail}` in its body, so two findings can
+    /// share a title. Matched on the title alone, the second returned the
+    /// first's number and was written nowhere; a pending task matches on its
+    /// title and its body.
+    #[test]
+    fn dedup_title_matches_the_body_too() {
+        let tmp = tempdir().unwrap();
+        make_feature_with_spec(tmp.path(), "specs/042-foo", "042 — Foo");
+        let first = disposition_args("Disposition out-of-spec finding: handle leak");
+        let mut second = first.clone();
+        second.body = Some(vec!["src/b.rs — leaks a handle".into()]);
+
+        assert_eq!(run(&first, tmp.path()).unwrap().task_number, 1);
+        let other = run(&second, tmp.path()).unwrap();
+        assert!(other.appended, "a second finding sharing the summary");
+        assert_eq!(other.task_number, 2);
+        for (again, number) in [(&second, 2), (&first, 1)] {
+            let rerun = run(again, tmp.path()).unwrap();
+            assert!(!rerun.appended);
+            assert_eq!(rerun.task_number, number);
+        }
     }
 
     #[test]

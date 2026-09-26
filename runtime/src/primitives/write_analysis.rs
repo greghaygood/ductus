@@ -74,21 +74,25 @@ use crate::schema::primitives::{
 /// - [`PrimitiveError::FeatureNotFound`] when the feature directory does not
 ///   exist.
 /// - [`PrimitiveError::InvalidArgument`] when `analyzed-at` is blank, when a
-///   finding's disposition lacks its companion or discards a `hard-fail` or
-///   `blocking` finding, when the findings contradict the tier counts, when two
-///   findings sharing a key are given different outcomes, or when a new
-///   decision has no `decided-by` — each before any write.
+///   finding's family or message is blank, when a finding's disposition lacks
+///   its companion or discards a `hard-fail` or `blocking` finding, when the
+///   findings contradict the tier counts, when two findings sharing a key are
+///   given different outcomes, or when a new decision has no `decided-by` —
+///   each before any write.
 /// - [`PrimitiveError::Io`] when `spec.md` or the prior `analysis.md` cannot
 ///   be read, or the record cannot be written.
+/// - [`PrimitiveError::MissingFrontmatter`] when `spec.md` has no frontmatter
+///   block.
 /// - [`PrimitiveError::Yaml`] when `spec.md`'s frontmatter block is malformed —
 ///   never repaired here. A spec whose frontmatter does not parse is one the
 ///   analysis itself would have hard-failed on, and writing a record of a
 ///   clean run into it would be the exact inversion this primitive exists to
 ///   prevent. Also when the prior `analysis.md`'s frontmatter does not parse,
 ///   since the decisions it stores cannot be read and would be written over.
-/// - [`PrimitiveError::MissingFrontmatter`] when the prior `analysis.md` opens
-///   a frontmatter block that never closes. One that opens none carries no
-///   decisions and is overwritten.
+/// - [`PrimitiveError::UnclosedFrontmatter`] when the block in `spec.md` or
+///   the prior `analysis.md` opens and never closes, for the same reasons. A
+///   prior `analysis.md` that opens no block carries no decisions and is
+///   overwritten.
 pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult> {
     validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
@@ -124,6 +128,12 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     }
     let blocking = args.hard_fail > 0 || args.blocking_findings > 0;
     let dispositions = count_dispositions(args)?;
+    decisions::one_outcome_per_key(
+        args.findings
+            .iter()
+            .map(|finding| (finding_key(finding), finding.disposition.outcome)),
+    )
+    .map_err(|refusal| refusal.into_error("write-analysis", "findings", "a finding"))?;
     // The prior record is read only for the decisions it stores. A file that
     // opens no frontmatter block carries none, so it is overwritten, and
     // re-running the command repairs a record damaged that way. One whose
@@ -131,15 +141,7 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     // `decisions:` list cannot be read, and writing over it would drop
     // decisions nobody can see (spec 058).
     let analysis_path = feature_dir.join(crate::primitives::ANALYSIS_RECORD_FILE);
-    let stored =
-        match decisions::read_decisions(&feature_dir, crate::primitives::ANALYSIS_RECORD_FILE) {
-            Err(PrimitiveError::MissingFrontmatter { .. })
-                if !opens_frontmatter(&analysis_path) =>
-            {
-                Vec::new()
-            }
-            other => other?,
-        };
+    let stored = decisions::read_decisions(&feature_dir, crate::primitives::ANALYSIS_RECORD_FILE)?;
     let merged = decisions::merge(
         stored,
         &args.expired_decisions,
@@ -238,12 +240,6 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     })
 }
 
-/// Whether the file at `path` opens a frontmatter block. A record that does
-/// not has nothing stored in it to preserve.
-fn opens_frontmatter(path: &Path) -> bool {
-    read_text(path).is_ok_and(|text| text.starts_with("---\n") || text.starts_with("---\r\n"))
-}
-
 /// A validation failure naming the offending argument.
 fn invalid(argument: impl Into<String>, reason: &str) -> PrimitiveError {
     PrimitiveError::InvalidArgument {
@@ -283,33 +279,17 @@ fn count_dispositions(args: &WriteAnalysisArgs) -> Result<Dispositions> {
             return Err(invalid(at("message"), "message is empty"));
         }
         let disposition = &finding.disposition;
-        let present =
-            |value: &Option<String>| value.as_deref().is_some_and(|v| !v.trim().is_empty());
-        match disposition.outcome {
-            DispositionOutcome::Routed if !present(&disposition.target) => {
-                return Err(invalid(
-                    at("disposition.target"),
-                    "a route names its target",
-                ));
-            }
-            DispositionOutcome::Discarded if !present(&disposition.reason) => {
-                return Err(invalid(
-                    at("disposition.reason"),
-                    "a discard states its reason",
-                ));
-            }
-            DispositionOutcome::Discarded
-                if matches!(
-                    finding.tier,
-                    AnalysisTier::HardFail | AnalysisTier::Blocking
-                ) =>
-            {
-                return Err(invalid(
-                    at("disposition.outcome"),
-                    "a hard-fail or blocking finding already gates done; fix or route it, never discard it",
-                ));
-            }
-            _ => {}
+        decisions::require_companion("write-analysis", &at("disposition"), disposition)?;
+        if disposition.outcome == DispositionOutcome::Discarded
+            && matches!(
+                finding.tier,
+                AnalysisTier::HardFail | AnalysisTier::Blocking
+            )
+        {
+            return Err(invalid(
+                at("disposition.outcome"),
+                "a hard-fail or blocking finding already gates done; fix or route it, never discard it",
+            ));
         }
         if !finding.live {
             if disposition.outcome != DispositionOutcome::Fixed {
@@ -1414,6 +1394,146 @@ mod tests {
             Err(PrimitiveError::Yaml { .. })
         ));
         assert_eq!(fs::read_to_string(&path).unwrap(), damaged);
+    }
+
+    /// A prior `analysis.md` whose frontmatter opens and never closes is
+    /// refused, named as unclosed, and left as it is: the decisions it may
+    /// store cannot be read, and writing over it would drop them unseen.
+    #[test]
+    fn a_prior_record_whose_frontmatter_never_closes_is_refused() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let path = tmp.path().join("specs/042-demo/analysis.md");
+        let damaged = "---\nspec: 042-demo\ndecisions:\n  - key: \"f — m\"\n    \
+                       outcome: discarded\n    reason: noise\n\n# Analysis\n";
+        fs::write(&path, damaged).unwrap();
+        let error = run(&args(), tmp.path()).unwrap_err();
+        assert!(error.to_string().contains("never closes"), "{error}");
+        assert!(matches!(error, PrimitiveError::UnclosedFrontmatter { .. }));
+        assert_eq!(fs::read_to_string(&path).unwrap(), damaged);
+    }
+
+    /// A closing `---` on the file's last line, with no newline after it,
+    /// closes the block: the prior record's decisions are read and kept.
+    #[test]
+    fn a_prior_record_closed_on_its_last_line_keeps_its_decisions() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let dir = tmp.path().join("specs/042-demo");
+        fs::write(
+            dir.join("analysis.md"),
+            "---\nspec: 042-demo\ndecisions:\n  - key: \"f — m\"\n    outcome: discarded\n    \
+             reason: noise\n    decided-at: 2026-09-01T00:00:00Z\n    decided-by: a@example.com\n---",
+        )
+        .unwrap();
+        run(&args(), tmp.path()).unwrap();
+        let stored = decisions::read_decisions(&dir, "analysis.md").unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].key.as_deref(), Some("f — m"));
+    }
+
+    /// A route names its target and a discard states its reason, refused by
+    /// the check `write-review` shares, under this primitive's argument path.
+    #[test]
+    fn a_disposition_without_its_companion_is_refused() {
+        for (outcome, argument, reason) in [
+            (
+                DispositionOutcome::Routed,
+                "findings[0].disposition.target",
+                "a route names its target",
+            ),
+            (
+                DispositionOutcome::Discarded,
+                "findings[0].disposition.reason",
+                "a discard states its reason",
+            ),
+        ] {
+            let tmp = spec_repo("status: in-progress\ndependencies: []");
+            let mut a = args();
+            a.advisory = 1;
+            a.decided_by = Some("dev@example.com".into());
+            a.findings = vec![finding(
+                AnalysisTier::Advisory,
+                "f",
+                "m",
+                outcome,
+                Some("  "),
+            )];
+            let error = run(&a, tmp.path()).unwrap_err();
+            assert!(
+                matches!(
+                    &error,
+                    PrimitiveError::InvalidArgument { primitive, argument: at, reason: why }
+                        if primitive == "write-analysis" && at == argument && why == reason
+                ),
+                "{error:?}"
+            );
+            assert!(!analysis_exists(&tmp));
+        }
+    }
+
+    /// One key, one disposition, whatever the two outcomes are — a finding
+    /// fixed beside one still firing under the same key included.
+    #[test]
+    fn same_key_findings_with_any_two_outcomes_are_refused() {
+        use DispositionOutcome::{Discarded, Fixed, Routed, Undispositioned};
+        for (first, second) in [
+            (Routed, Undispositioned),
+            (Fixed, Undispositioned),
+            (Fixed, Discarded),
+        ] {
+            let tmp = spec_repo("status: in-progress\ndependencies: []");
+            let mut a = args();
+            a.advisory = 2;
+            a.decided_by = Some("dev@example.com".into());
+            a.findings = [first, second]
+                .into_iter()
+                .map(|outcome| {
+                    let companion = match outcome {
+                        Routed => Some("specs/042-demo/tasks.md"),
+                        Discarded => Some("noise"),
+                        Fixed | Undispositioned => None,
+                    };
+                    finding(
+                        AnalysisTier::Advisory,
+                        "grounding",
+                        "same",
+                        outcome,
+                        companion,
+                    )
+                })
+                .collect();
+            let error = run(&a, tmp.path()).unwrap_err();
+            assert!(
+                matches!(&error, PrimitiveError::InvalidArgument { argument, .. } if argument == "findings"),
+                "{first:?} beside {second:?}: {error}"
+            );
+            assert!(!analysis_exists(&tmp));
+        }
+    }
+
+    /// Two findings sharing a key and an outcome are one decision, stored
+    /// once, and two findings counted: the tier counts count each, and
+    /// `undispositioned` is derived from them, so counting the pair once
+    /// would record one of them as owed.
+    #[test]
+    fn same_key_findings_sharing_an_outcome_are_each_counted_and_stored_once() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut a = args();
+        a.advisory = 2;
+        a.decided_by = Some("dev@example.com".into());
+        let twice = finding(
+            AnalysisTier::Advisory,
+            "grounding",
+            "same",
+            DispositionOutcome::Discarded,
+            Some("noise"),
+        );
+        a.findings = vec![twice.clone(), twice];
+        let result = run(&a, tmp.path()).unwrap();
+        assert_eq!(result.dispositions.discarded, 2);
+        assert_eq!(result.dispositions.undispositioned, 0);
+        let stored =
+            decisions::read_decisions(&tmp.path().join("specs/042-demo"), "analysis.md").unwrap();
+        assert_eq!(stored.len(), 1);
     }
 
     /// A blank timestamp would stamp every new decision with a blank

@@ -560,7 +560,8 @@ pub struct ComputeReviewScopeResult {
     pub diff_base: String,
     /// The review scope: the union of `plan-affected` and `modified-since`.
     pub scope: Vec<String>,
-    /// Files changed between `diff-base` and HEAD, sorted.
+    /// Files changed between `diff-base` and HEAD inside the project
+    /// directory, named from the project root, sorted.
     pub modified_since: Vec<String>,
     /// Files listed under the plan's `## Affected Files` section.
     pub plan_affected: Vec<String>,
@@ -2635,13 +2636,16 @@ pub struct AppendTaskArgs {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[arg(long)]
     pub parent_heading: Option<String>,
-    /// Return an existing **pending** task with this exact title instead of
+    /// Return an existing **pending** task with this exact title and exactly
+    /// the checkbox items this call would render, in order, instead of
     /// appending a second one (spec 058). Off by default, so every existing
     /// caller keeps its behavior. The case it exists for is a disposition
     /// task: it has no scenario to key the slug dedup on, and a re-run of an
     /// interrupted `/{project}:implement` must not record the same finding
-    /// twice. A spent section with the same title never matches — the same
-    /// finding surfacing again after it was dispositioned is new work.
+    /// twice. The body is matched too because two findings can share a
+    /// summary, the title, and differ only in the body. A spent section never
+    /// matches — the same finding surfacing again after it was dispositioned
+    /// is new work.
     #[serde(default)]
     #[arg(long)]
     pub dedup_title: bool,
@@ -2651,7 +2655,8 @@ pub struct AppendTaskArgs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct AppendTaskResult {
-    /// Number assigned to the newly-appended task (`max(existing) + 1`).
+    /// Number of the task: the one just appended (`max(existing) + 1`), or,
+    /// when `appended` is `false`, the existing task a dedup guard matched.
     pub task_number: u32,
     /// Repo-relative path of the tasks file written.
     pub path: String,
@@ -2661,7 +2666,7 @@ pub struct AppendTaskResult {
     /// Whether a task block was actually written. `false` is the dedup
     /// domain outcome, from either guard: a `slug` was supplied and an existing
     /// task already points at `scenarios/{slug}.md`, or `dedup-title` was set
-    /// and a pending task already carries this title. Either way
+    /// and a pending task already carries this title and body. Either way
     /// `task_number` names that task rather than a new one and `tasks.md` is
     /// unchanged.
     ///
@@ -3791,10 +3796,12 @@ pub struct InboxStanding {
     /// `append-inbox` and `remove-inbox-item` perform do not reset a surviving
     /// line's date.
     ///
-    /// Absent when it could not be determined: a shallow clone, a file not yet
-    /// committed, or any other blame failure. **Undeterminable, not today** —
-    /// the count still renders, and a caller reports the age as unknown rather
-    /// than dropping it or defaulting it.
+    /// Absent when it could not be determined: a file not yet committed, every
+    /// item uncommitted, a surviving item behind a shallow clone's cut (it
+    /// may be the oldest), or any other blame failure. An uncommitted item
+    /// alone never makes it absent, being newer than every committed one.
+    /// **Undeterminable, not today** — the count still renders, and a caller
+    /// reports the age as unknown rather than dropping it or defaulting it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub oldest: Option<String>,
     /// Repo-relative path the state describes, so a `no-file` row can name
