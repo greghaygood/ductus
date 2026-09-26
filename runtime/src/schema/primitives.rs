@@ -325,10 +325,12 @@ pub struct AnalyzeBlock {
     ///   decided on: `referrer-unreadable` (a referrer
     ///   `check-orphaned-references` could not read),
     ///   `rule-citations-not-checked` (citations `check-rule-ids` checked
-    ///   against no rule file), and `references-not-checked`,
-    ///   `applicable-rules-not-checked`, `grounding-not-checked` (the host
-    ///   detection an exec walk never runs). A real gap in what the run could
-    ///   see, and the class worth acting on.
+    ///   against no rule file), `rule-assessments-not-checked` (exec
+    ///   assessments whose request carried no rule to assess by), and
+    ///   `references-not-checked`, `applicable-rules-not-checked`,
+    ///   `grounding-not-checked` (the host detection an exec walk never
+    ///   runs). A real gap in what the run could see, and the class worth
+    ///   acting on.
     ///
     /// Omitted when empty, so a fully-examined run carries no map rather
     /// than a map of zeroes.

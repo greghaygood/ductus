@@ -441,20 +441,27 @@ fn analyze_completes_on_the_session_write_session_writes() {
     );
 }
 
-/// With no rule-file directory the derived list is empty, so step 5 reads no
-/// rule file: the spec's citation is recorded unexamined, not missing, and
-/// raises no blocking finding against a spec nothing was checked against.
+/// With no rule-file directory the derived list is empty, so nothing is
+/// checked against a rule: step 5 records the spec's citation unexamined, not
+/// missing, and steps 11 and 12 ask about no rule, so the fixture's scripted
+/// MUST and SHOULD verdicts count in no tier and both steps are recorded
+/// unexamined. No finding is raised against a spec nothing was checked
+/// against.
 #[test]
 fn analyze_with_no_rule_directory_records_its_citations_unexamined() {
     let (staged, _) = exec_analyze_on_a_written_session(|root| {
         fs::remove_dir_all(root.join("framework/rules")).unwrap();
     });
     let analysis = fs::read_to_string(staged.path().join("specs/003-analyze/analysis.md")).unwrap();
-    assert!(
-        analysis.contains("  rule-citations-not-checked: 1\n"),
-        "{analysis}"
-    );
-    assert!(analysis.contains("\nblocking-findings: 1\n"), "{analysis}");
+    for line in [
+        "  rule-citations-not-checked: 1\n",
+        "  rule-assessments-not-checked: 2\n",
+        "\nblocking-findings: 0\n",
+        "\nadvisory: 0\n",
+        "\nblocking: false\n",
+    ] {
+        assert!(analysis.contains(line), "{line:?} in\n{analysis}");
+    }
 }
 
 fn repo_root() -> PathBuf {

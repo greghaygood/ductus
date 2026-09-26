@@ -383,10 +383,10 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 return Ok(Some(WalkOutcome::Errored { code, message }));
             }
         };
-        // The tier of the rule an assessment request carries, taken before the
-        // request is handed off: it counts a failed assessment the host
-        // returned no finding for.
-        let assessed = analyze_tally::AnalyzeTally::assessed_tier(&request);
+        // What an assessment request asks about, taken before the request is
+        // handed off: its rule's tier counts a failed assessment the host
+        // returned no finding for, and a request carrying no rule counts none.
+        let assessed = analyze_tally::AnalyzeTally::assessed(&request);
         self.emit_llm_request(identifier, &request_id, request)?;
         let response = self.await_llm_response(&request_id)?;
         if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
@@ -1390,7 +1390,9 @@ mod tests {
     /// the case validation accepted it in, and a failed assessment the host
     /// returned no finding for counts in the tier of the rule the walker asked
     /// about. The capitalized finding answers a SHOULD-tier request, so only
-    /// its own tier, read case-insensitively, counts it as blocking.
+    /// its own tier, read case-insensitively, counts it as blocking. The rule
+    /// file gives each request a rule to assess; without one, nothing is
+    /// assessed and no verdict counts.
     #[test]
     fn an_exec_analyze_records_the_assessments_it_receives() {
         let tmp = tempfile::tempdir().unwrap();
@@ -1399,6 +1401,13 @@ mod tests {
         std::fs::write(
             dir.join("spec.md"),
             "---\nstatus: clarified\ndependencies: []\n---\n\n# x\n",
+        )
+        .unwrap();
+        let rules = tmp.path().join("framework/rules");
+        std::fs::create_dir_all(&rules).unwrap();
+        std::fs::write(
+            rules.join("quality-cross.md"),
+            "### X-1\n\n> A rule.\n\n**Verification:** the spec names its constants.\n",
         )
         .unwrap();
         let assess = |n: u32, tier: &str| Step::Extension {
