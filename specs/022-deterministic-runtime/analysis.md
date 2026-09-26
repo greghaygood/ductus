@@ -1,7 +1,7 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-26T21:29:09Z
-analyzed-against: ad58e07cc7c76327bc1f88d09815b672048e632c
+last-run: 2026-09-26T21:34:38Z
+analyzed-against: b27ac5ba557704639bcddbc08c2d445ddbe24123
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
@@ -115,7 +115,7 @@ analyzed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: e51b02bec5198078c0e5ead2f527e62b0d04809cdfd40d7dd018e114810f7380
-  tasks.md: 37862051c69451a1b5db5afdbebeaf839d037bda61353fce49a6cee84ed9449e
+  tasks.md: 7cea97c80e32598a7a271fd4886c06803d6c5d0f2f85e352a88d11c36ec35493
 blocking: false
 dispositions:
   fixed: 0
