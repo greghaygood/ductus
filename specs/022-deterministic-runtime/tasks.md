@@ -503,6 +503,6 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 
 ## 123. Implement scenario: exec-analyze-derives-its-list-seeds
 
-- [ ] Implement the behavior described in `scenarios/exec-analyze-derives-its-list-seeds.md`
+- [x] Implement the behavior described in `scenarios/exec-analyze-derives-its-list-seeds.md`
 
 - **Done when**: `ductus exec analyze` completes on a session written by `write-session` when only `analyzed-at` and `analyzed-against` are passed as arguments; a seeded `rule-files` or `paths` is used as given, so `analyze-basic`'s golden does not move; tests cover each derived list and the seeded override; and `cargo test --release --locked` and `clippy -D warnings` pass.

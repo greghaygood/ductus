@@ -371,16 +371,16 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 ## 44. Fix the third review's runtime findings
 
 - [x] SHOULD QUAL-CLAIM-001: `inbox_standing`'s age is undeterminable when any surviving bullet maps to a line behind a shallow cut, rather than the oldest date after the cut; test a mixed-depth shallow clone (origin 2020 and 2022 bullets, `--depth 2`)
-- [ ] SHOULD QUAL-CLAIM-001: exec analyze records what it did not examine — the host-responsibility detection steps it skips (13–15), a `check-rule-ids` that read zero rule files while citations exist, and `check-orphaned-references`' skipped referrers — under `unexamined-by-reason`, each reason classified in `analyze.md`'s Unexamined targets; test each
-- [ ] The exec tally takes an assessment's tier case-insensitively, as validation accepts it, and does not drop a failed assessment that carries no finding; test the walker path that feeds `assessSpecQuality` responses into the tally
+- [x] SHOULD QUAL-CLAIM-001: exec analyze records what it did not examine — the host-responsibility detection steps it skips (13–15), a `check-rule-ids` that read zero rule files while citations exist, and `check-orphaned-references`' skipped referrers — under `unexamined-by-reason`, each reason classified in `analyze.md`'s Unexamined targets; test each
+- [x] The exec tally takes an assessment's tier case-insensitively, as validation accepts it, and does not drop a failed assessment that carries no finding; test the walker path that feeds `assessSpecQuality` responses into the tally
 - [x] `remove-inbox-item` and `append-inbox` apply one single-line rule, so any bullet `append-inbox` writes can be removed; test a U+2028 round trip
 - [x] `process-decisions` reads a frontmatter-less `analysis.md` as holding no decisions, as `write-analysis` does; an unclosed frontmatter is named as unclosed, not missing, and a test pins `write-analysis`' refusal of it
 - [x] One key, one disposition: two findings sharing a key are refused whenever their outcomes differ, not only routed against discarded; test routed with undispositioned
 - [x] `dedup-title` matches a pending task on its title and body, so two out-of-spec findings sharing a summary stay two tasks; test it
 - [x] Inbox age: repeated bullet texts pair so that an uncommitted removal of one duplicate leaves the survivor its own date; test it
 - [x] `compute-review-scope` resolves the spec's history path against the git work tree, so a project in a subdirectory of its repo gets its diff base (predates 058); test it
-- [ ] One constitution resolver (`.ductus/` then `framework/`) serves the exec analyze binding and `writeCode`'s excerpts
-- [ ] Cleanups: drop `PassObservation`'s unused `Default` and `Eq`; project the validated `PerformReviewResponse` once instead of re-parsing each observation; use `UNBLOCKING_STATUSES` instead of the hand-copied status list in `analyze_tally.rs`; one route/discard companion check shared by `write-review` and `write-analysis`
+- [x] One constitution resolver (`.ductus/` then `framework/`) serves the exec analyze binding and `writeCode`'s excerpts
+- [x] Cleanups: drop `PassObservation`'s unused `Default` and `Eq`; project the validated `PerformReviewResponse` once instead of re-parsing each observation; use `UNBLOCKING_STATUSES` instead of the hand-copied status list in `analyze_tally.rs`; one route/discard companion check shared by `write-review` and `write-analysis`
 - [x] Docs: the `# Errors` sections of `write-review`, `write-analysis`, and `process-decisions`; the malformed-entry claims in `decisions.rs` and `read_recorded_list`; `pass_observations`' doc placement above `criterion_verified_met`; `tests/mcp.rs`' "three fields" doc; `already_done_block`'s split doc; `check_artifacts.rs`' `analysis.md` paragraph moved after the family list; `analyze_subjects.rs`' list of `analysis.md` readers; `AppendTaskResult.task_number` on a dedup return
 
 - **Done when**: each SHOULD's reproduction fails before its fix and passes after (a depth-2 clone holding a pre-cut bullet reads age undeterminable; exec analyze with `rule-files = []` and a citation, and any exec run, records what it did not examine), each bug above has a test that fails before its fix, no item is dead or documented as doing what it does not, and `cargo test --release --locked` and `clippy -D warnings` pass
@@ -400,12 +400,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 
 ## 46. Disposition out-of-spec finding: four primitives look up spec history relative to the project, not the git work tree
 
-- [ ] `runtime/src/primitives/{check_stuck,check_artifacts,diff_cross_spec,derive_boundary}.rs` — each joins spec-root-relative paths into git tree lookups after `Repository::discover`, so in a project that lives in a subdirectory of its repository it finds no history for the spec (predates 058). Task 44 fixed the same defect in `compute-review-scope` with the shared `workdir_prefix`
+- [x] `runtime/src/primitives/{check_stuck,check_artifacts,diff_cross_spec,derive_boundary}.rs` — each joins spec-root-relative paths into git tree lookups after `Repository::discover`, so in a project that lives in a subdirectory of its repository it finds no history for the spec (predates 058). Task 44 fixed the same defect in `compute-review-scope` with the shared `workdir_prefix`. **Routed** to a new spec, `059-project-in-a-repository-subdirectory`, created `draft` through `/{project}:specify`'s procedure (operator decision, 2026-09-26)
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
 
 ## 47. Disposition out-of-spec finding: 020's waiver-expiry scenario says duplicate waivers are not auto-pruned
 
-- [ ] `specs/020-code-review/scenarios/waiver-expiry.md` — a duplicate waiver goes when its `(rule, file)` pair expires, as it did before 058 (`is_expired` compares rule and file only); nothing prunes a duplicate for being one, so the sentence can be read as true. 020 is `done`, so a sync reopens it
+- [x] `specs/020-code-review/scenarios/waiver-expiry.md` — a duplicate waiver goes when its `(rule, file)` pair expires, as it did before 058 (`is_expired` compares rule and file only); nothing prunes a duplicate for being one, so the sentence can be read as true. 020 is `done`, so a sync reopens it — discarded: the sentence still holds, since nothing prunes a duplicate waiver for being a duplicate and it leaves only when its `(rule, file)` key expires, as every waiver does; reopening 020 would change no claim it makes (operator decision, 2026-09-26)
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
