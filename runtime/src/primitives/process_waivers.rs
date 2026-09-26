@@ -16,8 +16,8 @@
 //!   contract that waivers anchored to skipped dimensions apply unchanged.
 //!   Only an unrestricted run can expire a waiver.
 //! - **malformed** — a field is missing/empty; warn and skip, and never
-//!   report it expired. `write-review` compares anchors only, so it still
-//!   prunes a malformed waiver whose `(rule, file)` an expired one shares.
+//!   report it expired. `write-review` compares anchors only, so a malformed
+//!   waiver still loses each path whose `(rule, file)` an expired one shares.
 //! - **duplicate** — a repeated `(rule, file)` pair, within an entry or across
 //!   entries; only the first claim applies, and the same entry's other paths
 //!   are still classified.

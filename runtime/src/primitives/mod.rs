@@ -633,7 +633,6 @@ pub(crate) fn read_recorded_waivers<T: serde::de::DeserializeOwned>(
 /// chooses the spelling from the count, never from how the entry was written.
 /// A value that is neither — a number, a mapping, a list holding a non-string —
 /// is a parse error, as a non-string known field is.
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct WaiverPaths(Vec<String>);
 
 impl WaiverPaths {

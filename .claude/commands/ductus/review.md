@@ -744,8 +744,8 @@ expanded, so it names a path that does not exist and expires as one.
 
 On every `/ductus:review` run, after the review passes have produced their
 findings (see **Run review passes**) and before counting them into `must-violations`
-or writing the record, walk the recorded `waivers` and classify each entry against
-those findings. A waiver can only be judged against findings that exist — when
+or writing the record, walk the recorded `waivers` and classify each anchor — each
+path an entry lists, under its rule — against those findings. A waiver can only be judged against findings that exist — when
 an empty scope skips the passes entirely, leave the waivers untouched; and on
 a dimension-restricted run, waivers anchored to skipped dimensions apply
 unchanged rather than expiring:
