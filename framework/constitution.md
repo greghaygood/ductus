@@ -555,7 +555,7 @@ Each audit command records its run in the frontmatter of the artifact it writes:
 | `skipped-passes` | no | list of strings | Review dimensions that did not run, by name. |
 | `reviewed-digest` | no | map of path → sha256 | Per-path digest of the review's **durable contracts** as the run read them from disk. Absent means a pre-digest record, which is undeterminable rather than stale. An empty map is distinct: the digest was taken and there were no contracts to digest, which reads as current. |
 | `blocking` | yes | boolean | Derived, not authored. |
-| `waivers` | no | list | Waived findings, each anchored to a `(rule, file)` pair. |
+| `waivers` | no | list | Waived findings. Each entry names one rule and one path or a list of paths, and each `(rule, file)` pair is its own anchor. |
 | `decisions` | no | list | Stored routed and discarded observation decisions, each keyed on the observation's rendered line and carrying `outcome`, `target` (routed) or `reason` (discarded), `decided-at`, and `decided-by`. A list that does not parse is a defect, never an empty list. |
 
 ##### Analyze record — `analysis.md`

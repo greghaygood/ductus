@@ -371,12 +371,12 @@ pub(crate) fn render(block: &mut String, decisions: &[RawDecision]) {
             block,
             "",
             &[
-                ("key", decision.key.as_deref()),
-                ("outcome", decision.outcome.as_deref()),
-                ("target", decision.target.as_deref()),
-                ("reason", decision.reason.as_deref()),
-                ("decided-at", decision.decided_at.as_deref()),
-                ("decided-by", decision.decided_by.as_deref()),
+                ("key", decision.key.as_deref().into()),
+                ("outcome", decision.outcome.as_deref().into()),
+                ("target", decision.target.as_deref().into()),
+                ("reason", decision.reason.as_deref().into()),
+                ("decided-at", decision.decided_at.as_deref().into()),
+                ("decided-by", decision.decided_by.as_deref().into()),
             ],
             &decision.extra,
         );

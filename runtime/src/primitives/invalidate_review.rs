@@ -305,6 +305,26 @@ mod tests {
         assert!(report.contains("# Review — 050-alpha"), "{report}");
     }
 
+    /// A waiver whose `file` lists several paths (020's `waiver-file-lists`)
+    /// comes through the invalidation with every path — it prunes nothing.
+    #[test]
+    fn a_waiver_listing_several_paths_survives_whole() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_spec(tmp.path(), "050-alpha", SPEC);
+        let waiver = "  - rule: BE-INPUT-004\n    file:\n      - src/x.rs\n      - src/y.rs\n    reason: internal-only paths\n    waived-at: 2026-08-01T00:00:00Z\n    waived-by: someone@example.com\n";
+        fs::write(
+            tmp.path().join("specs/050-alpha/review.md"),
+            format!("---\nspec: 050-alpha\nlast-run: 2026-08-01T00:00:00Z\nmust-violations: 0\nblocking: false\nwaivers:\n{waiver}---\n\n# Review — 050-alpha\n"),
+        )
+        .unwrap();
+
+        assert!(run(&args("050-alpha"), tmp.path()).unwrap().invalidated);
+
+        let report = fs::read_to_string(tmp.path().join("specs/050-alpha/review.md")).unwrap();
+        assert!(report.contains("last-run: null"), "{report}");
+        assert!(report.contains(&format!("waivers:\n{waiver}")), "{report}");
+    }
+
     /// Converges: the second call is the domain outcome, not an error, so a
     /// re-run of an interrupted fold does not halt here.
     #[test]

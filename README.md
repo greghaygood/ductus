@@ -148,7 +148,7 @@ When a **MUST** violation is intentional, record a waiver rather than silencing 
 /review --waive <rule-id> --reason "<text>"
 ```
 
-The waiver is anchored to the `(rule, file)` pair, so code moving within a file keeps it while a rename or a fix expires it and the finding re-blocks — a waiver cannot quietly outlive the thing it excused. The schema is open, so an organization can require its own fields (a ticket, a second approver) and `ductus` preserves them. See [specs/020-code-review/data-model.md](specs/020-code-review/data-model.md).
+The waiver is anchored to the `(rule, file)` pair, so code moving within a file keeps it while a rename or a fix expires it and the finding re-blocks — a waiver cannot quietly outlive the thing it excused. When the rule fires in several files, one waiver lists them all, and each listed path still expires on its own. The schema is open, so an organization can require its own fields (a ticket, a second approver) and `ductus` preserves them. See [specs/020-code-review/data-model.md](specs/020-code-review/data-model.md).
 
 ### Writing your own
 

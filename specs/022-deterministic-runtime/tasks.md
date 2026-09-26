@@ -509,12 +509,12 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 
 ## 124. Implement scenario: process-waivers-file-lists
 
-- [ ] Implement the behavior described in `scenarios/process-waivers-file-lists.md`
-- [ ] Parse a waiver's `file` as a string or a list of strings in `process-waivers` and `write-review`'s `RawWaiverFull`, reporting absent, blank, empty-list and blank-item values as `missing 'file'`
-- [ ] Classify, deduplicate and report per `(rule, file)` anchor in `process-waivers`, leaving the result shape unchanged
-- [ ] Prune per path in `write-review`, dropping an entry left with no path, and render one path as a scalar and several as a quoted block list
-- [ ] Prove `invalidate-review` round-trips a list
-- [ ] Confirm each new test fails with its behavior reverted, and say how
+- [x] Implement the behavior described in `scenarios/process-waivers-file-lists.md`
+- [x] Parse a waiver's `file` as a string or a list of strings in `process-waivers` and `write-review`'s `RawWaiverFull`, reporting absent, blank, empty-list and blank-item values as `missing 'file'`
+- [x] Classify, deduplicate and report per `(rule, file)` anchor in `process-waivers`, leaving the result shape unchanged
+- [x] Prune per path in `write-review`, dropping an entry left with no path, and render one path as a scalar and several as a quoted block list
+- [x] Prove `invalidate-review` round-trips a list
+- [x] Confirm each new test fails with its behavior reverted, and say how
 - [ ] Carry the change into the next release's `runtime/CHANGELOG.md` section when the version is bumped; a heading ahead of the bump fails audit Family 20
 
 - **Done when**: a waiver whose `file` is a list is classified, pruned and re-rendered per anchor by `process-waivers`, `write-review` and `invalidate-review`; a one-path record is byte-identical to today's; tests cover each behavior and edge case in the scenario and each fails with its behavior reverted; and `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings` and `cargo test --release --locked` are clean.

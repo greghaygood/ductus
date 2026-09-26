@@ -702,7 +702,8 @@ A MUST violation can be waived only with explicit, recorded justification:
 /{project}:review --waive <rule-id> --reason "<text>"
 ```
 
-This appends to `review.md`'s frontmatter:
+This appends one entry to `review.md`'s frontmatter. Its `file` lists every
+in-scope file the rule fires at in this run — a single path when there is one:
 
 ```yaml
 waivers:
@@ -711,7 +712,21 @@ waivers:
     reason: "Endpoint is internal-only behind mTLS; rule applies to public APIs"
     waived-at: 2026-05-10T14:40:00Z
     waived-by: <git config user.email>
+  - rule: SEC-BE-021
+    file:
+      - src/api/admin.ts
+      - src/api/metrics.ts
+    reason: "Both routes are bound to the loopback interface"
+    waived-at: 2026-05-11T09:15:00Z
+    waived-by: <git config user.email>
 ```
+
+A list is one judgment — one `reason`, `waived-at` and `waived-by` — over
+each path it names. A later `--waive` for the same rule records a new entry
+rather than appending to an existing one, because an entry's `waived-at` and
+`waived-by` attest to one judgment made once. An operator may still merge
+entries that share a rule, reason and author by hand; the framework never
+merges them itself.
 
 Waived findings drop out of the `must-violations` count (there is no separate
 `waived-violations` field; `write-review` reports the waived count
@@ -720,7 +735,10 @@ findings** section. They survive across `/{project}:review` runs as long as the
 rule ID and file location still match; if either changes, the waiver expires
 and the finding re-blocks. Line numbers are not part of the waiver anchor —
 the contract is `(rule, file)`, so code moving within the file does not
-expire the waiver.
+expire the waiver. An entry listing several paths is that many anchors
+sharing their other fields: each path applies, expires and is retained on its
+own, and is matched literally — a pattern such as `src/**/*.ts` is not
+expanded, so it names a path that does not exist and expires as one.
 
 ### Per-run waiver processing
 
@@ -740,8 +758,9 @@ unchanged rather than expiring:
    (renamed, deleted, moved) or the rule no longer fires there (offending
    code fixed, rule removed, rule renamed — IDs are permanent per
    `specs/008-security-rules/data-model.md`, so a renamed rule is a
-   different rule). On expiry, drop the entry from the recorded `waivers` on the
-   next frontmatter write AND emit one line on stdout:
+   different rule). On expiry, drop the path from the entry on the next
+   frontmatter write — and the entry, when it was the last path — AND emit
+   one line on stdout:
 
    ```text
    waiver expired: rule {rule-id} at {file} ({reason})
@@ -751,9 +770,13 @@ unchanged rather than expiring:
    the same rule still fires anywhere in scope after a drop, the finding
    re-counts toward `must-violations` and `review.blocking` flips to
    `true` if it was previously `false`.
-3. **Do not extend** a waiver to a different file. If the same rule fires
-   at a path other than the waiver's anchor, that is a separate finding;
-   the operator records a fresh `--waive` if it is also intentional.
+3. **Do not extend** a waiver to a file it does not list. If the same rule
+   fires at a path other than the waiver's anchors, that is a separate
+   finding; the operator records a fresh `--waive` if it is also intentional.
+
+The record writes `file` as a single path when an entry holds one and as a
+list when it holds more, so a list pruned to one path reads like any
+one-path entry.
 
 ### Malformed and duplicate waivers
 
@@ -762,14 +785,19 @@ unchanged rather than expiring:
   entry (e.g. `malformed waiver at review.waivers[2]: missing 'reason'`).
   The entry is kept on the write; the operator must clean it up to silence
   the warning. Malformed entries are operator-authored state, not garbage
-  for the framework to collect. Two exceptions: an entry with no fields at
-  all holds nothing to keep, so a re-render drops it; and pruning matches
-  on `(rule, file)` alone, so a malformed entry that names an expired
-  waiver's rule and file is pruned with it.
-- Two or more waivers for the same `(rule, file)` pair: **only the first
-  applies**. Each duplicate emits a one-line warning
-  (`duplicate waiver: rule {rule-id} at {file} — entry [N] ignored`) and is
-  kept until that pair expires, when every entry for it is pruned together.
+  for the framework to collect. A `file` that is an empty list, or a list
+  holding a blank path, is missing too. Two exceptions: an entry with no
+  fields at all holds nothing to keep, so a re-render drops it; and pruning
+  matches on `(rule, file)` alone, so a malformed entry that lists an
+  expired waiver's rule and file loses that path, and is dropped when no
+  path remains. A `file` holding anything but a path or a list of paths
+  fails the `waivers:` parse, as any mistyped field does.
+- Two or more claims on the same `(rule, file)` pair, in different entries
+  or twice in one list: **only the first applies**. Each later claim emits a
+  one-line warning (`duplicate waiver: rule {rule-id} at {file} — entry [N]
+  ignored`); only that pair of entry N is ignored, and its other paths are
+  classified as usual. Duplicates are kept until the pair expires, when every
+  claim on it is pruned together.
 
 The `waivers` list follows the §text-first-artifacts open-schema
 rule. Adopters MAY add fields (e.g., `co-waived-by`, `approved-by-team`,

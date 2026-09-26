@@ -625,6 +625,71 @@ pub(crate) fn read_recorded_waivers<T: serde::de::DeserializeOwned>(
     read_recorded_list(feature_dir, REVIEW_RECORD_FILE, "waivers")
 }
 
+/// A recorded waiver's `file`: one repo-relative path, or a list of them.
+///
+/// Each path is its own `(rule, file)` anchor, so an entry listing N paths is
+/// N anchors sharing one `reason`, `waived-at` and `waived-by` (spec 020's
+/// `waiver-file-lists`). Both spellings read into the same list; the writer
+/// chooses the spelling from the count, never from how the entry was written.
+/// A value that is neither — a number, a mapping, a list holding a non-string —
+/// is a parse error, as a non-string known field is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct WaiverPaths(Vec<String>);
+
+impl WaiverPaths {
+    /// The listed paths, in record order.
+    pub(crate) fn as_slice(&self) -> &[String] {
+        &self.0
+    }
+
+    /// Whether the value names no usable anchor: an empty list, or any blank
+    /// path. `process-waivers` reports either as `missing 'file'`.
+    pub(crate) fn is_blank(&self) -> bool {
+        self.0.is_empty() || self.0.iter().any(|path| path.trim().is_empty())
+    }
+
+    /// Keep only the paths `keep` accepts.
+    pub(crate) fn retain(&mut self, keep: impl FnMut(&String) -> bool) {
+        self.0.retain(keep);
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for WaiverPaths {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        struct PathsVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for PathsVisitor {
+            type Value = WaiverPaths;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(formatter, "a path or a list of paths")
+            }
+
+            fn visit_str<E: serde::de::Error>(
+                self,
+                path: &str,
+            ) -> std::result::Result<Self::Value, E> {
+                Ok(WaiverPaths(vec![path.to_owned()]))
+            }
+
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut seq: A,
+            ) -> std::result::Result<Self::Value, A::Error> {
+                let mut paths = Vec::new();
+                while let Some(path) = seq.next_element::<String>()? {
+                    paths.push(path);
+                }
+                Ok(WaiverPaths(paths))
+            }
+        }
+
+        deserializer.deserialize_any(PathsVisitor)
+    }
+}
+
 /// A list recorded under `key` in the frontmatter of `feature_dir/file`.
 ///
 /// The one reader for every list an audit record carries beside its counts —

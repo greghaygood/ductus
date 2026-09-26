@@ -12,7 +12,7 @@ Anchoring on `(rule, file)` is intentional. A waiver is a statement about *this 
 
 ## Behavior
 
-For each waiver in the review record's `waivers` list at the start of every `/ductus:review` run, before counting findings into `must-violations` (`review.waivers` in spec frontmatter until `057-analyze-artifact-and-record-relocation` moved the record into `review.md`; the list, its anchor and every rule below are unchanged by the move):
+For each waiver in the review record's `waivers` list at the start of every `/ductus:review` run, before counting findings into `must-violations` (`review.waivers` in spec frontmatter until `057-analyze-artifact-and-record-relocation` moved the record into `review.md`; the list, its anchor and every rule below are unchanged by the move). Each rule applies per anchor: a waiver whose `file` lists several paths ([waiver-file-lists](waiver-file-lists.md)) is that many anchors, so where a rule below drops the waiver, it drops that path, and the waiver goes with its last one:
 
 1. **File still exists at the anchored path** and the rule still fires there → the waiver applies. The finding is recorded under `## Waived findings` in `review.md` with the waiver's `reason`, and excluded from the `must-violations` count.
 2. **File no longer exists at the anchored path** (renamed, deleted, or moved) → the waiver is dropped from the list on the next write of `review.md`. The framework does not chase renames — the operator explicitly anchored to that path, and a path change is a meaningful event worth re-evaluating.

@@ -1,12 +1,15 @@
 //! `process-waivers` — deterministic per-run waiver processing for `/ductus:review`.
 //!
-//! Reads the `waivers` list from `review.md`'s frontmatter and classifies each entry
-//! against the currently-firing `(rule, file)` findings:
+//! Reads the `waivers` list from `review.md`'s frontmatter and classifies each
+//! anchor against the currently-firing `(rule, file)` findings. An entry's
+//! `file` is one path or a list of them, and each listed path is its own
+//! anchor, so one entry can land in several of these buckets:
 //!
 //! - **apply** — the anchored file exists AND the rule still fires there.
 //! - **expire** — the file is gone OR the rule no longer fires there. The
-//!   entry drops on the next frontmatter write (write-review's job); this
-//!   primitive emits the `waiver expired: …` notice and reports the anchor.
+//!   path drops on the next frontmatter write, and the entry with its last
+//!   path (write-review's job); this primitive emits the `waiver expired: …`
+//!   notice and reports the anchor.
 //! - **retain** — a non-firing waiver on a **dimension-restricted** run
 //!   (`skipped-passes` non-empty). The run lacks the full-review picture, so
 //!   the waiver is left untouched (never expired/pruned) — this honors the
@@ -15,20 +18,23 @@
 //! - **malformed** — a field is missing/empty; warn and skip, and never
 //!   report it expired. `write-review` compares anchors only, so it still
 //!   prunes a malformed waiver whose `(rule, file)` an expired one shares.
-//! - **duplicate** — a repeated `(rule, file)` pair; only the first applies.
+//! - **duplicate** — a repeated `(rule, file)` pair, within an entry or across
+//!   entries; only the first claim applies, and the same entry's other paths
+//!   are still classified.
 //!
 //! The anchor is the `(rule, file)` pair only — line numbers are not part of
 //! it, so code moving within a file does not expire a waiver. Read-only:
 //! frontmatter mutation belongs to `write-review`.
 //!
 //! Defined by
-//! `specs/022-deterministic-runtime/scenarios/review-runtime-acceleration.md`.
+//! `specs/022-deterministic-runtime/scenarios/review-runtime-acceleration.md`;
+//! the per-path anchors by `process-waivers-file-lists.md` beside it.
 
 use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, Result, WaiverPaths};
 use crate::schema::paths;
 use crate::schema::primitives::{ProcessWaiversArgs, ProcessWaiversResult, WaiverRef};
 
@@ -94,33 +100,43 @@ pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResul
         // Safe: `first_missing_field` returned `None`, so each is present and
         // non-empty.
         let rule = waiver.rule.clone().unwrap_or_default();
-        let file = waiver.file.clone().unwrap_or_default();
         let reason = waiver.reason.clone().unwrap_or_default();
+        let paths = waiver.file.as_ref().map_or(&[][..], WaiverPaths::as_slice);
 
-        if seen.iter().any(|(r, f)| r == &rule && f == &file) {
-            notices.push(format!(
-                "duplicate waiver: rule {rule} at {file} — entry [{index}] ignored"
-            ));
-            continue;
-        }
-        seen.push((rule.clone(), file.clone()));
+        // Each listed path is its own anchor, so one entry can apply at one
+        // path, expire at another, and repeat an anchor an earlier entry
+        // already claimed at a third.
+        for file in paths {
+            if seen.iter().any(|(r, f)| r == &rule && f == file) {
+                notices.push(format!(
+                    "duplicate waiver: rule {rule} at {file} — entry [{index}] ignored"
+                ));
+                continue;
+            }
+            seen.push((rule.clone(), file.clone()));
 
-        let file_exists = repo.join(&file).exists();
-        let rule_fires = args
-            .fired
-            .iter()
-            .any(|finding| finding.rule == rule && finding.file == file);
+            let file_exists = repo.join(file).exists();
+            let rule_fires = args
+                .fired
+                .iter()
+                .any(|finding| finding.rule == rule && &finding.file == file);
+            let anchor = WaiverRef {
+                rule: rule.clone(),
+                file: file.clone(),
+                reason: reason.clone(),
+            };
 
-        if file_exists && rule_fires {
-            applied.push(WaiverRef { rule, file, reason });
-        } else if restricted {
-            notices.push(format!(
-                "waiver retained: rule {rule} at {file} — dimension not evaluated this run ({reason})"
-            ));
-            retained.push(WaiverRef { rule, file, reason });
-        } else {
-            notices.push(format!("waiver expired: rule {rule} at {file} ({reason})"));
-            expired.push(WaiverRef { rule, file, reason });
+            if file_exists && rule_fires {
+                applied.push(anchor);
+            } else if restricted {
+                notices.push(format!(
+                    "waiver retained: rule {rule} at {file} — dimension not evaluated this run ({reason})"
+                ));
+                retained.push(anchor);
+            } else {
+                notices.push(format!("waiver expired: rule {rule} at {file} ({reason})"));
+                expired.push(anchor);
+            }
         }
     }
 
@@ -134,18 +150,22 @@ pub fn run(args: &ProcessWaiversArgs, repo: &Path) -> Result<ProcessWaiversResul
 
 /// Return the first required field that is absent or empty, or `None` when the
 /// waiver is well-formed.
+///
+/// A `file` is missing when it is absent or names no usable anchor — an empty
+/// list, or a list holding a blank path.
 fn first_missing_field(waiver: &RawWaiver) -> Option<&'static str> {
-    let values = [
-        waiver.rule.as_deref(),
-        waiver.file.as_deref(),
-        waiver.reason.as_deref(),
-        waiver.waived_at.as_deref(),
-        waiver.waived_by.as_deref(),
+    let blank = |value: Option<&str>| value.unwrap_or("").trim().is_empty();
+    let missing = [
+        blank(waiver.rule.as_deref()),
+        waiver.file.as_ref().is_none_or(WaiverPaths::is_blank),
+        blank(waiver.reason.as_deref()),
+        blank(waiver.waived_at.as_deref()),
+        blank(waiver.waived_by.as_deref()),
     ];
     REQUIRED_FIELDS
         .iter()
-        .zip(values)
-        .find(|(_, value)| value.unwrap_or("").trim().is_empty())
+        .zip(missing)
+        .find(|(_, missing)| *missing)
         .map(|(field, _)| *field)
 }
 
@@ -156,7 +176,7 @@ struct RawWaiver {
     #[serde(default)]
     rule: Option<String>,
     #[serde(default)]
-    file: Option<String>,
+    file: Option<WaiverPaths>,
     #[serde(default)]
     reason: Option<String>,
     #[serde(default, rename = "waived-at")]
@@ -422,5 +442,157 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let err = run(&args("999-nope", &[]), tmp.path()).unwrap_err();
         assert!(matches!(err, PrimitiveError::FeatureNotFound { .. }));
+    }
+
+    // -- a `file` listing several paths (020's waiver-file-lists) -------------
+
+    /// One `SEC-BE-014` waiver whose `file` lists `paths`.
+    fn list_waiver(paths: &[&str]) -> String {
+        let items: String = paths.iter().fold(String::new(), |mut items, path| {
+            items.push_str("        - ");
+            items.push_str(path);
+            items.push('\n');
+            items
+        });
+        format!(
+            "    - rule: SEC-BE-014\n      file:\n{items}      reason: Shared justification.\n      waived-at: 2026-05-10T14:40:00Z\n      waived-by: dev@example.com\n"
+        )
+    }
+
+    fn anchors(refs: &[WaiverRef]) -> Vec<(&str, &str)> {
+        refs.iter()
+            .map(|r| (r.rule.as_str(), r.file.as_str()))
+            .collect()
+    }
+
+    #[test]
+    fn each_listed_path_is_classified_as_its_own_anchor() {
+        // a fires and exists → applied; b exists but does not fire and c is
+        // gone → each expires alone, with its own notice and the shared reason.
+        let tmp = setup(
+            "001-x",
+            &list_waiver(&["src/a.ts", "src/b.ts", "src/c.ts"]),
+            &["src/a.ts", "src/b.ts"],
+        );
+        let result = run(&args("001-x", &[("SEC-BE-014", "src/a.ts")]), tmp.path()).unwrap();
+        assert_eq!(anchors(&result.applied), vec![("SEC-BE-014", "src/a.ts")]);
+        assert_eq!(
+            anchors(&result.expired),
+            vec![("SEC-BE-014", "src/b.ts"), ("SEC-BE-014", "src/c.ts")]
+        );
+        assert!(
+            result
+                .applied
+                .iter()
+                .chain(&result.expired)
+                .all(|r| r.reason == "Shared justification.")
+        );
+        assert_eq!(
+            result.notices,
+            vec![
+                "waiver expired: rule SEC-BE-014 at src/b.ts (Shared justification.)",
+                "waiver expired: rule SEC-BE-014 at src/c.ts (Shared justification.)",
+            ]
+        );
+    }
+
+    #[test]
+    fn restricted_run_splits_one_entry_across_applied_and_retained() {
+        let tmp = setup(
+            "001-x",
+            &list_waiver(&["src/a.ts", "src/b.ts"]),
+            &["src/a.ts", "src/b.ts"],
+        );
+        let result = run(
+            &restricted_args("001-x", &[("SEC-BE-014", "src/a.ts")], &["simplicity"]),
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(anchors(&result.applied), vec![("SEC-BE-014", "src/a.ts")]);
+        assert_eq!(anchors(&result.retained), vec![("SEC-BE-014", "src/b.ts")]);
+        assert!(result.expired.is_empty());
+    }
+
+    #[test]
+    fn a_duplicate_path_ignores_only_that_pair_of_the_entry() {
+        // Entry [0] claims a; entry [1] lists a and b. Only (rule, a) of entry
+        // [1] is ignored — its b is still classified, and applies.
+        let waivers = format!(
+            "{ONE_WAIVER}{}",
+            list_waiver(&["src/api/internal.ts", "src/b.ts"])
+        );
+        let tmp = setup("001-x", &waivers, &["src/api/internal.ts", "src/b.ts"]);
+        let result = run(
+            &args(
+                "001-x",
+                &[
+                    ("SEC-BE-014", "src/api/internal.ts"),
+                    ("SEC-BE-014", "src/b.ts"),
+                ],
+            ),
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(
+            anchors(&result.applied),
+            vec![
+                ("SEC-BE-014", "src/api/internal.ts"),
+                ("SEC-BE-014", "src/b.ts")
+            ]
+        );
+        // The first claim's reason wins for the shared anchor.
+        assert_eq!(
+            result.applied[0].reason,
+            "Endpoint is internal-only behind mTLS."
+        );
+        assert_eq!(
+            result.notices,
+            vec!["duplicate waiver: rule SEC-BE-014 at src/api/internal.ts — entry [1] ignored"]
+        );
+    }
+
+    #[test]
+    fn the_same_path_twice_in_one_entry_is_a_duplicate_claim() {
+        let tmp = setup(
+            "001-x",
+            &list_waiver(&["src/a.ts", "src/a.ts"]),
+            &["src/a.ts"],
+        );
+        let result = run(&args("001-x", &[("SEC-BE-014", "src/a.ts")]), tmp.path()).unwrap();
+        assert_eq!(result.applied.len(), 1);
+        assert_eq!(
+            result.notices,
+            vec!["duplicate waiver: rule SEC-BE-014 at src/a.ts — entry [0] ignored"]
+        );
+    }
+
+    #[test]
+    fn an_empty_list_or_a_blank_path_is_a_missing_file() {
+        for file in ["[]", "\n        - src/a.ts\n        - \"\""] {
+            let waiver = format!(
+                "    - rule: SEC-BE-014\n      file: {file}\n      reason: Shared justification.\n      waived-at: 2026-05-10T14:40:00Z\n      waived-by: dev@example.com\n"
+            );
+            let tmp = setup("001-x", &waiver, &["src/a.ts"]);
+            let result = run(&args("001-x", &[("SEC-BE-014", "src/a.ts")]), tmp.path()).unwrap();
+            assert!(result.applied.is_empty(), "{file}");
+            assert_eq!(
+                result.notices,
+                vec!["malformed waiver at review.waivers[0]: missing 'file'"],
+                "{file}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_list_item_that_is_not_a_string_fails_the_parse() {
+        // An error, never an empty list: a waivers list that silently read as
+        // empty would re-block every finding it waives.
+        let tmp = setup(
+            "001-x",
+            &list_waiver(&["src/a.ts", "{nested: map}"]),
+            &["src/a.ts"],
+        );
+        let err = run(&args("001-x", &[("SEC-BE-014", "src/a.ts")]), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::Yaml { .. }), "{err}");
     }
 }

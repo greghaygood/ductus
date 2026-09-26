@@ -391,7 +391,8 @@ pub struct FiredFinding {
     pub file: String,
 }
 
-/// A resolved waiver reference in a `process-waivers` result.
+/// One `(rule, file)` anchor of a recorded waiver, in a `process-waivers`
+/// result. A waiver whose `file` lists several paths resolves to one per path.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct WaiverRef {
@@ -463,15 +464,18 @@ pub struct ProcessWaiversArgs {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProcessWaiversResult {
-    /// Waivers that apply this run (anchor exists and the rule still fires).
+    /// Anchors that apply this run (the file exists and the rule still fires
+    /// there). One per `(rule, file)` pair, so a waiver listing several paths
+    /// contributes one per path.
     pub applied: Vec<WaiverRef>,
-    /// Waivers that expired this run (anchor gone or rule no longer fires);
-    /// `write-review` drops these on the next frontmatter write. Always empty
-    /// on a dimension-restricted run (see `skipped-passes`).
+    /// Anchors that expired this run (the file is gone or the rule no longer
+    /// fires there); `write-review` drops each one's path on the next write,
+    /// and a waiver with its last path. Always empty on a dimension-restricted
+    /// run (see `skipped-passes`).
     pub expired: Vec<WaiverRef>,
-    /// Waivers left untouched this run because it was dimension-restricted and
+    /// Anchors left untouched this run because it was dimension-restricted and
     /// they did not fire against the passes that ran — neither applied nor
-    /// expired, so `write-review` keeps them in the spec frontmatter.
+    /// expired, so `write-review` keeps them in `review.md`'s frontmatter.
     pub retained: Vec<WaiverRef>,
     /// Ordered notice lines: `waiver expired: …`, `waiver retained: …`,
     /// `malformed waiver …`, and `duplicate waiver: …`, in entry order.
@@ -699,8 +703,9 @@ pub struct WriteReviewArgs {
     #[serde(default, alias = "applied")]
     #[arg(skip)]
     pub applied_waivers: Vec<WaiverRef>,
-    /// Expired waivers from `process-waivers`; dropped from the spec
-    /// frontmatter `review.waivers` list on this write. The `alias` reads
+    /// Expired anchors from `process-waivers`; each one's path is dropped
+    /// from the `waivers` list in `review.md`'s frontmatter on this write, and
+    /// a waiver left with no path with it. The `alias` reads
     /// `process-waivers`' `expired` result key (see `applied_waivers`).
     #[serde(default, alias = "expired")]
     #[arg(skip)]

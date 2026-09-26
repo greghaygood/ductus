@@ -19,7 +19,7 @@ Data structures introduced by [020 — `/ductus:review`](spec.md). Authoritative
 
 ## Waiver record
 
-One entry per waived MUST violation. Lives under `waivers` in `review.md`'s frontmatter — in spec frontmatter, under `review.waivers`, before 057 relocated the record. The list itself is open-schema — adopters MAY add fields like `co-waived-by`, `approved-by-team`, `ticket`.
+One entry per waiver judgment: one rule, waived at one or more files for one reason. Lives under `waivers` in `review.md`'s frontmatter — in spec frontmatter, under `review.waivers`, before 057 relocated the record. The list itself is open-schema — adopters MAY add fields like `co-waived-by`, `approved-by-team`, `ticket`.
 
 ```yaml
 - rule: SEC-BE-014
@@ -27,12 +27,19 @@ One entry per waived MUST violation. Lives under `waivers` in `review.md`'s fron
   reason: "Endpoint is internal-only behind mTLS; rule applies to public APIs"
   waived-at: 2026-05-10T14:40:00Z
   waived-by: dev@example.com
+- rule: SEC-BE-021
+  file:
+    - src/api/admin.ts
+    - src/api/metrics.ts
+  reason: "Both routes are bound to the loopback interface"
+  waived-at: 2026-05-11T09:15:00Z
+  waived-by: dev@example.com
 ```
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `rule` | string (rule ID) | yes | E.g. `SEC-BE-014`. Must reference a known rule at write time. |
-| `file` | string (relative path) | yes | The path the waiver is anchored to. Waiver expires when the file moves or is deleted. |
+| `file` | string (relative path), or a list of them | yes | The paths the waiver is anchored to, each its own `(rule, file)` anchor and matched literally — never expanded as a pattern. Written as a single path when the entry holds one and as a list when it holds more. An empty list, or a list holding a blank path, is missing. Added by [waiver-file-lists](scenarios/waiver-file-lists.md); a one-path entry is unchanged. |
 | `reason` | string | yes | Free-text justification. Empty string is invalid. |
 | `waived-at` | ISO 8601 timestamp | yes | Set by `/ductus:review --waive`. |
 | `waived-by` | string (email) | yes | Sourced from `git config user.email`. |
@@ -40,10 +47,10 @@ One entry per waived MUST violation. Lives under `waivers` in `review.md`'s fron
 
 ### Expiry rule
 
-A waiver expires (is dropped from `review.md`'s frontmatter on the next `/ductus:review` run — from the spec's, before 057) when **either** of the following holds:
+A waiver anchor expires (its path is dropped from `review.md`'s frontmatter on the next `/ductus:review` run — from the spec's, before 057 — and the entry with its last path) when **either** of the following holds:
 
-- The `file` path no longer exists in the repository (renamed or deleted).
-- The named `rule` no longer fires at `file` (rule removed, or the violating code was fixed).
+- The anchored path no longer exists in the repository (renamed or deleted).
+- The named `rule` no longer fires at that path (rule removed, or the violating code was fixed).
 
 When the underlying finding still exists elsewhere in scope after expiry, it re-counts toward `must-violations` and the record's `blocking` flag flips back to `true`. The detailed edge-case behavior is in [`scenarios/waiver-expiry.md`](scenarios/waiver-expiry.md).
 

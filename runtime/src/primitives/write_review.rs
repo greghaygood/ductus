@@ -39,7 +39,8 @@ use serde::Deserialize;
 
 use crate::primitives::decisions::{self, RawDecision};
 use crate::primitives::{
-    PrimitiveError, Result, analyze_subjects, read_text, rel_path, split_frontmatter, write_atomic,
+    PrimitiveError, Result, WaiverPaths, analyze_subjects, read_text, rel_path, split_frontmatter,
+    write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
@@ -834,23 +835,35 @@ fn surviving_waivers(feature_dir: &Path, args: &WriteReviewArgs) -> Result<Vec<R
     let recorded: Vec<RawWaiverFull> = crate::primitives::read_recorded_waivers(feature_dir)?;
     Ok(recorded
         .into_iter()
-        .filter(|waiver| !is_expired(waiver, &args.expired_waivers))
+        .filter_map(|waiver| prune_expired(waiver, &args.expired_waivers))
         .collect())
 }
 
-/// Whether a waiver's `(rule, file)` anchor is in the expired set.
+/// The waiver with every path whose `(rule, file)` anchor expired removed, or
+/// `None` when that removes its last path.
 ///
-/// Only the anchor is compared. A waiver missing another field, which
-/// `process-waivers` reports as malformed and never lists as expired, is
-/// still pruned here when its anchor is one an expired waiver names. A
-/// waiver missing its rule or file names no anchor, so it is never pruned.
-fn is_expired(waiver: &RawWaiverFull, expired: &[crate::schema::primitives::WaiverRef]) -> bool {
-    let (Some(rule), Some(file)) = (waiver.rule.as_deref(), waiver.file.as_deref()) else {
-        return false; // no anchor to match
+/// Each listed path is its own anchor (spec 020's `waiver-file-lists`), so an
+/// entry loses only the paths that expired and keeps the rest, with its other
+/// fields and extras. Only anchors are compared. A waiver missing another
+/// field, which `process-waivers` reports as malformed and never lists as
+/// expired, still loses a path an expired anchor names. A waiver missing its
+/// rule or file names no anchor, and one listing no path has none to lose, so
+/// neither is ever pruned.
+fn prune_expired(
+    mut waiver: RawWaiverFull,
+    expired: &[crate::schema::primitives::WaiverRef],
+) -> Option<RawWaiverFull> {
+    let (Some(rule), Some(paths)) = (waiver.rule.as_deref(), waiver.file.as_mut()) else {
+        return Some(waiver); // no anchor to match
     };
-    expired
-        .iter()
-        .any(|entry| entry.rule == rule && entry.file == file)
+    let listed = paths.as_slice().len();
+    paths.retain(|path| {
+        !expired
+            .iter()
+            .any(|entry| entry.rule == rule && &entry.file == path)
+    });
+    let emptied = listed > 0 && paths.as_slice().is_empty();
+    (!emptied).then_some(waiver)
 }
 
 /// Append the `waivers:` list to a rendered record, at the given base indent,
@@ -877,14 +890,44 @@ pub(crate) fn render_waivers_at(block: &mut String, waivers: &[RawWaiverFull], b
             block,
             base,
             &[
-                ("rule", waiver.rule.as_deref()),
-                ("file", waiver.file.as_deref()),
-                ("reason", waiver.reason.as_deref()),
-                ("waived-at", waiver.waived_at.as_deref()),
-                ("waived-by", waiver.waived_by.as_deref()),
+                ("rule", waiver.rule.as_deref().into()),
+                ("file", waiver_file(waiver.file.as_ref())),
+                ("reason", waiver.reason.as_deref().into()),
+                ("waived-at", waiver.waived_at.as_deref().into()),
+                ("waived-by", waiver.waived_by.as_deref().into()),
             ],
             &waiver.extra,
         );
+    }
+}
+
+/// A waiver's `file` as it renders: one path as a scalar, several as a list.
+///
+/// The spelling follows the count, not how the entry was written, so a list
+/// pruned to one path — or hand-written with one — renders exactly as a
+/// one-path entry always has, and a record that never used a list is
+/// byte-identical to one written before lists were accepted.
+fn waiver_file(paths: Option<&WaiverPaths>) -> EntryValue<'_> {
+    match paths.map(WaiverPaths::as_slice) {
+        None => EntryValue::Absent,
+        Some([path]) => EntryValue::Scalar(path),
+        Some(paths) => EntryValue::List(paths),
+    }
+}
+
+/// One known field's value in a record list entry.
+pub(crate) enum EntryValue<'a> {
+    /// Omitted from the entry.
+    Absent,
+    /// Rendered inline after the key.
+    Scalar(&'a str),
+    /// Rendered as a block sequence under the key; `[]` when empty.
+    List(&'a [String]),
+}
+
+impl<'a> From<Option<&'a str>> for EntryValue<'a> {
+    fn from(value: Option<&'a str>) -> Self {
+        value.map_or(Self::Absent, Self::Scalar)
     }
 }
 
@@ -896,7 +939,7 @@ pub(crate) fn render_waivers_at(block: &mut String, waivers: &[RawWaiverFull], b
 pub(crate) fn render_list_entry(
     block: &mut String,
     base: &str,
-    fields: &[(&str, Option<&str>)],
+    fields: &[(&str, EntryValue<'_>)],
     extra: &std::collections::BTreeMap<String, serde_norway::Value>,
 ) {
     let mut first = true;
@@ -910,8 +953,22 @@ pub(crate) fn render_list_entry(
         indent
     };
     for (key, value) in fields {
-        if let Some(value) = value {
-            let _ = writeln!(block, "{}{key}: {}", indent(), yaml_string(value));
+        match value {
+            EntryValue::Absent => {}
+            EntryValue::Scalar(value) => {
+                let _ = writeln!(block, "{}{key}: {}", indent(), yaml_string(value));
+            }
+            EntryValue::List([]) => {
+                let _ = writeln!(block, "{}{key}: []", indent());
+            }
+            EntryValue::List(items) => {
+                // The key sits at column `base + 4` whether or not it opens the
+                // entry, so its items nest two columns further in.
+                let _ = writeln!(block, "{}{key}:", indent());
+                for item in *items {
+                    let _ = writeln!(block, "{base}      - {}", yaml_string(item));
+                }
+            }
         }
     }
     for (key, value) in extra {
@@ -1043,7 +1100,7 @@ pub(crate) struct RawWaiverFull {
     #[serde(default)]
     rule: Option<String>,
     #[serde(default)]
-    file: Option<String>,
+    file: Option<WaiverPaths>,
     #[serde(default)]
     reason: Option<String>,
     #[serde(default, rename = "waived-at")]
@@ -1766,6 +1823,183 @@ mod tests {
         );
         // And no stray top-level `security` / `lead` keys leaked onto the waiver.
         assert!(!waivers[0].extra.contains_key("security"));
+    }
+
+    // -- a `file` listing several paths (020's waiver-file-lists) -------------
+
+    /// A `SEC-BE-014` waiver whose `file` is the given YAML, carrying an
+    /// adopter extra so each test also sees it survive.
+    fn waiver_with_file(file: &str) -> String {
+        format!(
+            "  - rule: SEC-BE-014\n    file: {file}\n    reason: Shared justification.\n    waived-at: 2026-01-01T00:00:00Z\n    waived-by: dev@example.com\n    ticket: SEC-9"
+        )
+    }
+
+    fn recorded_paths(tmp: &TempDir, feature: &str) -> Vec<Vec<String>> {
+        recorded(tmp, feature)
+            .iter()
+            .map(|w| {
+                w.file
+                    .as_ref()
+                    .map(|f| f.as_slice().to_vec())
+                    .unwrap_or_default()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn an_expired_path_leaves_the_list_and_the_rest_survive() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(
+            &tmp,
+            "001-x",
+            &format!(
+                "waivers:\n{}",
+                waiver_with_file("\n      - src/a.ts\n      - src/b.ts\n      - src/c.ts")
+            ),
+        );
+        let mut args = base_args("001-x");
+        args.expired_waivers = vec![waiver("SEC-BE-014", "src/b.ts")];
+        run(&args, tmp.path()).unwrap();
+        let report = review_md(&tmp, "001-x");
+        assert!(
+            report.contains(
+                "  - rule: SEC-BE-014\n    file:\n      - src/a.ts\n      - src/c.ts\n    reason: Shared justification.\n"
+            ),
+            "{report}"
+        );
+        assert!(report.contains("    ticket: SEC-9\n"), "{report}");
+        assert_eq!(
+            recorded_paths(&tmp, "001-x"),
+            vec![vec!["src/a.ts".to_string(), "src/c.ts".to_string()]]
+        );
+    }
+
+    #[test]
+    fn one_path_renders_as_a_scalar_however_it_was_written() {
+        // A list pruned to one path, and a one-item list written by hand, both
+        // render exactly as a one-path entry always has.
+        for (file, expired) in [
+            ("\n      - src/a.ts\n      - src/b.ts", Some("src/b.ts")),
+            ("[src/a.ts]", None),
+        ] {
+            let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+            seed_waivers(
+                &tmp,
+                "001-x",
+                &format!("waivers:\n{}", waiver_with_file(file)),
+            );
+            let mut args = base_args("001-x");
+            args.expired_waivers = expired
+                .map(|path| waiver("SEC-BE-014", path))
+                .into_iter()
+                .collect();
+            run(&args, tmp.path()).unwrap();
+            let report = review_md(&tmp, "001-x");
+            assert!(
+                report.contains("    file: src/a.ts\n    reason:"),
+                "{file}:\n{report}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_entry_is_dropped_when_its_last_path_expires() {
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(
+            &tmp,
+            "001-x",
+            &format!(
+                "waivers:\n{}\n  - rule: SEC-BE-020\n    file: src/keep.ts\n    reason: Still valid.\n    waived-at: 2026-01-02T00:00:00Z\n    waived-by: dev@example.com",
+                waiver_with_file("[src/a.ts, src/b.ts]")
+            ),
+        );
+        let mut args = base_args("001-x");
+        args.expired_waivers = vec![
+            waiver("SEC-BE-014", "src/a.ts"),
+            waiver("SEC-BE-014", "src/b.ts"),
+        ];
+        run(&args, tmp.path()).unwrap();
+        let waivers = recorded(&tmp, "001-x");
+        assert_eq!(waivers.len(), 1);
+        assert_eq!(waivers[0].rule.as_deref(), Some("SEC-BE-020"));
+    }
+
+    #[test]
+    fn an_expired_anchor_is_pruned_from_every_entry_that_claims_it() {
+        // Entry [0] claims a alone; entry [1] repeats a beside b. Expiring a
+        // drops entry [0] and leaves entry [1] with b.
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(
+            &tmp,
+            "001-x",
+            &format!(
+                "waivers:\n{}\n{}",
+                waiver_with_file("src/a.ts"),
+                waiver_with_file("[src/a.ts, src/b.ts]")
+            ),
+        );
+        let mut args = base_args("001-x");
+        args.expired_waivers = vec![waiver("SEC-BE-014", "src/a.ts")];
+        run(&args, tmp.path()).unwrap();
+        assert_eq!(
+            recorded_paths(&tmp, "001-x"),
+            vec![vec!["src/b.ts".to_string()]]
+        );
+    }
+
+    #[test]
+    fn a_malformed_entry_keeps_its_list_and_loses_only_an_expired_path() {
+        // No `reason`, so process-waivers never classifies it; the prune still
+        // compares its anchors. An empty list has no anchor to lose and is kept
+        // as the operator wrote it, and so is an entry with no rule.
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(
+            &tmp,
+            "001-x",
+            "waivers:\n  - rule: SEC-BE-014\n    file: [src/a.ts, src/b.ts]\n  - rule: SEC-BE-014\n    file: []\n  - file: [src/a.ts, src/c.ts]",
+        );
+        let mut args = base_args("001-x");
+        args.expired_waivers = vec![waiver("SEC-BE-014", "src/a.ts")];
+        run(&args, tmp.path()).unwrap();
+        let report = review_md(&tmp, "001-x");
+        assert!(report.contains("    file: []\n"), "{report}");
+        // A list as an entry's first key nests under it and still re-parses.
+        assert!(
+            report.contains("  - file:\n      - src/a.ts\n      - src/c.ts\n"),
+            "{report}"
+        );
+        assert_eq!(
+            recorded_paths(&tmp, "001-x"),
+            vec![
+                vec!["src/b.ts".to_string()],
+                vec![],
+                vec!["src/a.ts".to_string(), "src/c.ts".to_string()],
+            ]
+        );
+    }
+
+    #[test]
+    fn listed_paths_are_quoted_so_they_read_back_unchanged() {
+        // Paths that would retype, or open a comment, as plain scalars.
+        let tmp = spec_repo("001-x", "status: in-progress\ndependencies: []");
+        seed_waivers(
+            &tmp,
+            "001-x",
+            &format!(
+                "waivers:\n{}",
+                waiver_with_file("[\"1234\", \"true\", \"src/a b #c.ts\"]")
+            ),
+        );
+        run(&base_args("001-x"), tmp.path()).unwrap();
+        assert_eq!(
+            recorded_paths(&tmp, "001-x"),
+            vec![vec![
+                "1234".to_string(),
+                "true".to_string(),
+                "src/a b #c.ts".to_string()
+            ]]
+        );
     }
 
     // -- observation dispositions (spec 058) -----------------------------------
