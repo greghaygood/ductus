@@ -14,7 +14,7 @@ The framework already treats that absence as normal. This spec says the target "
 
 ## Behavior
 
-- **The fold check blocks only when the fold can be done here.** When the `folds-into` target resolves in the current tree, by the test `check-unfolded-specs` applies, the gate still blocks with `pending-fold`: the fold is possible, so it is the work owed before `done`.
+- **The fold check blocks only when the fold can be done here.** When the `folds-into` target resolves in the current tree, by the test fold-back applies, a feature directory holding a `spec.md`, the gate still blocks with `pending-fold`: the fold is possible, so it is the work owed before `done`.
 - **An absent target does not block.** When the target does not resolve in this tree, the fold check passes and the checks after it decide, so the spec reaches `done` through the normal gate when everything else passes.
 - **The fold stays owed, and stays visible.** `check-unfolded-specs` keeps reporting the spec, now with `status: done`, and `/{project}:status` renders it `done (fold pending)`, until fold-back discharges it in the first tree that holds both specs. Fold-back still refuses a target that does not exist (AC28), so a mistyped `folds-into` surfaces there, as it does today.
 - **`/{project}:fold` accepts a `done` staging spec.** The staging spec's status does not gate the fold. The upstream spec's reopen rules are unchanged: the scenario edge or the meaningful-body-edit edge, and only from `done`.

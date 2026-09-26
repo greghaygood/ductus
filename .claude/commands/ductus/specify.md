@@ -169,8 +169,8 @@ persisted setting exists that could change it.
    target directory is reported and never overwritten, which is also what makes
    two contributors creating under one identifier at the same moment safe.
 
-The branch-scoped directory is a staging form: it is discharged by fold-back
-and never reaches `done` (§numbering, §spec-lifecycle).
+The branch-scoped directory is a staging form: it is discharged by fold-back,
+whatever its status (§numbering, §spec-lifecycle).
 
 ### Fill the spec body
 
