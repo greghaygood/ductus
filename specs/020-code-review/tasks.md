@@ -94,3 +94,15 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Implement the behavior described in `scenarios/review-flag-parsing-is-specified.md`
 
 - **Done when**: `framework/commands/review.md` carries an explicit `$ARGUMENTS` parse step covering every flag in its Flags table, in the shape `analyze.md` and `implement.md` establish; its `argument-hint` names every documented flag; an unrecognized flag is reported rather than absorbed into the feature override; `/ductus:analyze`'s command-frontmatter family asserts hint-versus-table agreement so the next added flag cannot silently reopen the gap; the other commands with Flags tables are assessed and corrected only where the divergence is real; the regenerated `.claude/commands/ductus/review.md` reflects all of it
+
+## 13. Implement scenario: waiver-file-lists
+
+- [ ] Implement the behavior described in `scenarios/waiver-file-lists.md`
+- [ ] Document the list form in `framework/commands/review.md` §Waivers: the anchor per listed path, per-path expiry and pruning, the scalar-or-list rendering, `--waive` writing one entry per invocation, and the malformed and duplicate rules over anchors
+- [ ] Update the Waiver record table and expiry rule in `specs/020-code-review/data-model.md`
+- [ ] Update the `waivers` row of the review-record table in `framework/constitution.md`
+- [ ] Update `README.md` §Waivers
+- [ ] Declare `cross-spec-impact: [022-deterministic-runtime]` in `spec.md`, discharged by 022's `process-waivers-file-lists` back-link
+- [ ] Regenerate the `.claude/commands/ductus/` mirrors
+
+- **Done when**: `review.md`, 020's data model, the constitution's review-record table and `README.md` all describe `file` as one path or a list of explicit paths with each path its own anchor; the mirrors are regenerated; 022's `process-waivers-file-lists` is implemented; and markdownlint, the generators and `scripts/audit/run-all.sh` are clean.
