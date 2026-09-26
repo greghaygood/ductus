@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-25T23:14:57Z
-analyzed-against: 39856db620fc3891be9e2d0bd757407fe5a85de5
+last-run: 2026-09-26T19:25:48Z
+analyzed-against: c310f6a5917257566edd052d7a6e01f53b09f982
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 0
+unexamined: 2
 analyzed-digest:
-  data-model.md: c6e2e9b97839765c5275d1be4d1a5f860bad60cd323b47cb967fca1805d05517
+  data-model.md: b2a1c64496cc522f4ee1617bba118f9b283e3e9dda74bc24f5df28fcad0ceb4e
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 97de0d0dd730f6ae0c95379d11cbe2335618d9e2d563e981807af0581949860f
-  scenarios/a-done-spec-has-no-transition-to-gate.md: 416012217fd035c450f1709db7c36b314b6ef6bf652ec3b8bb2d2cd78e333c34
+  review.md: 29f3359843dd080d00c46d8566f7fba5b50085ab51fb6ae68cb2d212843b26b2
+  scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 52a49fff9ad4f3493a9d7f2daf51df20d3ac1f58776015ed64450b46d8a60154
@@ -46,6 +46,7 @@ analyzed-digest:
   scenarios/derive-references-unstaged-drift-is-reported.md: 358d0b1eb96d338a4dee7ee026382bd9011599407d408d5921e564ec4862d846
   scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
   scenarios/done-when-authoring-forms.md: 080f8717135b67c8400e072dae02f172e40cb0b6ad596c3e227d6cc5f90d0191
+  scenarios/exec-analyze-derives-its-list-seeds.md: 1f7a5b070674cc990876fe9537a64622e558f2150556e191b2ae074194b16440
   scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
   scenarios/fetch-archive-dns-rebinding.md: 39482bed2a531d36dce770c9c20ae3848ba254da0d02ee51d5c6feabe7967031
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
@@ -98,14 +99,14 @@ analyzed-digest:
   scenarios/the-cli-surface-nothing-pins.md: f63de14533aeb6b2c77f33421af289633e0fded63e795f219b82bfa30f071c8c
   scenarios/the-committed-tree-horizon.md: 20857abb817761824891eb284ed1f89e7455a413f3d7a83a25f029c7a256534b
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
-  scenarios/the-cross-spec-impact-gate.md: 73f85422945ba170b5ba5394fddff078026684693de49e06874574b53ea67eb0
+  scenarios/the-cross-spec-impact-gate.md: 80d698a71127af8797f8dde1865910686ae420b22a4a6f89072384b03b73bb96
   scenarios/the-inbox-row.md: f29a57dc733dfbaa62b54a94ca7486cb7fbc2c93d4a4e6ded07ab8714483ae04
   scenarios/the-promotion-coverage-line.md: 151e741fad3c4f953d85e14d3183fed27ef08bcce0cbd9b42ed7bc89e22fba29
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
   scenarios/waiver-processing-order.md: 0adb750e651d94ac8bcf06dd0dfbba84cd937c09817035e913ec08b77687f8e8
-  scenarios/write-analysis-and-the-second-gate.md: 0ed8f4e01c20469ebf6a5bfb524ebe3e6f0babf4049902dc9cbde0e8fd8b72fa
+  scenarios/write-analysis-and-the-second-gate.md: 97439d6e86852ebd2fff85e7cbefe14c0e77ee0edf98f97b23a01a11e1ea4940
   scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
   scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
   scenarios/write-session-primitive.md: 88b1f94a05bf09e168b9fcc30a82cecf6886ee750dcb44d333545dbff44fc1de
@@ -113,7 +114,9 @@ analyzed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: e51b02bec5198078c0e5ead2f527e62b0d04809cdfd40d7dd018e114810f7380
-  tasks.md: 5c4079f6e3c27ce62fc64b1e70b9785b3794620e252fe50fa259f77cbf82f1ff
+  tasks.md: 8806600d3530647ee86d695513edffffed88f97f16b58e9397d971330b51e03c
+unexamined-by-reason:
+  not-a-live-claim: 2
 blocking: false
 dispositions:
   fixed: 0
@@ -126,7 +129,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -142,7 +145,7 @@ dispositions:
 
 ## Unexamined targets
 
-*None — every target was examined.*
+- not-a-live-claim: 2
 
 ## Fixed in this run
 
