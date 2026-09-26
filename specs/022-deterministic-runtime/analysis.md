@@ -1,15 +1,15 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-26T19:25:48Z
-analyzed-against: c310f6a5917257566edd052d7a6e01f53b09f982
+last-run: 2026-09-26T21:29:09Z
+analyzed-against: ad58e07cc7c76327bc1f88d09815b672048e632c
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 2
+unexamined: 0
 analyzed-digest:
   data-model.md: b2a1c64496cc522f4ee1617bba118f9b283e3e9dda74bc24f5df28fcad0ceb4e
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 29f3359843dd080d00c46d8566f7fba5b50085ab51fb6ae68cb2d212843b26b2
+  review.md: 12d0018f96aec02133c5cfebaf93a336b315f22831a8577fe97a4fc115a8bc62
   scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -72,6 +72,7 @@ analyzed-digest:
   scenarios/parser-nested-list-continuation.md: 60eb9129494668bb18045e94e9c6b208353a9a1195ef384cf2aeb6d2482ce139
   scenarios/parser-walker-conventions.md: b53b0ffcadc43ec54c18f6b473b84021cddef418bf6481227b87f06a6acf08cb
   scenarios/primitive-robustness-hardening.md: 6b432610caf59aa9089ad50f19996bbd4d5809137f1fc58aafdcde2df2fc0f90
+  scenarios/process-waivers-file-lists.md: eb63107d20a53069e6f1e784314a21daabf0c4c8570bbed740eb2eee433e90ed
   scenarios/project-directory-resolution-chain.md: d43223e3f037960a24f5660a9944aae0fe02df5f1da10257477926a63cfb5a82
   scenarios/resolve-references-cli-exec-wiring.md: 3ddff8ea493af57fdacb9fab644d33ae95e766cfe7b7d5b11a27d7f083ce5c59
   scenarios/review-base-includes-the-transition-commit.md: bead0e5e5973049144a0e5fe0dda38ef508234b9db469aee91d7c1d71ca1dfd2
@@ -114,9 +115,7 @@ analyzed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: e51b02bec5198078c0e5ead2f527e62b0d04809cdfd40d7dd018e114810f7380
-  tasks.md: 8806600d3530647ee86d695513edffffed88f97f16b58e9397d971330b51e03c
-unexamined-by-reason:
-  not-a-live-claim: 2
+  tasks.md: 37862051c69451a1b5db5afdbebeaf839d037bda61353fce49a6cee84ed9449e
 blocking: false
 dispositions:
   fixed: 0
@@ -129,7 +128,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -145,7 +144,7 @@ dispositions:
 
 ## Unexamined targets
 
-- not-a-live-claim: 2
+*None — every target was examined.*
 
 ## Fixed in this run
 
