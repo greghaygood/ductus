@@ -1,21 +1,22 @@
 ---
 spec: 020-code-review
-last-run: 2026-09-25T18:23:57Z
-reviewed-against: cbc1f042b85cb720d31f1c86139774a70719a946
-diff-base: 2c488bf7d3d45e4177e5ad005d32d04fb88d646c
+last-run: 2026-09-26T21:27:59Z
+reviewed-against: ca5f411b84daf339a6436e0493e70fe3fdcec3b1
+diff-base: a620733b5fc28009c0421e679e4fa22e183ae60a
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 2
-scope: 15
+examined: 17
+scope: 23
 skipped-passes: []
 reviewed-digest:
-  data-model.md: a3f182639b7be06ee9bcf4d38b8cf5021adbf14a07ee91c1425d46613abb35cf
+  data-model.md: 24df9460a0c5becb220b5080cee546c8de5dd5813692ec87ced034bc75b7984b
   scenarios/review-flag-parsing-is-specified.md: 9f1a3dd82bab2b9622808c31dd2bb00f0c6f403effeb8bb496bb4b329496e9c7
-  scenarios/waiver-expiry.md: a06cf9e1d638fefd25d2edcf9d38a7ad56fa0b7e74ab048e4e77ce2878df77ca
+  scenarios/waiver-expiry.md: 80d0aeadc5ccb97f70086c283053f465acf754ed5246007035a252da30e87189
+  scenarios/waiver-file-lists.md: c945a3592874c7e2f651d4c00aa682daa6b7862be262dfdf868d82664f0a1f42
 blocking: false
 dispositions:
-  fixed: 2
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -25,15 +26,7 @@ dispositions:
 
 ## Summary
 
-Re-review for spec 058's cross-spec discharge (058 task 25). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. Two observations, both fixed in the run.
-
-**What changed.** 058 removed `captured-issues` from the review record and replaced it with a `dispositions:` map and a `decisions:` list. `data-model.md`'s `review.md` table, YAML example, and body-sections table now match `write-review`'s render order: `dispositions` after `blocking`, `decisions` after `waivers`, no captured-issues section, and an Observations row that renders each observation beside its disposition. `spec.md` gains a 058 signpost after the merge paragraph (now past tense), and the 057 signpost notes the replacement.
-
-**Observations, fixed.** (1) §Embedded artifacts said the pre-done gate reads nine things; 058 added two, so it reads eleven (checked against `ReviewGateBlock` in `runtime/src/schema/primitives.rs`). (2) `data-model.md` §Finding record said a waived finding's reason comes from spec frontmatter; waivers have lived in `review.md`'s frontmatter since 057. Both were one-phrase chores, confirmed before writing.
-
-**Scope.** `diff-base` 2c488bf7, 15 in scope, examined **2**: this spec's `spec.md` and `data-model.md`, both read in full. The thirteen unread: `scenarios/waiver-expiry.md` is unchanged and names no 058 field; 057's `spec.md` and `data-model.md` are reviewed under 057; 058's `tasks.md` is 058's; the rest are this spec's historical Affected Files, unchanged since the diff base. The record shapes were checked against `write_review.rs`'s frontmatter render and `decisions::render`, and against the constitution's Audit records table.
-
-**Passes.** Security, reuse, and efficiency had no subject: prose in one spec and its data model. Quality: each corrected row was checked against the code that renders it. Simplicity: `data-model.md` points at 058's data model for the two new fields' shapes rather than restating them.
+Review of 020's reopen for scenario `waiver-file-lists` (task 13): a waiver's `file` may list several paths, each its own `(rule, file)` anchor. The five passes read the 17 files modified since `a620733b` — the command source, 020's data model and scenarios, the constitution row, README, and the runtime half 022 carries — against the 11 selected rule files; the three frontend rule files had no subject. Not counted as read: `.claude/commands/ductus/review.md`, a generated mirror regenerated in the same commits; `framework/commands/analyze.md`, `framework/commands/implement.md`, `framework/templates/spec/spec.md` and `framework/templates/ci/adopter-generators.yml`, plan entries this change does not touch (none mentions waivers); and `framework/templates/spec/spec-and-plan.md`, which no longer exists — 023 deleted it, as 020's Affected files already records. 0 MUST, 0 SHOULD, 0 low-confidence, no observations: the three chores the same diff produced were fixed in `ca5f411b` under 022's review, before this run.
 
 ## MUST violations (blocking)
 
@@ -53,8 +46,7 @@ Re-review for spec 058's cross-spec discharge (058 task 25). 0 MUST, 0 SHOULD, 0
 
 ## Observations
 
-- convention: the embedded-artifacts note counted nine gate checks; 058 added two — `specs/020-code-review/spec.md` — **fixed**
-- convention: a waived finding's reason was said to come from spec frontmatter, where waivers have not lived since 057 — `specs/020-code-review/data-model.md` — **fixed**
+*None.*
 
 ## Skipped passes
 

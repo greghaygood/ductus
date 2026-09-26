@@ -1,13 +1,13 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-26T19:22:10Z
-reviewed-against: 185b6d561efc49461241a288e4ee34cfe2eefa06
-diff-base: 92b4b18a5812e9c8fe9f1707f62acd052f0620c7
+last-run: 2026-09-26T21:27:16Z
+reviewed-against: ca5f411b84daf339a6436e0493e70fe3fdcec3b1
+diff-base: a620733b5fc28009c0421e679e4fa22e183ae60a
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 10
-scope: 116
+examined: 17
+scope: 49
 skipped-passes: []
 reviewed-digest:
   data-model.md: b2a1c64496cc522f4ee1617bba118f9b283e3e9dda74bc24f5df28fcad0ceb4e
@@ -73,6 +73,7 @@ reviewed-digest:
   scenarios/parser-nested-list-continuation.md: 60eb9129494668bb18045e94e9c6b208353a9a1195ef384cf2aeb6d2482ce139
   scenarios/parser-walker-conventions.md: b53b0ffcadc43ec54c18f6b473b84021cddef418bf6481227b87f06a6acf08cb
   scenarios/primitive-robustness-hardening.md: 6b432610caf59aa9089ad50f19996bbd4d5809137f1fc58aafdcde2df2fc0f90
+  scenarios/process-waivers-file-lists.md: eb63107d20a53069e6f1e784314a21daabf0c4c8570bbed740eb2eee433e90ed
   scenarios/project-directory-resolution-chain.md: d43223e3f037960a24f5660a9944aae0fe02df5f1da10257477926a63cfb5a82
   scenarios/resolve-references-cli-exec-wiring.md: 3ddff8ea493af57fdacb9fab644d33ae95e766cfe7b7d5b11a27d7f083ce5c59
   scenarios/review-base-includes-the-transition-commit.md: bead0e5e5973049144a0e5fe0dda38ef508234b9db469aee91d7c1d71ca1dfd2
@@ -116,7 +117,7 @@ reviewed-digest:
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 3
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -126,17 +127,7 @@ dispositions:
 
 ## Summary
 
-022's review over its window since it re-entered `in-progress` (default `diff-base` 92b4b18a). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. 1 observation, fixed in the run.
-
-**Task 123 holds.** `derive_analyze_seeds` (`runtime/src/interpreter/mod.rs`), called from `Walker::new` for an `/analyze` walk, binds what scenario `exec-analyze-derives-its-list-seeds` asks for. `rule-files` is every rule file in the rule-file directory, resolved through `discover-rule-files`' own `resolve_rules_dir` and `list_rule_files`, with no surface filter. `paths` is the feature directory's markdown, through the glob `check-review-gate` lints (`lint_markdown::feature_markdown_glob`). A seeded value is used as given. A feature that climbs out of the spec root binds no lint subject, and the timestamps stay the caller's. Six single-point mutations in the dev profile, restored byte-identical afterwards, each failed at least one of its four unit tests: no rule files bound, a seeded rule-file list overridden, a surface filter applied, the traversal guard removed, no lint paths bound, and a seeded path list overridden. `analyze_completes_on_the_session_write_session_writes` asserts that a `write-session` session completes the walk. Without the derivation that walk exits 1 at step 5, as the scenario's reproduction at 39856db6 records; that test was not mutated. It also pins `blocking-findings: 1` and `advisory: 1`, which come from both assessment steps asking about the fixture's one rule. That double count was routed to draft spec 060 by 058's fifth review, and 060's AC4 names this fixture.
-
-**022's contracts.** Every hunk since the base in `data-model.md`, `spec.md`, `tasks.md` and four scenarios was read, whichever spec's commit made it. The `pending-fold` entry, the cross-spec-impact paragraph, and the two scenario hunks from 051's `5cf68693` match `pending_fold_block` and `fold_target_resolves` in `check_review_gate.rs`, which was consulted for that one function. It blocks only a target that resolves in this tree as a directory holding `spec.md`, and passes otherwise. The unexamined-reason paragraph (058 tasks 44 and 48), the inbox `oldest` rule and the `process-decisions` pruning note (058 task 44), and the constitution resolution order (058 task 44) are the hunks 058's fourth and fifth reviews checked against the code.
-
-**Fixed.** The new scenario's Context stated in the present tense that the walk stops at step 5, that no command line completes it, and that the parity fixtures do not show it, all false since task 123. Five verbs were put in the past tense by operator decision; nothing else in the file changed.
-
-**Scope.** 116 in scope (90 modified since the base, 26 plan-only); examined **10**: the seven 022 artifacts above, and task 123's hunks in `interpreter/mod.rs`, `tests/parity.rs` and `lint_markdown.rs`. **Not read:** the hunks of 058's commits outside 022's artifacts, which 058's third, fourth and fifth reviews read; the hunks of 051's `fde2e38f` and `5cf68693` outside 022's artifacts, which 051's review reads; 022's other scenarios, unchanged since the base; and the 26 plan-affected entries unchanged since the base, some of them glob strings rather than paths.
-
-**Passes.** Security: the derived lint subject is gated on `validate_no_traversal`, and the rule-file list comes from the shared resolver. Reuse: the derivation calls the discovery and glob helpers rather than restating them. Quality produced the one observation. Efficiency and simplicity found nothing.
+Partial review of 022, scoped to the waiver-file-lists change (scenario `process-waivers-file-lists`, task 124) — not a full five-pass review of 022's contracts. The five passes read the 17 files modified since `a620733b` (the whole diff and the functions it touches, not the unchanged remainder of the runtime sources) against the 11 selected rule files; the three frontend rule files had no subject, since nothing in scope is browser code. `.claude/commands/ductus/review.md` is a generated mirror, regenerated by `scripts/gen-claude-commands.sh` in the same commits, and is not counted as read. The plan's directory entries (`runtime/src/*/`, `runtime/tests/*/`, the command sources and workflows) were not re-read. 0 MUST, 0 SHOULD, 0 low-confidence. Three observations, all fixed in `ca5f411b` with the operator's confirmation: unused derives on `WaiverPaths`, and two doc sentences that still described a whole-entry prune. Each new test was confirmed to fail under a mutation of the behavior it names (12 mutations, recorded in `90b605d4`).
 
 ## MUST violations (blocking)
 
@@ -156,7 +147,9 @@ dispositions:
 
 ## Observations
 
-- convention: exec-analyze-derives-its-list-seeds' Context said in the present tense that the walk stops at step 5 and no command line completes it, which task 123 made false — `specs/022-deterministic-runtime/scenarios/exec-analyze-derives-its-list-seeds.md` — **fixed**
+- convention: `WaiverPaths` derived Debug, Clone, PartialEq and Eq that nothing used — dead code under AGENTS.md's no-dead-code rule — `runtime/src/primitives/mod.rs` — **fixed**
+- convention: the module doc said write-review prunes a malformed waiver sharing an expired anchor, where it now loses only that path — `runtime/src/primitives/process_waivers.rs` — **fixed**
+- convention: §Per-run waiver processing said each entry is classified, where each anchor is — `framework/commands/review.md` — **fixed**
 
 ## Skipped passes
 
