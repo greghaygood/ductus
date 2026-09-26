@@ -7,7 +7,7 @@ must-violations: 0
 should-violations: 0
 low-confidence: 0
 examined: 22
-scope: 92
+scope: 93
 skipped-passes: []
 reviewed-digest:
   data-model.md: 416e488447e1fb195e85babd92882b3d5eefa1cb5e3e2876809a59f487420818
@@ -46,7 +46,7 @@ decisions:
 
 **Discarded, by operator decision.** 050's scenario `a-declared-cross-spec-impact-gates-done` says the gate holds its category for any undischarged fold. Since task 26 it holds only a fold this tree can perform, but the sentence's point still holds and the constitution carries the narrowed wording.
 
-**Scope.** 92 in scope (84 modified since the base, 8 plan-only); examined **22**: every hunk of `fde2e38f`, `5cf68693` and `e9a22e18` in the 22 files they touched outside `.claude/`, which includes 022's data model and two scenarios and 058's `tasks.md` header. **Not read:** the four `.claude` mirrors `5cf68693` regenerated, which match their sources after regeneration; the hunks of 058's and 022's commits in the window, which 058's fourth and fifth reviews and 022's review read; and the 8 plan-affected entries unchanged since the base, one a glob string.
+**Scope.** 93 in scope (85 modified since the base, 8 plan-only); examined **22**: every hunk of `fde2e38f`, `5cf68693` and `e9a22e18` in the 22 files they touched outside `.claude/`, which includes 022's data model and two scenarios and 058's `tasks.md` header. **Not read:** the four `.claude` mirrors `5cf68693` regenerated, which match their sources after regeneration; the hunks of 058's and 022's commits in the window, which 058's fourth and fifth reviews and 022's review read; this `review.md`, which joined the window when an earlier write of this record was committed; and the 8 plan-affected entries unchanged since the base, one a glob string.
 
 **Passes.** Security: the fold target is screened by `parse_feature_dir` before it is joined to a path. Reuse: the gate calls the shared feature-directory predicate. Quality produced the five observations. Efficiency and simplicity found nothing.
 
