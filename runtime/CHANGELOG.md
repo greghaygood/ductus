@@ -2,6 +2,133 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.53.0] — 2026-09-26
+
+Three specs ship together. Spec 058 makes every finding a run produces get a
+disposition before its spec can reach `done`, and stops every writer but
+`/{project}:log` from appending to the inbox. Spec 022 lets `ductus exec
+analyze` complete on the session `/{project}:target` writes. Spec 051 stops a
+fold owed to another tree from holding `done`.
+
+### Changed
+
+- **A review observation carries its disposition instead of being written to
+  the inbox.** `write-review` no longer appends observations to
+  `{specs-root}/inbox.md`. Each observation takes a `disposition` (`fixed`,
+  `routed` with a `target`, `discarded` with a `reason`, or `undispositioned`,
+  the default) and an optional `decision-key`, and the record counts the four
+  outcomes in a `dispositions:` map. An observation newly routed or discarded
+  is stored in a `decisions:` list keyed on its rendered line, which needs
+  `decided-by`; a re-matched decision keeps its original stamp, and each entry
+  in `expired-decisions` is dropped.
+- **`write-analysis` takes the findings, not the captured inbox bullets.**
+  `findings` replaces `captured-issues`: each finding carries `tier`,
+  `family`, `message`, `path`, `live`, a `disposition`, and an optional
+  `decision-key`. The record gains the same `dispositions:` map and
+  `decisions:` list, keyed `{family} — {message}`. `undispositioned` is the
+  live tier total less the live findings routed or discarded, so a finding the
+  caller leaves out counts as owed, never as handled. A discard on a
+  `hard-fail` or `blocking` finding is refused before anything is written, and
+  so are two findings that share a key but not an outcome, in either writer. The
+  body renders `## Fixed in this run` in place of `## Captured issues`, and a
+  `{n} finding(s) not itemized` line wherever a tier count exceeds the
+  findings listed under it.
+- **`check-review-gate` blocks on findings nobody decided.** Two checks run
+  after every review and analyze check: `record-predates-dispositions`, for a
+  `review.md` or `analysis.md` with no `dispositions:` map, and
+  `undispositioned-findings`, for a record whose `undispositioned` count is
+  above zero. Absence is not zero: a record written before this release blocks
+  an `in-progress` spec until its command runs again. `invalidate-review`
+  removes the `dispositions:` map with the run's other counts.
+- **`check-artifacts` swaps `analyze-state-drift` for `disposition-drift`.**
+  The new family reports a `done` spec whose `review.md` records
+  undispositioned observations, and is silent for a record with no map. No
+  family judges `analysis.md` any more: `/{project}:analyze` judges it from
+  the record it has just written, because a finding read from the record a run
+  is about to replace could never clear. The count stays at nine families.
+- **The standing inbox count moved to `dashboard`.** `dashboard` returns
+  `inbox-standing` and renders an `Inbox:` line on every run, in four states:
+  outstanding with the oldest item's date, outstanding with its age
+  undeterminable, clean, or no readable inbox. The age dates each surviving
+  item by its text against `HEAD`'s blame. It is undeterminable, never today,
+  when no item is committed or when any item sits behind a shallow clone's
+  cut.
+- **`ductus exec analyze` records what it detected, and what it did not
+  examine.** It used to write 0/0/0 whatever its detection steps found. The
+  walker now tallies each detection step's findings into the tier counts
+  `write-analysis` records, and records under `unexamined-by-reason` what it
+  never looked at: steps 13–15, which it does not run
+  (`references-not-checked`, `applicable-rules-not-checked`,
+  `grounding-not-checked`); citations checked against no rule file
+  (`rule-citations-not-checked`); referrers it could not read
+  (`referrer-unreadable`); and assessments whose request carried no rule
+  (`rule-assessments-not-checked`), whose verdicts count in no tier. An
+  assessment's tier is read case-insensitively, and a failed assessment with no
+  finding counts in the tier of the rule it asked about. An exec run itemizes
+  no finding, so every live finding is recorded undispositioned.
+- **`ductus exec analyze` completes on a session `write-session` wrote.**
+  Spec-reading steps take the spec file when the session's `path` names the
+  spec directory. When the session carries no `rule-files`, the walker binds
+  every rule file in the rule-file directory, whatever the project's surfaces.
+  When it carries no lint `paths`, it binds the feature directory's markdown.
+  A seeded value is used as given (spec 022).
+- **A fold owed to another tree no longer holds `done`.** `check-review-gate`'s
+  `pending-fold` check blocks only when the `folds-into` target resolves in
+  this tree, as a feature directory holding a `spec.md`, which is fold-back's
+  own test. A target on another line passes, and the checks after it decide.
+  The fold stays owed: `check-unfolded-specs` and `dashboard` keep reporting
+  the spec, and `retire-feature` folds a `done` staging spec like any other
+  (spec 051).
+- **One constitution resolver.** The exec analyze binding and `writeCode`'s
+  constitution excerpts both read `.ductus/constitution.md`, then
+  `framework/constitution.md`, so an adopter's constitution is the one that
+  loads.
+
+### Added
+
+- **`process-decisions`.** A read-only primitive that classifies the
+  decisions stored in `review.md` or `analysis.md` against a run's finding keys
+  before any disposition is proposed. Each is `matched` (counted under its
+  stored outcome without asking again), `expired` (the finding stopped firing,
+  so the writer drops it), or `retained` (the run was `restricted` and may not
+  have looked). A malformed entry or a repeated key produces a notice. A list
+  that does not parse is an error, never an empty list.
+- **`append-task` `dedup-title`.** When set, a pending task with the same title
+  and body is returned with `appended: false` instead of being appended again,
+  so an interrupted `/{project}:implement` records an out-of-spec finding once.
+- **`validate-frontmatter` names an unparseable `decisions:` list** in either
+  record as a hard failure.
+
+### Removed
+
+- `write-review`'s `captured-issues` argument, frontmatter field, and
+  `## Captured issues` section, and its `observations-captured` and
+  `inbox-standing` result fields.
+- `write-analysis`'s `captured-issues` argument and section.
+- `compute-review-scope`'s `captured-issues` window, and `diff-cross-spec`'s
+  `inbox-additions` and `inbox-standing`.
+- `append-inbox`'s `dedup-prefix` argument and `deduped` result, whose only
+  callers were the removed capture paths.
+
+A record written before this release still parses. `captured-issues` is
+dropped the next time the record is written.
+
+### Fixed
+
+- **A record could be written with a value its own reader rejects.** A
+  single-line argument carrying a C0 or C1 control character, U+0085, U+2028,
+  U+2029, U+FFFE, or U+FFFF is refused, or flattened where the writer takes
+  free text. `yaml_string` quotes any value whose unquoted form would not read
+  back identically: a value holding a tab before `#` was written unquoted and
+  read back truncated.
+- **A frontmatter block with no closing fence was reported as missing.** It is
+  named `UnclosedFrontmatter`, and a closing fence that ends the file is
+  accepted.
+- **`compute-review-scope` found no diff base for a project in a subdirectory
+  of its repository,** and reported `modified-since` repository-relative. Both
+  now resolve against the git work tree, and changes outside the project are
+  dropped.
+
 ## [0.52.1] — 2026-09-18
 
 ### Fixed
