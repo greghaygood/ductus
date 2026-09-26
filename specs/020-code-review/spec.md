@@ -1,6 +1,6 @@
 ---
 spec: 020-code-review
-status: in-progress
+status: done
 dependencies: []
 cross-spec-impact: [022-deterministic-runtime]
 next-criterion: 16
