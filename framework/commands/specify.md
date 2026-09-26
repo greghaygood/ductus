@@ -38,7 +38,7 @@ If the constitution has not been loaded in this session (e.g., `/{project}:targe
 - This command creates spec artifacts only. Do NOT read or write source code, test files, or implementation files.
 - Read only what is needed: existing spec directory names (for numbering and routing), each candidate's `plan.md` Affected Files and frontmatter `status`, the rule-file directory listing, the spec template, and — only when branch-scoped creation is requested — the current git branch name, to propose an identifier candidate. Do NOT read other specs' bodies unless checking for naming conflicts.
 - The routing gate (step 1–3) writes nothing: it derives candidates, presents them, and confirms. A denial ends the run with no directory created and no session write.
-- Reference: §spec-phase, §spec-requirements, §numbering (both directory forms, and why the branch-scoped one is temporary), §spec-lifecycle (a branch-scoped spec is retired by fold-back, never completed), §text-first-artifacts, §brownfield-process, §bug-handling (the routing tree, canonical in `groom.md`).
+- Reference: §spec-phase, §spec-requirements, §numbering (both directory forms, and why the branch-scoped one is temporary), §spec-lifecycle (a branch-scoped spec is retired by fold-back, whatever its status), §text-first-artifacts, §brownfield-process, §bug-handling (the routing tree, canonical in `groom.md`).
 
 ## Instructions
 

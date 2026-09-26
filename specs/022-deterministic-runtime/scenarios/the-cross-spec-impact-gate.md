@@ -8,7 +8,7 @@ section: "Follow-on scenarios"
 
 [050](../../050-constitution/spec.md)'s `a-declared-cross-spec-impact-gates-done` requires that a declared cross-spec obligation gate `done`, and that discharge be provable rather than asserted. This scenario is the runtime half: the frontmatter field, the gate check, and where each sits.
 
-The gate already holds one obligation of this category. `check_review_gate`'s `pending_fold_block` blocks `in-progress → done` whenever `folds-into` is present, and its doc comment states the reasoning the new check inherits verbatim — *"a spec carrying an obligation nobody has discharged is not a candidate for `done`, so whether its review is fresh does not yet matter."* Both checks therefore sit ahead of the review and analyze record checks, for that one reason.
+The gate already holds one obligation of this category. `check_review_gate`'s `pending_fold_block` blocked `in-progress → done` whenever `folds-into` was present when this scenario was written (since narrowed to a target in this tree by [051](../../051-branch-scoped-spec-numbering/spec.md)'s scenario `a-fold-owed-to-another-tree-does-not-hold-done`), and its doc comment states the reasoning the new check inherits verbatim — *"a spec carrying an obligation nobody has discharged is not a candidate for `done`, so whether its review is fresh does not yet matter."* Both checks therefore sit ahead of the review and analyze record checks, for that one reason.
 
 The resemblance stops at the reasoning, and the question of whether the two should share code has an answer rather than a preference.
 
@@ -28,12 +28,13 @@ Extracting a common helper was evaluated and rejected. The two diverge on every 
 | --- | --- | --- |
 | Cardinality | one target | a list |
 | Discharge | the key's absence | the target's reciprocal link |
-| Reads the target spec | **never**, deliberately | necessarily |
+| Reads the target spec | only whether it is in this tree | necessarily |
+| Target absent | passes; the checks after it decide | blocks, `target-missing` |
 | Partial state | does not exist | the normal case |
 
-`pending_fold_block` is four lines over an `Option<&str>` — `let target = folds_into?` and build the result. A helper generalising that over a list-valued key whose discharge requires reading another spec from disk would be longer than both call sites and would have to carry the deliberate not-checked rule as a parameter. That rule is load-bearing: a fold target normally lives on the upstream branch before the merge, so the fold check *must not* look for it, while the cross-spec check *must*. One function honouring both would be two functions wearing a shared signature.
+`pending_fold_block` is a few lines over an `Option<&str>` — `let target = folds_into?`, ask whether the target is in this tree, and build the result. A helper generalising that over a list-valued key whose discharge requires reading another spec from disk would be longer than both call sites and would have to carry the fold's absent-target rule as a parameter. That rule is load-bearing and the opposite of this check's: a fold target normally lives on the upstream branch before the merge, and the pipeline view and fold-back carry the owed fold past `done`, so an absent one *must not* block, while nothing but this gate carries an undischarged impact, so an absent one *must*. One function honouring both would be two functions wearing a shared signature.
 
-Enhancing `folds-into` to carry this instead is rejected for a stronger reason than code shape: the two obligations point in opposite directions. A fold moves the **declaring** spec's own content into its home, and a branch-scoped spec is retired rather than completed — it has no `done` state at all. A cross-spec impact requires a change to **another** spec's content, and discharging it leaves the declaring spec perfectly completable. Folding them together would give the branch-scoped form a `done` state it must not have.
+Enhancing `folds-into` to carry this instead is rejected for a stronger reason than code shape: the two obligations point in opposite directions. A fold moves the **declaring** spec's own content into its home, and a branch-scoped spec is retired by fold-back whatever its status. A cross-spec impact requires a change to **another** spec's content, and discharging it leaves the declaring spec perfectly completable. Folding them together would make one key's discharge stand in for an obligation that points the other way.
 
 What they share is the gate's ordering rationale and their position in the check sequence. That is a category in `ReviewGateBlock`, expressed as a new variant beside `PendingFold` and a doc comment citing the same reasoning — not a shared function.
 

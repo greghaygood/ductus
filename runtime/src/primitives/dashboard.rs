@@ -279,9 +279,10 @@ fn render_callouts(view: &View<'_>, project: &str) -> String {
             .collect();
         lines.push(format!(
             "{} spec(s) with an outstanding fold: {}. Run /{project}:fold on each; a \
-             branch-scoped spec is retired by fold-back, not completed. A target reported \
-             as not in this tree is the normal state before the merge — it lives on the \
-             upstream branch — so correct it only when it is a typo.",
+             branch-scoped spec is retired by fold-back, whatever its status. A target \
+             reported as not in this tree is the normal state before the merge — it lives \
+             on the upstream branch, and the fold waits for the tree that holds both — so \
+             correct it only when it is a typo.",
             pending.len(),
             detail.join("; ")
         ));
@@ -428,8 +429,9 @@ fn next_action(spec: &DashboardSpec, project: &str) -> String {
     }
     if let Some(target) = &spec.folds_into {
         // A declared fold is outstanding work, so it owns the cell for every
-        // status — `done` included, which a spec carrying an undischarged
-        // fold has no honest claim to (spec 051 AC34). It sits *below* the
+        // status — `done` included: a spec whose target is not in this tree
+        // reaches `done` and still owes the fold (spec 051 AC34, scenario
+        // `a-fold-owed-to-another-tree-does-not-hold-done`). It sits *below* the
         // two overrides above rather than beside them because an open
         // question is the more upstream defect: the content gets settled
         // before it gets moved.
@@ -453,13 +455,13 @@ fn next_action(spec: &DashboardSpec, project: &str) -> String {
 
 /// The Status cell. A spec declaring `folds-into` is qualified as carrying
 /// a pending fold, so the view never reports it as simply `done` — the fold
-/// is work the spec still owes, and a branch-scoped spec is retired by
-/// fold-back rather than completed (spec 051 AC34).
+/// is work the spec still owes, whatever its status, until fold-back
+/// retires it (spec 051 AC34).
 ///
 /// The frontmatter value is kept alongside the qualification rather than
 /// replaced by it: the view's job is to show where a spec sits, and
-/// `in-progress` and a hand-edited `done` are different situations for the
-/// operator even though both are held short of complete.
+/// `in-progress` and `done` are different situations for the operator even
+/// though both still owe the fold.
 fn status_cell(spec: &DashboardSpec) -> String {
     if spec.folds_into.is_some() {
         return format!("{} (fold pending)", spec.status);
@@ -831,10 +833,10 @@ mod tests {
 
     /// AC34: a spec declaring `folds-into` is reported as carrying an
     /// outstanding fold, and the row's Next Action is the fold rather than
-    /// the status-driven action — `done` included, which a spec owing a
-    /// fold has no honest claim to.
+    /// the status-driven action — `done` included, since a spec at `done`
+    /// still owes the fold until fold-back retires it.
     #[test]
-    fn a_declared_fold_holds_a_spec_short_of_done() {
+    fn a_declared_fold_is_never_reported_as_done() {
         let tmp = TempDir::new().unwrap();
         pin_project(tmp.path(), "");
         write_spec(

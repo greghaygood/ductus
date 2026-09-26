@@ -193,6 +193,27 @@ mod tests {
         assert!(tmp.path().join("specs/050-alpha/spec.md").is_file());
     }
 
+    /// The staging spec's status does not gate the fold: one that reached
+    /// `done` on a branch that could not see its target is folded like any
+    /// other (spec 051 scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
+    #[test]
+    fn a_done_staging_spec_is_retired_like_any_other() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_spec(tmp.path(), "050-alpha");
+        let staged = tmp.path().join("specs/1234.1-staged");
+        fs::create_dir_all(&staged).unwrap();
+        fs::write(
+            staged.join("spec.md"),
+            "---\nstatus: done\ndependencies: []\nfolds-into: 050-alpha\n---\n\n# staged\n",
+        )
+        .unwrap();
+
+        let result = run(&args("1234.1-staged", "050-alpha"), tmp.path()).unwrap();
+
+        assert!(result.retired);
+        assert!(!staged.exists());
+    }
+
     /// AC28: a target that does not exist refuses and leaves the
     /// branch-scoped spec in place, so nothing is ever stranded.
     #[test]

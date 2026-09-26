@@ -5,8 +5,8 @@
 //! walked by hand on every completion attempt: first whether the spec is
 //! already `done`, then the feature directory's markdown lint (through the
 //! `lint-markdown` machinery, replacing the raw `npx markdownlint-cli2`
-//! invocation), then unresolved scenario open questions, then an
-//! undischarged `folds-into` fold, then an undischarged `cross-spec-impact`,
+//! invocation), then unresolved scenario open questions, then a `folds-into`
+//! fold this tree can perform, then an undischarged `cross-spec-impact`,
 //! then the review record in `review.md` and whether it is still current,
 //! then the analyze record in `analysis.md` and whether it is still current,
 //! and last the two records' `dispositions:` maps — a record that predates
@@ -116,8 +116,10 @@ pub(crate) fn run_with_lint(
         return Ok(blocked);
     }
 
-    // Gate check 3: the spec has no undischarged fold.
-    if let Some(blocked) = pending_fold_block(frontmatter.folds_into.as_deref(), &project) {
+    // Gate check 3: the spec owes no fold this tree can perform.
+    if let Some(blocked) =
+        pending_fold_block(frontmatter.folds_into.as_deref(), repo, &root, &project)
+    {
         return Ok(blocked);
     }
 
@@ -714,28 +716,38 @@ fn already_done_block(status: &str, project: &str) -> Option<CheckReviewGateResu
 }
 
 /// The pending-fold gate check: `Some(blocked)` when the spec declares a
-/// `folds-into` target, `None` when it declares none.
+/// `folds-into` target that resolves in this tree, `None` when it declares
+/// none or its target is not here.
 ///
 /// Ordered beside the scenario-open-questions check and ahead of the
 /// `review:` block because it is the same kind of claim: a spec carrying an
-/// obligation nobody has discharged is not a candidate for `done`, so
-/// whether its review is fresh does not yet matter. The consequence is that
-/// the branch-scoped form has no `done` state at all — it is retired by
-/// fold-back, not completed, which is the honest reading of a staging spec
-/// (spec 051 AC35).
+/// obligation it could discharge here is not a candidate for `done`, so
+/// whether its review is fresh does not yet matter (spec 051 AC35).
 ///
-/// **Presence only** — the target's existence is deliberately not checked.
-/// A branch-scoped spec exists because upstream moved, so before the merge
-/// its target normally lives on the upstream branch; requiring it to resolve
-/// would block the feature's normal case over a tree this gate cannot see.
-/// `retire-feature` enforces existence at fold-back, in the first tree
-/// holding both.
+/// **It blocks only when the fold can be done here** (spec 051 scenario
+/// `a-fold-owed-to-another-tree-does-not-hold-done`). A branch-scoped spec
+/// exists because upstream moved, so its target normally lives on a line of
+/// development this tree does not hold, and fold-back needs both specs in one
+/// tree. Blocking there held finished work `in-progress` for the life of the
+/// branch, with no exit but a hand edit. So an absent target passes this
+/// check and the checks after it decide. The fold stays owed and visible:
+/// `check-unfolded-specs` keeps reporting the spec, `/{project}:status`
+/// renders it `done (fold pending)`, and `retire-feature` enforces the
+/// target's existence at fold-back, in the first tree holding both.
 ///
-/// Absence is never a finding. A sequential spec has no fold target by
-/// definition, and removing the key by hand is the supported way to make a
-/// branch-scoped spec stand on its own.
-fn pending_fold_block(folds_into: Option<&str>, project: &str) -> Option<CheckReviewGateResult> {
+/// Absence of the key is never a finding. A sequential spec has no fold
+/// target by definition, and removing the key by hand is the supported way
+/// to make a branch-scoped spec stand on its own.
+fn pending_fold_block(
+    folds_into: Option<&str>,
+    repo: &Path,
+    specs_root: &str,
+    project: &str,
+) -> Option<CheckReviewGateResult> {
     let target = folds_into?;
+    if !fold_target_resolves(target, repo, specs_root) {
+        return None;
+    }
     Some(CheckReviewGateResult {
         passed: false,
         blocked_by: Some(ReviewGateBlock::PendingFold),
@@ -745,13 +757,25 @@ fn pending_fold_block(folds_into: Option<&str>, project: &str) -> Option<CheckRe
         )),
         guidance: Some(format!(
             "Run /{project}:fold to fold this spec into {target} and retire its \
-             directory: a branch-scoped spec is retired by fold-back, not completed. \
-             A spec that should stand on its own instead is renamed to the sequential \
-             NNN- form with its folds-into key removed."
+             directory: the target is in this tree, so the fold can be done here and \
+             is owed before done. A spec that should stand on its own instead is \
+             renamed to the sequential NNN- form with its folds-into key removed."
         )),
         violations: vec![],
         cross_spec_impact: vec![],
     })
+}
+
+/// Whether the fold target `target` resolves in this tree: it names a
+/// feature directory holding a `spec.md`. That is the test fold-back applies,
+/// since `retire-feature` and `rewrite-spec-links` refuse any other target,
+/// and the one behind `/{project}:status`'s "not in this tree". The name is
+/// screened through [`super::parse_feature_dir`] before it is joined to a
+/// path, as a `cross-spec-impact` entry is, so a hand-edited value cannot
+/// walk out of the spec root.
+fn fold_target_resolves(target: &str, repo: &Path, specs_root: &str) -> bool {
+    super::parse_feature_dir(target).is_some()
+        && repo.join(specs_root).join(target).join("spec.md").is_file()
 }
 
 /// Classify every `cross-spec-impact:` entry the declaring spec carries.
@@ -780,8 +804,8 @@ fn pending_fold_block(folds_into: Option<&str>, project: &str) -> Option<CheckRe
 /// reports `undischarged` however the target links back, because the shared
 /// matcher recognizes the sequential `NNN-slug` link form only. That bound is
 /// inherited rather than introduced, and it is outside what a declaration is
-/// for: a branch-scoped spec is retired by fold-back rather than completed, so
-/// an impact on one is declared against the upstream spec it folds into.
+/// for: a branch-scoped spec's content is folded into its upstream spec, so an
+/// impact on one is declared against the upstream spec it folds into.
 fn cross_spec_impact_states(
     declared: &[String],
     feature: &str,
@@ -880,17 +904,21 @@ fn links_back(path: &Path, specs_root: &str, feature: &str, depth: usize) -> boo
 /// **It shares that reasoning and nothing else.** Extracting a helper common
 /// to both was evaluated and rejected. They diverge on every axis the code
 /// turns on — one target against a list, discharge by the key's absence
-/// against discharge by the target's reciprocal link, never reading the target
-/// against necessarily reading it, and no partial state against partial state
-/// as the normal case. `pending_fold_block` is four lines over an
-/// `Option<&str>`; a helper generalising it over a list-valued key whose
-/// discharge requires reading another spec from disk would be longer than both
-/// call sites and would have to carry the deliberate never-read-the-target
-/// rule as a parameter — a rule that is load-bearing, since a fold target
-/// normally lives on the upstream branch before the merge. Carrying this on
+/// against discharge by the target's reciprocal link, asking only whether the
+/// target is in this tree against reading it, an absent target that passes
+/// against one that blocks, and no partial state against partial state as the
+/// normal case. `pending_fold_block` is a few lines over an `Option<&str>`; a
+/// helper generalising it over a list-valued key whose discharge requires
+/// reading another spec from disk would be longer than both call sites and
+/// would have to carry the fold's absent-target rule as a parameter. That rule
+/// is load-bearing and the opposite of this check's: a fold target normally
+/// lives on the upstream branch before the merge, and the pipeline view and
+/// fold-back carry the owed fold past `done`, while nothing but this check
+/// carries an undischarged impact (spec 051 scenario
+/// `a-fold-owed-to-another-tree-does-not-hold-done`). Carrying this on
 /// `folds-into` instead is rejected more strongly still: the two obligations
-/// point in opposite directions, and folding them together would give the
-/// branch-scoped form the `done` state it must not have.
+/// point in opposite directions — a fold moves the declaring spec's own
+/// content into its home, an impact asks for a change to another spec's.
 ///
 /// There is no `--fix`. Which section of the affected spec should carry the
 /// signpost is the routing judgment `/{project}:amend` puts to the operator,
@@ -1143,7 +1171,8 @@ mod tests {
     }
 
     /// A branch-scoped spec: reviewed, clean, and every other check would
-    /// pass — the fold is the only thing holding it short of `done`.
+    /// pass — with its target in the tree, the fold is the only thing holding
+    /// it short of `done`.
     const PENDING_FOLD: &str = "---\nstatus: in-progress\ndependencies: []\nfolds-into: 050-upstream\nreview:\n  last-run: 2026-07-10T00:00:00Z\n  reviewed-against: abc123\n  must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  blocking: false\nanalyze:\n  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc123\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 0\n  blocking: false\n---\n\n# 007 — Gate\n";
 
     /// Reviewed clean and analyzed clean, declaring one cross-spec impact —
@@ -1446,10 +1475,13 @@ mod tests {
         );
     }
 
+    /// AC35: with its target in this tree the fold can be done here, so it is
+    /// the work owed before `done`.
     #[test]
-    fn a_declared_fold_blocks_the_done_transition() {
+    fn a_fold_whose_target_is_in_this_tree_blocks_the_done_transition() {
         let tmp = tempdir().unwrap();
         seed(tmp.path(), PENDING_FOLD);
+        seed_target(tmp.path(), "The upstream home.");
 
         let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
 
@@ -1463,16 +1495,18 @@ mod tests {
         );
         let guidance = result.guidance.expect("the block carries guidance");
         assert!(guidance.contains("/ductus:fold"), "{guidance}");
-        assert!(guidance.contains("retired by fold-back"), "{guidance}");
+        assert!(
+            guidance.contains("the target is in this tree"),
+            "{guidance}"
+        );
     }
 
-    /// The block does not depend on the target resolving, and deliberately:
-    /// a branch-scoped spec exists because upstream moved, so before the
-    /// merge its target normally lives on the branch this tree forked from.
-    /// Checking resolvability here would refuse the feature's normal case
-    /// over a tree the gate cannot see.
+    /// With its target on a line of development this tree does not hold, the
+    /// fold cannot be done here, so it does not hold `done`: the spec passes
+    /// the gate when everything else does, and still owes the fold (spec 051
+    /// scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
     #[test]
-    fn the_fold_block_does_not_depend_on_the_target_existing() {
+    fn a_fold_whose_target_is_not_in_this_tree_does_not_hold_done() {
         let tmp = tempdir().unwrap();
         seed(tmp.path(), PENDING_FOLD);
         // Nothing named `050-upstream` is anywhere in this corpus.
@@ -1480,7 +1514,42 @@ mod tests {
 
         let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
 
-        assert_eq!(result.blocked_by, Some(ReviewGateBlock::PendingFold));
+        assert!(result.passed, "{:?}", result.message);
+        assert_eq!(result.blocked_by, None);
+    }
+
+    /// An absent target passes the fold check and nothing more: the checks
+    /// after it still decide, here a review recording a MUST violation.
+    #[test]
+    fn with_the_target_absent_the_later_checks_decide() {
+        let tmp = tempdir().unwrap();
+        seed(
+            tmp.path(),
+            &PENDING_FOLD
+                .replacen("  must-violations: 0\n", "  must-violations: 1\n", 1)
+                .replacen(
+                    "  blocking: false\nanalyze:",
+                    "  blocking: true\nanalyze:",
+                    1,
+                ),
+        );
+
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+
+        assert_eq!(result.blocked_by, Some(ReviewGateBlock::MustViolations));
+    }
+
+    /// A directory with no `spec.md` is not a home fold-back can land content
+    /// in, so a target naming one is not in this tree.
+    #[test]
+    fn a_target_directory_without_a_spec_does_not_block() {
+        let tmp = tempdir().unwrap();
+        seed(tmp.path(), PENDING_FOLD);
+        fs::create_dir_all(tmp.path().join("specs/050-upstream")).unwrap();
+
+        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+
+        assert_eq!(result.blocked_by, None, "{:?}", result.message);
     }
 
     /// Ordering: an unresolved scenario question is the more upstream
@@ -1490,6 +1559,7 @@ mod tests {
     fn a_scenario_question_outranks_a_pending_fold() {
         let tmp = tempdir().unwrap();
         seed(tmp.path(), PENDING_FOLD);
+        seed_target(tmp.path(), "The upstream home.");
         fs::create_dir_all(tmp.path().join("specs/007-gate/scenarios")).unwrap();
         fs::write(
             tmp.path().join("specs/007-gate/scenarios/a.md"),

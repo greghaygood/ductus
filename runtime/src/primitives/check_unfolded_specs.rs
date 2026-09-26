@@ -185,6 +185,25 @@ mod tests {
         );
     }
 
+    /// A staging spec that reached `done` on a branch that could not see its
+    /// target still owes its fold, so it is reported, with its status (spec
+    /// 051 scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
+    #[test]
+    fn a_done_staging_spec_is_reported_with_its_status() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_spec(
+            tmp.path(),
+            "1234.1-shipped",
+            "status: done\ndependencies: []\nfolds-into: 099-not-in-this-tree\n",
+        );
+
+        let result = run(&CheckUnfoldedSpecsArgs {}, tmp.path()).unwrap();
+
+        assert_eq!(result.unfolded.len(), 1);
+        assert_eq!(result.unfolded[0].feature, "1234.1-shipped");
+        assert_eq!(result.unfolded[0].status, "done");
+    }
+
     #[test]
     fn a_spec_that_declares_no_target_reports_none_rather_than_vanishing() {
         let tmp = tempfile::tempdir().unwrap();

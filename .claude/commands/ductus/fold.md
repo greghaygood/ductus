@@ -11,7 +11,7 @@ Fold a branch-scoped spec's content into the upstream spec it names, then retire
 
 Pipeline discharge for the branch-scoped directory form. A spec numbered `{identifier}.{n}-{slug}` exists so two branches can each create a spec without claiming the same sequential number ([051 — Branch-scoped spec numbering](https://github.com/stonean/ductus/blob/main/specs/051-branch-scoped-spec-numbering/spec.md)); it is a **staging** form, not a destination. This command is how it is discharged: the content moves into the upstream spec its `folds-into` names, every inbound pointer moves with it, and the directory is removed.
 
-The branch-scoped form therefore has no `done` state at all. It is retired, not completed — which is why `/ductus:status` reports a spec carrying `folds-into` as pending rather than `done`, and why `/ductus:implement`'s pre-`done` gate blocks while the field is present. The fold is the outstanding work; this is the command that clears it.
+The fold is the outstanding work, whatever the staging spec's status, and this is the command that clears it. `/ductus:status` reports a spec carrying `folds-into` as pending at every status, `done (fold pending)` included, and `/ductus:implement`'s pre-`done` gate blocks while the target is in this tree, where the fold can be done. A spec whose target lives on another line reaches `done` there and is folded here, after the merge: the staging spec's status never gates the fold.
 
 Run it **after the merge**, on the upstream branch. That is the first tree in which both specs exist, and so the first moment the fold target's existence can be checked at all — before it, the target normally lives on a branch this tree cannot see.
 

@@ -70,7 +70,7 @@ Two branches each adding the next `NNN-` spec is a merge conflict in the one fil
 
 That number is scaffolding, not a home. `/fold` is how you take it down: run it on the upstream branch after the merge, and the staging spec's content moves into the durable spec it was standing in for (as a body edit, or as a scenario under it), every inbound pointer is re-pointed, and the directory is removed.
 
-**The point is that one feature ends up with one durable home** — rather than its decisions spread across a permanent spec and a leftover branch spec nobody ever consolidated. A branch-scoped spec is therefore **retired, not completed**: `/status` reports one as pending and the `done` gate blocks while the fold is outstanding, so the framework will not let you forget it. Two specs.
+**The point is that one feature ends up with one durable home** — rather than its decisions spread across a permanent spec and a leftover branch spec nobody ever consolidated. A branch-scoped spec is therefore **retired by fold-back**, whatever its status: `/status` reports one as pending until the fold runs, and the `done` gate blocks while its target is in your tree, so the framework will not let you forget it. A spec whose target lives on another line can reach `done` first and is folded after the merge. Two specs.
 
 ### `/consolidate` — an entire spec directory
 

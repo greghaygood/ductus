@@ -1009,7 +1009,8 @@ pub struct Frontmatter {
     /// Declared rather than derived: nothing in the repository can compute
     /// it, and no generator rewrites it. Its presence means the fold has
     /// not happened yet, which is outstanding work — so the pipeline view
-    /// reports the spec as pending and the pre-`done` gate blocks on it.
+    /// reports the spec as pending, and the pre-`done` gate blocks on it
+    /// while the target is in this tree, where the fold can be done.
     ///
     /// The named spec routinely does **not** exist in this working tree: a
     /// branch-scoped spec exists because upstream moved, so its target
@@ -3399,16 +3400,17 @@ pub enum ReviewGateBlock {
     /// first avoids sending a contributor to review a design that is about
     /// to change (spec 046).
     ScenarioOpenQuestions,
-    /// The spec declares `folds-into`: it is a branch-scoped staging spec
-    /// whose content has not yet been folded into its upstream home
-    /// (spec 051).
+    /// The spec declares `folds-into` and the target is in this tree: it is a
+    /// branch-scoped staging spec whose content can be folded into its
+    /// upstream home here and has not been (spec 051).
     ///
     /// The same category as an unresolved scenario question, and ordered
     /// beside it for the same reason: both say the spec carries an
     /// undischarged obligation, which makes asking whether its review is
-    /// fresh beside the point. The consequence is that the branch-scoped
-    /// form has no `done` state at all — it is retired by fold-back, not
-    /// completed.
+    /// fresh beside the point. A target not in this tree does not block: the
+    /// fold cannot be done here, so the checks after this one decide, and
+    /// the fold stays owed on `check-unfolded-specs` and the pipeline view
+    /// (scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
     PendingFold,
     /// The spec declares `cross-spec-impact` entries that are not yet
     /// discharged — the affected spec does not link back to this one — or
@@ -3421,9 +3423,10 @@ pub enum ReviewGateBlock {
     /// the point.
     ///
     /// It shares that reasoning and nothing else. A fold has one target,
-    /// discharges by the key's absence, and deliberately never reads the
-    /// target; a cross-spec impact has a list, discharges by the target's
-    /// reciprocal link, and necessarily reads it. Partial state does not
+    /// discharges by the key's absence, and asks only whether the target is
+    /// in this tree, passing when it is not; a cross-spec impact has a list,
+    /// discharges by the target's reciprocal link, necessarily reads it, and
+    /// blocks when it is missing. Partial state does not
     /// exist for a fold and is the normal case here. The two are a shared
     /// category in this enum, not shared code — see
     /// `check_review_gate::cross_spec_impact_block`.

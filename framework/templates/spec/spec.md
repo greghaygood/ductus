@@ -28,8 +28,9 @@ dependencies: []
      decides the spec should stand on its own. The named spec normally lives
      on the upstream branch and is absent from your working tree; that is
      expected, not an error. While the key is present the spec carries
-     outstanding work, so it is reported by /{project}:status and cannot reach
-     `done` — after the merge, target it and fold it.
+     outstanding work: /{project}:status reports it, and it cannot reach
+     `done` while the target is in your tree — after the merge, target it and
+     fold it.
 
      Cross-service references: to reference a spec in another service (its own
      repo with its own ductus install), write a normal inline markdown link to
