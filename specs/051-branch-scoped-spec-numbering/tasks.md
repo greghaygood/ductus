@@ -231,11 +231,11 @@ Phase 1 (tasks 1–5) makes branch-scoped directories creatable and visible. Pha
 
 ## 26. Implement scenario: a-fold-owed-to-another-tree-does-not-hold-done
 
-- [ ] Implement the behavior described in `scenarios/a-fold-owed-to-another-tree-does-not-hold-done.md`
-- [ ] `check-review-gate`: the pending-fold check blocks only when the `folds-into` target resolves in this tree, by `check-unfolded-specs`' test; test a present target (still `pending-fold`) and an absent one (the later checks decide)
-- [ ] `/{project}:fold` and `retire-feature` accept a `done` staging spec; test a fold of one
-- [ ] `check-unfolded-specs` reports a `done` staging spec with its status; test it
-- [ ] The constitution's §spec-lifecycle (the `done` row and the branch-scoped paragraph) and §numbering; this spec's AC35 and §Fold-back on merge; `implement.md`'s gate text; `fold.md`; `status.md`; `docs/slash-commands.md`; the `dashboard.rs`, `check_review_gate.rs`, and `schema/primitives.rs` docs
-- [ ] 022's `data-model.md` and the scenarios that restate the fold check carry the change with a link back to this spec, discharging its `cross-spec-impact`
+- [x] Implement the behavior described in `scenarios/a-fold-owed-to-another-tree-does-not-hold-done.md`
+- [x] `check-review-gate`: the pending-fold check blocks only when the `folds-into` target resolves in this tree, by `check-unfolded-specs`' test; test a present target (still `pending-fold`) and an absent one (the later checks decide)
+- [x] `/{project}:fold` and `retire-feature` accept a `done` staging spec; test a fold of one
+- [x] `check-unfolded-specs` reports a `done` staging spec with its status; test it
+- [x] The constitution's §spec-lifecycle (the `done` row and the branch-scoped paragraph) and §numbering; this spec's AC35 and §Fold-back on merge; `implement.md`'s gate text; `fold.md`; `status.md`; `docs/slash-commands.md`; the `dashboard.rs`, `check_review_gate.rs`, and `schema/primitives.rs` docs
+- [x] 022's `data-model.md` and the scenarios that restate the fold check carry the change with a link back to this spec, discharging its `cross-spec-impact`
 
 - **Done when**: a branch-scoped spec whose target is absent from the tree reaches `done` through the normal gate when everything else passes; one whose target is present is still blocked with `pending-fold`; `check-unfolded-specs` reports both with their status; `/{project}:fold` works on a `done` staging spec; the constitution, this spec, the command sources, 022's record, and the tests agree; and `cargo test --release --locked`, `clippy -D warnings`, markdownlint, and `scripts/audit/run-all.sh` pass
