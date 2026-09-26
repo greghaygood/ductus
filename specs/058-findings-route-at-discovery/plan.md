@@ -476,8 +476,12 @@ The bump is `0.52.1` → `0.53.0`, a minor release: primitive result schemas
 lose fields, a primitive is added, and the gate blocks on new conditions. The
 version goes in the repo-root `version` file, `runtime/Cargo.toml:3`, and a
 `runtime/CHANGELOG.md` section. `Cargo.lock` is refreshed by one build without
-`--locked`. Family 20 checks that they agree. The tag `ductus-v0.53.0` is cut
-after every spec is `done`, following the `AGENTS.md` release entry. The new
+`--locked`. Family 20 checks that they agree. The changelog section covers
+every runtime change this release carries, not only 058's (tasks 1–47): 022's
+task 123, exec analyze deriving its list seeds, and 051's task 26, a fold
+owed to another tree no longer holding `done`. The tag `ductus-v0.53.0` is
+cut after 058, 022, and 051 are all `done`, following the `AGENTS.md` release
+entry. The new
 primitive joins `framework/runtime-tools.txt`, whose parity with the registry
 is asserted by `runtime/tests/mcp.rs:109-119`. The configure permission lists
 gain it too (`framework/bootstrap/configure/claude.md:119-120`, `auggie.md:107-108`).
