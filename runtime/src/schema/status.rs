@@ -3,8 +3,9 @@
 //! Single source of truth for the constitution's lifecycle set
 //! (§text-first-artifacts): `validate-frontmatter` (membership findings),
 //! `set-status` (from/to argument validation), `resolve-references`
-//! (linked-spec status read), and `traverse-deps` (compatibility subset)
-//! all consume these constants instead of hand-maintaining copies.
+//! (linked-spec status read), `traverse-deps` (compatibility subset), and the
+//! exec analyze tally (the consumer-status condition on an incompatible
+//! dependency) all consume these constants instead of hand-maintaining copies.
 
 /// The constitution's lifecycle set, in pipeline order.
 pub(crate) const ALLOWED_STATUSES: &[&str] =
@@ -22,7 +23,8 @@ pub(crate) const COMPATIBLE_STATUSES: &[&str] = ALLOWED_STATUSES.split_at(2).1;
 /// blocks its consumers; once `clarified` the downstream work can proceed
 /// against a committed direction. Derived from [`ALLOWED_STATUSES`]
 /// (dropping only the leading `draft`) so it cannot drift from the
-/// canonical order.
+/// canonical order. The same tail is `/analyze` step 3's "`clarified` or
+/// later", past which a spec's incompatible dependency is blocking.
 pub(crate) const UNBLOCKING_STATUSES: &[&str] = ALLOWED_STATUSES.split_at(1).1;
 
 #[cfg(test)]

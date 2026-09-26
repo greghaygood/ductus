@@ -76,6 +76,23 @@ pub(crate) const LEGACY_SESSION_FILE: &str = ".govern.session.toml";
 pub(crate) const SESSION_CHAIN: [&str; 3] =
     [SESSION_FILE, LEGACY_DIR_SESSION_FILE, LEGACY_SESSION_FILE];
 
+/// Where a project's constitution lives, in resolution order: the copy an
+/// adopter's bootstrap installs, then ductus's own source, which ships as that
+/// copy. A repository holds one or the other.
+pub(crate) const CONSTITUTION_CHAIN: [&str; 2] =
+    [".ductus/constitution.md", "framework/constitution.md"];
+
+/// The project's constitution, repo-relative: the first of
+/// [`CONSTITUTION_CHAIN`] that is a file, or `None` when neither is. The one
+/// resolver for every runtime reader of the constitution, so an adopter and
+/// this repository resolve by the same rule.
+#[must_use]
+pub(crate) fn constitution_path(repo: &Path) -> Option<&'static str> {
+    CONSTITUTION_CHAIN
+        .into_iter()
+        .find(|candidate| repo.join(candidate).is_file())
+}
+
 /// Resolve the project config file to *read* for `repo`: the newest location
 /// in [`CONFIG_CHAIN`] that exists. New-wins across all three tiers, so a
 /// split layout never reads stale content. When none exists the oldest path is
@@ -330,6 +347,29 @@ mod tests {
         let path = dir.join(CONFIG_FILE);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();
+    }
+
+    // --- constitution_path ---------------------------------------------------
+
+    /// An adopter's installed copy wins over a framework source, and a project
+    /// holding neither resolves to nothing rather than to a path that is not
+    /// there.
+    #[test]
+    fn constitution_resolves_the_adopter_copy_then_the_framework_source() {
+        let dir = tmp_repo();
+        assert_eq!(constitution_path(dir.path()), None);
+        std::fs::create_dir_all(dir.path().join("framework")).unwrap();
+        std::fs::write(dir.path().join("framework/constitution.md"), "# c\n").unwrap();
+        assert_eq!(
+            constitution_path(dir.path()),
+            Some("framework/constitution.md")
+        );
+        std::fs::create_dir_all(dir.path().join(".ductus")).unwrap();
+        std::fs::write(dir.path().join(".ductus/constitution.md"), "# c\n").unwrap();
+        assert_eq!(
+            constitution_path(dir.path()),
+            Some(".ductus/constitution.md")
+        );
     }
 
     // --- validate_specs_root -------------------------------------------------

@@ -16,7 +16,7 @@ Found by the 058 review (2026-09-25).
 
 ## Behavior
 
-`restricted` is set only when a skipped target's reason is in the *could not be read* class: `target-missing`, `target-unparseable`, `no-readable-state`, or `artifact-unreadable`. Targets excluded by construction never restrict, because the run decided not to examine them. It did not fail to.
+`restricted` is set only when a skipped target's reason is in the *could not be read* class: `target-missing`, `target-unparseable`, `no-readable-state`, `artifact-unreadable`, and each reason `analyze.md`'s Unexamined targets section classifies with them. Targets excluded by construction never restrict, because the run decided not to examine them. It did not fail to.
 
 `/{project}:analyze` step 16 states the rule, and `docs/analyze.md` follows it. The class list lives in one place and is named where the step uses it, so a reason added later is classified once.
 

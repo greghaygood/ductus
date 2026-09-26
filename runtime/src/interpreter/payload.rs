@@ -43,6 +43,7 @@ use crate::schema::extensions::{
     RouteFoldRequest, RouteInboxItemRequest, RouteInboxSpec, VerifyCriteriaRequest,
     VerifyCriterion, WriteCodeRequest, WriteCodeTask, WriteSpecBodyRequest,
 };
+use crate::schema::paths;
 use crate::schema::primitives::ReadTasksArgs;
 use crate::schema::severity::RuleSeverity;
 
@@ -807,8 +808,9 @@ fn build_verify_criteria_request(context: &Map<String, Value>, repo: &Path) -> V
 /// read (`/ductus:analyze` steps 8–9). Mirrors `build_write_code_request`'s
 /// structure: typed fields sourced from the walker context and disk.
 ///
-/// - `spec-path` — the context's `path` (seeded by `/ductus:target`, echoed
-///   by `read-spec`).
+/// - `spec-path` — the spec file the context's `path` names (seeded by
+///   `/ductus:target` as the spec directory, echoed by `read-spec` as the
+///   file).
 /// - `spec-content` — the spec read off disk, repo-confined
 ///   (BE-INPUT-004); empty when missing or out of repo.
 /// - `rule` — the rule under assessment: the first `citations` entry
@@ -829,8 +831,8 @@ fn build_assess_spec_quality_request(
     let spec_path = context
         .get("path")
         .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_string();
+        .map(|path| super::spec_file(repo, path))
+        .unwrap_or_default();
     let spec_content = read_repo_file(repo, &spec_path).unwrap_or_default();
     let severity = severity_from_step_prose(step_prose);
     let rule = resolve_assessed_rule(context, repo, severity);
@@ -1180,11 +1182,16 @@ fn load_constitution_excerpts(command_name: &str, repo: &Path) -> ConstitutionEx
         // line, so there is nothing to load and nothing went unexamined.
         return ConstitutionExcerptScan::default();
     }
-    let constitution_path = repo.join("framework/constitution.md");
-    let Ok(constitution) = std::fs::read_to_string(&constitution_path) else {
-        return ConstitutionExcerptScan::unexaminable(
-            "constitution-unreadable: framework/constitution.md".to_string(),
-        );
+    let Some(constitution_rel) = paths::constitution_path(repo) else {
+        return ConstitutionExcerptScan::unexaminable(format!(
+            "constitution-unreadable: {}",
+            paths::CONSTITUTION_CHAIN.join(" or ")
+        ));
+    };
+    let Ok(constitution) = std::fs::read_to_string(repo.join(constitution_rel)) else {
+        return ConstitutionExcerptScan::unexaminable(format!(
+            "constitution-unreadable: {constitution_rel}"
+        ));
     };
     let mut scan = ConstitutionExcerptScan::default();
     for anchor in anchors {
@@ -1603,9 +1610,32 @@ mod tests {
         assert_eq!(scan.unexaminable.len(), 1);
         assert_eq!(
             scan.unexaminable,
-            vec!["constitution-unreadable: framework/constitution.md".to_string()],
-            "the label is repo-relative — it rides in an outbound payload"
+            vec![
+                "constitution-unreadable: .ductus/constitution.md or framework/constitution.md"
+                    .to_string()
+            ],
+            "the label names every path tried, repo-relative — it rides in an outbound payload"
         );
+    }
+
+    /// An adopter's constitution is the one its bootstrap installs under
+    /// `.ductus/`; a project holding only that copy loads its excerpts rather
+    /// than reporting the constitution unreadable.
+    #[test]
+    fn excerpt_scan_reads_an_adopter_constitution() {
+        let tmp = tempdir().unwrap();
+        write_command_file(tmp.path(), "implement", "§alpha");
+        fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        fs::write(
+            tmp.path().join(".ductus/constitution.md"),
+            "<!-- §alpha -->\n\nBody of alpha.\n",
+        )
+        .unwrap();
+
+        let scan = load_constitution_excerpts("implement", tmp.path());
+        assert!(scan.unexaminable.is_empty(), "{:?}", scan.unexaminable);
+        assert_eq!(scan.excerpts.len(), 1);
+        assert!(scan.excerpts[0].contains("Body of alpha."));
     }
 
     #[test]
@@ -2164,6 +2194,20 @@ mod tests {
             value["rule"]["verification"],
             "Every constant is sourced from the central module."
         );
+    }
+
+    /// A session target's `path` is the spec directory, as `write-session`
+    /// records it; the request carries the spec file inside it, never the
+    /// directory with nothing read from it.
+    #[test]
+    fn build_assess_spec_quality_request_reads_the_spec_a_directory_path_names() {
+        let tmp = tempdir().unwrap();
+        stage_assess_fixture(tmp.path());
+        let mut context = assess_context();
+        context.insert("path".into(), Value::String("specs/003-analyze".into()));
+        let value = build_assess_spec_quality_request(&context, tmp.path(), "MUST-tier");
+        assert_eq!(value["spec-path"], "specs/003-analyze/spec.md");
+        assert_eq!(value["spec-content"], "# Spec body\n");
     }
 
     #[test]

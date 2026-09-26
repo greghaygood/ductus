@@ -5,7 +5,9 @@
 //! exec walker has no host to do that, and its `write-analysis` dispatch once
 //! bound no counts at all, so every exec record read 0/0/0 and fully examined
 //! whatever detection had found: a clean result standing in for an unexamined
-//! one, the conflation `QUAL-CLAIM-001` forbids. This is that tally.
+//! one, the conflation `QUAL-CLAIM-001` forbids. This is that tally, and the
+//! `unexamined-by-reason` breakdown beside it: what the walk did not examine,
+//! including the detection it never runs.
 //!
 //! It is taken at dispatch rather than read back from the walker context,
 //! because the context merges results by bare key and several steps answer
@@ -14,24 +16,55 @@
 //! the walker has no operator to decide one.
 //!
 //! Each arm restates the tier its step in `framework/commands/analyze.md`
-//! assigns. The procedure is the authority: a step whose tiering changes
-//! changes here in the same commit.
+//! assigns, and each unexamined reason the class that file's Unexamined
+//! targets section gives it. The procedure is the authority: a step whose
+//! tiering changes changes here in the same commit.
 
 use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
+use crate::schema::severity::{AnalyzeSeverity, RuleSeverity};
+use crate::schema::status::UNBLOCKING_STATUSES;
+
+/// Steps 13–15 — cross-service references, `## Applicable Rules` citations,
+/// and grounding — by the reason each is recorded under. They are detection
+/// the procedure leaves to the host, and the walker no-ops host prose, so an
+/// exec run examines none of them. Each is recorded once, on every run: whether
+/// a step would have applied to this spec is itself something the walk never
+/// looked at.
+const HOST_DETECTION: [&str; 3] = [
+    "references-not-checked",
+    "applicable-rules-not-checked",
+    "grounding-not-checked",
+];
+
 /// The running tier counts of one exec analyze walk.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct AnalyzeTally {
     hard_fail: u32,
     blocking: u32,
     advisory: u32,
-    /// Skipped targets by their closed reason, as `check-artifacts` reports them.
+    /// What the walk did not examine, by reason: the host detection it never
+    /// runs, and the targets its detection steps report they could not reach.
     unexamined: BTreeMap<String, u32>,
 }
 
 impl AnalyzeTally {
+    /// A tally for a walk that has examined nothing yet, carrying the host
+    /// detection it will not run.
+    pub(crate) fn new() -> Self {
+        Self {
+            hard_fail: 0,
+            blocking: 0,
+            advisory: 0,
+            unexamined: HOST_DETECTION
+                .iter()
+                .map(|reason| ((*reason).to_string(), 1))
+                .collect(),
+        }
+    }
+
     /// Count one detection primitive's result. `context` is the walker context
     /// the step ran against, where step 3 finds the spec's own status in step
     /// 1's `read-spec` result.
@@ -60,7 +93,7 @@ impl AnalyzeTally {
                     .and_then(|frontmatter| frontmatter.get("status"))
                     .and_then(Value::as_str)
                     .unwrap_or_default();
-                let past_draft = matches!(status, "clarified" | "planned" | "in-progress" | "done");
+                let past_draft = UNBLOCKING_STATUSES.contains(&status);
                 for edge in items("dependencies") {
                     let holds = |key: &str| edge.get(key) == Some(&Value::Bool(true));
                     if !holds("exists") || (past_draft && !holds("compatible")) {
@@ -73,11 +106,14 @@ impl AnalyzeTally {
             "resolve-anchor" => self.advisory += count("unresolved"),
             // Step 5: a missing citation is blocking and a deprecated one
             // advisory — but `missing` means something only against rule files
-            // actually read. With none examined, nothing was checked, and a
-            // blocking finding raised from that would be against a correct spec.
+            // actually read. With none examined, nothing was checked: a
+            // blocking finding raised from that would be against a correct
+            // spec, so each citation is recorded unexamined instead.
             "check-rule-ids" => {
                 if result.get("examined").and_then(Value::as_u64).unwrap_or(0) > 0 {
                     self.blocking += count("missing");
+                } else {
+                    self.record_unexamined("rule-citations-not-checked", count("citations"));
                 }
                 self.advisory += count("deprecated");
             }
@@ -96,30 +132,46 @@ impl AnalyzeTally {
                 self.by_severity(items("findings"));
                 for skipped in items("skipped") {
                     if let Some(reason) = skipped.get("reason").and_then(Value::as_str) {
-                        *self.unexamined.entry(reason.to_string()).or_default() += 1;
+                        self.record_unexamined(reason, 1);
                     }
                 }
             }
-            // Steps 9 and 10: project-level checks, advisory.
-            "check-orphaned-references" => self.advisory += count("findings"),
+            // Steps 9 and 10: project-level checks, advisory. A referrer
+            // step 9 could not read is unexamined, never clean.
+            "check-orphaned-references" => {
+                self.advisory += count("findings");
+                self.record_unexamined("referrer-unreadable", count("skipped"));
+            }
             "check-unfolded-specs" => self.advisory += count("unfolded"),
             _ => {}
         }
     }
 
-    /// Steps 11 and 12: an `assessSpecQuality` finding joins the blocking tier
-    /// for a MUST rule and the advisory tier for a SHOULD rule.
-    pub(crate) fn record_assessment(&mut self, response: &Value) {
+    /// The tier of the rule an `assessSpecQuality` request assesses, read
+    /// before the request is handed to the host, for
+    /// [`Self::record_assessment`].
+    pub(crate) fn assessed_tier(request: &Value) -> Option<RuleSeverity> {
+        rule_tier(request, "/rule/severity")
+    }
+
+    /// Steps 11 and 12: a failed `assessSpecQuality` assessment joins the
+    /// blocking tier for a MUST rule and the advisory tier for a SHOULD rule.
+    ///
+    /// The tier is the finding's own when the host returned one, and
+    /// otherwise `assessed`, the tier of the rule the walker put in the
+    /// request: a failure the host reported without a finding still failed,
+    /// and dropping it would record the rule as passed. Either is read
+    /// through [`RuleSeverity`], case-insensitively, as validation accepts
+    /// it. An INFO rule has no analyze tier to join, and an unspecified one
+    /// comes from a step naming no tier, which steps 11 and 12 never are.
+    pub(crate) fn record_assessment(&mut self, assessed: Option<RuleSeverity>, response: &Value) {
         if response.get("passed") == Some(&Value::Bool(true)) {
             return;
         }
-        match response
-            .pointer("/finding/severity")
-            .and_then(Value::as_str)
-        {
-            Some("must") => self.blocking += 1,
-            Some("should") => self.advisory += 1,
-            _ => {}
+        match rule_tier(response, "/finding/severity").or(assessed) {
+            Some(RuleSeverity::Must) => self.blocking += 1,
+            Some(RuleSeverity::Should) => self.advisory += 1,
+            Some(RuleSeverity::Info | RuleSeverity::Unspecified) | None => {}
         }
     }
 
@@ -140,17 +192,37 @@ impl AnalyzeTally {
         );
     }
 
+    /// Record `count` targets unexamined under `reason`; nothing when zero, so
+    /// a step that reached everything adds no entry.
+    fn record_unexamined(&mut self, reason: &str, count: u32) {
+        if count > 0 {
+            *self.unexamined.entry(reason.to_string()).or_default() += count;
+        }
+    }
+
     /// Count findings by the analyze severity each carries.
     fn by_severity(&mut self, findings: &[Value]) {
         for finding in findings {
-            match finding.get("severity").and_then(Value::as_str) {
-                Some("hard-fail") => self.hard_fail += 1,
-                Some("blocking") => self.blocking += 1,
-                Some("advisory") => self.advisory += 1,
-                _ => {}
+            match finding
+                .get("severity")
+                .and_then(Value::as_str)
+                .and_then(|tier| tier.parse().ok())
+            {
+                Some(AnalyzeSeverity::HardFail) => self.hard_fail += 1,
+                Some(AnalyzeSeverity::Blocking) => self.blocking += 1,
+                Some(AnalyzeSeverity::Advisory) => self.advisory += 1,
+                Some(AnalyzeSeverity::Informational) | None => {}
             }
         }
     }
+}
+
+/// The rule tier at `pointer` in an `assessSpecQuality` payload.
+fn rule_tier(payload: &Value, pointer: &str) -> Option<RuleSeverity> {
+    payload
+        .pointer(pointer)
+        .and_then(Value::as_str)
+        .and_then(|tier| tier.parse().ok())
 }
 
 #[cfg(test)]
@@ -166,9 +238,18 @@ mod tests {
         bindings
     }
 
+    /// The host detection an exec walk never runs, as the record lists it.
+    fn host_detection() -> Value {
+        json!([
+            ["applicable-rules-not-checked", 1],
+            ["grounding-not-checked", 1],
+            ["references-not-checked", 1]
+        ])
+    }
+
     #[test]
     fn each_step_counts_in_the_tier_it_assigns() {
-        let mut tally = AnalyzeTally::default();
+        let mut tally = AnalyzeTally::new();
         let mut context = Map::new();
         context.insert("frontmatter".into(), json!({ "status": "planned" }));
         tally.record_primitive(
@@ -214,7 +295,7 @@ mod tests {
         );
         tally.record_primitive(
             "check-orphaned-references",
-            &json!({ "findings": [{}] }),
+            &json!({ "findings": [{}], "skipped": [] }),
             &context,
         );
         tally.record_primitive(
@@ -222,9 +303,15 @@ mod tests {
             &json!({ "unfolded": [{}] }),
             &context,
         );
-        tally.record_assessment(&json!({ "passed": false, "finding": { "severity": "must" } }));
-        tally.record_assessment(&json!({ "passed": false, "finding": { "severity": "should" } }));
-        tally.record_assessment(&json!({ "passed": true }));
+        tally.record_assessment(
+            Some(RuleSeverity::Must),
+            &json!({ "passed": false, "finding": { "severity": "must" } }),
+        );
+        tally.record_assessment(
+            Some(RuleSeverity::Should),
+            &json!({ "passed": false, "finding": { "severity": "should" } }),
+        );
+        tally.record_assessment(Some(RuleSeverity::Must), &json!({ "passed": true }));
 
         let bindings = bound(&tally);
         assert_eq!(bindings["hard-fail"], 1);
@@ -236,15 +323,31 @@ mod tests {
         assert_eq!(bindings["advisory"], 9);
         assert_eq!(
             bindings["unexamined-by-reason"],
-            json!([["root-absent", 2]])
+            json!([
+                ["applicable-rules-not-checked", 1],
+                ["grounding-not-checked", 1],
+                ["references-not-checked", 1],
+                ["root-absent", 2]
+            ])
         );
     }
 
-    /// Below `clarified` an incompatible dependency is allowed, and with no
-    /// rule file read a missing citation is nothing checked, not a finding.
+    /// Steps 13–15 are host prose the walker never runs, so a walk that
+    /// detected nothing still records them unexamined rather than reading as
+    /// fully examined.
     #[test]
-    fn a_draft_spec_and_an_unread_rule_set_raise_nothing() {
-        let mut tally = AnalyzeTally::default();
+    fn an_exec_walk_records_the_host_detection_it_never_runs() {
+        let bindings = bound(&AnalyzeTally::new());
+        assert_eq!(bindings["blocking-findings"], 0);
+        assert_eq!(bindings["unexamined-by-reason"], host_detection());
+    }
+
+    /// Below `clarified` an incompatible dependency is allowed, and with no
+    /// rule file read a citation is unexamined, not missing: nothing was
+    /// checked, so nothing is blocking and the record says what went unchecked.
+    #[test]
+    fn a_draft_spec_raises_nothing_and_an_unread_rule_set_records_its_citations() {
+        let mut tally = AnalyzeTally::new();
         let mut context = Map::new();
         context.insert("frontmatter".into(), json!({ "status": "draft" }));
         tally.record_primitive(
@@ -254,12 +357,101 @@ mod tests {
         );
         tally.record_primitive(
             "check-rule-ids",
-            &json!({ "missing": ["X-1"], "deprecated": [], "examined": 0 }),
+            &json!({
+                "citations": [
+                    { "rule-id": "X-1", "found": false, "deprecated": false },
+                    { "rule-id": "X-2", "found": false, "deprecated": false }
+                ],
+                "missing": ["X-1", "X-2"],
+                "deprecated": [],
+                "examined": 0
+            }),
             &context,
         );
         let bindings = bound(&tally);
         assert_eq!(bindings["blocking-findings"], 0);
         assert_eq!(bindings["advisory"], 0);
-        assert_eq!(bindings["unexamined-by-reason"], json!([]));
+        assert_eq!(
+            bindings["unexamined-by-reason"],
+            json!([
+                ["applicable-rules-not-checked", 1],
+                ["grounding-not-checked", 1],
+                ["references-not-checked", 1],
+                ["rule-citations-not-checked", 2]
+            ])
+        );
+    }
+
+    /// An unread rule set is a gap only when the spec cites a rule: with no
+    /// citation there was nothing to check against it.
+    #[test]
+    fn an_unread_rule_set_with_no_citation_records_nothing() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_primitive(
+            "check-rule-ids",
+            &json!({ "citations": [], "missing": [], "deprecated": [], "examined": 0 }),
+            &Map::new(),
+        );
+        assert_eq!(bound(&tally)["unexamined-by-reason"], host_detection());
+    }
+
+    /// A referrer `check-orphaned-references` could not read is unexamined:
+    /// its empty `findings` for that file is not a clean one.
+    #[test]
+    fn an_unreadable_referrer_is_recorded_unexamined() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_primitive(
+            "check-orphaned-references",
+            &json!({
+                "findings": [],
+                "skipped": [
+                    { "path": "CLAUDE.md", "reason": "file exists but could not be read as UTF-8 text" },
+                    { "path": "AGENTS.md", "reason": "file exists but could not be read as UTF-8 text" }
+                ]
+            }),
+            &Map::new(),
+        );
+        let bindings = bound(&tally);
+        assert_eq!(bindings["advisory"], 0);
+        assert_eq!(
+            bindings["unexamined-by-reason"],
+            json!([
+                ["applicable-rules-not-checked", 1],
+                ["grounding-not-checked", 1],
+                ["references-not-checked", 1],
+                ["referrer-unreadable", 2]
+            ])
+        );
+    }
+
+    /// Validation accepts a capitalized tier, so the tally does too; and a
+    /// failed assessment with no finding counts in its rule's tier rather
+    /// than vanishing.
+    #[test]
+    fn an_assessment_counts_whatever_its_case_and_with_or_without_a_finding() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_assessment(
+            None,
+            &json!({ "passed": false, "finding": { "severity": "MUST" } }),
+        );
+        tally.record_assessment(
+            None,
+            &json!({ "passed": false, "finding": { "severity": "Should" } }),
+        );
+        tally.record_assessment(Some(RuleSeverity::Must), &json!({ "passed": false }));
+        tally.record_assessment(Some(RuleSeverity::Should), &json!({ "passed": false }));
+        tally.record_assessment(Some(RuleSeverity::Info), &json!({ "passed": false }));
+        let bindings = bound(&tally);
+        assert_eq!(bindings["blocking-findings"], 2);
+        assert_eq!(bindings["advisory"], 2);
+    }
+
+    #[test]
+    fn the_assessed_tier_is_read_from_the_request() {
+        let request = json!({ "rule": { "id": "X-1", "verification": "v", "severity": "should" } });
+        assert_eq!(
+            AnalyzeTally::assessed_tier(&request),
+            Some(RuleSeverity::Should)
+        );
     }
 }

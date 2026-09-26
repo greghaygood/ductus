@@ -673,18 +673,19 @@ async fn compute_review_scope_returns_structured_scope_via_mcp() {
     );
 }
 
-/// The three fields 0.48.0 added to primitive **results** cross the MCP wire.
+/// `check-review-gate`'s per-entry `cross-spec-impact`, a field 0.48.0 added
+/// to a primitive **result**, crosses the MCP wire.
 ///
-/// They were verified through the CLI and through unit tests, both of which
+/// It was verified through the CLI and through unit tests, both of which
 /// share the serde path this exercises — so this is not a second
 /// serialization. What it pins is the MCP surface specifically: a result type
 /// that fails to serve (a `JsonSchema` derive that will not generate, a field
 /// the wrapper drops) would be invisible to every other test, and the
 /// markdown-only and MCP paths are supposed to reach the same result.
 ///
-/// `check-review-gate`'s `cross-spec-impact` had no wire test at all. The
-/// standing inbox count, which once rode `diff-cross-spec` and `write-review`,
-/// now crosses the wire on `dashboard` and is asserted below.
+/// 0.48.0 added two more, the `inbox-standing` fields on `diff-cross-spec`
+/// and `write-review`; spec 058 removed both, and the standing inbox count now
+/// crosses the wire on `dashboard`, asserted below.
 #[tokio::test]
 async fn the_cross_spec_impact_gate_reports_per_entry_via_mcp() {
     let tmp = tempfile::tempdir().unwrap();

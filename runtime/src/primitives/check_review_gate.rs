@@ -562,11 +562,7 @@ fn stale_review_block(freshness: &RecordFreshness, project: &str) -> Option<Chec
 }
 
 /// Gate check 1 — every markdown file in the feature directory passes
-/// `markdownlint-cli2`.
-///
-/// The glob is recursive (`**/*.md`), so `scenarios/` is included and the
-/// feature directory's own files are covered — `**` matches zero or more
-/// directories.
+/// `markdownlint-cli2`, by [`lint_markdown::feature_markdown_glob`].
 ///
 /// A non-zero exit the parser could not attribute to specific violations gets
 /// its own message rather than being reported as zero violations: a lint that
@@ -578,7 +574,7 @@ fn markdown_lint_block(
 ) -> Result<Option<CheckReviewGateResult>> {
     let lint_result = lint(
         &LintMarkdownArgs {
-            paths: vec![format!("{rel_dir}/**/*.md")],
+            paths: vec![lint_markdown::feature_markdown_glob(rel_dir)],
             fix: false,
         },
         repo,

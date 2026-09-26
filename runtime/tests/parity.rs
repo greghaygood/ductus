@@ -345,6 +345,118 @@ fn implement_rejects_out_of_boundary_write_code_edit() {
     );
 }
 
+/// Stage `analyze-basic` with its session replaced by the one `write-session`
+/// writes — the target alone — apply `prepare`, and run `exec analyze` with the
+/// two caller-supplied timestamps as its only arguments. Returns the staged tree
+/// and the run's stdout.
+///
+/// The fixture's own session seeds every list the walk needs, which no
+/// written session does; this is the shape a real `/{project}:target` leaves
+/// (spec 022 scenario `exec-analyze-derives-its-list-seeds`).
+fn exec_analyze_on_a_written_session(prepare: impl FnOnce(&Path)) -> (tempfile::TempDir, String) {
+    ensure_binary_built();
+    let bin = runtime_binary();
+    let staged = stage_fixture("analyze", "analyze-basic");
+    fs::remove_file(staged.path().join(".govern.session.toml")).unwrap();
+    prepare(staged.path());
+
+    let wrote = Command::new(&bin)
+        .args([
+            "write-session",
+            "--feature",
+            "003-analyze",
+            "--path",
+            "specs/003-analyze",
+        ])
+        .current_dir(staged.path())
+        .output()
+        .expect("spawn write-session");
+    assert!(
+        wrote.status.success(),
+        "write-session failed: {}",
+        String::from_utf8_lossy(&wrote.stderr)
+    );
+    let session: toml::Table =
+        toml::from_str(&fs::read_to_string(staged.path().join(".ductus/session.toml")).unwrap())
+            .unwrap();
+    let keys: Vec<&str> = session.keys().map(String::as_str).collect();
+    assert_eq!(keys, ["feature", "path", "set-at"], "{session:?}");
+
+    let mut child = Command::new(&bin)
+        .args([
+            "exec",
+            "analyze",
+            "analyzed-at=2026-05-11T00:00:00Z",
+            "analyzed-against=abcdef0",
+        ])
+        .current_dir(staged.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn runtime");
+    let responses =
+        fs::read(repo_root().join("runtime/tests/fixtures/analyze-basic/stdin.jsonl")).unwrap();
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(&responses)
+        .expect("stdin write");
+    let output = child.wait_with_output().expect("wait");
+    let stdout = String::from_utf8(output.stdout).expect("utf-8 stdout");
+    assert!(
+        output.status.success(),
+        "exec analyze on a written session exited {:?}\n{stdout}",
+        output.status
+    );
+    (staged, stdout)
+}
+
+/// A session `write-session` wrote carries no `rule-files` and no lint
+/// `paths`, and a `key=value` argument cannot supply a list, so exec analyze
+/// derives both: the walk completes, assesses the fixture's rule from the
+/// derived rule file against the spec the session's directory names, and
+/// records the run.
+#[test]
+fn analyze_completes_on_the_session_write_session_writes() {
+    let (staged, stdout) = exec_analyze_on_a_written_session(|_| {});
+    let requests: Vec<serde_json::Value> = stdout
+        .lines()
+        .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
+        .filter(|envelope| envelope["type"] == "llm-request")
+        .collect();
+    assert_eq!(requests.len(), 2, "{stdout}");
+    for request in &requests {
+        assert_eq!(request["request"]["spec-path"], "specs/003-analyze/spec.md");
+        assert_eq!(request["request"]["rule"]["id"], "CFG-CONST-001");
+    }
+    let analysis = fs::read_to_string(staged.path().join("specs/003-analyze/analysis.md")).unwrap();
+    // The fixture's two scripted assessments: a MUST and a SHOULD.
+    assert!(analysis.contains("\nblocking-findings: 1\n"), "{analysis}");
+    assert!(analysis.contains("\nadvisory: 1\n"), "{analysis}");
+    assert!(
+        !analysis.contains("rule-citations-not-checked"),
+        "{analysis}"
+    );
+}
+
+/// With no rule-file directory the derived list is empty, so step 5 reads no
+/// rule file: the spec's citation is recorded unexamined, not missing, and
+/// raises no blocking finding against a spec nothing was checked against.
+#[test]
+fn analyze_with_no_rule_directory_records_its_citations_unexamined() {
+    let (staged, _) = exec_analyze_on_a_written_session(|root| {
+        fs::remove_dir_all(root.join("framework/rules")).unwrap();
+    });
+    let analysis = fs::read_to_string(staged.path().join("specs/003-analyze/analysis.md")).unwrap();
+    assert!(
+        analysis.contains("  rule-citations-not-checked: 1\n"),
+        "{analysis}"
+    );
+    assert!(analysis.contains("\nblocking-findings: 1\n"), "{analysis}");
+}
+
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()

@@ -71,6 +71,15 @@ fn launch_guidance(kind: std::io::ErrorKind, via_npx: bool) -> Option<String> {
     })
 }
 
+/// Every markdown file in the feature directory `rel_dir`, as a glob
+/// markdownlint-cli2 expands itself. Recursive, so `scenarios/` is included,
+/// and `**` matches zero directories, so the directory's own files are too.
+/// The one statement of a feature's lint subject, shared by
+/// `check-review-gate`'s lint check and exec `/analyze`'s step 7.
+pub(crate) fn feature_markdown_glob(rel_dir: &str) -> String {
+    format!("{rel_dir}/**/*.md")
+}
+
 /// Execute the `lint-markdown` primitive.
 ///
 /// # Errors

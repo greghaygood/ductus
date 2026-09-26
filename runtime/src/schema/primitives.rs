@@ -321,8 +321,14 @@ pub struct AnalyzeBlock {
     ///   (nothing is provable because the path's top-level segment does not
     ///   exist here). Correct, and nothing is owed.
     /// - **Could not be read** — `target-missing`, `target-unparseable`,
-    ///   `no-readable-state`, `artifact-unreadable`. A real gap in what the
-    ///   run could see, and the class worth acting on.
+    ///   `no-readable-state`, `artifact-unreadable`, and the gaps no check
+    ///   decided on: `referrer-unreadable` (a referrer
+    ///   `check-orphaned-references` could not read),
+    ///   `rule-citations-not-checked` (citations `check-rule-ids` checked
+    ///   against no rule file), and `references-not-checked`,
+    ///   `applicable-rules-not-checked`, `grounding-not-checked` (the host
+    ///   detection an exec walk never runs). A real gap in what the run could
+    ///   see, and the class worth acting on.
     ///
     /// Omitted when empty, so a fully-examined run carries no map rather
     /// than a map of zeroes.

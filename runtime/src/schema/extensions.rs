@@ -278,7 +278,7 @@ pub struct PerformReviewResponse {
 /// walker accumulates observations in this shape alone. An exec run therefore
 /// records every observation undispositioned (spec 058, AC26), and a
 /// disposition a host volunteers is neither type-checked nor carried.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct PassObservation {
     /// What was observed, as one line of prose.

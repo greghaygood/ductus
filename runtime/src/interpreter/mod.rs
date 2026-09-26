@@ -57,7 +57,7 @@ use serde_json::{Map, Value};
 
 use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
-use crate::schema::extensions::{self, ValidationError, WriteCodeResponse};
+use crate::schema::extensions::{self, PerformReviewResponse, ValidationError, WriteCodeResponse};
 use crate::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
@@ -114,14 +114,19 @@ pub enum WalkOutcome {
 impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
     /// Build a walker against `procedure`, rooted at `repo`. `context`
     /// carries CLI-supplied bindings (e.g., `feature`) that primitives
-    /// deserialize their args from.
+    /// deserialize their args from. An `/analyze` walk also binds the list
+    /// seeds a session cannot carry (see [`derive_analyze_seeds`]).
     pub fn new(
         procedure: &'a Procedure,
         repo: PathBuf,
-        context: Map<String, Value>,
+        mut context: Map<String, Value>,
         reader: &'a mut R,
         writer: &'a mut W,
     ) -> Self {
+        let analyze = procedure.command == "analyze";
+        if analyze {
+            derive_analyze_seeds(&mut context, &repo);
+        }
         let seeded_keys = context.keys().cloned().collect();
         Self {
             procedure,
@@ -131,8 +136,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             reader,
             writer,
             request_counter: 0,
-            analyze_tally: (procedure.command == "analyze")
-                .then(analyze_tally::AnalyzeTally::default),
+            analyze_tally: analyze.then(analyze_tally::AnalyzeTally::new),
         }
     }
 
@@ -379,6 +383,10 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 return Ok(Some(WalkOutcome::Errored { code, message }));
             }
         };
+        // The tier of the rule an assessment request carries, taken before the
+        // request is handed off: it counts a failed assessment the host
+        // returned no finding for.
+        let assessed = analyze_tally::AnalyzeTally::assessed_tier(&request);
         self.emit_llm_request(identifier, &request_id, request)?;
         let response = self.await_llm_response(&request_id)?;
         if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
@@ -387,7 +395,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         if identifier == "assessSpecQuality"
             && let Some(tally) = &mut self.analyze_tally
         {
-            tally.record_assessment(&response);
+            tally.record_assessment(assessed, &response);
         }
         // `performReview` runs once per pass; accumulate each pass's
         // findings and observations into the shared context keys so a later
@@ -395,22 +403,22 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         // observation is a pass output the reviewer judged real but that
         // matched no loaded rule, and it reaches `write-review` by this same
         // route — in `PassObservation`'s shape, text and path alone, since
-        // a pass has no disposition to give. The walker has no operator to
-        // disposition it, so it is recorded undispositioned (spec 058, AC26).
+        // a pass has no disposition to give. Both are taken from the typed
+        // response, so nothing a pass volunteers beyond that shape is
+        // carried. The walker has no operator to disposition an observation,
+        // so it is recorded undispositioned (spec 058, AC26).
         if identifier == "performReview" {
+            let pass = serde_json::to_value(reparse::<PerformReviewResponse>(&response)?)
+                .map_err(std::io::Error::other)?;
             for key in payload::PERFORM_REVIEW_ACCUMULATORS {
-                let Some(Value::Array(items)) = response.get(*key) else {
+                let Some(Value::Array(items)) = pass.get(*key) else {
                     continue;
                 };
-                let items = if *key == "observations" {
-                    pass_observations(items)
-                } else {
-                    items.clone()
-                };
                 match self.context.get_mut(*key) {
-                    Some(Value::Array(existing)) => existing.extend(items),
+                    Some(Value::Array(existing)) => existing.extend(items.iter().cloned()),
                     _ => {
-                        self.context.insert((*key).to_string(), Value::Array(items));
+                        self.context
+                            .insert((*key).to_string(), Value::Array(items.clone()));
                     }
                 }
             }
@@ -613,12 +621,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             return Ok(Some(WalkOutcome::Errored { code, message }));
         }
         if identifier == "writeCode" {
-            // `validate_response` already confirmed the shape, so the
-            // boundary check on the typed struct can't fail to deserialize.
-            let parsed: WriteCodeResponse =
-                serde_json::from_value(response.clone()).map_err(|err| {
-                    std::io::Error::other(format!("re-parse of validated payload failed: {err}"))
-                })?;
+            let parsed = reparse::<WriteCodeResponse>(response)?;
             let boundary = self.write_boundary();
             if let Err(err) = extensions::validate_write_code_boundary(&parsed, &boundary) {
                 let message = err.to_string();
@@ -647,6 +650,16 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             })
             .unwrap_or_default()
     }
+}
+
+/// The typed form of an `llm-response` that [`extensions::validate_response`]
+/// already accepted. Validation parsed the same shape, so this cannot fail on a
+/// validated payload; a failure would mean the two disagree, and it surfaces as
+/// an I/O error rather than being dropped.
+fn reparse<T: serde::de::DeserializeOwned>(response: &Value) -> std::io::Result<T> {
+    serde_json::from_value(response.clone()).map_err(|err| {
+        std::io::Error::other(format!("re-parse of validated payload failed: {err}"))
+    })
 }
 
 /// The envelope's `type` discriminator, for stderr ignore-and-continue logs.
@@ -714,9 +727,9 @@ fn dispatch_primitive(
     // run itemizes nothing, and against the tier counts the walker tallied
     // (see `analyze_tally`) the writer counts every live finding as
     // undispositioned (spec 058, AC26). The context's `findings` key belongs
-    // to other primitives (`check-artifacts`, `check-orphaned-references`),
-    // whose entries are not analyze findings and would fail to bind, so it
-    // never reaches this primitive.
+    // to other primitives (`validate-frontmatter`, `check-artifacts`,
+    // `check-orphaned-references`), whose entries are not analyze findings and
+    // would fail to bind, so it never reaches this primitive.
     if name == "write-analysis" {
         bindings.remove("findings");
     }
@@ -729,9 +742,8 @@ fn dispatch_primitive(
         name,
         "validate-frontmatter" | "resolve-anchor" | "check-rule-ids"
     ) && let Some(Value::String(path)) = bindings.get("path")
-        && repo.join(path).is_dir()
     {
-        let spec = format!("{}/spec.md", path.trim_end_matches('/'));
+        let spec = spec_file(repo, path);
         bindings.insert("path".into(), Value::String(spec));
     }
     // Exec-path binding for `resolve-anchor`: `/analyze` step 4 resolves the
@@ -740,9 +752,7 @@ fn dispatch_primitive(
     // project's constitution when the context names no markers file.
     if name == "resolve-anchor"
         && !bindings.contains_key("markers-path")
-        && let Some(constitution) = [".ductus/constitution.md", "framework/constitution.md"]
-            .into_iter()
-            .find(|candidate| repo.join(candidate).is_file())
+        && let Some(constitution) = crate::schema::paths::constitution_path(repo)
     {
         bindings.insert("markers-path".into(), Value::String(constitution.into()));
     }
@@ -863,24 +873,64 @@ fn dispatch_primitive(
     }
 }
 
+/// The spec file a context `path` names. A session target's `path` is the spec
+/// *directory*, as `write-session` records it, and what `/analyze` reads as
+/// "the spec path" is that directory's `spec.md`; a `path` naming anything
+/// else is the spec file already and is returned as given.
+fn spec_file(repo: &Path, path: &str) -> String {
+    if repo.join(path).is_dir() {
+        format!("{}/spec.md", path.trim_end_matches('/'))
+    } else {
+        path.to_string()
+    }
+}
+
+/// Bind the list seeds an exec `/analyze` walk needs and no session carries
+/// (spec 022 scenario `exec-analyze-derives-its-list-seeds`). A session
+/// `write-session` writes names the target alone, and a `key=value` argument
+/// binds only a string, so without these no command line could complete the
+/// walk. A seeded value is used as given.
+///
+/// - `rule-files` — every rule file in the project's rule-file directory,
+///   resolved as `discover-rule-files` resolves it. `/analyze` loads all of
+///   them whatever the project's surfaces, because a citation may name a rule
+///   on any surface. A directory that is absent, empty, or unreadable binds
+///   none, and step 5's `examined: 0` then records each citation unexamined
+///   rather than missing.
+/// - `paths` — the feature directory's markdown files, step 7's lint subject,
+///   as the glob `check-review-gate` lints. A scenario pair in the session
+///   does not narrow it. Unbound without a `feature` to name the directory.
+///
+/// `analyzed-at` and `analyzed-against` are not derived: the caller supplies
+/// them, as `/analyze`'s host does, and a missing one fails by name at
+/// `write-analysis`.
+fn derive_analyze_seeds(context: &mut Map<String, Value>, repo: &Path) {
+    if !context.contains_key("rule-files") {
+        let rule_files = match primitives::discover_rule_files::resolve_rules_dir(repo) {
+            (Some(dir), rel) => primitives::discover_rule_files::list_rule_files(&dir)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|name| Value::String(format!("{rel}/{name}")))
+                .collect(),
+            (None, _) => Vec::new(),
+        };
+        context.insert("rule-files".into(), Value::Array(rule_files));
+    }
+    if !context.contains_key("paths")
+        && let Some(Value::String(feature)) = context.get("feature")
+        && primitives::validate_no_traversal(feature).is_ok()
+    {
+        let root = crate::schema::paths::Paths::load(repo).specs_root;
+        let glob = primitives::lint_markdown::feature_markdown_glob(&format!("{root}/{feature}"));
+        context.insert("paths".into(), Value::Array(vec![Value::String(glob)]));
+    }
+}
+
 /// Whether a `verifyCriteria` response affirmatively confirms the criterion
 /// at `criterion_index` as `met: true`. A missing/non-numeric index, a
 /// missing `results` array, an absent verdict for the index, or an explicit
 /// `met: false` all yield `false` — the completion gate flips only criteria
 /// the response confirms (data-model §verifyCriteria).
-/// A `performReview` pass's observations in
-/// [`extensions::PassObservation`]'s shape — text and path — whatever else the
-/// host's response carried, so nothing a pass volunteers reaches
-/// `write-review` as a disposition. The response was validated against that
-/// shape before this runs, so every item deserializes.
-fn pass_observations(items: &[Value]) -> Vec<Value> {
-    items
-        .iter()
-        .filter_map(|item| serde_json::from_value::<extensions::PassObservation>(item.clone()).ok())
-        .filter_map(|observation| serde_json::to_value(observation).ok())
-        .collect()
-}
-
 fn criterion_verified_met(verify: &Value, criterion_index: Option<&Value>) -> bool {
     let Some(index) = criterion_index.and_then(Value::as_u64) else {
         return false;
@@ -1335,10 +1385,155 @@ mod tests {
         assert!(analysis.contains("  undispositioned: 2\n"), "{analysis}");
     }
 
+    /// Steps 11 and 12 feed each `assessSpecQuality` response into the tally
+    /// the record is written from. A finding counts in its own tier whatever
+    /// the case validation accepted it in, and a failed assessment the host
+    /// returned no finding for counts in the tier of the rule the walker asked
+    /// about. The capitalized finding answers a SHOULD-tier request, so only
+    /// its own tier, read case-insensitively, counts it as blocking.
+    #[test]
+    fn an_exec_analyze_records_the_assessments_it_receives() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: clarified\ndependencies: []\n---\n\n# x\n",
+        )
+        .unwrap();
+        let assess = |n: u32, tier: &str| Step::Extension {
+            number: StepNumber(vec![n]),
+            identifier: "assessSpecQuality".into(),
+            prose: format!("For every loaded {tier}-tier rule, request a semantic assessment."),
+            location: loc(),
+        };
+        let procedure = Procedure {
+            command: "analyze".into(),
+            steps: vec![
+                assess(12, "SHOULD"),
+                assess(11, "MUST"),
+                assess(12, "SHOULD"),
+                assess(12, "SHOULD"),
+                Step::Primitive {
+                    number: StepNumber(vec![19]),
+                    name: "write-analysis".into(),
+                    prose: String::new(),
+                    location: loc(),
+                },
+            ],
+        };
+        let responses = concat!(
+            "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"passed\":false,\"finding\":{\"severity\":\"MUST\",\"rule-id\":\"X-1\",\"location\":{\"section\":\"x\",\"line\":1},\"message\":\"m\"}}}\n",
+            "{\"type\":\"llm-response\",\"request-id\":\"req-2\",\"response\":{\"passed\":false}}\n",
+            "{\"type\":\"llm-response\",\"request-id\":\"req-3\",\"response\":{\"passed\":false}}\n",
+            "{\"type\":\"llm-response\",\"request-id\":\"req-4\",\"response\":{\"passed\":true}}\n",
+        );
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert("path".into(), Value::String("specs/001-x".into()));
+        context.insert(
+            "analyzed-at".into(),
+            Value::String("2026-09-26T00:00:00Z".into()),
+        );
+        context.insert("analyzed-against".into(), Value::String("abc1234".into()));
+        let mut reader = Cursor::new(responses.to_string());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            tmp.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+        let analysis = std::fs::read_to_string(dir.join("analysis.md")).unwrap();
+        // The capitalized MUST finding, and the MUST assessment with none.
+        // Read case-sensitively, the finding would fall back to its SHOULD
+        // request and count as advisory instead.
+        assert!(analysis.contains("\nblocking-findings: 2\n"), "{analysis}");
+        // The SHOULD assessment with no finding; the passed one counts nowhere.
+        assert!(analysis.contains("\nadvisory: 1\n"), "{analysis}");
+    }
+
+    /// A session `write-session` wrote names the target alone, so an analyze
+    /// walk binds the two list seeds its steps need: every rule file in the
+    /// rule-file directory, whatever the project's surfaces, and the feature
+    /// directory's markdown files.
+    #[test]
+    fn an_analyze_walk_derives_the_list_seeds_a_session_cannot_carry() {
+        let tmp = tempfile::tempdir().unwrap();
+        let rules = tmp.path().join("framework/rules");
+        std::fs::create_dir_all(&rules).unwrap();
+        for name in ["security-frontend.md", "quality-cross.md", "notes.txt"] {
+            std::fs::write(rules.join(name), "# rules\n").unwrap();
+        }
+        std::fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/config.toml"),
+            "[rules]\nsurfaces = [\"backend\"]\n",
+        )
+        .unwrap();
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert("path".into(), Value::String("specs/001-x".into()));
+        derive_analyze_seeds(&mut context, tmp.path());
+        assert_eq!(
+            context["rule-files"],
+            serde_json::json!([
+                "framework/rules/quality-cross.md",
+                "framework/rules/security-frontend.md"
+            ])
+        );
+        assert_eq!(context["paths"], serde_json::json!(["specs/001-x/**/*.md"]));
+    }
+
+    /// A seeded list is the caller's, so it is used as given — which is why the
+    /// `analyze-basic` fixture, whose session seeds both, walks unchanged.
+    #[test]
+    fn seeded_analyze_lists_are_used_as_given() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join("framework/rules")).unwrap();
+        std::fs::write(tmp.path().join("framework/rules/a.md"), "# a\n").unwrap();
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert("rule-files".into(), serde_json::json!(["mine.md"]));
+        context.insert("paths".into(), serde_json::json!(["specs/001-x/spec.md"]));
+        let seeded = context.clone();
+        derive_analyze_seeds(&mut context, tmp.path());
+        assert_eq!(context, seeded);
+    }
+
+    /// An absent or empty rule-file directory binds an empty list, so step 5
+    /// reads no rule file and records the spec's citations unexamined.
+    #[test]
+    fn an_absent_or_empty_rule_directory_binds_no_rule_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut absent = Map::new();
+        derive_analyze_seeds(&mut absent, tmp.path());
+        assert_eq!(absent["rule-files"], serde_json::json!([]));
+
+        std::fs::create_dir_all(tmp.path().join("framework/rules")).unwrap();
+        let mut empty = Map::new();
+        derive_analyze_seeds(&mut empty, tmp.path());
+        assert_eq!(empty["rule-files"], serde_json::json!([]));
+    }
+
+    /// The lint subject is a directory inside the spec root; a `feature` that
+    /// climbs out of it names none, so none is bound.
+    #[test]
+    fn a_feature_outside_the_spec_root_binds_no_lint_subject() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("../elsewhere".into()));
+        derive_analyze_seeds(&mut context, tmp.path());
+        assert!(!context.contains_key("paths"), "{context:?}");
+    }
+
     /// `write-analysis` binds no `findings` from the walker context: that key
-    /// belongs to `check-artifacts` and `check-orphaned-references`, whose
-    /// entries are not analyze findings. Before this, one orphaned reference
-    /// made an exec `/analyze` fail at the record step (spec 058).
+    /// belongs to `validate-frontmatter`, `check-artifacts` and
+    /// `check-orphaned-references`, whose entries are not analyze findings.
+    /// Before this, one orphaned reference made an exec `/analyze` fail at the
+    /// record step (spec 058).
     #[test]
     fn write_analysis_binds_no_other_primitives_findings() {
         let tmp = tempfile::tempdir().unwrap();
