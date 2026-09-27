@@ -683,10 +683,10 @@ mod tests {
     #[test]
     fn a_root_absolute_target_resolves_against_the_project_root() {
         // At the repository's root, what a markdown renderer does with
-        // `/specs/...`. Resolving it
-        // against the *filesystem* root instead would report every one of
-        // them broken, or — worse on a machine that happens to have the
-        // path — report a link to somewhere outside the repo as fine.
+        // `/specs/...`. Resolving it against the *filesystem* root instead
+        // would report every one of them broken, or — worse on a machine that
+        // happens to have the path — report a link to somewhere outside the
+        // repo as fine.
         let tmp = tempdir().unwrap();
         write(tmp.path(), "specs/041-real/spec.md", "# Real\n");
         write(

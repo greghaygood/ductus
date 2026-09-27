@@ -1374,11 +1374,11 @@ pub(crate) fn workdir_prefix(repository: &git2::Repository, dir: &Path) -> Optio
 ///
 /// Every reader that asks git about a project's files opens the repository
 /// through this (spec 059), save `inbox_standing`, which places the inbox
-/// file's own directory rather than the project root. Git names each path in its trees, index, status,
-/// and diffs from the work tree, and a project names its files from the
-/// project root. The two agree only when the project is the work tree's root,
-/// so a reader converts with [`Self::to_git`] on the way in and
-/// [`Self::to_project`] on the way out.
+/// file's own directory rather than the project root. Git names each path in
+/// its trees, index, status, and diffs from the work tree, and a project
+/// names its files from the project root. The two agree only when the project
+/// is the work tree's root, so a reader converts with [`Self::to_git`] on the
+/// way in and [`Self::to_project`] on the way out.
 pub(crate) struct ProjectRepository {
     pub(crate) repository: git2::Repository,
     /// The project root's path from the work tree, `/`-joined: empty at the
@@ -1396,9 +1396,9 @@ impl ProjectRepository {
     /// `core.worktree` moved the work tree elsewhere (`GIT_WORK_TREE` is not
     /// consulted: libgit2 reads it only when a repository is opened from the
     /// environment, which discovery does not do). Each is the no-repository
-    /// case. Reading history from the work tree's root
-    /// instead would find none and answer as for a spec never committed,
-    /// which a caller cannot tell from a real answer.
+    /// case. Reading history from the work tree's root instead would find none
+    /// and answer as for a spec never committed, which a caller cannot tell
+    /// from a real answer.
     pub(crate) fn discover(project: &Path) -> std::result::Result<Self, git2::Error> {
         let repository = git2::Repository::discover(project)?;
         let Some(place) = workdir_prefix(&repository, project) else {

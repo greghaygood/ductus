@@ -1,8 +1,8 @@
 //! `diff-cross-spec` — the cross-spec impact surface for `/ductus:implement`.
 //!
 //! The deterministic filter implement steps 7 and 13 previously re-derived
-//! by hand per task (the gate step's prose self-declared "no primitive owns this
-//! filter yet"; spec 022, scenario coverage-expansion-primitives): the
+//! by hand per task (the gate step's prose self-declared "no primitive owns
+//! this filter yet"; spec 022, scenario coverage-expansion-primitives): the
 //! diff from the feature's first spec-dir commit — the same base
 //! `derive-boundary` computes, through the shared
 //! [`first_commit_for_prefix`] walk — scoped to the spec root and filtered

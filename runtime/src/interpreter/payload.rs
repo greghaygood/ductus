@@ -1110,11 +1110,11 @@ fn load_plan_relevant_files(
     // Affected Files entry. A project no work tree contains (discover fails:
     // no repository, a bare one, or a work tree `core.worktree` moved) yields
     // no repository, and every path is treated as not-ignored — the same
-    // degradation the per-path form gave. Git reads ignore rules
-    // by the path from the work tree, which is not the project root when the
-    // project sits in a subdirectory of its repository: asked by the
-    // project-relative path, the project's own `.gitignore` never applied,
-    // and a root pattern could refuse a path it does not name (spec 059).
+    // degradation the per-path form gave. Git reads ignore rules by the path
+    // from the work tree, which is not the project root when the project sits
+    // in a subdirectory of its repository: asked by the project-relative path,
+    // the project's own `.gitignore` never applied, and a root pattern could
+    // refuse a path it does not name (spec 059).
     let git_repo = crate::primitives::ProjectRepository::discover(&canon_repo).ok();
     let mut out = Vec::new();
     for rel in paths {
