@@ -2,6 +2,58 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.54.1] — 2026-09-27
+
+### Fixed
+
+- **A project in a subdirectory of its repository read git as though it sat
+  at the repository's root.** Git names every path in its trees, index,
+  status and diffs from the work tree, while a project names its files from
+  its own root, and the two differ by the project's directory inside the
+  repository. Ten runtime readers looked a project path up in git, or opened
+  the project root as the repository, and every one failed silently there.
+  Each now opens through one helper, `ProjectRepository`
+  (`runtime/src/primitives/mod.rs`), which discovers the repository from the
+  project root, places the project in its work tree, and converts paths on the
+  way in (`to_git`) and on the way out (`to_project`, which drops a path
+  outside the project). A project at the repository's root reads exactly as
+  before. Spec 059.
+  - `check-stuck` found no `in-progress` commit, counted nothing, and never
+    reported a spec stuck.
+  - `check-artifacts`' scenario-to-task walk found no `tasks.md` history, so a
+    scenario whose task had been pruned was reported as never having had one.
+  - `diff-cross-spec` and `derive-boundary` found no first spec-directory
+    commit and answered as for a spec never committed: cross-spec impact
+    unknown, and a boundary of the spec directory alone. Both now report
+    every path from the project root and leave out another project's changes.
+  - The exec payload's gitignore guard asked libgit2 about the project's
+    name for a path, so the project's own `.gitignore` never applied — an
+    ignored file under a name no secret pattern matches went into the payload
+    — and a root pattern could refuse a tracked file it does not name.
+  - `derive-dependencies` and `derive-references` could not open the index,
+    so they walked the worktree: `--write` rewrote untracked drafts,
+    `untracked-skipped` was always empty, and `--staged` rewrote nothing.
+  - The rename exemption on review and analyze freshness missed every
+    lookup, so a uniform repo-wide rename staled both records.
+  - `check-corpus-links --scope repository` could not open the repository and
+    blamed an unreadable index. It now examines the project's tracked
+    markdown, and its guidance names both causes it can have: no repository
+    contains the project, or its index could not be read.
+  - `compute-review-scope`, which spec 058 had already converted, treated a
+    project its repository's work tree could not place as the repository
+    root and found no history. That case is now the no-repository error, as
+    it is for every other reader.
+- **An escaping plan path was refused under the wrong label in any git
+  repository.** The exec payload asked libgit2 about gitignore before
+  checking containment, and libgit2 answers "ignored" for any path containing
+  `..`, so an Affected Files entry such as `../outside.txt` was refused as
+  `.gitignore` rather than `out-of-repo`. The refusal held; the label named
+  the wrong cause and contradicted 022's `writecode-payload-canonicalize-paths`.
+  Containment now runs first: a missing path is skipped before git is asked,
+  an outside one is refused as `out-of-repo`, and only a path inside the
+  project is asked about gitignore before it is read. It predates spec 059,
+  which found it.
+
 ## [0.54.0] — 2026-09-26
 
 ### Added

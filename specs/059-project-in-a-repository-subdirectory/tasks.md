@@ -147,8 +147,8 @@ Operator-approved (2026-09-26, with the `cross-spec-impact:` declaration; confir
 
 Moved from task 15 so the release carries task 16's runtime fix; number 15 is unused.
 
-- [ ] Bump `version` and `runtime/Cargo.toml:3` to `0.54.1`; refresh `runtime/Cargo.lock` with one build without `--locked`
-- [ ] Add a `runtime/CHANGELOG.md` section covering tasks 1–9 and 16
-- [ ] Run audit Family 20
+- [x] Bump `version` and `runtime/Cargo.toml:3` to `0.54.1`; refresh `runtime/Cargo.lock` with one build without `--locked`
+- [x] Add a `runtime/CHANGELOG.md` section covering tasks 1–9 and 16
+- [x] Run audit Family 20
 
 - **Done when**: Family 20 passes and the changelog section names every runtime change. The tag is cut after 059 and 018 are `done`.
