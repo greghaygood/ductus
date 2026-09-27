@@ -1,21 +1,50 @@
 ---
 spec: 018-adopter-owned-pre-commit
-last-run: 2026-09-13T20:24:59Z
-analyzed-against: d9c1d784df1524b86937efae2716adc8464e4990
+last-run: 2026-09-27T14:15:25Z
+analyzed-against: a5e8970ae7d3eafb29a3cff56aad7792368f4755
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 0
+unexamined: 7
 analyzed-digest:
-  plan.md: ea8d8d62a9e496e3bcc2017466343bad29869e348a26d62cb7a2bd8151eb3288
-  review.md: b8285de8e6fa5286b628bbfc2cc62499b156568b63cf22bd33a2754813770cea
-  spec.md: b6b8ab6d9e65367fb60efb5f1ee804cf50d913861659d2c3c46c02fa97858c94
-  tasks.md: 0b74cae6c34b594697a70c707ea58dcc79fc5c83012e71c62eb045ce763d67da
+  plan.md: a3f4801c0544dc9a07675d1e1ad8efc1575bb7855af94a5f2379e42b2d35e30b
+  review.md: ea791ccdb408da8b2966deae525c869fea2222a731772491a9f44a4c778d4fc8
+  spec.md: 4253124f834ac8c46e177860aa86138549111c7af80023967eb7e3c38fa9d14c
+  tasks.md: 4d0fcee0f530c10fde7cddc5583dfb416a33fbe0ee470a2e536893041308de2e
+unexamined-by-reason:
+  not-a-live-claim: 6
+  ships-to-adopter: 1
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Analysis — 018-adopter-owned-pre-commit
 
 ## Summary
 
-Relocated from the spec's frontmatter by the record-relocation migration. The counts above are the recorded run's; this report body begins at the next run.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 7 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+
+## Hard failures
+
+*None.*
+
+## Blocking findings
+
+*None.*
+
+## Advisory findings
+
+*None.*
+
+## Unexamined targets
+
+- not-a-live-claim: 6
+- ships-to-adopter: 1
+
+## Fixed in this run
+
+*None.*
