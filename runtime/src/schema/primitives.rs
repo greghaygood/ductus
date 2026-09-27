@@ -325,8 +325,11 @@ pub struct AnalyzeBlock {
     ///   decided on: `referrer-unreadable` (a referrer
     ///   `check-orphaned-references` could not read),
     ///   `rule-citations-not-checked` (citations `check-rule-ids` checked
-    ///   against no rule file), `rule-assessments-not-checked` (exec
-    ///   assessments whose request carried no rule to assess by), and
+    ///   against no rule file), `rule-assessments-not-checked` (loaded
+    ///   rules steps 11 and 12 did not ask about — no Verification, or no
+    ///   RFC 2119 keyword to take a tier from — and, on the exec path, a
+    ///   step that loaded no rule or named no tier), `rule-file-unreadable`
+    ///   (rule files those steps could not read), and
     ///   `references-not-checked`, `applicable-rules-not-checked`,
     ///   `grounding-not-checked` (the host detection an exec walk never
     ///   runs). A real gap in what the run could see, and the class worth

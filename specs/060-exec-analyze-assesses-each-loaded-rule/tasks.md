@@ -32,10 +32,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Document the per-rule walk and the reasons (AC3, AC8)
 
-- [ ] `framework/commands/analyze.md` steps 11 and 12: add the exec-path sentence (one request per loaded rule of the tier, tier from the Statement's keyword, host judges the trigger and answers `passed: true` when it does not fire), keeping the `MUST-tier` and `SHOULD-tier` phrases
-- [ ] `framework/commands/analyze.md` §Unexamined targets: classify `rule-file-unreadable` as could-not-be-read, redefine `rule-assessments-not-checked` as counting rules, and rewrite the counted phrases ("The last six reasons") without a count where the sentence allows
-- [ ] `runtime/src/schema/primitives.rs` `unexamined_by_reason` doc comment: the same two reasons
-- [ ] Commit, letting the pre-commit hook regenerate `.claude/commands/ductus/analyze.md`, then run `cargo test --release --locked` in full, since a command-source edit can move a parity golden
+- [x] `framework/commands/analyze.md` steps 11 and 12: add the exec-path sentence (one request per loaded rule of the tier, tier from the Statement's keyword, host judges the trigger and answers `passed: true` when it does not fire), keeping the `MUST-tier` and `SHOULD-tier` phrases
+- [x] `framework/commands/analyze.md` §Unexamined targets: classify `rule-file-unreadable` as could-not-be-read, redefine `rule-assessments-not-checked` as counting rules, and rewrite the counted phrases ("The last six reasons") without a count where the sentence allows
+- [x] `runtime/src/schema/primitives.rs` `unexamined_by_reason` doc comment: the same two reasons
+- [x] Commit, letting the pre-commit hook regenerate `.claude/commands/ductus/analyze.md`, then run `cargo test --release --locked` in full, since a command-source edit can move a parity golden
 
 - **Done when**: the three documents name the same reason set with the same classes, the generated command matches its source, and the full test suite passes.
 
