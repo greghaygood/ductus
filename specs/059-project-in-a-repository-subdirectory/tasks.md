@@ -20,8 +20,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 3. `check-artifacts` scenario-to-task walk (AC2)
 
-- [ ] Open through `ProjectRepository` in `ever_tasked_slugs`; build the `tasks.md` path with `to_git` (`check_artifacts.rs:419-420`)
-- [ ] Test: a `done` subdirectory spec whose scenario's task was pruned from `tasks.md` raises no scenario-to-task finding, and a scenario that never had a task still does
+- [x] Open through `ProjectRepository` in `ever_tasked_slugs`; build the `tasks.md` path with `to_git` (`check_artifacts.rs:419-420`)
+- [x] Test: a `done` subdirectory spec whose scenario's task was pruned from `tasks.md` raises no scenario-to-task finding, and a scenario that never had a task still does
 
 - **Done when**: both directions pass, and the first fails with `to_git` removed.
 

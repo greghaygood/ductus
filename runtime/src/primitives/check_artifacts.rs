@@ -111,8 +111,9 @@ use std::path::{Component, Path, PathBuf};
 
 use crate::primitives::label_criteria::StoredCounter;
 use crate::primitives::{
-    MarkdownBlock, PrimitiveError, Result, inline_code_spans, label_criteria, list_scenario_files,
-    read_spec, read_tasks, read_text, rel_path, scenario_name_cmp, split_blocks,
+    MarkdownBlock, PrimitiveError, ProjectRepository, Result, inline_code_spans, label_criteria,
+    list_scenario_files, read_spec, read_tasks, read_text, rel_path, scenario_name_cmp,
+    split_blocks,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
@@ -416,8 +417,11 @@ fn ever_tasked_slugs(
     feature: &str,
     slugs: &[String],
 ) -> Option<BTreeSet<String>> {
-    let rel = format!("{root}/{feature}/tasks.md");
-    let repository = git2::Repository::discover(repo).ok()?;
+    // History names the file from the git work tree, which is not the
+    // project root when the project sits in a subdirectory of its repository.
+    let project = ProjectRepository::discover(repo).ok()?;
+    let repository = &project.repository;
+    let rel = project.to_git(&format!("{root}/{feature}/tasks.md"));
     let mut walk = repository.revwalk().ok()?;
     walk.push_head().ok()?;
     let mut seen: BTreeSet<String> = BTreeSet::new();
@@ -2179,6 +2183,55 @@ mod tests {
         );
         let result = run(&args(), tmp.path()).unwrap();
         assert!(result.clean, "{:?}", result.findings);
+    }
+
+    /// A `done` spec in a subdirectory of its repository: `alpha`'s task was
+    /// pruned from `tasks.md` and `beta` never had one. History names
+    /// `tasks.md` from the work tree, so asked by the path from the project
+    /// root it found no revision at all and flagged `alpha` as never tasked
+    /// too, which is the finding this walk exists to suppress (spec 059).
+    #[test]
+    fn a_subdirectory_projects_pruned_task_is_found_in_history() {
+        use crate::primitives::git_fixture;
+        let tmp = tempdir().unwrap();
+        let (repository, project) = git_fixture::subdirectory_project(tmp.path());
+        write(
+            &project,
+            &format!("specs/{FEATURE}/spec.md"),
+            &spec("done", None),
+        );
+        write(&project, &format!("specs/{FEATURE}/plan.md"), "# Plan\n");
+        for slug in ["alpha", "beta"] {
+            write(
+                &project,
+                &format!("specs/{FEATURE}/scenarios/{slug}.md"),
+                "---\nsection: \"X\"\n---\n\n# X\n",
+            );
+        }
+        let tasks = format!("specs/{FEATURE}/tasks.md");
+        write(
+            &project,
+            &tasks,
+            "# T\n\n## 1. Alpha\n\n- [x] Implement `scenarios/alpha.md`\n\n- **Done when**: alpha.\n",
+        );
+        git_fixture::commit_all(&repository, "feat: alpha");
+        // Reset to a file with no pruning evidence, so only history can
+        // answer whether `alpha` was ever tasked.
+        write(
+            &project,
+            &tasks,
+            "# T\n\n## 1. Other\n\n- [x] other\n\n- **Done when**: other.\n",
+        );
+        git_fixture::commit_all(&repository, "chore: reset tasks");
+
+        let result = run(&args(), &project).unwrap();
+        let flagged: Vec<&str> = result
+            .findings
+            .iter()
+            .filter(|f| f.family == "scenario-consistency")
+            .map(|f| f.path.as_str())
+            .collect();
+        assert_eq!(flagged, vec![format!("specs/{FEATURE}/scenarios/beta.md")]);
     }
 
     #[test]
