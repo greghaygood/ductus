@@ -152,3 +152,9 @@ Reopen surfaced upstream from an adopter: an `FE-DEPS` rule was missing for a de
 - [x] Re-review clears the reopen and returns `008` to `done`
 
 **Done when:** `FE-DEPS-005` is present and well-formed, no data-model change is outstanding, and `008` is re-reviewed back to `done`.
+
+## 9. Reconcile mixed-keyword rule Statements with the one-keyword invariant (reopen)
+
+- [ ] Implement the behavior described in `scenarios/a-statement-carries-one-obligation-keyword.md`
+
+- **Done when**: the scenario's open questions are resolved, no rule in `framework/rules/` violates the severity-classification invariant as the data models then state it, and `008` is re-reviewed back to `done`.
