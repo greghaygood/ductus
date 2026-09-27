@@ -67,9 +67,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 9. Runtime gate
 
-- [ ] `cargo fmt --check`, `cargo clippy --release --locked -- -D warnings`, and `cargo test --release --locked` in `runtime/`, each exit status read on the line that ran it
-- [ ] Re-grep `runtime/src` for `Repository::discover` and `Repository::open` outside test modules: only `ProjectRepository::discover` and `inbox_standing` remain
-- [ ] Build the release binary; note in the commit that the MCP server must be restarted on it before any review or analysis of 059
+- [x] `cargo fmt --check`, `cargo clippy --release --locked -- -D warnings`, and `cargo test --release --locked` in `runtime/`, each exit status read on the line that ran it
+- [x] Re-grep `runtime/src` for `Repository::discover` and `Repository::open` outside test modules: only `ProjectRepository::discover` and `inbox_standing` remain
+- [x] Build the release binary; note in the commit that the MCP server must be restarted on it before any review or analysis of 059
 
 - **Done when**: all three commands exit 0 and the re-grep shows no unconverted reader.
 
