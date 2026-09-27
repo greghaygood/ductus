@@ -1370,6 +1370,117 @@ pub(crate) fn workdir_prefix(repository: &git2::Repository, dir: &Path) -> Optio
     )
 }
 
+/// A project's git repository, with the project's place in its work tree.
+///
+/// Every reader that asks git about a project's files opens the repository
+/// through this (spec 059). Git names each path in its trees, index, status,
+/// and diffs from the work tree, and a project names its files from the
+/// project root. The two agree only when the project is the work tree's root,
+/// so a reader converts with [`Self::to_git`] on the way in and
+/// [`Self::to_project`] on the way out.
+pub(crate) struct ProjectRepository {
+    pub(crate) repository: git2::Repository,
+    /// The project root's path from the work tree, `/`-joined: empty at the
+    /// work tree's root, else ending in `/`.
+    prefix: String,
+}
+
+impl ProjectRepository {
+    /// Discover the repository containing `project`, searching upward.
+    ///
+    /// # Errors
+    ///
+    /// No repository contains `project`, or [`workdir_prefix`] cannot place it
+    /// inside the repository's work tree: a repository with no work tree, or
+    /// one whose work tree `GIT_WORK_TREE` or `core.worktree` moved elsewhere.
+    /// Both are the no-repository case. Reading history from the work tree's
+    /// root instead would find none and answer as for a spec never committed,
+    /// which a caller cannot tell from a real answer.
+    pub(crate) fn discover(project: &Path) -> std::result::Result<Self, git2::Error> {
+        let repository = git2::Repository::discover(project)?;
+        let Some(place) = workdir_prefix(&repository, project) else {
+            return Err(git2::Error::from_str(
+                "the project directory is not inside its repository's work tree",
+            ));
+        };
+        // Joined by component rather than rendered as a path, so the prefix
+        // uses git's `/` on every platform.
+        let mut prefix = String::new();
+        for part in &place {
+            prefix.push_str(&part.to_string_lossy());
+            prefix.push('/');
+        }
+        Ok(Self { repository, prefix })
+    }
+
+    /// `rel`, a `/`-separated path from the project root, as git names it.
+    pub(crate) fn to_git(&self, rel: &str) -> String {
+        format!("{}{rel}", self.prefix)
+    }
+
+    /// `git_path`, as git names it, from the project root, or `None` when it
+    /// lies outside the project: another project's work, never this one's.
+    pub(crate) fn to_project<'a>(&self, git_path: &'a str) -> Option<&'a str> {
+        git_path.strip_prefix(self.prefix.as_str())
+    }
+}
+
+/// A repository whose project sits in a subdirectory, for the tests of every
+/// reader that converts through [`ProjectRepository`].
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+pub(crate) mod git_fixture {
+    use std::path::{Path, PathBuf};
+
+    /// Initialize a repository at `root` and a project at `root/proj`, with
+    /// its own `.ductus/config.toml`. Returns the repository and the project
+    /// root.
+    pub(crate) fn subdirectory_project(root: &Path) -> (git2::Repository, PathBuf) {
+        let repository = git2::Repository::init(root).unwrap();
+        let project = root.join("proj");
+        write(
+            &project.join(".ductus/config.toml"),
+            "[paths]\nspecs-root = \"specs\"\n",
+        );
+        (repository, project)
+    }
+
+    /// Write `body` to `path`, creating its parent directories.
+    pub(crate) fn write(path: &Path, body: &str) {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(path, body).unwrap();
+    }
+
+    /// Stage every change in the work tree and commit it.
+    pub(crate) fn commit_all(repository: &git2::Repository, message: &str) -> git2::Oid {
+        let mut index = repository.index().unwrap();
+        index
+            .add_all(["*"], git2::IndexAddOption::DEFAULT, None)
+            .unwrap();
+        index.write().unwrap();
+        let tree = repository.find_tree(index.write_tree().unwrap()).unwrap();
+        let signature = git2::Signature::now("Test", "test@example.com").unwrap();
+        let parent = repository
+            .head()
+            .ok()
+            .and_then(|head| head.target())
+            .and_then(|oid| repository.find_commit(oid).ok());
+        let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
+        repository
+            .commit(
+                Some("HEAD"),
+                &signature,
+                &signature,
+                message,
+                &tree,
+                &parents,
+            )
+            .unwrap()
+    }
+}
+
 /// A character that is not plain single-line text: a control character other
 /// than tab (C0, DEL, C1 — `U+0085` among them), `U+2028` / `U+2029`, which
 /// YAML treats as line breaks, or the noncharacters `U+FFFE` / `U+FFFF`. The
@@ -2548,6 +2659,75 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+
+    // --- project repository ----------------------------------------------------
+    // Git names paths from the work tree and a project names them from its own
+    // root; these pin the conversion between the two (spec 059).
+
+    #[test]
+    fn a_project_at_the_work_tree_root_converts_nothing() {
+        let tmp = tempfile::tempdir().unwrap();
+        git2::Repository::init(tmp.path()).unwrap();
+        let project = ProjectRepository::discover(tmp.path()).unwrap();
+        assert_eq!(project.to_git("specs/001-x/spec.md"), "specs/001-x/spec.md");
+        assert_eq!(project.to_project("src/a.rs"), Some("src/a.rs"));
+    }
+
+    #[test]
+    fn a_project_in_a_subdirectory_converts_through_its_place() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (_, root) = git_fixture::subdirectory_project(tmp.path());
+        let project = ProjectRepository::discover(&root).unwrap();
+        assert_eq!(
+            project.to_git("specs/001-x/spec.md"),
+            "proj/specs/001-x/spec.md"
+        );
+        assert_eq!(
+            project.to_project("proj/specs/001-x/spec.md"),
+            Some("specs/001-x/spec.md")
+        );
+    }
+
+    #[test]
+    fn a_path_outside_the_project_is_not_the_projects() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (_, root) = git_fixture::subdirectory_project(tmp.path());
+        let project = ProjectRepository::discover(&root).unwrap();
+        assert_eq!(project.to_project("other/x.rs"), None);
+        // A sibling whose name starts with the project's is another project.
+        // Matching on the bare name rather than the name and its `/` would
+        // claim it.
+        assert_eq!(project.to_project("proj-other/x.rs"), None);
+        assert_eq!(project.to_project("README.md"), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_project_reached_through_a_symlink_takes_its_targets_place() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo_root = tmp.path().join("repo");
+        let (_, root) = git_fixture::subdirectory_project(&repo_root);
+        let link = tmp.path().join("link");
+        std::os::unix::fs::symlink(&root, &link).unwrap();
+        let project = ProjectRepository::discover(&link).unwrap();
+        assert_eq!(project.to_git("specs/x.md"), "proj/specs/x.md");
+    }
+
+    #[test]
+    fn a_repository_with_no_work_tree_is_no_repository() {
+        // A bare repository has no work tree for the project to sit in, so
+        // there is no place to convert through. Reading it as the work tree's
+        // root would look up paths git never recorded and find no history.
+        let tmp = tempfile::tempdir().unwrap();
+        git2::Repository::init_bare(tmp.path()).unwrap();
+        assert!(ProjectRepository::discover(tmp.path()).is_err());
+    }
+
+    #[test]
+    fn a_directory_in_no_repository_is_no_repository() {
+        let tmp = tempfile::tempdir().unwrap();
+        assert!(ProjectRepository::discover(tmp.path()).is_err());
+    }
 
     // --- audit record loading -------------------------------------------------
     // Absent, unreadable and present are three answers, not two (spec 057 AC5).

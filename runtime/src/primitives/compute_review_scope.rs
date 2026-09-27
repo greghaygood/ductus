@@ -31,7 +31,7 @@ use std::path::Path;
 use git2::{Oid, Repository};
 
 use crate::primitives::check_stuck::find_in_progress_commit;
-use crate::primitives::{PrimitiveError, Result, parse_affected_files};
+use crate::primitives::{PrimitiveError, ProjectRepository, Result, parse_affected_files};
 use crate::schema::paths;
 use crate::schema::primitives::{ComputeReviewScopeArgs, ComputeReviewScopeResult};
 
@@ -52,12 +52,12 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
             feature: args.feature.clone(),
         });
     }
-    let repository = Repository::discover(repo)?;
     // History names every path from the git work tree, and a project need not
     // sit at its repository's root. Asked by the path from the project root, a
     // project in a subdirectory found no transition and reviewed nothing.
-    let prefix = history_prefix(&repository, repo);
-    let spec_rel = format!("{prefix}{}/{}/spec.md", layout.specs_root, args.feature);
+    let project = ProjectRepository::discover(repo)?;
+    let repository = &project.repository;
+    let spec_rel = project.to_git(&format!("{}/{}/spec.md", layout.specs_root, args.feature));
 
     let diff_base = match &args.since {
         // An explicit base is used verbatim. No parent walk: an operator naming
@@ -79,8 +79,8 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
         // 0 SHOULD over an empty subject that way on 2026-08-27 before the
         // operator caught it (scenario
         // `review-base-includes-the-transition-commit`).
-        None => match find_in_progress_commit(&repository, &spec_rel)? {
-            Some(sha) => transition_parent(&repository, &sha)?,
+        None => match find_in_progress_commit(repository, &spec_rel)? {
+            Some(sha) => transition_parent(repository, &sha)?,
             None => String::new(),
         },
     };
@@ -88,7 +88,7 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
     let modified_since = if diff_base.is_empty() {
         Vec::new()
     } else {
-        diff_since(&repository, &diff_base, &prefix)?
+        diff_since(&project, &diff_base)?
     };
 
     let plan_affected = read_plan_affected(&feature_dir);
@@ -135,24 +135,11 @@ fn transition_parent(repository: &Repository, sha: &str) -> Result<String> {
     })
 }
 
-/// The project directory's path from the git work tree, as the `/`-joined
-/// prefix a history path carries: empty at the work tree's root, else ending
-/// in `/`. Empty too when the position cannot be resolved (a repository with
-/// no work tree), which reads history from the root as before.
-fn history_prefix(repository: &Repository, repo: &Path) -> String {
-    let mut prefix = String::new();
-    for part in super::workdir_prefix(repository, repo).iter().flatten() {
-        prefix.push_str(&part.to_string_lossy());
-        prefix.push('/');
-    }
-    prefix
-}
-
 /// Diff `base_sha..HEAD`: the sorted set of changed file paths inside the
-/// project, named from the project root as the plan names them. `prefix` is
-/// the project's [`history_prefix`]; a change outside the project directory
-/// is another project's work and is left out.
-fn diff_since(repo: &Repository, base_sha: &str, prefix: &str) -> Result<Vec<String>> {
+/// project, named from the project root as the plan names them. A change
+/// outside the project directory is another project's work and is left out.
+fn diff_since(project: &ProjectRepository, base_sha: &str) -> Result<Vec<String>> {
+    let repo = &project.repository;
     let base_tree = repo.find_commit(Oid::from_str(base_sha)?)?.tree()?;
     let head_tree = repo.head()?.peel_to_commit()?.tree()?;
 
@@ -163,7 +150,7 @@ fn diff_since(repo: &Repository, base_sha: &str, prefix: &str) -> Result<Vec<Str
         &mut |delta, _| {
             let path = delta.new_file().path().or_else(|| delta.old_file().path());
             if let Some(path) = path
-                && let Some(inside) = path.to_string_lossy().strip_prefix(prefix)
+                && let Some(inside) = project.to_project(&path.to_string_lossy())
             {
                 files.insert(inside.to_string());
             }
@@ -420,21 +407,21 @@ mod tests {
     /// plan names them; a change outside the project is not its work.
     #[test]
     fn a_project_in_a_repository_subdirectory_resolves_its_base() {
+        use crate::primitives::git_fixture;
         let tmp = tempfile::tempdir().unwrap();
-        let repo = Repository::init(tmp.path()).unwrap();
-        let project = tmp.path().join("service");
+        let (repo, project) = git_fixture::subdirectory_project(tmp.path());
         let spec_path = project.join("specs/001-x/spec.md");
         write(&spec_path, &spec("planned"));
-        commit_all(&repo, "feat: plan");
+        git_fixture::commit_all(&repo, "feat: plan");
         write(&spec_path, &spec("in-progress"));
-        let sha = commit_all(&repo, "chore: begin");
+        let sha = git_fixture::commit_all(&repo, "chore: begin");
         write(&project.join("src/a.rs"), "fn a() {}\n");
         write(&tmp.path().join("other/x.rs"), "fn x() {}\n");
-        commit_all(&repo, "feat: implement");
+        git_fixture::commit_all(&repo, "feat: implement");
 
         let result = run(&args("001-x", None), &project).unwrap();
         let parent = repo
-            .find_commit(Oid::from_str(&sha).unwrap())
+            .find_commit(sha)
             .unwrap()
             .parent(0)
             .unwrap()
