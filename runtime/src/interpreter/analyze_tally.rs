@@ -153,19 +153,23 @@ impl AnalyzeTally {
     /// A rule whose trigger does not fire is answered `passed: true` and
     /// counts in no tier.
     ///
-    /// The tier is the finding's own when the host returned one, and
+    /// The tier is the finding's own when it names MUST or SHOULD, and
     /// otherwise `asked`, the tier of the rule the walker asked about, which
     /// its Statement states (spec 060): a failure the host reported without a
-    /// finding still failed, and dropping it would record the rule as passed.
-    /// The finding's tier comes first so a rule carrying both keywords, asked
-    /// as MUST-tier, can still fail advisory on its SHOULD clause alone. It
-    /// is read through [`RuleSeverity`], case-insensitively, as validation
-    /// accepts it. An INFO or unspecified tier has no analyze tier to join.
+    /// finding, or with a finding naming `info` or the empty tier, still
+    /// failed, and dropping it would record the rule as passed. The finding's
+    /// tier comes first so a rule carrying both keywords, asked as MUST-tier,
+    /// can still fail advisory on its SHOULD clause alone. It is read through
+    /// [`RuleSeverity`], case-insensitively, as validation accepts it.
     pub(crate) fn record_assessment(&mut self, asked: RuleSeverity, response: &Value) {
         if response.get("passed") == Some(&Value::Bool(true)) {
             return;
         }
-        match rule_tier(response, "/finding/severity").unwrap_or(asked) {
+        let tier = match rule_tier(response, "/finding/severity") {
+            Some(tier @ (RuleSeverity::Must | RuleSeverity::Should)) => tier,
+            _ => asked,
+        };
+        match tier {
             RuleSeverity::Must => self.blocking += 1,
             RuleSeverity::Should => self.advisory += 1,
             RuleSeverity::Info | RuleSeverity::Unspecified => {}
@@ -463,6 +467,26 @@ mod tests {
         let bindings = bound(&tally);
         assert_eq!(bindings["blocking-findings"], 2);
         assert_eq!(bindings["advisory"], 2);
+    }
+
+    /// A failure whose finding names no analyze tier — `info`, or the empty
+    /// tier, both of which validation accepts — still failed, so it counts in
+    /// the asked rule's tier rather than in none, which would record a failed
+    /// rule as passed.
+    #[test]
+    fn a_failure_whose_finding_names_no_analyze_tier_counts_in_the_asked_tier() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_assessment(
+            RuleSeverity::Must,
+            &json!({ "passed": false, "finding": { "severity": "info" } }),
+        );
+        tally.record_assessment(
+            RuleSeverity::Should,
+            &json!({ "passed": false, "finding": { "severity": "" } }),
+        );
+        let bindings = bound(&tally);
+        assert_eq!(bindings["blocking-findings"], 1);
+        assert_eq!(bindings["advisory"], 1);
     }
 
     /// A rule whose trigger does not fire is answered `passed: true`: it was

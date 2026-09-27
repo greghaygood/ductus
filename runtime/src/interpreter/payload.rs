@@ -895,7 +895,7 @@ pub(crate) fn severity_from_step_prose(prose: &str) -> RuleSeverity {
 
 /// The rules an `/analyze` walk assesses, read once from its `rule-files`
 /// at the walk's first `assessSpecQuality` step (spec 060).
-#[derive(Clone, Debug, Default)]
+#[derive(Default)]
 pub(crate) struct LoadedRules {
     /// Rules carrying a tier and a Verification, in `rule-files` order and
     /// heading order within a file — the order requests go out in.

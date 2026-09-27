@@ -24,7 +24,7 @@ use crate::primitives::parse_atx_heading;
 use crate::schema::severity::RuleSeverity;
 
 /// One rule section of a rule file.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct RuleSection {
     /// The rule ID its heading carries (e.g. `CFG-CONST-001`).
     pub(crate) id: String,
