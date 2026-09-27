@@ -15,7 +15,7 @@ The shipped rule files do not hold to it. Counted 2026-09-27 over the Statement 
 - `framework/rules/performance-frontend.md`: `FE-FONT-002`, `FE-LOAD-001`, `FE-LOAD-002`
 - `framework/rules/api-backend.md`: `BE-ERRENV-001`, `BE-PAGE-001`
 
-Every one is a `BE-`/`FE-` ID, whose format this spec's data model governs. No check enforces the invariant, which is how 16 violations reached the shipped files. `BE-PAGE-001` also uses MAY, which is not one of the four keywords.
+Every one is a `BE-`/`FE-` ID, whose format this spec's data model governs. No check enforces the invariant, which is how 16 violations reached the shipped files. Three Statements also use MAY, which is not one of the four keywords — `BE-PAGE-001` (one of the 16), `BE-INPUT-010`, and `BE-DATA-001` — counted over the same block quotes.
 
 Surfaced while clarifying `060-exec-analyze-assesses-each-loaded-rule`, whose exec walker reads each rule's tier from its Statement. That spec settles the walker's reading of a mixed Statement as MUST-tier, so a mixed rule is assessed once and never in both tiers. It does not settle whether the rule files or the invariant is the thing to change.
 
@@ -33,7 +33,7 @@ Every shipped rule's Statement and the rule format's severity classification agr
 
 - Are the 16 mixed rules split into two entries each, as the invariant directs — a MUST rule and a SHOULD rule, one of them under a newly minted ID — or is the invariant relaxed to admit a SHOULD clause refining a MUST rule, with the format stating that such a rule is MUST-tier? Splitting mints up to 16 IDs and changes what adopters cite; relaxing changes two data models and makes the format match the reading `060-exec-analyze-assesses-each-loaded-rule` already adopted.
 - Does a check enforce the resolved invariant, so a mixed Statement cannot reach a shipped rule file again? None does today, and the format's other integrity requirements (missing fields, malformed IDs, duplicate IDs) are stated as analyze blocks in this spec's Edge Cases.
-- Is MAY permitted in a Statement? The severity classification names four keywords and assigns MAY no tier, and `BE-PAGE-001` uses it.
+- Is MAY permitted in a Statement? The severity classification names four keywords and assigns MAY no tier, and three shipped Statements use it (`BE-PAGE-001`, `BE-INPUT-010`, `BE-DATA-001`).
 
 ## Resolved Questions
 
