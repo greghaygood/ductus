@@ -1,14 +1,13 @@
 ---
 spec: 008-security-rules
-scenario: x-frame-options-carries-one-strength
-last-run: 2026-09-27T21:41:10Z
-reviewed-against: e13765301207955bb901ba321d899fcfa9b391ad
-diff-base: f76b222737b0c53d2a638e3aa5578f0574988475
+last-run: 2026-09-27T21:54:15Z
+reviewed-against: b0b60c6266609bfb215f6457fc0f8841707cce28
+diff-base: 6f43a9d9fa22cd52647685cc69dfa01744505bd8
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 5
-scope: 9
+examined: 4
+scope: 10
 skipped-passes: []
 reviewed-digest:
   data-model.md: 4ab1f01634418baee8b7f06d1348ceacbfff8b665703782bfcb408ecb3cf89bb
@@ -26,15 +25,15 @@ dispositions:
 
 ## Summary
 
-Re-review for task 11, scenario `x-frame-options-carries-one-strength`, the route the previous review (f76b2227) made. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run. The previous review's one stored decision, the X-Frame-Options route, expired because its finding no longer fires.
+Re-review for task 12, which the completion gate's criteria check raised: AC18 and AC21 were found unmet against the tree. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers, no stored decisions. One observation, fixed in the run.
 
-**What changed.** `X-Frame-Options` is a SHOULD in both security rule files. `BE-API-001`'s minimum-required header table no longer lists it, and its Rationale points at the new `BE-API-012`. `BE-API-012` (SHOULD) mirrors `FE-CSP-008` for a backend that serves HTML without loading the frontend rules, and `FE-CSP-008` names it. That makes 207 shipped rules, none mixing tiers, with every citation in both files resolving (`check-rule-ids`, 0 missing) and the rule-section corpus tests green.
+**What changed.** `framework/commands/analyze.md`'s Rules section again reports a malformed rule file and a duplicate rule ID as Blocking findings, with the file's rules withheld from steps 11 and 12. Those are the two messages 008 and 016 specified, which 022's parseable rewrite (11aad341) dropped with no recorded decision. The section now also states the exec reduction: the walker checks no rule-file integrity. Also in the window: analyze's three grounding fixes to `plan.md` (7d106937), its record (c48608a7), and the task-12 tick.
 
-**Base.** `diff-base` f76b2227, the previous review's commit, passed with `--since`. That review recorded 0 MUST and 0 SHOULD over 23 files from base f0b59a9e, 18 of them read in full, and everything outside this delta is unchanged since. The derived base, the parent of 008's reopen commit, would re-cover the same 52-file window that review narrowed for the reason its Summary gives.
+**Base.** `diff-base` 6f43a9d9, the previous review's commit, passed with `--since`, on the same reasoning as that review: everything outside this delta is covered by 6f43a9d9's and f76b2227's records.
 
-**Scope.** 9 in scope, examined 5: the five files changed since the base. For each, this review read its whole change since f76b2227 in context. All five were also read in full earlier the same session: the X-Frame-Options scenario while it was clarified, and the other four by f76b2227's review. The four not counted are plan-listed Affected Files with no change since the base: `framework/constitution.md` and `specs/008-security-rules/data-model.md`, both read in full by f76b2227's review, and `framework/bootstrap/ductus.md` and `framework/commands/analyze.md`, not read.
+**Scope.** 10 in scope, examined 4: `framework/commands/analyze.md`, `specs/008-security-rules/plan.md`, `analysis.md` and `tasks.md`. For each, this review read its whole change since the base in context, and the Rules section of `analyze.md` in full. The six not counted: `.claude/commands/ductus/analyze.md`, the generated mirror, regenerated after each edit, whose Rules section was compared with the source's and differs only by the generator's `/{project}:` → `/ductus:` substitution; and five plan-listed Affected Files unchanged since the base. Of those five, `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `framework/constitution.md` and `specs/008-security-rules/data-model.md` were read in full earlier this session, and `framework/bootstrap/ductus.md` only in its Shared Files manifest (lines 645–662 and 559).
 
-**Passes.** Loaded: api-backend, concurrency-backend, configuration-cross, observability-backend, performance-backend, quality-cross, reliability-backend, security-backend. Security and efficiency found nothing: the change is rule prose. Quality: `BE-API-012` parses SHOULD-tier with a Verification, and `BE-API-001`'s Statement still asks for "frame protection", which its CSP `frame-ancestors` row provides. A sweep for claims task 11 falsified found one, fixed in e1376530. Reuse: `BE-API-012` restates `FE-CSP-008` deliberately, as `BE-AUTHN-014` does `FE-STORAGE-002`, and says so in its Rationale, so it is not an observation. Simplicity found nothing.
+**Passes.** Loaded: api-backend, concurrency-backend, configuration-cross, observability-backend, performance-backend, quality-cross, reliability-backend, security-backend. Security, reuse and efficiency had no subject: the change is command prose and spec records. Quality: the restored text's claims hold against the tree. 11aad341 removed both messages, `runtime/src/interpreter/analyze_tally.rs:182`–`:187` records the two reasons it names, and `runtime/src/primitives/rule_sections.rs` reads no Rationale and detects no duplicate. It raised one observation, fixed in b0b60c62: since MAY became a tierless keyword, "no RFC 2119 keyword" missed a MAY-only Statement, so three places now say "no MUST or SHOULD keyword". The wording avoids a "-tier" token inside step 11, whose prose the exec walker's `severity_from_step_prose` reads. The runtime suite passed after each command-file edit: 1713 passed, 0 failed. Simplicity found nothing.
 
 ## MUST violations (blocking)
 
@@ -54,7 +53,7 @@ Re-review for task 11, scenario `x-frame-options-carries-one-strength`, the rout
 
 ## Observations
 
-- convention: the keyword scenario's Q1 measured cost said the two SHOULD-half citations are re-pointed to the new ID, which task 11 made false for the security-backend one — `specs/008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md` — **fixed**
+- convention: analyze.md described the rules recorded unexamined as those whose Statement carries no RFC 2119 keyword, missing a MAY-only Statement, which carries one and still has no tier — `framework/commands/analyze.md` — **fixed**
 
 ## Skipped passes
 
