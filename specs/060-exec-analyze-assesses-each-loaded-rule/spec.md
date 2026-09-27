@@ -34,15 +34,15 @@ Line references in this Motivation and in the Resolved Questions are to the tree
 
 ## Acceptance Criteria
 
-- [ ] AC1: An exec analyze assesses each rule in the tier the rule itself carries, never in a tier taken from the step alone, so no rule is assessed in both step 11 and step 12
-- [ ] AC2: Each rule an exec analyze assesses contributes its verdict to the record at most once
-- [ ] AC3: Every loaded rule an exec analyze did not ask the host about is recorded in `unexamined-by-reason`, under a reason `framework/commands/analyze.md`'s Unexamined targets and 022's data model classify, so the record never reads as though steps 11 and 12 examined a rule they did not
-- [ ] AC4: An exec run over `analyze-basic` counts `CFG-CONST-001`'s verdict once, and a test with two or more loaded rules shows each one either assessed or recorded unexamined
-- [ ] AC5: An exec analyze sends one `assessSpecQuality` request for every loaded rule that carries a tier and a Verification, whether or not the rule's trigger fires against the spec, each request carrying that one rule in the request's existing typed shape
-- [ ] AC6: An exec analyze reads a rule's tier from the RFC 2119 keyword in its Statement: MUST or MUST NOT makes it MUST-tier, SHOULD or SHOULD NOT with no MUST makes it SHOULD-tier, and a Statement carrying neither is recorded unexamined rather than assessed
-- [ ] AC7: A rule file an exec analyze cannot read is recorded in `unexamined-by-reason`, and a walk with no rule loaded records one `rule-assessments-not-checked` target at each of steps 11 and 12
-- [ ] AC8: `framework/commands/analyze.md` steps 11 and 12 and the `assessSpecQuality` section of `specs/022-deterministic-runtime/data-model.md` state that an exec run leaves trigger evaluation to the host, which answers a rule whose trigger does not fire with `passed: true`
-- [ ] AC9: 022 records the per-rule exec walk: the `rule-assessments-not-checked` description in `specs/022-deterministic-runtime/data-model.md` counts rules rather than requests, and 022's body or a scenario under it links back to this spec, discharging the `cross-spec-impact:` entry this spec declares on it
+- [x] AC1: An exec analyze assesses each rule in the tier the rule itself carries, never in a tier taken from the step alone, so no rule is assessed in both step 11 and step 12
+- [x] AC2: Each rule an exec analyze assesses contributes its verdict to the record at most once
+- [x] AC3: Every loaded rule an exec analyze did not ask the host about is recorded in `unexamined-by-reason`, under a reason `framework/commands/analyze.md`'s Unexamined targets and 022's data model classify, so the record never reads as though steps 11 and 12 examined a rule they did not
+- [x] AC4: An exec run over `analyze-basic` counts `CFG-CONST-001`'s verdict once, and a test with two or more loaded rules shows each one either assessed or recorded unexamined
+- [x] AC5: An exec analyze sends one `assessSpecQuality` request for every loaded rule that carries a tier and a Verification, whether or not the rule's trigger fires against the spec, each request carrying that one rule in the request's existing typed shape
+- [x] AC6: An exec analyze reads a rule's tier from the RFC 2119 keyword in its Statement: MUST or MUST NOT makes it MUST-tier, SHOULD or SHOULD NOT with no MUST makes it SHOULD-tier, and a Statement carrying neither is recorded unexamined rather than assessed
+- [x] AC7: A rule file an exec analyze cannot read is recorded in `unexamined-by-reason`, and a walk with no rule loaded records one `rule-assessments-not-checked` target at each of steps 11 and 12
+- [x] AC8: `framework/commands/analyze.md` steps 11 and 12 and the `assessSpecQuality` section of `specs/022-deterministic-runtime/data-model.md` state that an exec run leaves trigger evaluation to the host, which answers a rule whose trigger does not fire with `passed: true`
+- [x] AC9: 022 records the per-rule exec walk: the `rule-assessments-not-checked` description in `specs/022-deterministic-runtime/data-model.md` counts rules rather than requests, and 022's body or a scenario under it links back to this spec, discharging the `cross-spec-impact:` entry this spec declares on it
 
 ## Open Questions
 
