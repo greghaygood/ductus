@@ -61,7 +61,7 @@ Each rule within a file follows a consistent structure:
 - **Rationale** — why this rule exists (threat it mitigates)
 - **Verification** — how `/{project}:analyze` or a reviewer checks compliance (code pattern, test requirement, configuration check, or documentation commitment — see **Verification phrasing** below)
 
-Rules use RFC 2119 language: MUST, MUST NOT, SHOULD, SHOULD NOT. MUST/MUST NOT rules are reported as errors; SHOULD/SHOULD NOT rules are flagged as warnings.
+Rules use RFC 2119 language: MUST, MUST NOT, SHOULD, SHOULD NOT. MUST/MUST NOT rules are reported as errors; SHOULD/SHOULD NOT rules are flagged as warnings. MAY may appear beside either tier to state a permission or a scope boundary, and carries no tier of its own.
 
 ### ID stability
 

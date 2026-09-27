@@ -49,7 +49,7 @@ impl RuleSection {
     /// is not an obligation keyword.
     pub(crate) fn tier(&self) -> Option<RuleSeverity> {
         let mut should = false;
-        for token in self.statement.split(|c: char| !c.is_ascii_alphanumeric()) {
+        for token in self.tokens() {
             match token {
                 "MUST" => return Some(RuleSeverity::Must),
                 "SHOULD" => should = true,
@@ -57,6 +57,13 @@ impl RuleSection {
             }
         }
         should.then_some(RuleSeverity::Should)
+    }
+
+    /// The Statement's whole tokens, split on every non-alphanumeric
+    /// character. Every keyword check reads the Statement through this, so
+    /// two checks cannot disagree about what counts as a keyword.
+    fn tokens(&self) -> impl Iterator<Item = &str> {
+        self.statement.split(|c: char| !c.is_ascii_alphanumeric())
     }
 }
 
@@ -232,13 +239,10 @@ mod tests {
     }
 
     /// Whether a section's Statement carries keywords of both tiers, read
-    /// with the whole-token, case-sensitive split [`RuleSection::tier`] uses.
+    /// through the same tokens [`RuleSection::tier`] reads.
     fn mixes_tiers(section: &RuleSection) -> bool {
-        let tokens: Vec<&str> = section
-            .statement
-            .split(|c: char| !c.is_ascii_alphanumeric())
-            .collect();
-        tokens.contains(&"MUST") && tokens.contains(&"SHOULD")
+        section.tokens().any(|token| token == "MUST")
+            && section.tokens().any(|token| token == "SHOULD")
     }
 
     fn statement_mixes_tiers(statement: &str) -> bool {
