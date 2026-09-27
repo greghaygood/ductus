@@ -71,14 +71,14 @@ Operator-approved (2026-09-27, with the `cross-spec-impact:` declaration): this 
 
 - [x] `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, and `cargo test --release --locked` under `runtime/`, as CI runs them
 - [x] `bash scripts/audit/run-all.sh`, the generators, and `npx markdownlint-cli2` over every changed markdown file
-- [ ] Commit, then run the checks that read git history again against the commit
+- [x] Commit, then run the checks that read git history again against the commit
 
 - **Done when**: every check passes against the committed tree, with each result read on the line that ran it.
 
 ## 9. Release `0.54.2`
 
-- [ ] Bump `version` and `runtime/Cargo.toml` to `0.54.2`; refresh `runtime/Cargo.lock` with one build without `--locked`
-- [ ] Add a `runtime/CHANGELOG.md` section covering tasks 1–3
-- [ ] Run audit Family 20
+- [x] Bump `version` and `runtime/Cargo.toml` to `0.54.2`; refresh `runtime/Cargo.lock` with one build without `--locked`
+- [x] Add a `runtime/CHANGELOG.md` section covering tasks 1–3
+- [x] Run audit Family 20
 
 - **Done when**: Family 20 passes and the changelog section names every runtime change. The tag is cut after 060 and 022 are `done`, in the same session.

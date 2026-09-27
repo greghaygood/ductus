@@ -2,6 +2,33 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.54.2] — 2026-09-27
+
+### Fixed
+
+- **`ductus exec analyze` asked the host about one rule per step, tiered by
+  the step, and recorded none of the rest.** Steps 11 and 12 each sent one
+  `assessSpecQuality` request, filled with the first cited rule or else the
+  first rule in the loaded files and tiered by the step's prose, so both
+  steps asked about the same rule — once as `must`, once as `should` — its
+  verdict counted twice, and every other loaded rule went unasked while the
+  record read as fully examined. The walker now loads the rule set once per
+  walk and sends one request per loaded rule of a step's tier, each rule
+  tiered by the RFC 2119 keyword in its own Statement (MUST when a Statement
+  carries both), and the host judges whether each rule's trigger fires,
+  answering `passed: true` when it does not. A rule with no keyword or no
+  Verification is recorded under `rule-assessments-not-checked`, which now
+  counts rules rather than requests, and a rule file the walk could not read
+  under the new could-not-be-read reason `rule-file-unreadable`. One
+  rule-section parser (`runtime/src/primitives/rule_sections.rs`), sharing
+  `check-rule-ids`' heading grammar, replaces the walker's two. Spec 060.
+- **`ductus exec clarify` asked only the first open question.** Clarify step
+  6 promises one `askClarifyQuestion` round trip per question; the walker
+  sent one per step and the builder fell back to the first. The step now
+  fans out over `read-spec`'s `open-questions`, seeding each as the request's
+  `question`, and a spec with none left asks nothing and says so. Spec 022,
+  scenario `exec-clarify-asks-each-open-question`.
+
 ## [0.54.1] — 2026-09-27
 
 ### Fixed
