@@ -1,7 +1,7 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-27T18:21:39Z
-analyzed-against: f83b0922358c9292d27afe64b7397e4cfee91940
+last-run: 2026-09-27T19:00:52Z
+analyzed-against: 5715ed7bb74d4551973fcbd9c95fdf2b92b81b70
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
@@ -9,7 +9,7 @@ unexamined: 2
 analyzed-digest:
   data-model.md: 98b6b5e54781654d83c62b2deb9ae6f5c175594c136853507270ad94f17a4968
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 13ac4416589364265145aeb5533cd8a8924e11c8eb20016e7ac0d0bc17936bc3
+  review.md: b4e468a3ae08f7cc1aa22ff475137dde59bf30976f836723df97ca52df77d655
   scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -47,6 +47,7 @@ analyzed-digest:
   scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
   scenarios/done-when-authoring-forms.md: 080f8717135b67c8400e072dae02f172e40cb0b6ad596c3e227d6cc5f90d0191
   scenarios/exec-analyze-derives-its-list-seeds.md: 1f7a5b070674cc990876fe9537a64622e558f2150556e191b2ae074194b16440
+  scenarios/exec-clarify-asks-each-open-question.md: 4851dc543c6dd80603aa86c776543017b9ab1a7adac469e1b49ec311a9877cab
   scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
   scenarios/fetch-archive-dns-rebinding.md: 39482bed2a531d36dce770c9c20ae3848ba254da0d02ee51d5c6feabe7967031
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
@@ -115,12 +116,12 @@ analyzed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: 49cc696c3b45a18d1e5872e4591aad88f3ddd3325ce0d6bd4573e499afd60a40
-  tasks.md: 7cea97c80e32598a7a271fd4886c06803d6c5d0f2f85e352a88d11c36ec35493
+  tasks.md: 0d2b5daca9fede545ae9ca25ed7fe5932f01c25d56a7ca65719c1c99f7994c2c
 unexamined-by-reason:
   not-a-live-claim: 2
 blocking: false
 dispositions:
-  fixed: 0
+  fixed: 1
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -130,7 +131,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -150,4 +151,4 @@ dispositions:
 
 ## Fixed in this run
 
-*None.*
+- link-adjacent-drift — line 9: prose asserting `open question` is contradicted by its link target specs/022-deterministic-runtime/scenarios/clarify-command-acceleration.md, which reports zero open questions — `specs/022-deterministic-runtime/scenarios/exec-clarify-asks-each-open-question.md` — **fixed**
