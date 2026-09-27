@@ -1,7 +1,7 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-27T18:56:22Z
-reviewed-against: f32a434341cd5bb379262be23c5e1b202889fdf6
+last-run: 2026-09-27T19:00:34Z
+reviewed-against: 520645acca0fe5cec5c5010adde6c031798d3009
 diff-base: 4300909dbe52756f8a94f3f02a125723ca545a21
 must-violations: 0
 should-violations: 0
@@ -48,7 +48,7 @@ reviewed-digest:
   scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
   scenarios/done-when-authoring-forms.md: 080f8717135b67c8400e072dae02f172e40cb0b6ad596c3e227d6cc5f90d0191
   scenarios/exec-analyze-derives-its-list-seeds.md: 1f7a5b070674cc990876fe9537a64622e558f2150556e191b2ae074194b16440
-  scenarios/exec-clarify-asks-each-open-question.md: 974085c18d3e81081f02c6183850e56e0955bb2bc61b57e29517700caf4c955b
+  scenarios/exec-clarify-asks-each-open-question.md: 4851dc543c6dd80603aa86c776543017b9ab1a7adac469e1b49ec311a9877cab
   scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
   scenarios/fetch-archive-dns-rebinding.md: 39482bed2a531d36dce770c9c20ae3848ba254da0d02ee51d5c6feabe7967031
   scenarios/framework-list-dedup.md: 9aef03cab7d2494a662058d1091a65e38e26637b10ba338d94eedbd15f9f7f4b
@@ -128,7 +128,7 @@ dispositions:
 
 ## Summary
 
-Partial review of 022, scoped to its reopen for 060 — the cross-spec discharge and task 125 (scenario `exec-clarify-asks-each-open-question`) — not a full five-pass review of 022's contracts. The window since `4300909d` (the parent of the reopen commit `6b7a0772`) holds eleven files. The five passes read eight of them against the 11 selected rule files: the diffs of `runtime/src/interpreter/mod.rs` (the `askClarifyQuestion` fan-out, `handle_clarify_questions`, and its three tests) and `runtime/src/interpreter/payload.rs` (`CLARIFY_QUESTION_KEY` and `resolve_clarify_question`'s doc), the doc comments changed in `runtime/src/schema/extensions.rs` and `runtime/src/schema/severity.rs`, the changed sections of `specs/022-deterministic-runtime/data-model.md` (the unexamined-reason table and prose, the `assessSpecQuality` section; the rest of the 116 KB file was not re-read), `specs/022-deterministic-runtime/spec.md` in full, the new scenario, and `tasks.md`'s task 125. The other three are not review subjects: `review.md` and `analysis.md` are this spec's own records, and `specs/060-exec-analyze-assesses-each-loaded-rule/tasks.md` is another spec's ephemeral tracking file. The plan's directory entries (`runtime/src/*/`, `runtime/tests/*/`, the command sources and workflows) were not re-read; 060's own review covers the analyze walk it changed there. The three new clarify tests were confirmed to fail before the fan-out (only the first question asked; an empty list still sent a request). 0 MUST, 0 SHOULD, 0 low-confidence, no observations.
+Partial review of 022, scoped to its reopen for 060 — the cross-spec discharge and task 125 (scenario `exec-clarify-asks-each-open-question`) — not a full five-pass review of 022's contracts. The window since `4300909d` (the parent of the reopen commit `6b7a0772`) holds eleven files. The five passes read eight of them against the 11 selected rule files: the diffs of `runtime/src/interpreter/mod.rs` (the `askClarifyQuestion` fan-out, `handle_clarify_questions`, and its three tests) and `runtime/src/interpreter/payload.rs` (`CLARIFY_QUESTION_KEY` and `resolve_clarify_question`'s doc), the doc comments changed in `runtime/src/schema/extensions.rs` and `runtime/src/schema/severity.rs`, the changed sections of `specs/022-deterministic-runtime/data-model.md` (the unexamined-reason table and prose, the `assessSpecQuality` section; the rest of the 116 KB file was not re-read), `specs/022-deterministic-runtime/spec.md` in full, the new scenario in full, and `tasks.md`'s task 125. The other three are not review subjects: `review.md` and `analysis.md` are this spec's own records, and `specs/060-exec-analyze-assesses-each-loaded-rule/tasks.md` is another spec's ephemeral tracking file. The plan's directory entries (`runtime/src/*/`, `runtime/tests/*/`, the command sources and workflows) were not re-read; 060's own review covers the analyze walk it changed there. This supersedes the review recorded at `f32a4343`: the scenario's Context was reworded at `520645ac` to clear an analyze link-adjacent-drift finding, changing no claim. The three new clarify tests were confirmed to fail before the fan-out (only the first question asked; an empty list still sent a request). 0 MUST, 0 SHOULD, 0 low-confidence, no observations.
 
 ## MUST violations (blocking)
 
