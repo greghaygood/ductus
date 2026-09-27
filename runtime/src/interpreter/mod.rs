@@ -11,7 +11,8 @@
 //! - Emits an `llm-request` envelope and reads a matching
 //!   `llm-response` from stdin (`Step::Extension`). An `assessSpecQuality`
 //!   step emits one per loaded rule of its tier, each carrying one rule
-//!   (spec 060); every other extension step emits exactly one.
+//!   (spec 060), and an `askClarifyQuestion` step one per open question;
+//!   every other extension step emits exactly one.
 //! - Blocks on a confirmation gate: emits a `gate-confirm` envelope and
 //!   reads a `gate-response` back. A denied gate is a clean `complete`
 //!   (per §partial-failure-semantics), never an error.
@@ -86,6 +87,9 @@ const GATE_TRIGGER: &str = "ask the user to approve";
 
 /// The extension point `/analyze` steps 11 and 12 ask per rule through.
 const ASSESS_SPEC_QUALITY: &str = "assessSpecQuality";
+
+/// The extension point `/clarify` step 6 asks per open question through.
+const ASK_CLARIFY_QUESTION: &str = "askClarifyQuestion";
 
 /// One run of the walker. The caller owns the procedure, repo path, and
 /// reader/writer streams; the walker borrows them for its lifetime.
@@ -382,6 +386,11 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         if identifier == ASSESS_SPEC_QUALITY {
             return self.handle_assessments(number, prose);
         }
+        if identifier == ASK_CLARIFY_QUESTION
+            && let Some(Value::Array(questions)) = self.context.get("open-questions").cloned()
+        {
+            return self.handle_clarify_questions(number, prose, questions);
+        }
         let response = match self.exchange(identifier, prose)? {
             Ok(response) => response,
             Err(outcome) => return Ok(Some(outcome)),
@@ -459,6 +468,45 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 tally.record_assessment(asked_tier, &response);
             }
             self.accept_response(number, ASSESS_SPEC_QUALITY, response)?;
+        }
+        Ok(None)
+    }
+
+    /// `/clarify` step 6: one `askClarifyQuestion` round trip per open
+    /// question, in `read-spec`'s order (spec 022, scenario
+    /// `exec-clarify-asks-each-open-question`). Each question is seeded as
+    /// the request's `question` and removed after its round trip; a `question`
+    /// seeded before the step is restored afterwards. With no question left
+    /// there is nothing to ask, and the step says so.
+    fn handle_clarify_questions(
+        &mut self,
+        number: &StepNumber,
+        prose: &str,
+        questions: Vec<Value>,
+    ) -> std::io::Result<Option<WalkOutcome>> {
+        if questions.is_empty() {
+            self.emit_progress(
+                "no open question to ask".into(),
+                Some(format_step_number(number)),
+                None,
+            )?;
+            return Ok(None);
+        }
+        let seeded = self.context.remove(payload::CLARIFY_QUESTION_KEY);
+        for question in questions {
+            self.context
+                .insert(payload::CLARIFY_QUESTION_KEY.into(), question);
+            let exchanged = self.exchange(ASK_CLARIFY_QUESTION, prose);
+            self.context.remove(payload::CLARIFY_QUESTION_KEY);
+            let response = match exchanged? {
+                Ok(response) => response,
+                Err(outcome) => return Ok(Some(outcome)),
+            };
+            self.accept_response(number, ASK_CLARIFY_QUESTION, response)?;
+        }
+        if let Some(seeded) = seeded {
+            self.context
+                .insert(payload::CLARIFY_QUESTION_KEY.into(), seeded);
         }
         Ok(None)
     }
@@ -1791,6 +1839,95 @@ mod tests {
             "{analysis}"
         );
         assert!(analysis.contains("\nblocking-findings: 0\n"), "{analysis}");
+    }
+
+    /// Walk one `askClarifyQuestion` step over the `analyze_repo` spec with
+    /// `open-questions` seeded as given (absent when `None`), answering from
+    /// `responses`.
+    fn walk_clarify(questions: Option<Value>, responses: &str) -> (WalkOutcome, Vec<Value>) {
+        let repo = analyze_repo(None);
+        let procedure = Procedure {
+            command: "clarify".into(),
+            steps: vec![Step::Extension {
+                number: StepNumber(vec![6]),
+                identifier: "askClarifyQuestion".into(),
+                prose: "Resolve open questions one at a time.".into(),
+                location: loc(),
+            }],
+        };
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert("path".into(), Value::String("specs/001-x".into()));
+        if let Some(questions) = questions {
+            context.insert("open-questions".into(), questions);
+        }
+        let mut reader = Cursor::new(responses.to_string());
+        let mut writer: Vec<u8> = Vec::new();
+        let outcome = Walker::new(
+            &procedure,
+            repo.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        )
+        .run()
+        .unwrap();
+        let envelopes = String::from_utf8(writer)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        (outcome, envelopes)
+    }
+
+    /// Clarify step 6 is one round trip per open question (spec 022,
+    /// scenario `exec-clarify-asks-each-open-question`): each question
+    /// `read-spec` returned is asked, in its order, never only the first.
+    #[test]
+    fn an_exec_clarify_asks_each_open_question_in_order() {
+        let responses = [
+            llm_response(1, "{\"answer\":\"first\"}"),
+            llm_response(2, "{\"answer\":\"second\"}"),
+        ]
+        .concat();
+        let (outcome, envelopes) = walk_clarify(
+            Some(serde_json::json!([{ "text": "Which store?" }, { "text": "What limit?" }])),
+            &responses,
+        );
+        assert_eq!(outcome, WalkOutcome::Complete);
+        let asked: Vec<&str> = requests(&envelopes)
+            .iter()
+            .map(|envelope| envelope["request"]["question"]["text"].as_str().unwrap())
+            .collect();
+        assert_eq!(asked, ["Which store?", "What limit?"]);
+        assert_eq!(progress_at(&envelopes, "6").len(), 2, "{envelopes:?}");
+    }
+
+    /// With every question resolved there is nothing to ask: the step sends
+    /// no request and says so, rather than asking about an empty question.
+    #[test]
+    fn an_exec_clarify_with_no_open_question_asks_nothing() {
+        let (outcome, envelopes) = walk_clarify(Some(serde_json::json!([])), "");
+        assert_eq!(outcome, WalkOutcome::Complete);
+        assert!(requests(&envelopes).is_empty(), "{envelopes:?}");
+        assert!(
+            progress_at(&envelopes, "6")
+                .iter()
+                .any(|message| message.starts_with("no open question")),
+            "{envelopes:?}"
+        );
+    }
+
+    /// With no question list in the context the walker cannot know the
+    /// questions, so it sends the single request the builder has always
+    /// built rather than asking nothing.
+    #[test]
+    fn an_exec_clarify_with_no_question_list_sends_the_single_request() {
+        let (outcome, envelopes) = walk_clarify(None, &llm_response(1, "{\"answer\":\"a\"}"));
+        assert_eq!(outcome, WalkOutcome::Complete);
+        let sent = requests(&envelopes);
+        assert_eq!(sent.len(), 1, "{envelopes:?}");
+        assert_eq!(sent[0]["request"]["question"]["text"], "");
     }
 
     /// A session `write-session` wrote names the target alone, so an analyze

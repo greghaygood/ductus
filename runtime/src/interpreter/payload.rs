@@ -510,13 +510,20 @@ fn resolve_spec_path(context: &Map<String, Value>, repo: &Path) -> String {
     String::new()
 }
 
-/// Resolve the question an `askClarifyQuestion` round trip carries. An
-/// explicit `question` context value wins (a clarify walker loop seeds
-/// one per round trip); otherwise the first entry of the merged
-/// `open-questions` result. The typed shape is always present — an
-/// unseeded context yields an empty question text.
+/// The walker-context key a clarify walk seeds with the question each
+/// `askClarifyQuestion` round trip asks: one per entry of `read-spec`'s
+/// `open-questions`, removed after its round trip (spec 022, scenario
+/// `exec-clarify-asks-each-open-question`).
+pub(crate) const CLARIFY_QUESTION_KEY: &str = "question";
+
+/// Resolve the question an `askClarifyQuestion` round trip carries. The
+/// question the walker seeded under [`CLARIFY_QUESTION_KEY`] wins — the
+/// clarify walk seeds one per open question; otherwise the first entry of
+/// the merged `open-questions` result, which is what a walk with no
+/// question list to fan out over sends. The typed shape is always present —
+/// an unseeded context yields an empty question text.
 fn resolve_clarify_question(context: &Map<String, Value>) -> ClarifyQuestion {
-    if let Some(question) = context.get("question") {
+    if let Some(question) = context.get(CLARIFY_QUESTION_KEY) {
         if let Some(text) = question.as_str() {
             return ClarifyQuestion {
                 text: text.to_string(),

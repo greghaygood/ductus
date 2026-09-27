@@ -521,9 +521,9 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 
 ## 125. Implement scenario: exec-clarify-asks-each-open-question
 
-- [ ] Implement the behavior described in `scenarios/exec-clarify-asks-each-open-question.md`
-- [ ] Write walker tests first and see them fail: two open questions send two requests carrying each question in order; an empty list sends none and says so; an absent list sends the single legacy request
-- [ ] In `runtime/src/interpreter/mod.rs`, fan an `askClarifyQuestion` step out over `open-questions`, seeding `question` per round trip and removing it after each
-- [ ] Confirm `resolve_clarify_question`'s doc still describes what the walker now does
+- [x] Implement the behavior described in `scenarios/exec-clarify-asks-each-open-question.md`
+- [x] Write walker tests first and see them fail: two open questions send two requests carrying each question in order; an empty list sends none and says so; an absent list sends the single legacy request
+- [x] In `runtime/src/interpreter/mod.rs`, fan an `askClarifyQuestion` step out over `open-questions`, seeding `question` per round trip and removing it after each
+- [x] Confirm `resolve_clarify_question`'s doc still describes what the walker now does
 
 - **Done when**: the new walker tests pass, having failed before the change, and the full runtime suite passes.

@@ -51,10 +51,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 Operator-approved (2026-09-27, with the `cross-spec-impact:` declaration): this task writes to `specs/022-deterministic-runtime/` and reopens 022 once.
 
-- [ ] Reopen `022-deterministic-runtime` (`done → in-progress`) through the status primitive, committed as its own step
-- [ ] `specs/022-deterministic-runtime/data-model.md`: add `rule-file-unreadable` to the could-not-be-read row (`:473`); rewrite the `rule-assessments-not-checked` sentence and the reason counts in the prose (`:476`); add the exec per-rule and trigger-judgment note to the `assessSpecQuality` section (`:1273`)
-- [ ] `specs/022-deterministic-runtime/spec.md`: add a **block-quoted** signpost beside the extension-point inventory (`:170`) linking to this spec, so `check-review-gate` reads the discharge and `derive-dependencies` induces no `022 → 060` edge; after committing, read the derivation's cycle report as well as its drift report
-- [ ] Read 022's ticked criteria naming `assessSpecQuality` or the unexamined reasons against the new behavior, and correct or annotate any claim 060 supersedes
+- [x] Reopen `022-deterministic-runtime` (`done → in-progress`) through the status primitive, committed as its own step
+- [x] `specs/022-deterministic-runtime/data-model.md`: add `rule-file-unreadable` to the could-not-be-read row (`:473`); rewrite the `rule-assessments-not-checked` sentence and the reason counts in the prose (`:476`); add the exec per-rule and trigger-judgment note to the `assessSpecQuality` section (`:1273`)
+- [x] `specs/022-deterministic-runtime/spec.md`: add a **block-quoted** signpost beside the extension-point inventory (`:170`) linking to this spec, so `check-review-gate` reads the discharge and `derive-dependencies` induces no `022 → 060` edge; after committing, read the derivation's cycle report as well as its drift report
+- [x] Read 022's ticked criteria naming `assessSpecQuality` or the unexamined reasons against the new behavior, and correct or annotate any claim 060 supersedes
 - [ ] With 022 targeted, run `/ductus:review` and `/ductus:analyze`, then `/ductus:implement`'s completion gate, which returns 022 to `done`; target 060 again afterwards
 
 - **Done when**: 022 is `done`, its body links to 060 in a block quote, `derive-dependencies` reports no cycle, and `check-review-gate` on 060 reports the impact discharged.
