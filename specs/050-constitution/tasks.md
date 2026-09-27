@@ -224,3 +224,9 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Implement the behavior described in `scenarios/report-outcomes-not-edits.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 25. A status commit holds only the transition
+
+- [ ] Implement the behavior described in `scenarios/a-status-commit-holds-only-the-transition.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
