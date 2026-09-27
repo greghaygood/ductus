@@ -53,6 +53,38 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
   an outside one is refused as `out-of-repo`, and only a path inside the
   project is asked about gitignore before it is read. It predates spec 059,
   which found it.
+- **The exec payload's secret and gitignore guards judged a plan path as the
+  plan spelled it, not the file it reads.** Both now ask about the path's
+  canonical target, named from the project root. An absolute spelling of an
+  ignored file inside a subdirectory project reached git as `proj//<path>`,
+  which no anchored pattern matches, so the file was read and shipped — a
+  regression spec 059 introduced. A `.`, `..` or `//` spelling, and a
+  harmless-named link to `.env` or to an ignored file, slipped past the same
+  way; those predate 059. The `writeSpecBody` payload's existing-section
+  reader, which joined the context's `feature` and `path` with no containment,
+  now reads nothing outside the project.
+- **A project whose path contains `*`, `?` or `[` had its specs matched as a
+  glob, which matched nothing.** `diff-cross-spec` reported no cross-spec
+  impact, and the untracked-spec listing behind `derive-dependencies` and
+  `derive-references` reported none skipped, without either having looked.
+  Every pathspec naming the project's spec tree is now literal, and the
+  `--staged` listing is bounded to the spec tree rather than diffing the whole
+  repository.
+- **A git failure read as an empty answer.** The tracked, untracked and
+  staged spec listings returned nothing when a repository was found but its
+  index or status could not be read, and `compute-review-scope` treated an
+  unreadable `plan.md` as one with no Affected Files. Each is now an error;
+  an absent plan is still an empty list.
+- **`check-artifacts`' scenario history walk could flag a scenario whose task
+  it had not read.** A revision whose `tasks.md` could not be read or decoded
+  was skipped, and a shallow clone was walked as though complete, so a task
+  living only there was reported as never having existed. Both now fail safe
+  to flagging nothing, as 000's `scenario-without-task-visibility` requires,
+  and an unchanged `tasks.md` is scanned once rather than once per commit.
+- **`check-corpus-links --scope repository` counted a conflicted file once
+  per conflict stage,** reporting its broken links two or three times, and its
+  empty-scope guidance named the spec root rather than the project's tracked
+  files it had examined.
 
 ## [0.54.0] — 2026-09-26
 

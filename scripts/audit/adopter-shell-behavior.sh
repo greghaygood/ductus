@@ -19,8 +19,10 @@
 #     landed with frontmatter the generators had already superseded on disk.
 #
 # None was reachable by grep: each is a *behavior* that only appears when the
-# shell runs against a tree shaped like an adopter's. So this family builds one
-# and runs the real shipped hook in it.
+# shell runs against a tree shaped like an adopter's. So this family builds
+# such trees and runs the real shipped hooks in them: the inner hook directly,
+# and, for a project in a subdirectory of its repository (spec 059), the outer
+# stub and the inner hook together through a real `git commit`.
 #
 # **What this family covers changed with spec 022's adopter-generator-promotion.**
 # The two frontmatter derivations moved out of shell and into the
@@ -33,10 +35,14 @@
 # `cargo build`, identical in CI and on a laptop); the stub simulates the
 # derivation so the re-stage assertion still has a rewrite to catch.
 #
-# The fixture is deliberately hostile to the masking conditions above:
-#   * `[paths] specs-root = "features"` — never the default
+# The fixtures are deliberately hostile to the masking conditions above:
+#   * one run sets `[paths] specs-root = "features"`, where a hardcoded default
+#     matches nothing (the others use the default, isolating everything else)
 #   * config only at `.ductus/config.toml` — no legacy tier to fall back to
 #   * the runtime reachable ONLY at `.ductus/bin/ductus`, nothing on `PATH`
+#   * every fixture commit runs with the user's global and system git config
+#     ignored, so a `commit.gpgsign` or a hook setting there cannot fail a case
+#     for a reason that is not the shipped hook's
 #
 # Vacuity guard: every precondition failure is a finding, never a silent pass.
 # A fixture that cannot be built is a family that did not run, and this file
@@ -57,6 +63,22 @@ for shipped in "$HOOK" "$OUTER"; do
     exit "$drift"
   fi
 done
+
+# fixture_failed WHAT DIR — report a fixture that could not be built, and remove
+# whatever of it exists. A fixture that cannot be built is a case that did not
+# run, which must not read as a pass.
+fixture_failed() {
+  emit "scripts/audit/adopter-shell-behavior.sh" \
+    "could not build $1" \
+    "ensure mktemp and git work here — a skipped run must not read as a pass"
+  if [ -n "$2" ]; then rm -rf "$2"; fi
+}
+
+# fixture_git ARGS... — git as a fixture commit runs it: from the current
+# directory, blind to the user's global and system config.
+fixture_git() {
+  GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git "$@"
+}
 
 # scaffold FIXTURE SPECS_DIR [FEATURE] [GIT_ROOT] — lay down an adopter-shaped
 # tree. Returns non-zero when the fixture could not be built (a finding, never a
@@ -111,13 +133,15 @@ SPEC
 # install_stub FIXTURE — a runtime that records its invocations and simulates
 # the dependency derivation. Not the real binary: what is under test is the
 # shell's resolution and scoping, not the primitive, which has its own tests.
+# It rewrites only on a `--write` call, so the hook's `--help` capability
+# probe cannot stand in for the derivation it precedes.
 install_stub() {
   local fixture="$1"
   cat > "$fixture/.ductus/bin/ductus" <<'STUB'
 #!/usr/bin/env bash
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 echo "$@" >> "$root/.ductus-stub-invoked"
-if [ "${1:-}" = "derive-dependencies" ]; then
+if [ "${1:-}" = "derive-dependencies" ] && [ "${2:-}" = "--write" ]; then
   # Stand in for the primitive: collapse the seeded block-form entry, so the
   # hook's re-stage loop has a real worktree change to capture.
   for f in "$root"/*/*/spec.md; do
@@ -141,10 +165,7 @@ check_halts_without_runtime() {
   local fixture out status
   fixture="$(mktemp -d 2>/dev/null)" || fixture=""
   if [ -z "$fixture" ] || ! scaffold "$fixture" specs; then
-    emit "scripts/audit/adopter-shell-behavior.sh" \
-      "could not build the no-runtime fixture" \
-      "ensure mktemp and git work here — a skipped run must not read as a pass"
-    [ -n "$fixture" ] && rm -rf "$fixture"
+    fixture_failed "the no-runtime fixture" "$fixture"
     return
   fi
   # Deliberately no .ductus/bin/ductus, and nothing named ductus on PATH.
@@ -174,10 +195,7 @@ build_and_run() {
   local fixture invoked hook_out hook_status unstaged
   fixture="$(mktemp -d 2>/dev/null)" || fixture=""
   if [ -z "$fixture" ] || ! scaffold "$fixture" "$specs_dir" "$feature"; then
-    emit "scripts/audit/adopter-shell-behavior.sh" \
-      "could not build a fixture for specs-root '$specs_dir' feature '$feature'" \
-      "ensure mktemp and git work here — a skipped run must not read as a pass"
-    [ -n "$fixture" ] && rm -rf "$fixture"
+    fixture_failed "a fixture for specs-root '$specs_dir' feature '$feature'" "$fixture"
     return
   fi
   install_stub "$fixture"
@@ -200,18 +218,21 @@ build_and_run() {
       "resolve the runtime through the .ductus/bin/ductus pointer before falling back to PATH"
   fi
 
-  # Assertion 2 — both derivations run. Dropping one is silent: its index just
-  # stops updating, and nothing else in the pipeline recomputes it on commit.
+  # Assertion 2 — both derivations run, as writes over the staged specs, not
+  # only as the `--help` capability probe that precedes them. Dropping one is
+  # silent: its index just stops updating, and nothing else in the pipeline
+  # recomputes it on commit.
   for primitive in derive-dependencies derive-references; do
     case "$invoked" in
-      *"$primitive"*) ;;
+      *"$primitive --write --staged"*) ;;
       *) emit "framework/bootstrap/hooks/ductus-pre-commit" \
            "with specs-root '$specs_dir' the hook never invoked $primitive" \
            "invoke both derivation primitives with --write --staged before the re-stage loop" ;;
     esac
   done
 
-  # Assertion 3 — the derivation reached the spec. If it did not, assertion 4
+  # Assertion 3 — the derivation reached the spec: the stub rewrites only on
+  # the hook's `--write` call. If it did not, assertion 4
   # would compare an unchanged file against itself and report clean having
   # examined nothing (QUAL-CLAIM-001, the shape this family exists to catch).
   if grep -q '000-stale-entry' "$fixture/$specs_dir/$feature/spec.md" 2>/dev/null; then
@@ -255,10 +276,7 @@ check_survives_deleted_spec() {
   local fixture hook_out hook_status
   fixture="$(mktemp -d 2>/dev/null)" || fixture=""
   if [ -z "$fixture" ] || ! scaffold "$fixture" specs; then
-    emit "scripts/audit/adopter-shell-behavior.sh" \
-      "could not build the deleted-spec fixture" \
-      "ensure mktemp and git work here — a skipped run must not read as a pass"
-    [ -n "$fixture" ] && rm -rf "$fixture"
+    fixture_failed "the deleted-spec fixture" "$fixture"
     return
   fi
   install_stub "$fixture"
@@ -267,7 +285,7 @@ check_survives_deleted_spec() {
   # one commits the scaffolded tree first, then stages the removal.
   if ! (
     cd "$fixture" || exit 1
-    git commit -qm seed && git rm -q "specs/001-example/spec.md"
+    fixture_git commit -qm seed && git rm -q "specs/001-example/spec.md"
   ) > /dev/null 2>&1; then
     emit "scripts/audit/adopter-shell-behavior.sh" \
       "could not stage a spec deletion in the fixture" \
@@ -299,22 +317,19 @@ check_survives_deleted_spec() {
 # tree. A real `git commit` drives it, so git's own hook resolution is under
 # test too rather than assumed.
 check_subdirectory_project() {
-  local repo_root project commit_out commit_status invoked committed
+  local repo_root project commit_out commit_status invoked committed call fix
   repo_root="$(mktemp -d 2>/dev/null)" || repo_root=""
   project="$repo_root/proj"
   if [ -z "$repo_root" ] || ! scaffold "$project" specs 001-example "$repo_root" \
     || ! cp "$OUTER" "$project/.githooks/pre-commit" \
     || ! chmod +x "$project/.githooks/pre-commit"; then
-    emit "scripts/audit/adopter-shell-behavior.sh" \
-      "could not build the subdirectory-project fixture" \
-      "ensure mktemp and git work here — a skipped run must not read as a pass"
-    [ -n "$repo_root" ] && rm -rf "$repo_root"
+    fixture_failed "the subdirectory-project fixture" "$repo_root"
     return
   fi
   install_stub "$project"
 
   commit_out="$(cd "$repo_root" && PATH=/usr/bin:/bin \
-    git -c core.hooksPath=proj/.githooks commit -qm seed 2>&1)"
+    fixture_git -c core.hooksPath=proj/.githooks commit -qm seed 2>&1)"
   commit_status=$?
   if [ "$commit_status" -ne 0 ]; then
     emit "framework/bootstrap/hooks/pre-commit" \
@@ -327,11 +342,15 @@ check_subdirectory_project() {
   invoked="$(cat "$project/.ductus-stub-invoked" 2>/dev/null)"
   for call in "derive-dependencies --write --staged" "derive-references --write --staged" \
     "label-criteria --feature 001-example"; do
+    case "$call" in
+      label-criteria*) fix="list staged specs from the project root (git diff --cached --relative), so the shape match sees the project's own paths" ;;
+      *) fix="run the derivation from the project root — the directory above the hook — so the runtime and the spec root are found there" ;;
+    esac
     case "$invoked" in
       *"$call"*) ;;
       *) emit "framework/bootstrap/hooks/ductus-pre-commit" \
            "in a project in a subdirectory of its repository the hook never ran \`$call\`" \
-           "list staged specs from the project root (git diff --cached --relative), so the shape match sees the project's own paths" ;;
+           "$fix" ;;
     esac
   done
 

@@ -164,7 +164,10 @@ fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
 /// frontmatter parses on a big-history repo into a handful.
 ///
 /// Shared with `compute-review-scope`, which uses the same commit as its
-/// default `diff-base`.
+/// default `diff-base`. `spec_rel` is looked up in commit trees, so it names
+/// the spec from the work tree's root ([`super::ProjectRepository::to_git`]),
+/// not from the project root; a project-relative name finds no history in a
+/// project that is a subdirectory of its repository (spec 059).
 pub(crate) fn find_in_progress_commit(repo: &Repository, spec_rel: &str) -> Result<Option<String>> {
     let mut walk = repo.revwalk()?;
     walk.push_head()?;

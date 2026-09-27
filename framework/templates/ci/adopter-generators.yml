@@ -129,11 +129,19 @@ jobs:
           SPECS_ROOT: ${{ steps.derive.outputs.specs-root }}
         run: |
           set -euo pipefail
+          # GitHub resolves an annotation's `file=` from the repository root,
+          # while this step runs from the project root and names files from
+          # there. The project's path from the work tree (empty at the root)
+          # joins the two, so an annotation lands on its file when the job
+          # sets a working directory (spec 059).
+          PROJECT_PREFIX="$(git rev-parse --show-prefix)"
+          export PROJECT_PREFIX
           python3 - <<'PY'
           import os
           import sys
 
           root = os.environ["SPECS_ROOT"]
+          PREFIX = os.environ.get("PROJECT_PREFIX", "")
           BASELINE = ".ductus/audit-record-baseline.txt"
           MARKS = ("review-exempt", "analyze-exempt")
 
@@ -274,7 +282,7 @@ jobs:
                   ))
 
           for path, message in findings:
-              print("::error file=%s::Audit-record gate: %s" % (path, message))
+              print("::error file=%s%s::Audit-record gate: %s" % (PREFIX, path, message))
 
           # Say what was examined. A gate that enumerated nothing and a gate
           # that examined the corpus and found it clean both used to exit 0,
