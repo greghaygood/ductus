@@ -530,7 +530,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 > All HTTP responses MUST include a documented set of security headers covering: HSTS, content-type options, frame protection, referrer policy, content security policy (for HTML responses), and cache control for sensitive responses.
 
-**Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache. CSP `frame-ancestors` is the modern clickjacking defense and supersedes `X-Frame-Options`; `X-Frame-Options: DENY` is set in addition for browsers that do not implement CSP Level 2 (see `FE-CSP-008`).
+**Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache. CSP `frame-ancestors` is the modern clickjacking defense and supersedes `X-Frame-Options`, which `BE-API-012` keeps as an advisory fallback for browsers that do not implement CSP Level 2.
 
 **Verification:** Any spec or plan that introduces an HTTP response (especially HTML) MUST commit to setting these headers, ideally at the framework or reverse-proxy layer for uniform coverage. `/{project}:analyze` flags response specs that omit any of the headers above, and specifically flags HTML-serving specs without a CSP commitment. The minimum required headers and their values:
 
@@ -539,7 +539,6 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` (floor); `preload` is opt-in after the operator confirms all subdomains can run HTTPS forever | All responses |
 | `X-Content-Type-Options` | `nosniff` | All responses |
 | `Content-Security-Policy` | Project-defined CSP including `frame-ancestors` (see `FE-CSP-002`/`FE-CSP-003`) | HTML responses |
-| `X-Frame-Options` | `DENY` (or `SAMEORIGIN`) as a fallback alongside the CSP directive | HTML responses |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` (or stricter) | All responses |
 | `Cache-Control` | `no-store` | Authenticated and sensitive-data responses |
 | `Content-Type` | Explicit type with charset (e.g., `text/html; charset=UTF-8`) | All responses |
@@ -647,6 +646,16 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 **Verification:** Any spec or plan that introduces cookie-authenticated (or otherwise ambient-credential) state-changing endpoints MUST name the server-side CSRF check and its rejection behavior. `/{project}:analyze` flags state-changing endpoints that rely on an ambient credential without a documented server-side token or origin validation, and flags token checks that are not constant-time.
 
 **Source:** OWASP Cross-Site Request Forgery Prevention Cheat Sheet
+
+### BE-API-012
+
+> HTML responses SHOULD also set `X-Frame-Options: DENY` (or `SAMEORIGIN` where same-origin framing is required) as a clickjacking fallback for browsers that do not honor the CSP `frame-ancestors` directive `BE-API-001` requires.
+
+**Rationale:** `frame-ancestors` obsoletes `X-Frame-Options` in every browser that implements CSP Level 2, but a browser that does not ignores the directive and frames the page unless `X-Frame-Options` forbids it. Because the header is only a fallback, it is advisory. A backend-only service that never loads the frontend rule set still serves the HTML responses it protects, so the requirement lives here as well as in the client-facing `FE-CSP-008`. The header does nothing for a redirect or a JSON API response.
+
+**Verification:** Any spec or plan that describes serving HTML responses SHOULD commit to `X-Frame-Options: DENY` (or `SAMEORIGIN`) alongside the CSP `frame-ancestors` directive. `/{project}:analyze` emits a warning when HTML-serving specs omit `X-Frame-Options`.
+
+**Source:** OWASP HTTP Headers Cheat Sheet, OWASP Clickjacking Defense Cheat Sheet
 
 ## BE-ERR — Error Handling
 

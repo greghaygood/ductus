@@ -282,7 +282,7 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 > Legacy `X-Frame-Options: DENY` (or `SAMEORIGIN` where same-origin framing is required) SHOULD also be set as a clickjacking fallback for browsers that do not honor `frame-ancestors`.
 
-**Rationale:** `X-Frame-Options` covers older browsers that do not implement CSP Level 2, where the `frame-ancestors` directive `FE-CSP-003` requires has no effect.
+**Rationale:** `X-Frame-Options` covers older browsers that do not implement CSP Level 2, where the `frame-ancestors` directive `FE-CSP-003` requires has no effect. `BE-API-012` states the same fallback for a backend that serves HTML without loading this file.
 
 **Verification:** Any spec or plan that describes serving HTML responses SHOULD commit to `X-Frame-Options: DENY` (or `SAMEORIGIN`). `/{project}:analyze` emits a warning when HTML-serving specs omit `X-Frame-Options`.
 

@@ -167,6 +167,6 @@ Reopen surfaced upstream from an adopter: an `FE-DEPS` rule was missing for a de
 
 ## 11. X-Frame-Options carries one strength across the two rule files
 
-- [ ] Implement the behavior described in `scenarios/x-frame-options-carries-one-strength.md`
+- [x] Implement the behavior described in `scenarios/x-frame-options-carries-one-strength.md`
 
 - **Done when**: the scenario's open question is resolved, `BE-API-001` and `FE-CSP-008` state one strength for `X-Frame-Options`, and `008` is re-reviewed back to `done`.
