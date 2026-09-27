@@ -56,7 +56,10 @@ pub enum PayloadError {
     /// A path listed in the plan's Affected Files matched a secret-bearing
     /// pattern (`.env`, `credentials*`, etc.), was marked ignored by
     /// `.gitignore`, or canonicalized to a location outside the repo root
-    /// (path traversal — pattern label `out-of-repo`).
+    /// (path traversal — pattern label `out-of-repo`). The root here is the
+    /// project root, which is a subdirectory of the git repository when the
+    /// project sits in one (spec 059); the label keeps its name because it is
+    /// part of the envelope a host already parses.
     #[error("secret-exfiltration-blocked: '{path}' matches pattern '{pattern}'")]
     SecretExfiltration {
         /// Offending repo-relative path.
@@ -361,7 +364,7 @@ fn build_write_code_request(
 
     let plan_relevant_files = load_plan_relevant_files(&feature, repo)?;
     let excerpts = load_constitution_excerpts(command_name, repo);
-    let write_boundary = read_write_boundary(context);
+    let write_boundary = string_array(context, "write-boundary");
     let task = load_current_task(&feature, context, repo);
 
     let typed = WriteCodeRequest {
@@ -1034,18 +1037,6 @@ fn first_rule_with_verification(content: &str) -> Option<(String, String)> {
     None
 }
 
-fn read_write_boundary(context: &Map<String, Value>) -> Vec<String> {
-    context
-        .get("write-boundary")
-        .and_then(Value::as_array)
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str().map(str::to_string))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
 fn load_current_task(feature: &str, context: &Map<String, Value>, repo: &Path) -> WriteCodeTask {
     let task_number = context
         .get("task-number")
@@ -1116,9 +1107,10 @@ fn load_plan_relevant_files(
     let paths = crate::primitives::parse_affected_files(&plan_content);
     // Discover the git repo once, above the loop (BE-QUERY-001): the prior
     // per-path `Repository::discover` re-walked the filesystem for every
-    // Affected Files entry. A directory that is not a git repo (discover
-    // fails) yields no repository, and every path is treated as not-ignored
-    // — the same degradation the per-path form gave. Git reads ignore rules
+    // Affected Files entry. A project no work tree contains (discover fails:
+    // no repository, a bare one, or a work tree `core.worktree` moved) yields
+    // no repository, and every path is treated as not-ignored — the same
+    // degradation the per-path form gave. Git reads ignore rules
     // by the path from the work tree, which is not the project root when the
     // project sits in a subdirectory of its repository: asked by the
     // project-relative path, the project's own `.gitignore` never applied,
@@ -1155,8 +1147,26 @@ fn load_plan_relevant_files(
             }
             Contained::Inside(abs) => abs,
         };
+        // The checks below ask about the file that is read, by its name from
+        // the project root, never by the plan's spelling of it. The plan may
+        // write an absolute path, a `.`, `..` or `//` segment, or a symlink
+        // with a harmless name: asked by the raw text, libgit2 matched no
+        // anchored pattern against `proj//<absolute>` and refused `src/../x`
+        // as ignored, and a link named `notes.txt` sent the `.env` it points
+        // at. The entry's own name was checked for a secret pattern above.
+        let Some(target) = project_relative(&canon_repo, &canon_abs) else {
+            // A name that is not UTF-8 cannot be asked about, so nothing is
+            // read rather than something sent unexamined.
+            continue;
+        };
+        if let Some(pattern) = secret_pattern(&target) {
+            return Err(PayloadError::SecretExfiltration {
+                path: rel,
+                pattern: pattern.into(),
+            });
+        }
         if let Some(project) = git_repo.as_ref()
-            && is_gitignored(&project.repository, &project.to_git(&rel))
+            && is_gitignored(&project.repository, &project.to_git(&target))
         {
             return Err(PayloadError::SecretExfiltration {
                 path: rel,
@@ -1169,6 +1179,18 @@ fn load_plan_relevant_files(
         out.push(PlanRelevantFile { path: rel, content });
     }
     Ok(out)
+}
+
+/// `abs`, a path inside `canon_repo`, named from the project root with `/`
+/// between components. `None` when a component is not UTF-8, which no
+/// gitignore pattern could be asked about.
+fn project_relative(canon_repo: &Path, abs: &Path) -> Option<String> {
+    let inside = abs.strip_prefix(canon_repo).ok()?;
+    let parts: Option<Vec<&str>> = inside
+        .components()
+        .map(|part| part.as_os_str().to_str())
+        .collect();
+    Some(parts?.join("/"))
 }
 
 fn load_constitution_excerpts(command_name: &str, repo: &Path) -> ConstitutionExcerptScan {
@@ -1355,9 +1377,16 @@ fn read_existing_section(
         "specify" => &["spec.md"],
         _ => return None,
     };
+    // BE-INPUT-004: `feature` and `path` arrive in the walker context, so the
+    // file is confined to the project before it is read, as every other reader
+    // here is — a `../` feature or an absolute path never reaches the payload.
+    let canon_repo = repo.canonicalize().ok()?;
     for filename in filenames {
         let candidate = feature_dir.join(filename);
-        let Ok(content) = std::fs::read_to_string(&candidate) else {
+        let Contained::Inside(abs) = classify_contained(&canon_repo, &candidate) else {
+            continue;
+        };
+        let Ok(content) = std::fs::read_to_string(&abs) else {
             continue;
         };
         if let Some(body) = extract_section_body(&content, section) {
@@ -1464,7 +1493,8 @@ fn secret_pattern(path: &str) -> Option<&'static str> {
 /// secret-pattern check above is the floor; gitignore is an opt-in second
 /// layer. The caller hoists `ProjectRepository::discover` above the Affected
 /// Files loop (BE-QUERY-001) and only calls this when discovery succeeded,
-/// so a directory that is not a git repo skips the query entirely and every
+/// so a project no work tree contains — no repository, a bare one, or a work
+/// tree `core.worktree` moved elsewhere — skips the query entirely and every
 /// path stays not-ignored.
 fn is_gitignored(repository: &git2::Repository, path: &str) -> bool {
     repository
@@ -1870,6 +1900,115 @@ mod tests {
                 panic!("expected SecretExfiltration, got {other:?}")
             }
         }
+    }
+
+    /// BE-INPUT-004: a context `feature` that climbs out of the spec root, or
+    /// an absolute `path` hint, is not read into the `writeSpecBody` payload.
+    #[test]
+    fn read_existing_section_reads_nothing_outside_the_project() {
+        let outer = tempdir().unwrap();
+        let repo = outer.path().join("repo");
+        fs::create_dir_all(repo.join("specs")).unwrap();
+        fs::write(
+            outer.path().join("spec.md"),
+            "# Outside\n\n## Motivation\n\nOutside text.\n",
+        )
+        .unwrap();
+        let climbing = read_existing_section("Motivation", Some("../.."), None, &repo, "specify");
+        assert_eq!(climbing, None);
+        let absolute = outer.path().canonicalize().unwrap();
+        let hinted = read_existing_section(
+            "Motivation",
+            None,
+            Some(absolute.to_str().unwrap()),
+            &repo,
+            "specify",
+        );
+        assert_eq!(hinted, None);
+    }
+
+    /// The refusal a subdirectory project's plan entry produced, by pattern.
+    fn refusal_pattern(project: &Path) -> Option<String> {
+        match load_plan_relevant_files("123-foo", project) {
+            Err(PayloadError::SecretExfiltration { pattern, .. }) => Some(pattern),
+            Err(other @ PayloadError::UnknownExtension { .. }) => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
+            Ok(_) => None,
+        }
+    }
+
+    /// An absolute spelling of an ignored file inside a subdirectory project.
+    /// Converted for git by prefixing it, it became `proj//<absolute>`, which
+    /// no anchored pattern matches, so the file went into the payload.
+    #[test]
+    fn an_absolute_spelling_of_an_ignored_file_is_refused() {
+        let tmp = tempdir().unwrap();
+        // The fixture places the project at `proj/`.
+        let absolute = tmp
+            .path()
+            .canonicalize()
+            .unwrap()
+            .join("proj/config/local.toml")
+            .to_string_lossy()
+            .into_owned();
+        let project = subdirectory_plan(tmp.path(), &absolute);
+        fs::write(project.join(".gitignore"), "/config/local.toml\n").unwrap();
+        fs::create_dir_all(project.join("config")).unwrap();
+        fs::write(project.join("config/local.toml"), "token=value").unwrap();
+
+        assert_eq!(refusal_pattern(&project).as_deref(), Some(".gitignore"));
+    }
+
+    /// A `..` spelling of a file git tracks is asked about by the file's own
+    /// name. Asked by the raw text, libgit2 answered "ignored" for the `..`
+    /// and refused a file nothing ignores.
+    #[test]
+    fn a_dot_dot_spelling_of_a_tracked_file_is_not_refused() {
+        let tmp = tempdir().unwrap();
+        let project = subdirectory_plan(tmp.path(), "src/../app.toml");
+        fs::create_dir_all(project.join("src")).unwrap();
+        fs::write(project.join("app.toml"), "name=app").unwrap();
+
+        assert_eq!(refusal_pattern(&project), None);
+        let files = load_plan_relevant_files("123-foo", &project).unwrap();
+        assert_eq!(files.len(), 1);
+    }
+
+    /// A symlink with a harmless name pointing at an ignored file: the file
+    /// read is the target, so the target's name is what git is asked about.
+    #[cfg(unix)]
+    #[test]
+    fn a_harmless_named_link_to_an_ignored_file_is_refused() {
+        let tmp = tempdir().unwrap();
+        let project = subdirectory_plan(tmp.path(), "notes.txt");
+        fs::write(project.join(".gitignore"), "/config/local.toml\n").unwrap();
+        fs::create_dir_all(project.join("config")).unwrap();
+        fs::write(project.join("config/local.toml"), "token=value").unwrap();
+        std::os::unix::fs::symlink("config/local.toml", project.join("notes.txt")).unwrap();
+
+        assert_eq!(refusal_pattern(&project).as_deref(), Some(".gitignore"));
+    }
+
+    /// A symlink with a harmless name pointing at a secret-named file: the
+    /// basename check reads the target's name as well as the entry's.
+    #[cfg(unix)]
+    #[test]
+    fn a_harmless_named_link_to_a_secret_file_is_refused() {
+        let tmp = tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/123-foo");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(
+            feature_dir.join("plan.md"),
+            "## Affected Files\n\n\
+             | File | Action |\n| --- | --- |\n\
+             | `readme.txt` | Edit |\n",
+        )
+        .unwrap();
+        fs::write(tmp.path().join(".env"), "TOKEN=value").unwrap();
+        std::os::unix::fs::symlink(".env", tmp.path().join("readme.txt")).unwrap();
+
+        assert_eq!(refusal_pattern(tmp.path()).as_deref(), Some(".env"));
     }
 
     /// The same escape from a project at the root of its git repository,
