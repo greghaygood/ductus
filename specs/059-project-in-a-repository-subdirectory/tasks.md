@@ -98,8 +98,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 13. Prose-claim sweep
 
-- [ ] Re-grep live artifacts for `core.hooksPath`, `show-toplevel`, and `./.githooks/ductus-pre-commit`; classify each hit as corrected here, historical (a past-tense record, a changelog, a migration), or out of scope with its reason in the plan
-- [ ] Grep for claims that a project sits at its repository's root, by meaning, across `README.md`, `framework/bootstrap/`, and `framework/commands/`
+- [x] Re-grep live artifacts for `core.hooksPath`, `show-toplevel`, and `./.githooks/ductus-pre-commit`; classify each hit as corrected here, historical (a past-tense record, a changelog, a migration), or out of scope with its reason in the plan
+- [x] Grep for claims that a project sits at its repository's root, by meaning, across `README.md`, `framework/bootstrap/`, and `framework/commands/`
 
 - **Done when**: every hit is corrected or classified, and no present-tense claim of the old wiring remains outside spec 018.
 
@@ -123,5 +123,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 ## 16. Disposition out-of-spec finding: an escaping plan path in a git repository is refused under the `.gitignore` label, not `out-of-repo`
 
 - [ ] `runtime/src/interpreter/payload.rs` — libgit2's `status_should_ignore` answers `true` for a path containing `..`, so in any git repository an Affected Files entry such as `../outside.txt` is refused by the gitignore layer and labelled `.gitignore` before the containment check can label it `out-of-repo`. The refusal holds; only the label misleads. Measured at the repository root before 059's change (probe: `should_ignore("../outside.txt") = Ok(true)`), so it predates 059 and is not about subdirectory projects. The existing escape tests run outside a git repository, where the label is `out-of-repo`.
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
+
+## 17. Disposition out-of-spec finding: three live pointers still name `framework/bootstrap/ductus.md` §Hook Installation, which spec 056 moved to `ductus-procedure.md`
+
+- [ ] `specs/017-derive-dont-ask/spec.md` (the signpost at line 15 and AC21 at line 143) and `specs/022-deterministic-runtime/scenarios/adopter-generator-promotion.md:68` send a reader to `framework/bootstrap/ductus.md` §Hook Installation; the section has lived in `framework/bootstrap/ductus-procedure.md` since 056's archive-boundary split (`ca85c8b8`). Measured by `git grep` over the live-artifact set during 059's prose-claim sweep: those three, plus 018's six, which 059's task 14 corrects; plans and tasks files are design records and not counted. Predates 059. Pricing: 017 is a `spec.md` edit (reopen plus an analyze); 022's is a scenario, a durable contract (reopen plus 022's full five-pass re-review).
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
