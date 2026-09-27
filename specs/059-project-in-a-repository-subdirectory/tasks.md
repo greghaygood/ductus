@@ -1,6 +1,6 @@
 # 059 — Project in a repository subdirectory Tasks
 
-Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runtime work, verified through the built binary rather than the MCP tools, which answer with the binary the session started on. Every new test is shown to fail with its conversion removed before it is trusted.
+Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 and 16 are runtime work, verified through the built binary rather than the MCP tools, which answer with the binary the session started on. Every new test is shown to fail with its conversion removed before it is trusted.
 
 ## 1. `ProjectRepository` and the subdirectory fixture
 
@@ -105,30 +105,32 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 14. Discharge the impact on 018
 
+Operator-approved (2026-09-26, with the `cross-spec-impact:` declaration; confirmed 2026-09-27): this task writes to `specs/018-adopter-owned-pre-commit/`, outside 059's derived write boundary, and reopens 018 once.
+
 - [ ] Reopen `018-adopter-owned-pre-commit` (`done → in-progress`) through the status primitive
-- [ ] Replace its embedded outer stub (`spec.md:30-44`) with a pointer to `framework/bootstrap/hooks/pre-commit`; replace the ladder (`:52-61`) and snippet (`:63-75`) with pointers to `framework/bootstrap/ductus-procedure.md` §Hook Installation; add a signpost linking back to 059
-- [ ] Read 018's ticked criteria against the new behavior; annotate any the change supersedes rather than rewriting it
-- [ ] Run `/ductus:review` and `/ductus:analyze` on 018 and return it to `done` through its gate
+- [ ] Replace its embedded outer stub (`spec.md:30-44`) with a pointer to `framework/bootstrap/hooks/pre-commit`; replace the ladder (`:52-61`) and snippet (`:63-75`) with pointers to `framework/bootstrap/ductus-procedure.md` §Hook Installation; add a signpost that links back to 059 with a relative markdown link in the body (the gate's discharge test), not under `## See also`
+- [ ] Repoint every other `framework/bootstrap/ductus.md` §Hook Installation reference in 018's `spec.md` (the ladder's lead-in, §Affected Surfaces, and AC5, AC6, AC7, AC12) to `framework/bootstrap/ductus-procedure.md`, where 056 moved the section and its migration subsection; §Shared Files still lives in `ductus.md`
+- [ ] Read 018's ticked criteria against the new behavior and annotate, rather than rewrite, each one 059 supersedes for a subdirectory project: AC6's snippet path and AC9's and AC12's `core.hooksPath .githooks` still hold at the repository root, and 059's AC9 governs a subdirectory
+- [ ] With 018 targeted, run `/ductus:review` and `/ductus:analyze`, then `/ductus:implement`'s completion gate, which returns 018 to `done`; target 059 again afterwards
 
 - **Done when**: 018 is `done`, its body links to 059, and `check-review-gate` on 059 reports the impact discharged.
 
-## 15. Release `0.54.1`
-
-- [ ] Bump `version` and `runtime/Cargo.toml:3` to `0.54.1`; refresh `runtime/Cargo.lock` with one build without `--locked`
-- [ ] Add a `runtime/CHANGELOG.md` section covering tasks 1–9
-- [ ] Run audit Family 20
-
-- **Done when**: Family 20 passes and the changelog section names every runtime change. The tag is cut after 059 and 018 are `done`.
-
 ## 16. Disposition out-of-spec finding: an escaping plan path in a git repository is refused under the `.gitignore` label, not `out-of-repo`
 
-- [ ] `runtime/src/interpreter/payload.rs` — libgit2's `status_should_ignore` answers `true` for a path containing `..`, so in any git repository an Affected Files entry such as `../outside.txt` is refused by the gitignore layer and labelled `.gitignore` before the containment check can label it `out-of-repo`. The refusal holds; only the label misleads. Measured at the repository root before 059's change (probe: `should_ignore("../outside.txt") = Ok(true)`), so it predates 059 and is not about subdirectory projects. The existing escape tests run outside a git repository, where the label is `out-of-repo`.
+- [ ] `runtime/src/interpreter/payload.rs` — libgit2's `status_should_ignore` answers `true` for a path containing `..`, so in any git repository an Affected Files entry such as `../outside.txt` is refused by the gitignore layer and labelled `.gitignore` before the containment check can label it `out-of-repo`. The refusal holds; only the label misleads. Measured at the repository root before 059's change (probe: `should_ignore("../outside.txt") = Ok(true)`), so it predates 059 and is not about subdirectory projects. The existing escape tests run outside a git repository, where the label is `out-of-repo`. It also contradicts 022's scenario `writecode-payload-canonicalize-paths`, whose edge case rejects a relative escape "with `out-of-repo`". Operator decision (2026-09-27): fix it here, so the code meets 022's existing contract and nothing reopens.
+- [ ] In `load_plan_relevant_files`, run `classify_contained` before the gitignore check: `Missing` continues, `Outside` refuses as `out-of-repo`, and only an `Inside` path is asked about gitignore before it is read
+- [ ] Test: a project at the root of a git repository planning `../outside.txt` is refused as `out-of-repo`; restore the `out-of-repo` assertion, and its doc comment, in `a_subdirectory_plan_path_escaping_the_project_is_still_refused`; show both fail with the old order
+- [ ] Correct `plan.md`'s paragraph on the escaping path, which records the old layer order and the `.gitignore` label
+- [ ] Append `— fixed` to this task's first item
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
 
 ## 17. Disposition out-of-spec finding: three live pointers still name `framework/bootstrap/ductus.md` §Hook Installation, which spec 056 moved to `ductus-procedure.md`
 
-- [ ] `specs/017-derive-dont-ask/spec.md` (the signpost at line 15 and AC21 at line 143) and `specs/022-deterministic-runtime/scenarios/adopter-generator-promotion.md:68` send a reader to `framework/bootstrap/ductus.md` §Hook Installation; the section has lived in `framework/bootstrap/ductus-procedure.md` since 056's archive-boundary split (`ca85c8b8`). Measured by `git grep` over the live-artifact set during 059's prose-claim sweep: those three, plus 018's six, which 059's task 14 corrects; plans and tasks files are design records and not counted. Predates 059. Pricing: 017 is a `spec.md` edit (reopen plus an analyze); 022's is a scenario, a durable contract (reopen plus 022's full five-pass re-review).
+- [ ] `specs/017-derive-dont-ask/spec.md` (the signpost at line 15 and AC21 at line 143) and `specs/022-deterministic-runtime/scenarios/adopter-generator-promotion.md:68` send a reader to `framework/bootstrap/ductus.md` §Hook Installation; the section has lived in `framework/bootstrap/ductus-procedure.md` since 056's archive-boundary split (`ca85c8b8`). Measured by `git grep` over the live-artifact set during 059's prose-claim sweep: those three, plus 018's six, which 059's task 14 corrects; plans and tasks files are design records and not counted. Predates 059. Pricing: 017 is a `spec.md` edit (reopen plus an analyze); 022's is a scenario, a durable contract (reopen plus 022's full five-pass re-review). Operator decision (2026-09-27): sweep all three as one uniform substitution, a mechanical edit under §spec-lifecycle case (a), so 017 and 022 stay `done`.
+- [ ] In one commit that changes nothing else, replace `framework/bootstrap/ductus.md` with `framework/bootstrap/ductus-procedure.md` in exactly those three references
+- [ ] After committing, run `scripts/audit/run-all.sh`. If Family 19 (review freshness) reports 022's review stale, the mechanical-sweep exemption did not cover the change: revert 022's line in a new commit and record its discard reason here (re-reviewing 022 costs its full five-pass review, and the section still exists under the same name one file over)
+- [ ] Append the outcome to this task's first item: `— fixed`, or `— fixed in 017; 022's discarded: {reason}`
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
 
@@ -140,3 +142,13 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 - [x] Re-bless `implement-basic` (`cargo test --release --locked --test parity`) and confirm its diff is commit shas only
 
 - **Done when**: both command sources name a subdirectory project's paths from the project root, the parity suite passes, and the `implement-basic` re-bless changed only `first-commit`/`current-head`.
+
+## 19. Release `0.54.1`
+
+Moved from task 15 so the release carries task 16's runtime fix; number 15 is unused.
+
+- [ ] Bump `version` and `runtime/Cargo.toml:3` to `0.54.1`; refresh `runtime/Cargo.lock` with one build without `--locked`
+- [ ] Add a `runtime/CHANGELOG.md` section covering tasks 1–9 and 16
+- [ ] Run audit Family 20
+
+- **Done when**: Family 20 passes and the changelog section names every runtime change. The tag is cut after 059 and 018 are `done`.
