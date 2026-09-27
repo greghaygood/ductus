@@ -1,8 +1,10 @@
 # ductus generators and policy gates — adopter CI template.
 #
-# Copy this file into your project at .github/workflows/ductus-generators.yml
-# to enforce that ductus's invariants stay intact on every PR. Two classes of
-# check run:
+# Copy this file into your repository at .github/workflows/ductus-generators.yml
+# to enforce that ductus's invariants stay intact on every PR. GitHub reads
+# workflows only from the repository's root, so a project that is a
+# subdirectory of its repository puts the file there too and sets the job's
+# working directory below. Two classes of check run:
 #
 #   1. Generator sync — generated frontmatter (spec `dependencies:` and
 #      `references:`, via `ductus derive-dependencies` and
@@ -53,6 +55,14 @@ jobs:
   check:
     name: ductus generators are in sync
     runs-on: ubuntu-latest
+    # A project that is a subdirectory of its repository sets its path here,
+    # so every `run` step starts from the project root, where `.ductus/` and
+    # the spec root live (spec 059). Without it the first step fails looking
+    # for `.ductus/bin/ductus` at the repository root. The checkout is a
+    # `uses` step and is not affected.
+    # defaults:
+    #   run:
+    #     working-directory: path/to/project
     steps:
       - uses: actions/checkout@v4
 

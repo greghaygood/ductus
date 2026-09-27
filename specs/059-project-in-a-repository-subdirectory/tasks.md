@@ -92,7 +92,7 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 12. CI template (AC10)
 
-- [ ] `framework/templates/ci/adopter-generators.yml`: add a commented job-level `defaults.run.working-directory`, with a comment saying a project that is not at the repository root sets it to its path
+- [x] `framework/templates/ci/adopter-generators.yml`: add a commented job-level `defaults.run.working-directory`, with a comment saying a project that is not at the repository root sets it to its path
 
 - **Done when**: the template parses as YAML with the default commented out and with it uncommented, and every `run` step's paths resolve from the working directory.
 
