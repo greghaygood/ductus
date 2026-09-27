@@ -518,3 +518,12 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Carry the change into the next release's `runtime/CHANGELOG.md` section when the version is bumped; a heading ahead of the bump fails audit Family 20
 
 - **Done when**: a waiver whose `file` is a list is classified, pruned and re-rendered per anchor by `process-waivers`, `write-review` and `invalidate-review`; a one-path record is byte-identical to today's; tests cover each behavior and edge case in the scenario and each fails with its behavior reverted; and `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings` and `cargo test --release --locked` are clean.
+
+## 125. Implement scenario: exec-clarify-asks-each-open-question
+
+- [ ] Implement the behavior described in `scenarios/exec-clarify-asks-each-open-question.md`
+- [ ] Write walker tests first and see them fail: two open questions send two requests carrying each question in order; an empty list sends none and says so; an absent list sends the single legacy request
+- [ ] In `runtime/src/interpreter/mod.rs`, fan an `askClarifyQuestion` step out over `open-questions`, seeding `question` per round trip and removing it after each
+- [ ] Confirm `resolve_clarify_question`'s doc still describes what the walker now does
+
+- **Done when**: the new walker tests pass, having failed before the change, and the full runtime suite passes.

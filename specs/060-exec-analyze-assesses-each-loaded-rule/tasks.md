@@ -63,7 +63,7 @@ Operator-approved (2026-09-27, with the `cross-spec-impact:` declaration): this 
 
 `/ductus:clarify` step 6 promises one `askClarifyQuestion` round trip per open question (`framework/commands/clarify.md:78`), and 022's `clarify-command-acceleration` scenario says the same. The exec walker sends one request per step, and `resolve_clarify_question` falls back to the first question (`runtime/src/interpreter/payload.rs:516`). Found while planning 060, outside its scope.
 
-- [ ] Decide with the operator: fix, route (the bug decision tree's clear-spec, wrong-implementation branch points at a scenario on 022), or discard with its reason written here
+- [x] Decide with the operator: fix, route (the bug decision tree's clear-spec, wrong-implementation branch points at a scenario on 022), or discard with its reason written here — routed to `specs/022-deterministic-runtime/scenarios/exec-clarify-asks-each-open-question.md` (operator decision 2026-09-27, implemented in this effort before `0.54.2`; 022's task 125 carries it)
 
 - **Done when**: the finding is fixed, routed to an artifact the pre-`done` gate reads, or discarded with its reason recorded on this task.
 
