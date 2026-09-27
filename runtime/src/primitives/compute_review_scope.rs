@@ -39,9 +39,12 @@ use crate::schema::primitives::{ComputeReviewScopeArgs, ComputeReviewScopeResult
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory is
-/// absent, or [`PrimitiveError::Git`] for any libgit2 failure (repo discovery,
-/// revparse of `--since`, tree/diff lookup).
+/// Returns [`PrimitiveError::InvalidPath`] when `feature` would leave the spec
+/// root, [`PrimitiveError::FeatureNotFound`] when the feature directory is
+/// absent, [`PrimitiveError::Io`] when `plan.md` exists but cannot be read,
+/// or [`PrimitiveError::Git`] for any libgit2 failure (repo discovery,
+/// including a project no work tree contains, revparse of `--since`,
+/// tree/diff lookup).
 pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewScopeResult> {
     super::validate_no_traversal(&args.feature)?;
     let layout = paths::Paths::load(repo);
@@ -91,7 +94,7 @@ pub fn run(args: &ComputeReviewScopeArgs, repo: &Path) -> Result<ComputeReviewSc
         diff_since(&project, &diff_base)?
     };
 
-    let plan_affected = read_plan_affected(&feature_dir);
+    let plan_affected = read_plan_affected(&feature_dir)?;
 
     // Union, not "whichever set is larger". Choosing one set can exclude the
     // files the work actually touched: a mature spec's plan lists its whole
@@ -167,11 +170,19 @@ fn diff_since(project: &ProjectRepository, base_sha: &str) -> Result<Vec<String>
 /// paths, using the shared canonical-table parser (`parse_affected_files`) so
 /// `compute-review-scope` and the writeCode plan reader agree on one format.
 /// Returns an empty list when `plan.md` is absent or has no such section.
-pub(crate) fn read_plan_affected(feature_dir: &Path) -> Vec<String> {
-    let Ok(content) = std::fs::read_to_string(feature_dir.join("plan.md")) else {
-        return Vec::new();
-    };
-    parse_affected_files(&content)
+///
+/// # Errors
+///
+/// Returns [`PrimitiveError::Io`] when `plan.md` exists but cannot be read:
+/// the same empty list there would read as a plan naming no files, and the
+/// review scope would shrink to the diff without saying why (QUAL-CLAIM-001).
+pub(crate) fn read_plan_affected(feature_dir: &Path) -> Result<Vec<String>> {
+    let path = feature_dir.join("plan.md");
+    match std::fs::read_to_string(&path) {
+        Ok(content) => Ok(parse_affected_files(&content)),
+        Err(source) if source.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
+        Err(source) => Err(PrimitiveError::Io { path, source }),
+    }
 }
 
 #[cfg(test)]
@@ -179,32 +190,13 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
-    use git2::{IndexAddOption, Repository, Signature};
+    use crate::primitives::git_fixture::{self, write};
+    use git2::Repository;
     use std::fs;
 
     /// Stage everything and commit; returns the new commit's sha.
     fn commit_all(repo: &Repository, message: &str) -> String {
-        let mut index = repo.index().unwrap();
-        index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
-        index.write().unwrap();
-        let tree = repo.find_tree(index.write_tree().unwrap()).unwrap();
-        let sig = Signature::now("Test", "test@example.com").unwrap();
-        let parent = repo
-            .head()
-            .ok()
-            .and_then(|h| h.target())
-            .and_then(|oid| repo.find_commit(oid).ok());
-        let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
-        repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
-            .unwrap()
-            .to_string()
-    }
-
-    fn write(path: &Path, body: &str) {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).unwrap();
-        }
-        fs::write(path, body).unwrap();
+        git_fixture::commit_all(repo, message).to_string()
     }
 
     fn spec(status: &str) -> String {
@@ -232,6 +224,22 @@ mod tests {
         write(&tmp.path().join("src/b.rs"), "fn b() {}\n");
         commit_all(&repo, "feat: implement");
         (tmp, sha)
+    }
+
+    /// A `plan.md` that exists but cannot be read is an error, not a plan
+    /// naming no files: the empty list would shrink the scope to the diff
+    /// without saying why (QUAL-CLAIM-001). An absent plan stays empty.
+    #[test]
+    fn an_unreadable_plan_is_an_error_not_an_empty_plan() {
+        let (tmp, _) = repo_with_progress();
+        assert!(run(&args("001-x", None), tmp.path()).is_ok());
+        fs::write(
+            tmp.path().join("specs/001-x/plan.md"),
+            b"\xff\xfe not UTF-8",
+        )
+        .unwrap();
+        let err = run(&args("001-x", None), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::Io { .. }), "{err:?}");
     }
 
     #[test]

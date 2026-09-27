@@ -95,7 +95,10 @@ struct RegisteredService {
 /// # Errors
 ///
 /// Returns [`super::PrimitiveError::Io`] when a spec cannot be read or the
-/// rewrite cannot be persisted.
+/// rewrite cannot be persisted, and [`super::PrimitiveError::Git`] when a
+/// repository contains the project but its index or status cannot be read —
+/// the listing of which specs to derive then has no answer, and guessing one
+/// would rewrite drafts or skip specs silently.
 pub fn run(args: &DeriveReferencesArgs, repo: &Path) -> Result<DeriveReferencesResult> {
     let specs_root = paths::Paths::load(repo).specs_root;
     let registry = load_registry(repo);
@@ -108,10 +111,10 @@ pub fn run(args: &DeriveReferencesArgs, repo: &Path) -> Result<DeriveReferencesR
     // an untouched spec is never staged. Narrowing the walk made that entire
     // class structurally invisible to the pre-commit hook, for any number of
     // commits (scenario `derive-references-unstaged-drift-is-reported`).
-    let tracked = super::list_tracked_specs(repo, &specs_root);
-    let untracked = super::list_untracked_specs(repo, &specs_root);
+    let tracked = super::list_tracked_specs(repo, &specs_root)?;
+    let untracked = super::list_untracked_specs(repo, &specs_root)?;
     let staged = if args.staged {
-        Some(super::list_staged_specs(repo, &specs_root))
+        Some(super::list_staged_specs(repo, &specs_root)?)
     } else {
         None
     };
@@ -245,7 +248,6 @@ fn strip_branch_ref(before: &str) -> &str {
 /// wins, matching the shell's `match()` semantics. Content after `.md` (an
 /// anchor, a query) is permitted and ignored.
 fn find_spec_segment(url: &str) -> Option<(usize, String, String)> {
-    let bytes = url.as_bytes();
     for (idx, _) in url.char_indices().filter(|&(_, c)| c == '/') {
         let rest = &url[idx + 1..];
         // <root>/
@@ -270,7 +272,6 @@ fn find_spec_segment(url: &str) -> Option<(usize, String, String)> {
         let tail = &after_root[slug_end + 1..];
         // Longest filename alternative first, mirroring awk's leftmost-longest.
         if tail.starts_with("spec-and-plan.md") || tail.starts_with("spec.md") {
-            let _ = bytes;
             return Some((idx, root_seg.to_string(), slug.to_string()));
         }
     }
@@ -495,11 +496,6 @@ mod tests {
         const LINK: &str = "[x](https://github.com/other/t/specs/003-user/spec.md)";
         let tmp = tempfile::tempdir().unwrap();
         let (repository, project) = git_fixture::subdirectory_project(tmp.path());
-        git_fixture::write(
-            &project.join(".ductus/config.toml"),
-            "[paths]\nspecs-root = \"specs\"\n\n\
-             [services.api]\nrepo = \"https://github.com/acme/api\"\npath = \"checkouts/api\"\n",
-        );
         let a = project.join("specs/001-a/spec.md");
         let b = project.join("specs/002-b/spec.md");
         git_fixture::write(&a, &spec("nothing"));

@@ -202,7 +202,11 @@ fn runtime_signal(description: &str) -> Option<String> {
 /// wins so the answer is stable; `None` when no spec claims it.
 fn runtime_home(specs_dir: &Path) -> Option<String> {
     list_feature_dirs(specs_dir).into_iter().find(|slug| {
+        // An unreadable plan claims nothing here, as it always has: routing
+        // candidates are advice, and this caller's contract predates the
+        // error `compute-review-scope` now raises for it.
         crate::primitives::compute_review_scope::read_plan_affected(&specs_dir.join(slug))
+            .unwrap_or_default()
             .iter()
             .any(|path| path.starts_with(RUNTIME_PATH_PREFIX))
     })

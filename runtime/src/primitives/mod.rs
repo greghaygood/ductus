@@ -870,7 +870,6 @@ pub(crate) fn split_frontmatter_with_offset<'a>(
     Err(PrimitiveError::UnclosedFrontmatter { path: path.into() })
 }
 
-/// Read a UTF-8 file, surfacing path context on failure.
 /// The line ending an existing text file uses, for a rewrite that has to
 /// give the file back the way it found it.
 ///
@@ -946,6 +945,7 @@ pub(crate) fn with_line_ending(text: &str, ending: &str) -> String {
     out
 }
 
+/// Read a UTF-8 file, surfacing path context on failure.
 pub(crate) fn read_text(path: &Path) -> Result<String> {
     std::fs::read_to_string(path).map_err(|source| PrimitiveError::Io {
         path: path.into(),
@@ -1373,7 +1373,8 @@ pub(crate) fn workdir_prefix(repository: &git2::Repository, dir: &Path) -> Optio
 /// A project's git repository, with the project's place in its work tree.
 ///
 /// Every reader that asks git about a project's files opens the repository
-/// through this (spec 059). Git names each path in its trees, index, status,
+/// through this (spec 059), save `inbox_standing`, which places the inbox
+/// file's own directory rather than the project root. Git names each path in its trees, index, status,
 /// and diffs from the work tree, and a project names its files from the
 /// project root. The two agree only when the project is the work tree's root,
 /// so a reader converts with [`Self::to_git`] on the way in and
@@ -1390,11 +1391,13 @@ impl ProjectRepository {
     ///
     /// # Errors
     ///
-    /// No repository contains `project`, or [`workdir_prefix`] cannot place it
-    /// inside the repository's work tree: a repository with no work tree, or
-    /// one whose work tree `GIT_WORK_TREE` or `core.worktree` moved elsewhere.
-    /// Both are the no-repository case. Reading history from the work tree's
-    /// root instead would find none and answer as for a spec never committed,
+    /// No repository contains `project`; [`workdir_prefix`] cannot place it
+    /// inside the repository's work tree — a bare repository, or one whose
+    /// `core.worktree` moved the work tree elsewhere (`GIT_WORK_TREE` is not
+    /// consulted: libgit2 reads it only when a repository is opened from the
+    /// environment, which discovery does not do). Each is the no-repository
+    /// case. Reading history from the work tree's root
+    /// instead would find none and answer as for a spec never committed,
     /// which a caller cannot tell from a real answer.
     pub(crate) fn discover(project: &Path) -> std::result::Result<Self, git2::Error> {
         let repository = git2::Repository::discover(project)?;
@@ -2259,12 +2262,6 @@ pub(crate) fn is_feature_slug(name: &str) -> bool {
     parse_feature_dir(name).is_some()
 }
 
-/// List feature directories (`NNN-slug`) under the spec root, sorted by
-/// name. Best-effort: a missing or unreadable spec root yields an empty
-/// list — a repo without a spec root has no features by definition, and
-/// the primitives that consume this (`resolve-feature`, `create-feature`,
-/// `dashboard`, and `interpreter::payload`'s inbox router) all report the
-/// empty case as "no features" rather than an operational error.
 /// Whether a repo-relative path is a feature spec under `specs_root`:
 /// `{root}/NNN-slug/(spec|spec-and-plan).md`.
 ///
@@ -2294,28 +2291,50 @@ pub(crate) fn spec_feature_slug(path: &str, specs_root: &str) -> Option<String> 
         .map(str::to_string)
 }
 
+/// Every path the git index tracks inside the project, named from the project
+/// root, sorted and deduplicated (an index in conflict holds one entry per
+/// stage). `Ok(None)` when no work tree contains the project, the
+/// no-repository case; an index that cannot be read in a repository that was
+/// found is an error, never an empty index. The index names paths from the
+/// work tree, so a project in a subdirectory of its repository reads its own
+/// files by their names and leaves another project's out (spec 059).
+///
+/// # Errors
+///
+/// Returns [`PrimitiveError::Git`] when the repository's index cannot be read.
+pub(crate) fn tracked_project_paths(repo: &Path) -> Result<Option<Vec<String>>> {
+    let Ok(project) = ProjectRepository::discover(repo) else {
+        return Ok(None);
+    };
+    let index = project.repository.index()?;
+    let mut out: Vec<String> = index
+        .iter()
+        .filter_map(|entry| String::from_utf8(entry.path).ok())
+        .filter_map(|path| project.to_project(&path).map(str::to_string))
+        .collect();
+    out.sort();
+    out.dedup();
+    Ok(Some(out))
+}
+
 /// Feature-spec paths tracked by git, named from the project root, sorted.
 ///
 /// Scoped to the git index rather than a worktree glob so an untracked
 /// in-progress draft is never rewritten and never enters a derived index
 /// (spec 017, `tracked-specs-not-worktree`). Falls back to a worktree walk
-/// only outside a git repo, where there is no index. The repository is
-/// discovered rather than opened at the project root, and index paths are
-/// named from the work tree: a project in a subdirectory of its repository
-/// took the fallback, and its untracked drafts were rewritten (spec 059).
-pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
-    if let Ok(project) = ProjectRepository::discover(repo)
-        && let Ok(index) = project.repository.index()
-    {
-        let mut out: Vec<String> = index
-            .iter()
-            .filter_map(|entry| String::from_utf8(entry.path).ok())
-            .filter_map(|path| project.to_project(&path).map(str::to_string))
+/// only outside a git repo, where there is no index; a repository whose index
+/// cannot be read is an error rather than that fallback, which would rewrite
+/// the drafts the index exists to exclude.
+///
+/// # Errors
+///
+/// Returns [`PrimitiveError::Git`] when the repository's index cannot be read.
+pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Result<Vec<String>> {
+    if let Some(tracked) = tracked_project_paths(repo)? {
+        return Ok(tracked
+            .into_iter()
             .filter(|path| is_spec_path(path, specs_root))
-            .collect();
-        out.sort();
-        out.dedup();
-        return out;
+            .collect());
     }
     let mut out = Vec::new();
     let specs_dir = repo.join(specs_root);
@@ -2327,7 +2346,7 @@ pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
         }
     }
     out.sort();
-    out
+    Ok(out)
 }
 
 /// Feature-spec paths present in the worktree but not tracked by git —
@@ -2339,9 +2358,15 @@ pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
 /// draft is never enumerated, so a bare in-sync claim would assert a property
 /// of files the generator cannot vouch for. Empty outside a git repo, where
 /// the fallback already walks everything.
-pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
+///
+/// # Errors
+///
+/// Returns [`PrimitiveError::Git`] when the status of a repository that was
+/// found cannot be read: an empty list there would claim no untracked draft
+/// exists when none was looked for (QUAL-CLAIM-001).
+pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Result<Vec<String>> {
     let Ok(project) = ProjectRepository::discover(repo) else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
     let mut opts = git2::StatusOptions::new();
     opts.include_untracked(true)
@@ -2350,11 +2375,12 @@ pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String>
         // Bound the walk to the spec tree. Without a pathspec this is a full
         // worktree status on every run — including the pre-commit path, where
         // it would scan build output and vendored trees to answer a question
-        // only about `{specs-root}/`.
-        .pathspec(project.to_git(specs_root));
-    let Ok(statuses) = project.repository.statuses(Some(&mut opts)) else {
-        return Vec::new();
-    };
+        // only about `{specs-root}/`. Literal, because the project's path from
+        // the work tree may hold `*`, `?` or `[`, which as a glob would match
+        // no file and report no untracked draft.
+        .pathspec(project.to_git(specs_root))
+        .disable_pathspec_match(true);
+    let statuses = project.repository.statuses(Some(&mut opts))?;
     let mut out: Vec<String> = Vec::new();
     for entry in statuses.iter() {
         if !entry.status().contains(git2::Status::WT_NEW) {
@@ -2371,19 +2397,24 @@ pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String>
     }
     out.sort();
     out.dedup();
-    out
+    Ok(out)
 }
 
 /// Feature-spec paths staged in the index for the pending commit, named from
 /// the project root — the `--staged` rewrite set, so committing one spec
 /// never rewrites the derived frontmatter of unrelated specs. Empty outside a
 /// git repo.
+///
+/// # Errors
+///
+/// Returns [`PrimitiveError::Git`] when the staged changes of a repository
+/// that was found cannot be read.
 pub(crate) fn list_staged_specs(
     repo: &Path,
     specs_root: &str,
-) -> std::collections::BTreeSet<String> {
+) -> Result<std::collections::BTreeSet<String>> {
     let Ok(project) = ProjectRepository::discover(repo) else {
-        return std::collections::BTreeSet::new();
+        return Ok(std::collections::BTreeSet::new());
     };
     let repository = &project.repository;
     // HEAD tree against the index. An unborn HEAD (no commits yet) diffs the
@@ -2392,9 +2423,14 @@ pub(crate) fn list_staged_specs(
         .head()
         .ok()
         .and_then(|head| head.peel_to_tree().ok());
-    let Ok(diff) = repository.diff_tree_to_index(head_tree.as_ref(), None, None) else {
-        return std::collections::BTreeSet::new();
-    };
+    // Bounded to the spec tree, as the untracked listing is, rather than the
+    // whole index against HEAD — which in a large repository holding the
+    // project is every other project's staged work too. Literal, for the
+    // same reason.
+    let mut opts = git2::DiffOptions::new();
+    opts.pathspec(project.to_git(specs_root))
+        .disable_pathspec_match(true);
+    let diff = repository.diff_tree_to_index(head_tree.as_ref(), None, Some(&mut opts))?;
     let mut out = std::collections::BTreeSet::new();
     for delta in diff.deltas() {
         for file in [delta.new_file(), delta.old_file()] {
@@ -2406,9 +2442,14 @@ pub(crate) fn list_staged_specs(
             }
         }
     }
-    out
+    Ok(out)
 }
 
+/// List feature directories (`NNN-slug`) under the spec root, sorted by
+/// name. Best-effort: a missing or unreadable spec root yields an empty
+/// list — a repo without a spec root has no features by definition, and
+/// every caller reports the empty case as "no features" rather than an
+/// operational error.
 pub(crate) fn list_feature_dirs(specs_dir: &Path) -> Vec<String> {
     let Ok(entries) = std::fs::read_dir(specs_dir) else {
         return Vec::new();
@@ -4061,7 +4102,11 @@ mod tests {
 mod spec_corpus_tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-    use super::{is_spec_path, spec_feature_slug};
+    use super::{
+        git_fixture, is_spec_path, list_staged_specs, list_tracked_specs, list_untracked_specs,
+        spec_feature_slug, tracked_project_paths,
+    };
+    use std::path::Path;
 
     #[test]
     fn spec_path_recognition_is_scoped_to_the_root_and_shape() {
@@ -4084,5 +4129,108 @@ mod spec_corpus_tests {
             Some("022-deterministic-runtime")
         );
         assert_eq!(spec_feature_slug("other/001-a/spec.md", "specs"), None);
+    }
+
+    // --- spec listings -----------------------------------------------------------
+
+    fn spec_body(title: &str) -> String {
+        format!("---\nstatus: draft\ndependencies: []\n---\n\n# {title}\n")
+    }
+
+    /// A repository whose index cannot be read is not the no-repository case.
+    /// `list_tracked_specs` fell back to the worktree walk there and so listed
+    /// an untracked draft the index exists to exclude; the other two listings
+    /// answered empty, as though they had looked (QUAL-CLAIM-001).
+    #[test]
+    fn an_unreadable_index_is_an_error_for_every_listing() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
+        git_fixture::write(&tmp.path().join("specs/001-a/spec.md"), &spec_body("A"));
+        git_fixture::commit_all(&repository, "init");
+        git_fixture::write(
+            &tmp.path().join("specs/002-draft/spec.md"),
+            &spec_body("Draft"),
+        );
+        std::fs::write(tmp.path().join(".git/index"), "not an index").unwrap();
+
+        assert!(list_tracked_specs(tmp.path(), "specs").is_err());
+        assert!(list_untracked_specs(tmp.path(), "specs").is_err());
+        assert!(list_staged_specs(tmp.path(), "specs").is_err());
+    }
+
+    /// A project whose path from the work tree holds a glob character. As a
+    /// glob the pathspec matched no file, so no untracked draft was reported
+    /// and, once the staged listing is bounded the same way, no staged spec.
+    #[test]
+    fn a_project_path_with_a_glob_character_lists_its_specs_literally() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
+        let project = tmp.path().join("app[v2]");
+        git_fixture::write(&project.join("specs/001-a/spec.md"), &spec_body("A"));
+        git_fixture::commit_all(&repository, "init");
+        git_fixture::write(
+            &project.join("specs/002-draft/spec.md"),
+            &spec_body("Draft"),
+        );
+        git_fixture::write(
+            &project.join("specs/001-a/spec.md"),
+            &spec_body("A, edited"),
+        );
+        let mut index = repository.index().unwrap();
+        index
+            .add_path(Path::new("app[v2]/specs/001-a/spec.md"))
+            .unwrap();
+        index.write().unwrap();
+
+        assert_eq!(
+            list_tracked_specs(&project, "specs").unwrap(),
+            vec!["specs/001-a/spec.md".to_string()]
+        );
+        assert_eq!(
+            list_untracked_specs(&project, "specs").unwrap(),
+            vec!["specs/002-draft/spec.md".to_string()]
+        );
+        assert_eq!(
+            list_staged_specs(&project, "specs")
+                .unwrap()
+                .into_iter()
+                .collect::<Vec<_>>(),
+            vec!["specs/001-a/spec.md".to_string()]
+        );
+    }
+
+    /// An index in conflict holds one entry per stage for the same path; the
+    /// tracked-paths walk names each path once.
+    #[test]
+    fn tracked_project_paths_names_a_conflicted_path_once() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
+        git_fixture::write(&tmp.path().join("a.md"), "base\n");
+        git_fixture::commit_all(&repository, "init");
+        let mut index = repository.index().unwrap();
+        let entry = index.get_path(Path::new("a.md"), 0).unwrap();
+        index.remove_path(Path::new("a.md")).unwrap();
+        for stage in 1..=3_u16 {
+            let staged = git2::IndexEntry {
+                ctime: entry.ctime,
+                mtime: entry.mtime,
+                dev: entry.dev,
+                ino: entry.ino,
+                mode: entry.mode,
+                uid: entry.uid,
+                gid: entry.gid,
+                file_size: entry.file_size,
+                id: entry.id,
+                flags: (entry.flags & !0x3000) | (stage << 12),
+                flags_extended: entry.flags_extended,
+                path: entry.path.clone(),
+            };
+            index.add(&staged).unwrap();
+        }
+        index.write().unwrap();
+        assert!(repository.index().unwrap().has_conflicts());
+
+        let tracked = tracked_project_paths(tmp.path()).unwrap().unwrap();
+        assert_eq!(tracked, vec!["a.md".to_string()]);
     }
 }

@@ -1,7 +1,7 @@
 //! `diff-cross-spec` — the cross-spec impact surface for `/ductus:implement`.
 //!
-//! The deterministic filter implement steps 7 and 12 previously re-derived
-//! by hand per task (step 12's prose self-declared "no primitive owns this
+//! The deterministic filter implement steps 7 and 13 previously re-derived
+//! by hand per task (the gate step's prose self-declared "no primitive owns this
 //! filter yet"; spec 022, scenario coverage-expansion-primitives): the
 //! diff from the feature's first spec-dir commit — the same base
 //! `derive-boundary` computes, through the shared
@@ -11,9 +11,10 @@
 //! The diff runs against the working tree (index and untracked files
 //! included), not `HEAD`: the per-task summary (step 7) fires before the
 //! task's commit, when any sibling-spec edits are still uncommitted. On a
-//! clean tree the result equals the documented
-//! `git diff <first-commit>..HEAD -- {specs-root}/` form (step 12).
-//! Read-only.
+//! clean tree the result equals the documented markdown-only form, `git diff
+//! --name-only --relative <first-commit>..HEAD -- {specs-root}/` run from the
+//! project root (step 13), which names each path from the project root as
+//! this primitive does. Read-only.
 //!
 //! `{specs-root}/inbox.md` is excluded from the result. It holds only what a
 //! person logs (spec 058), so editing it is not a cross-spec impact, and no
@@ -34,14 +35,16 @@ use crate::schema::primitives::{DiffCrossSpecArgs, DiffCrossSpecResult};
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory
-/// is absent and [`PrimitiveError::Git`] for any libgit2 failure.
+/// Returns [`PrimitiveError::InvalidPath`] when `feature` would leave the
+/// spec root, [`PrimitiveError::FeatureNotFound`] when the feature directory
+/// is absent, and [`PrimitiveError::Git`] for any libgit2 failure, including
+/// a project no work tree contains.
 ///
 /// A spec dir with no commit touching it yields the empty result rather
 /// than an error (scenario derive-boundary-uncommitted-spec-dir): there is
 /// no window to diff, so there is nothing to report. Erroring here would
 /// only relocate the halt `derive-boundary` no longer raises — the same
-/// `/{project}:implement` walk hits this primitive at steps 7 and 12.
+/// `/{project}:implement` walk hits this primitive at steps 7 and 13.
 pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult> {
     super::validate_no_traversal(&args.feature)?;
     let layout = paths::Paths::load(repo);
@@ -54,14 +57,17 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
     }
     // A diff and history name every path from the git work tree, which is
     // not the project root when the project sits in a subdirectory of its
-    // repository. Matched in git's names, reported in the project's.
+    // repository. Each path is converted to the project's name before it is
+    // matched, as `derive-boundary` does, so another project's work never
+    // reaches the filter.
     let project = ProjectRepository::discover(repo)?;
     let repository = &project.repository;
-    let root_prefix = project.to_git(&format!("{}/", layout.specs_root));
-    let spec_prefix = project.to_git(&format!("{}/{}/", layout.specs_root, args.feature));
-    let inbox_rel = project.to_git(&format!("{}/inbox.md", layout.specs_root));
+    let root_prefix = format!("{}/", layout.specs_root);
+    let spec_prefix = format!("{}/{}/", layout.specs_root, args.feature);
+    let inbox_rel = format!("{}/inbox.md", layout.specs_root);
 
-    let Some(first_commit) = first_commit_for_prefix(repository, &spec_prefix)? else {
+    let Some(first_commit) = first_commit_for_prefix(repository, &project.to_git(&spec_prefix))?
+    else {
         return Ok(DiffCrossSpecResult {
             first_commit: String::new(),
             current_head: String::new(),
@@ -81,9 +87,13 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
     let first_tree = repository.find_commit(first_commit)?.tree()?;
 
     // One diff, first-commit tree → working tree, scoped to the spec root.
-    // Untracked files (a brand-new sibling scenario) must surface too.
+    // Untracked files (a brand-new sibling scenario) must surface too. The
+    // pathspec is literal: the project's path from the work tree may hold
+    // `*`, `?` or `[`, which as a glob would match no file, and the empty
+    // result would read as no impact (QUAL-CLAIM-001).
     let mut opts = DiffOptions::new();
     opts.pathspec(project.to_git(&layout.specs_root))
+        .disable_pathspec_match(true)
         .include_untracked(true)
         .recurse_untracked_dirs(true);
     let diff = repository.diff_tree_to_workdir_with_index(Some(&first_tree), Some(&mut opts))?;
@@ -97,13 +107,11 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
             {
                 let s = path.to_string_lossy().replace('\\', "/");
                 // Belt and braces over the pathspec: keep spec-root paths
-                // only, and drop the feature's own dir and the inbox. A path
-                // under the spec root is inside the project, so `to_project`
-                // names every one that survives.
-                if s.starts_with(&root_prefix)
-                    && !s.starts_with(&spec_prefix)
-                    && s != inbox_rel
-                    && let Some(inside) = project.to_project(&s)
+                // only, and drop the feature's own dir and the inbox.
+                if let Some(inside) = project.to_project(&s)
+                    && inside.starts_with(&root_prefix)
+                    && !inside.starts_with(&spec_prefix)
+                    && inside != inbox_rel
                 {
                     cross_spec.insert(inside.to_string());
                 }
@@ -128,33 +136,8 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
-    use git2::{IndexAddOption, Repository, Signature};
-    use std::fs;
-    use std::path::Path;
-
-    fn commit_all(repo: &Repository, message: &str) -> git2::Oid {
-        let mut index = repo.index().unwrap();
-        index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
-        index.write().unwrap();
-        let tree_id = index.write_tree().unwrap();
-        let tree = repo.find_tree(tree_id).unwrap();
-        let sig = Signature::now("Test", "test@example.com").unwrap();
-        let parent = repo
-            .head()
-            .ok()
-            .and_then(|h| h.target())
-            .and_then(|oid| repo.find_commit(oid).ok());
-        let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
-        repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
-            .unwrap()
-    }
-
-    fn write(path: &Path, body: &str) {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).unwrap();
-        }
-        fs::write(path, body).unwrap();
-    }
+    use crate::primitives::git_fixture::{commit_all, write};
+    use git2::Repository;
 
     fn args(feature: &str) -> DiffCrossSpecArgs {
         DiffCrossSpecArgs {
@@ -232,6 +215,7 @@ mod tests {
             &project.join("specs/007-sibling/spec.md"),
             "---\nstatus: done\n---\n\n# 007\n",
         );
+        write(&project.join("specs/inbox.md"), "# Inbox\n");
         write(
             &other.join("specs/007-sibling/spec.md"),
             "---\nstatus: done\n---\n\n# other 007\n",
@@ -250,10 +234,47 @@ mod tests {
             &other.join("specs/007-sibling/spec.md"),
             "---\nstatus: done\n---\n\n# other 007\n\nChanged.\n",
         );
+        write(
+            &project.join("specs/inbox.md"),
+            "# Inbox\n\n- a logged todo\n",
+        );
         git_fixture::commit_all(&repo, "feat(020): implement");
 
         let result = run(&args("020-demo"), &project).unwrap();
         assert_eq!(result.first_commit, first.to_string());
+        assert_eq!(result.guidance, None);
+        assert_eq!(
+            result.cross_spec_paths,
+            vec!["specs/007-sibling/spec.md".to_string()],
+            "the project's own inbox is excluded, and the other project's spec is not this one's"
+        );
+    }
+
+    /// A project whose path from the work tree holds a glob character. As a
+    /// glob the diff pathspec matched no file, so the window read as clean
+    /// while a sibling spec had changed (QUAL-CLAIM-001); it is literal now.
+    #[test]
+    fn a_project_path_with_a_glob_character_is_matched_literally() {
+        let tmp = tempfile::tempdir().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+        let project = tmp.path().join("app[v2]");
+        write(
+            &project.join("specs/007-sibling/spec.md"),
+            "---\nstatus: done\n---\n\n# 007\n",
+        );
+        commit_all(&repo, "chore: init");
+        write(
+            &project.join("specs/020-demo/spec.md"),
+            "---\nstatus: planned\n---\n\n# 020\n",
+        );
+        commit_all(&repo, "feat(020): plan");
+        write(
+            &project.join("specs/007-sibling/spec.md"),
+            "---\nstatus: done\n---\n\n# 007\n\nNew criterion.\n",
+        );
+        commit_all(&repo, "feat(020): implement");
+
+        let result = run(&args("020-demo"), &project).unwrap();
         assert_eq!(result.guidance, None);
         assert_eq!(
             result.cross_spec_paths,
@@ -337,7 +358,7 @@ mod tests {
     fn missing_spec_history_is_the_empty_result() {
         // Scenario derive-boundary-uncommitted-spec-dir: erroring here would
         // relocate the halt `derive-boundary` no longer raises, since the
-        // same /ductus:implement walk reaches this primitive at steps 7 and 12.
+        // same /ductus:implement walk reaches this primitive at steps 7 and 13.
         let tmp = tempfile::tempdir().unwrap();
         let repo = Repository::init(tmp.path()).unwrap();
         write(&tmp.path().join("README.md"), "# repo\n");

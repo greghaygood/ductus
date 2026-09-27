@@ -49,7 +49,7 @@ use crate::schema::primitives::{AnalyzeBlock, RecordFreshness};
 ///
 /// `/{project}:analyze` writes this file, so it is the command's **output**,
 /// exactly as `review.md` is `/{project}:review`'s and is excluded from
-/// [`is_durable_contract`] for the identical stated reason. Nothing reads its
+/// [`is_review_contract`] for the identical stated reason. Nothing reads its
 /// body: its readers — the pre-done gate, `write-review`'s analyze-freshness
 /// row, `read-spec`, `validate-frontmatter`, `process-decisions` and
 /// `write-analysis` reading its stored decisions, and `/{project}:analyze`
@@ -125,19 +125,20 @@ pub(crate) struct SubjectDigest {
 
 /// Digest every analyze subject under `feature_dir`.
 ///
-/// `analysis.md` is digested with its own frontmatter **excised**. That
-/// exclusion is load-bearing rather than tidy: the record is written after the
-/// subjects are read, so a digest covering it could never match on the next
-/// comparison and every run would stale itself. Measured on the sha-diff design
-/// the same exclusion was what took the flagged population from 54 of 54 specs
-/// down to 1.
+/// `analysis.md` is not digested at all: [`is_analyze_subject`] excludes the
+/// whole file, and every other subject is digested whole. That exclusion is
+/// load-bearing rather than tidy: the record is written after the subjects are
+/// read, so a digest covering it could never match on the next comparison and
+/// every run would stale itself. Measured on the sha-diff design the same
+/// exclusion was what took the flagged population from 54 of 54 specs down
+/// to 1.
 ///
-/// It used to apply to `spec.md`'s `analyze:` block and moved with the record
-/// (spec 057). The excision got simpler on the way: dropping a file's whole
-/// frontmatter needs no YAML parse, so unlike the block surgery it replaced it
-/// cannot half-succeed and leave a digest over a partially-excised file.
-/// `spec.md` is now digested whole, which means a frontmatter edit there moves
-/// the digest — visible where the old excision hid it.
+/// It began as an excision of `spec.md`'s `analyze:` block and moved with the
+/// record (spec 057), first as an excision of `analysis.md`'s frontmatter —
+/// which left the body, rewritten by the same call, inside the digest — and
+/// then as the whole-file exclusion. `spec.md` is now digested whole, which
+/// means a frontmatter edit there moves the digest — visible where the old
+/// excision hid it.
 ///
 /// Both failure modes are reported, and they are one line apart: a subject the
 /// walk could not **reach** and one it opened and could not **read** both land
@@ -471,7 +472,7 @@ mod tests {
     /// subject, body and frontmatter both, because `review.md` is an input to
     /// an analysis rather than its output. Excluding it would exempt the single
     /// edit that most often invalidates an analyze record, which is the
-    /// asymmetry `is_analyze_subject` and `is_durable_contract` exist to keep.
+    /// asymmetry `is_analyze_subject` and `is_review_contract` exist to keep.
     #[test]
     fn the_review_record_remains_a_subject() {
         let tmp = tempdir().unwrap();

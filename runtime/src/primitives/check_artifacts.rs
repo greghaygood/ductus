@@ -26,10 +26,13 @@
 //! - **scenario-consistency** (advisory) — reference §"Scenario
 //!   consistency (advisory)": every
 //!   `scenarios/*.md` has a referencing task in `tasks.md` *only while
-//!   that task is still pending*. Never flags a scenario under a `done`
-//!   spec (a done feature's tasks may have been pruned), and never requires
-//!   a pruned spent task to persist (constitution §tasks-phase — `tasks.md`
-//!   is ephemeral; see [`pruning_evidence`] for the documented heuristic).
+//!   that task is still pending*. Under a `done` spec a scenario with no
+//!   task in the current file is flagged only when no revision of
+//!   `tasks.md` ever named it, since a done feature's tasks may have been
+//!   pruned (000's `scenario-without-task-visibility`); a history that cannot
+//!   be consulted flags nothing. It never requires a pruned spent task to
+//!   persist (constitution §tasks-phase — `tasks.md` is ephemeral; see
+//!   [`pruning_evidence`] for the documented heuristic).
 //! - **review-state-drift** (blocking) — reference §"Review state drift
 //!   (blocking)": a `done` spec whose `review.md` record has `last-run`
 //!   unset, `blocking: true`, or a non-zero `should-violations`,
@@ -189,34 +192,23 @@ pub fn run(args: &CheckArtifactsArgs, repo: &Path) -> Result<CheckArtifactsResul
         tasks.as_ref().map(|t| t.tasks.as_slice()),
         repo,
     );
-    // The records live in their own artifacts now (spec 057). An unreadable
-    // one is deliberately treated as absent here rather than reported: this
-    // family's subject is *drift between a done spec and its record*, and a
-    // record that will not parse is a different defect, owned by
-    // `validate-frontmatter` and by the pre-done gate. Reporting it twice, in
-    // two vocabularies, is how one problem becomes two findings.
-    let review_record = crate::primitives::load_review_record(&feature_dir);
-    check_review_drift(
-        &mut findings,
-        review_record.as_present(),
-        &status,
-        &spec_path,
-        repo,
-    );
-    check_disposition_drift(
-        &mut findings,
-        review_record.as_present(),
-        &status,
-        &spec_path,
-        repo,
-    );
+    // The records live in their own artifacts now (spec 057), and `read-spec`
+    // has already loaded the review record. An unreadable one is deliberately
+    // treated as absent here rather than reported — `read-spec` collapses it
+    // the same way: this family's subject is *drift between a done spec and
+    // its record*, and a record that will not parse is a different defect,
+    // owned by `validate-frontmatter` and by the pre-done gate. Reporting it
+    // twice, in two vocabularies, is how one problem becomes two findings.
+    let review_record = spec.review.as_ref();
+    check_review_drift(&mut findings, review_record, &status, &spec_path, repo);
+    check_disposition_drift(&mut findings, review_record, &status, &spec_path, repo);
 
     let mut skipped: Vec<SkippedTarget> = Vec::new();
     check_scenario_open_questions(
         &mut findings,
         &mut skipped,
         &feature_dir,
-        &status,
+        &spec,
         &spec_path,
         repo,
     );
@@ -422,25 +414,36 @@ fn ever_tasked_slugs(
     let project = ProjectRepository::discover(repo).ok()?;
     let repository = &project.repository;
     let rel = project.to_git(&format!("{root}/{feature}/tasks.md"));
+    // A shallow clone holds only part of the history, so a scenario whose
+    // task lived in a commit it lacks would read as never tasked. The history
+    // cannot be consulted in full, which fails safe below.
+    if repository.is_shallow() {
+        return None;
+    }
     let mut walk = repository.revwalk().ok()?;
     walk.push_head().ok()?;
     let mut seen: BTreeSet<String> = BTreeSet::new();
-    for oid in walk.flatten() {
+    // `tasks.md` is unchanged across most commits, so each distinct blob is
+    // decoded and scanned once however many commits carry it.
+    let mut scanned: HashSet<git2::Oid> = HashSet::new();
+    for oid in walk {
         if seen.len() == slugs.len() {
             break;
         }
-        let Ok(tree) = repository.find_commit(oid).and_then(|c| c.tree()) else {
-            continue;
-        };
+        // Any revision the walk cannot read fails the whole walk safe, as
+        // 000's `scenario-without-task-visibility` requires of an unreadable
+        // history or a non-UTF-8 blob: skipping it could flag a scenario whose
+        // task appeared only there.
+        let tree = repository.find_commit(oid.ok()?).ok()?.tree().ok()?;
         let Ok(entry) = tree.get_path(Path::new(&rel)) else {
+            // `tasks.md` did not exist at this revision.
             continue;
         };
-        let Ok(blob) = repository.find_blob(entry.id()) else {
+        if !scanned.insert(entry.id()) {
             continue;
-        };
-        let Ok(text) = std::str::from_utf8(blob.content()) else {
-            continue;
-        };
+        }
+        let blob = repository.find_blob(entry.id()).ok()?;
+        let text = std::str::from_utf8(blob.content()).ok()?;
         for slug in slugs {
             if !seen.contains(slug) && text.contains(slug.as_str()) {
                 seen.insert(slug.clone());
@@ -688,24 +691,24 @@ fn check_review_drift(
 /// whenever it arrived, and exempting it would preserve exactly the state
 /// this check exists to surface (spec 046).
 ///
-/// Reads through `read-spec`'s collector so this finding, the
-/// `check-review-gate` block, and the count surfaced to the user can never
-/// disagree.
+/// Reads the scan `read-spec` already took, through its collector, so this
+/// finding, the `check-review-gate` block, and the count surfaced to the user
+/// can never disagree.
 fn check_scenario_open_questions(
     findings: &mut Vec<ArtifactFinding>,
     skipped: &mut Vec<SkippedTarget>,
     feature_dir: &Path,
-    status: &str,
+    spec: &ReadSpecResult,
     spec_path: &Path,
     repo: &Path,
 ) {
-    let scan = read_spec::collect_scenario_open_questions(feature_dir);
+    let status = spec.frontmatter.status.as_str();
     // A scenario that could not be read is reported as a skipped target, not
     // as a finding and not as silence. It is not a defect — nothing can be
     // proven about a file that will not parse — but a zero-finding result
     // over a subject the family never read would be indistinguishable from a
     // fully-examined clean one (QUAL-CLAIM-001).
-    for slug in &scan.unreadable {
+    for slug in &spec.scenario_files_unreadable {
         record_unreadable_artifact(
             findings,
             skipped,
@@ -717,11 +720,11 @@ fn check_scenario_open_questions(
             ),
         );
     }
-    let questions = scan.questions;
+    let questions = &spec.scenario_open_questions;
     if questions.is_empty() {
         return;
     }
-    let scenarios = read_spec::scenario_names(&questions);
+    let scenarios = read_spec::scenario_names(questions);
     let severity = if status == "done" {
         AnalyzeSeverity::Blocking
     } else {
@@ -881,7 +884,7 @@ fn check_link_adjacent_drift(
                 );
                 let target_rel = rel_path(&target, repo);
                 match state {
-                    Err(reason) => record_skip(skipped, reason, &target_rel),
+                    Err(reason) => record_skip(skipped, "link-adjacent-drift", reason, &target_rel),
                     Ok(state) => evaluate(
                         findings,
                         skipped,
@@ -926,7 +929,12 @@ fn evaluate(
         // Only a tell that could not be evaluated is worth recording — a tell
         // the target simply agrees with is an ordinary clean result.
         if unreadable {
-            record_skip(skipped, "no-readable-state", target_rel);
+            record_skip(
+                skipped,
+                "link-adjacent-drift",
+                "no-readable-state",
+                target_rel,
+            );
         }
         return;
     }
@@ -975,16 +983,16 @@ fn contradiction(class: TellClass, state: &TargetState) -> Contradiction {
 }
 
 /// Record a skipped target once. The fact is about the target, so the same
-/// target reached twice by this family collapses to one entry.
-fn record_skip(skipped: &mut Vec<SkippedTarget>, reason: &str, path: &str) {
+/// target reached twice by one family collapses to one entry.
+fn record_skip(skipped: &mut Vec<SkippedTarget>, family: &str, reason: &str, path: &str) {
     if skipped
         .iter()
-        .any(|s| s.family == "link-adjacent-drift" && s.reason == reason && s.path == path)
+        .any(|s| s.family == family && s.reason == reason && s.path == path)
     {
         return;
     }
     skipped.push(SkippedTarget {
-        family: "link-adjacent-drift".into(),
+        family: family.into(),
         reason: reason.into(),
         path: path.into(),
     });
@@ -1229,14 +1237,12 @@ fn check_criterion_path_existence(
             // irrelevant to it — never contradicts it. Recorded rather than
             // silently dropped, the same way `root-absent` is.
             if !asserts {
-                let entry = SkippedTarget {
-                    family: "criterion-path-existence".into(),
-                    reason: "not-a-live-claim".into(),
-                    path: candidate.clone(),
-                };
-                if !skipped.contains(&entry) {
-                    skipped.push(entry);
-                }
+                record_skip(
+                    skipped,
+                    "criterion-path-existence",
+                    "not-a-live-claim",
+                    &candidate,
+                );
                 continue;
             }
             // A trailing slash marks a directory reference; either kind of
@@ -1256,14 +1262,12 @@ fn check_criterion_path_existence(
             // caught — the rule self-corrects where it matters.
             let root = trimmed.split('/').next().unwrap_or(trimmed);
             if !repo.join(root).exists() {
-                let entry = SkippedTarget {
-                    family: "criterion-path-existence".into(),
-                    reason: "root-absent".into(),
-                    path: candidate.clone(),
-                };
-                if !skipped.contains(&entry) {
-                    skipped.push(entry);
-                }
+                record_skip(
+                    skipped,
+                    "criterion-path-existence",
+                    "root-absent",
+                    &candidate,
+                );
                 continue;
             }
             // The path resolves in the repo this criterion is *about*, which
@@ -1275,14 +1279,12 @@ fn check_criterion_path_existence(
             // elsewhere. Recorded, never dropped: the report still says the
             // path went unexamined and why.
             if ships_to_adopter(&ships_elsewhere, trimmed) {
-                let entry = SkippedTarget {
-                    family: "criterion-path-existence".into(),
-                    reason: "ships-to-adopter".into(),
-                    path: candidate.clone(),
-                };
-                if !skipped.contains(&entry) {
-                    skipped.push(entry);
-                }
+                record_skip(
+                    skipped,
+                    "criterion-path-existence",
+                    "ships-to-adopter",
+                    &candidate,
+                );
                 continue;
             }
             findings.push(ArtifactFinding {
@@ -1729,7 +1731,7 @@ mod tests {
     /// that describe a review state, but the block it names no longer lands in
     /// this file — see [`seed_review`], which the same callers use to put it
     /// where the record now lives (spec 057).
-    fn spec(status: &str, _review: Option<&str>) -> String {
+    fn spec(status: &str) -> String {
         format!("---\nstatus: {status}\ndependencies: []\n---\n\n# Demo\n")
     }
 
@@ -1929,7 +1931,7 @@ mod tests {
         // Edge case from the scenario: files are required by status tier,
         // not universally.
         let tmp = tempdir().unwrap();
-        write(tmp.path(), "specs/042-demo/spec.md", &spec("draft", None));
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("draft"));
         let result = run(&args(), tmp.path()).unwrap();
         assert!(result.clean, "{:?}", result.findings);
         assert_eq!(result.status, "draft");
@@ -1939,7 +1941,7 @@ mod tests {
     #[test]
     fn planned_spec_missing_plan_and_tasks_yields_blocking_findings() {
         let tmp = tempdir().unwrap();
-        write(tmp.path(), "specs/042-demo/spec.md", &spec("planned", None));
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("planned"));
         let result = run(&args(), tmp.path()).unwrap();
         assert_eq!(
             families(&result),
@@ -1956,7 +1958,7 @@ mod tests {
     #[test]
     fn data_model_is_never_required() {
         let tmp = tempdir().unwrap();
-        write(tmp.path(), "specs/042-demo/spec.md", &spec("planned", None));
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("planned"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         let result = run(&args(), tmp.path()).unwrap();
@@ -1972,11 +1974,7 @@ mod tests {
     #[test]
     fn strictly_increasing_numbered_tasks_with_done_when_are_clean() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         let result = run(&args(), tmp.path()).unwrap();
@@ -1986,11 +1984,7 @@ mod tests {
     #[test]
     fn non_increasing_numbering_yields_blocking_finding() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         let tasks = "# T\n\n\
             ## 2. Second\n\n- [ ] a\n\n- **Done when**: done.\n\n\
@@ -2012,11 +2006,7 @@ mod tests {
     #[test]
     fn missing_done_when_yields_blocking_finding() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         let tasks = "# T\n\n## 1. No done-when\n\n- [ ] a\n";
         write(tmp.path(), "specs/042-demo/tasks.md", tasks);
@@ -2035,11 +2025,7 @@ mod tests {
         // gets no task-consistency findings (and no completeness ones
         // either, below the planned tier).
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("clarified", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("clarified"));
         let result = run(&args(), tmp.path()).unwrap();
         assert!(result.clean, "{:?}", result.findings);
     }
@@ -2049,11 +2035,7 @@ mod tests {
     #[test]
     fn unmapped_scenario_yields_advisory_finding() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         write(
@@ -2075,11 +2057,7 @@ mod tests {
     #[test]
     fn mapped_scenario_produces_no_finding() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         write(
@@ -2104,11 +2082,7 @@ mod tests {
         // mapped here (specs/022-deterministic-runtime/data-model.md,
         // registered canonical in constitution §drift-prevention).
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         let hand_written = "# Demo Tasks\n\n\
             ## 1. Implement scenario: retry-on-timeout\n\n\
@@ -2139,11 +2113,7 @@ mod tests {
         // completion produces no finding. keep-pending pruning leaves
         // non-contiguous numbers (task 1 was dropped; 2 survives).
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         let pruned = "# T\n\n## 2. Wire CLI\n\n- [ ] sub\n\n- **Done when**: CLI works.\n";
         write(tmp.path(), "specs/042-demo/tasks.md", pruned);
@@ -2165,11 +2135,7 @@ mod tests {
         // Reset-to-template parses as zero tasks — the other pruning
         // fingerprint (§tasks-phase).
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", None),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(
             tmp.path(),
@@ -2195,11 +2161,7 @@ mod tests {
         use crate::primitives::git_fixture;
         let tmp = tempdir().unwrap();
         let (repository, project) = git_fixture::subdirectory_project(tmp.path());
-        write(
-            &project,
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec("done", None),
-        );
+        write(&project, &format!("specs/{FEATURE}/spec.md"), &spec("done"));
         write(&project, &format!("specs/{FEATURE}/plan.md"), "# Plan\n");
         for slug in ["alpha", "beta"] {
             write(
@@ -2234,17 +2196,74 @@ mod tests {
         assert_eq!(flagged, vec![format!("specs/{FEATURE}/scenarios/beta.md")]);
     }
 
-    #[test]
-    fn done_spec_scenarios_are_never_flagged() {
+    /// A `done` spec whose history cannot be read in full flags nothing, as
+    /// 000's `scenario-without-task-visibility` requires. Builds the repository
+    /// the history walk reads: `alpha`'s task, then a reset `tasks.md` with no
+    /// pruning evidence, and a `beta` scenario that never had a task.
+    fn history_fixture(first_tasks: &[u8]) -> (tempfile::TempDir, git2::Repository) {
+        use crate::primitives::git_fixture;
         let tmp = tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
         write(
             tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec(
-                "done",
-                Some("  last-run: 2026-07-01T00:00:00Z\n  blocking: false"),
-            ),
+            &format!("specs/{FEATURE}/spec.md"),
+            &spec("done"),
         );
+        write(tmp.path(), &format!("specs/{FEATURE}/plan.md"), "# Plan\n");
+        write(
+            tmp.path(),
+            &format!("specs/{FEATURE}/scenarios/alpha.md"),
+            "---\nsection: \"X\"\n---\n\n# X\n",
+        );
+        let tasks = tmp.path().join(format!("specs/{FEATURE}/tasks.md"));
+        std::fs::write(&tasks, first_tasks).unwrap();
+        git_fixture::commit_all(&repository, "feat: alpha");
+        write(
+            tmp.path(),
+            &format!("specs/{FEATURE}/tasks.md"),
+            "# T\n\n## 1. Other\n\n- [x] other\n\n- **Done when**: other.\n",
+        );
+        git_fixture::commit_all(&repository, "chore: reset tasks");
+        (tmp, repository)
+    }
+
+    fn scenario_findings(repo: &Path) -> Vec<String> {
+        run(&args(), repo)
+            .unwrap()
+            .findings
+            .iter()
+            .filter(|f| f.family == "scenario-consistency")
+            .map(|f| f.path.clone())
+            .collect()
+    }
+
+    /// A revision whose `tasks.md` is not UTF-8 is one the walk cannot read.
+    /// Skipping it flagged `alpha`, whose task appeared only there.
+    #[test]
+    fn a_revision_the_walk_cannot_decode_flags_nothing() {
+        let (tmp, _repository) =
+            history_fixture(b"# T\n\n## 1. Alpha \xff\n\n- [x] scenarios/alpha.md\n");
+        assert_eq!(scenario_findings(tmp.path()), Vec::<String>::new());
+    }
+
+    /// A shallow clone lacks commits, so a scenario whose task lived in one
+    /// would read as never tasked; the walk fails safe instead.
+    #[test]
+    fn a_shallow_history_flags_nothing() {
+        let (tmp, repository) = history_fixture(b"# T\n\n## 1. Other\n\n- [x] other\n");
+        let head = repository.head().unwrap().target().unwrap();
+        std::fs::write(tmp.path().join(".git/shallow"), format!("{head}\n")).unwrap();
+        assert!(repository.is_shallow());
+        assert_eq!(scenario_findings(tmp.path()), Vec::<String>::new());
+    }
+
+    /// With no repository to consult, the history walk fails safe (000's
+    /// `scenario-without-task-visibility`), so an unmapped scenario under a
+    /// `done` spec flags nothing.
+    #[test]
+    fn a_done_spec_outside_a_repository_flags_no_scenario() {
+        let tmp = tempdir().unwrap();
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         write(
@@ -2261,11 +2280,7 @@ mod tests {
     #[test]
     fn done_spec_with_unset_last_run_yields_blocking_finding() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("done", Some("  blocking: false")),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
         seed_review(tmp.path(), "  blocking: false");
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
@@ -2278,14 +2293,7 @@ mod tests {
     #[test]
     fn done_spec_with_blocking_review_yields_blocking_finding() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec(
-                "done",
-                Some("  last-run: 2026-07-01T00:00:00Z\n  blocking: true\n  must-violations: 2"),
-            ),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
         seed_review(
             tmp.path(),
             "  last-run: 2026-07-01T00:00:00Z\n  blocking: true\n  must-violations: 2",
@@ -2309,16 +2317,7 @@ mod tests {
         // compares the frontmatter block against review.md and one review run
         // writes both, so the two were consistently stale.
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec(
-                "done",
-                Some(
-                    "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 1",
-                ),
-            ),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
         seed_review(
             tmp.path(),
             "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 1",
@@ -2338,15 +2337,10 @@ mod tests {
     #[test]
     fn done_spec_with_zero_should_is_clean() {
         let tmp = tempdir().unwrap();
-        write(
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
+        seed_review(
             tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec(
-                "done",
-                Some(
-                    "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 0",
-                ),
-            ),
+            "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 0",
         );
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
@@ -2360,15 +2354,10 @@ mod tests {
         // completion is allowed to carry it. The rule is about the *state*
         // `done` asserts, not about the finding existing.
         let tmp = tempdir().unwrap();
-        write(
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
+        seed_review(
             tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec(
-                "in-progress",
-                Some(
-                    "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 3",
-                ),
-            ),
+            "  last-run: 2026-07-01T00:00:00Z\n  blocking: false\n  must-violations: 0\n  should-violations: 3",
         );
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
@@ -2385,7 +2374,7 @@ mod tests {
     #[test]
     fn done_spec_without_review_block_is_grandfathered() {
         let tmp = tempdir().unwrap();
-        write(tmp.path(), "specs/042-demo/spec.md", &spec("done", None));
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
         let result = run(&args(), tmp.path()).unwrap();
@@ -2395,11 +2384,7 @@ mod tests {
     #[test]
     fn non_done_spec_with_empty_review_block_is_exempt() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("in-progress", Some("  blocking: false")),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("in-progress"));
         seed_review(tmp.path(), "  blocking: false");
         write(tmp.path(), "specs/042-demo/plan.md", "# Plan\n");
         write(tmp.path(), "specs/042-demo/tasks.md", GOOD_TASKS);
@@ -2419,15 +2404,11 @@ mod tests {
     #[test]
     fn multiple_families_report_in_declared_order() {
         let tmp = tempdir().unwrap();
-        write(
-            tmp.path(),
-            "specs/042-demo/spec.md",
-            &spec("done", Some("  blocking: true")),
-        );
+        write(tmp.path(), "specs/042-demo/spec.md", &spec("done"));
         seed_review(tmp.path(), "  blocking: true");
         // done + no plan.md/tasks.md + review drift (last-run unset AND
         // blocking true) → completeness ×2, then review drift ×2. The
-        // scenario family is skipped at done.
+        // scenario family is silent: there is no `tasks.md` to map against.
         write(
             tmp.path(),
             "specs/042-demo/scenarios/some-scenario.md",
@@ -2456,11 +2437,7 @@ mod tests {
     /// unresolved question, with plan/tasks present so completeness and
     /// task-consistency stay quiet and the assertion isolates this family.
     fn seed_with_questioning_scenario(repo: &Path, status: &str) {
-        write(
-            repo,
-            &format!("specs/{FEATURE}/spec.md"),
-            &spec(status, Some(CLEAN_REVIEW)),
-        );
+        write(repo, &format!("specs/{FEATURE}/spec.md"), &spec(status));
         write(repo, &format!("specs/{FEATURE}/plan.md"), "# Demo Plan\n");
         write(repo, &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
         write(
@@ -2509,7 +2486,7 @@ mod tests {
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/spec.md"),
-            &spec("done", None),
+            &spec("done"),
         );
         write(
             tmp.path(),
@@ -2533,14 +2510,16 @@ mod tests {
     #[test]
     fn an_unparseable_scenario_produces_no_blocking_finding() {
         // The gate has the matching test; this pins the finding half of
-        // the same rule. Nothing can be proven about a file that will not
-        // parse, and an unknown is never escalated into a defect — least
-        // of all a blocking one on a `done` spec (spec 046).
+        // the same rule. Nothing can be proven about the questions of a
+        // scenario whose frontmatter will not parse, so it contributes none
+        // and raises no finding (spec 046). That is not the unreadable-
+        // artifact case `record_unreadable_artifact` makes blocking at
+        // `done`: this file reads as text.
         let tmp = tempdir().unwrap();
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/spec.md"),
-            &spec("done", Some(CLEAN_REVIEW)),
+            &spec("done"),
         );
         seed_review(tmp.path(), CLEAN_REVIEW);
         write(
@@ -2576,7 +2555,7 @@ mod tests {
         write(
             repo,
             &format!("specs/{FEATURE}/spec.md"),
-            &spec("in-progress", Some(CLEAN_REVIEW)),
+            &spec("in-progress"),
         );
         seed_review(repo, CLEAN_REVIEW);
         write(repo, &format!("specs/{FEATURE}/plan.md"), plan_body);
@@ -2911,7 +2890,7 @@ mod tests {
             &format!("specs/{FEATURE}/spec.md"),
             &format!(
                 "{}\nThe [scenario](scenarios/retry-on-timeout.md) still has an open question.\n",
-                spec("in-progress", Some(CLEAN_REVIEW))
+                spec("in-progress")
             ),
         );
         seed_review(tmp.path(), CLEAN_REVIEW);
@@ -3003,10 +2982,7 @@ mod tests {
         write(
             repo,
             &format!("specs/{FEATURE}/spec.md"),
-            &format!(
-                "{}\n## Acceptance Criteria\n\n{criteria}",
-                spec(status, Some(CLEAN_REVIEW))
-            ),
+            &format!("{}\n## Acceptance Criteria\n\n{criteria}", spec(status)),
         );
         write(repo, &format!("specs/{FEATURE}/plan.md"), "# Demo Plan\n");
         write(repo, &format!("specs/{FEATURE}/tasks.md"), GOOD_TASKS);
@@ -3233,7 +3209,7 @@ mod tests {
             &format!(
                 "{}\n## Behavior\n\nRetired by spec 043, which deleted `framework/workflows/`.\n\n\
                  ## Acceptance Criteria\n\n- [x] The audit runs in CI\n",
-                spec("done", Some(CLEAN_REVIEW))
+                spec("done")
             ),
         );
         seed_review(tmp.path(), CLEAN_REVIEW);
@@ -3475,7 +3451,7 @@ mod tests {
         write(
             tmp.path(),
             &format!("specs/{FEATURE}/spec.md"),
-            &spec("done", Some(CLEAN_REVIEW)),
+            &spec("done"),
         );
         seed_review(tmp.path(), CLEAN_REVIEW);
         write(

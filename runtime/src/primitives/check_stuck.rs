@@ -294,26 +294,8 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+    use crate::primitives::git_fixture::{commit_all, write};
     use git2::{IndexAddOption, Repository, Signature};
-    use std::fs;
-    use std::path::Path;
-
-    fn commit_all(repo: &Repository, message: &str) -> git2::Oid {
-        let mut index = repo.index().unwrap();
-        index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
-        index.write().unwrap();
-        let tree_id = index.write_tree().unwrap();
-        let tree = repo.find_tree(tree_id).unwrap();
-        let sig = Signature::now("Test", "test@example.com").unwrap();
-        let parent = repo
-            .head()
-            .ok()
-            .and_then(|h| h.target())
-            .and_then(|oid| repo.find_commit(oid).ok());
-        let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
-        repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
-            .unwrap()
-    }
 
     /// Stage the full workdir and create a commit with explicit parents.
     /// `update_head: false` leaves HEAD where it is (side-branch commit);
@@ -339,13 +321,6 @@ mod tests {
         let refname = if update_head { Some("HEAD") } else { None };
         repo.commit(refname, &sig, &sig, message, &tree, &parent_refs)
             .unwrap()
-    }
-
-    fn write(path: &Path, body: &str) {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).unwrap();
-        }
-        fs::write(path, body).unwrap();
     }
 
     fn spec(status: &str) -> String {

@@ -23,8 +23,10 @@ use crate::schema::primitives::{DeriveBoundaryArgs, DeriveBoundaryResult};
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::FeatureNotFound`] when the feature directory
-/// is absent and [`PrimitiveError::Git`] for any libgit2 failure.
+/// Returns [`PrimitiveError::InvalidPath`] when `feature` would leave the
+/// spec root, [`PrimitiveError::FeatureNotFound`] when the feature directory
+/// is absent, and [`PrimitiveError::Git`] for any libgit2 failure, including
+/// a project no work tree contains.
 ///
 /// A spec dir with no commit touching it is **not** an error (scenario
 /// derive-boundary-uncommitted-spec-dir): the boundary is unknowable, not
@@ -210,33 +212,8 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
-    use git2::{IndexAddOption, Repository, Signature};
-    use std::fs;
-    use std::path::Path;
-
-    fn commit_all(repo: &Repository, message: &str) -> git2::Oid {
-        let mut index = repo.index().unwrap();
-        index.add_all(["*"], IndexAddOption::DEFAULT, None).unwrap();
-        index.write().unwrap();
-        let tree_id = index.write_tree().unwrap();
-        let tree = repo.find_tree(tree_id).unwrap();
-        let sig = Signature::now("Test", "test@example.com").unwrap();
-        let parent = repo
-            .head()
-            .ok()
-            .and_then(|h| h.target())
-            .and_then(|oid| repo.find_commit(oid).ok());
-        let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
-        repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
-            .unwrap()
-    }
-
-    fn write(path: &Path, body: &str) {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).unwrap();
-        }
-        fs::write(path, body).unwrap();
-    }
+    use crate::primitives::git_fixture::{commit_all, write};
+    use git2::Repository;
 
     #[test]
     fn boundary_uses_configured_specs_root() {

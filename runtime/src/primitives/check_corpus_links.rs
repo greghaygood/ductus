@@ -29,7 +29,7 @@ use std::path::{Component, Path, PathBuf};
 
 use crate::host::Host;
 use crate::primitives::spec_links::is_frontmatter_fence;
-use crate::primitives::{ProjectRepository, Result, inline_code_spans, rel_path};
+use crate::primitives::{Result, inline_code_spans, rel_path};
 use crate::schema::paths;
 use crate::schema::primitives::{
     BrokenCorpusLink, CheckCorpusLinksArgs, CheckCorpusLinksResult, CorpusLinkSkip, LinkScope,
@@ -114,41 +114,32 @@ pub fn run(args: &CheckCorpusLinksArgs, repo: &Path) -> Result<CheckCorpusLinksR
     }
 
     if result.examined.is_empty() && result.skipped.is_empty() {
+        let subject = match args.scope {
+            LinkScope::SpecCorpus => format!("under `{specs_root}`"),
+            LinkScope::Repository => "among the project's tracked files".to_string(),
+        };
         result.guidance = format!(
-            "no markdown files were examined under `{specs_root}` — the link scan found nothing \
-             because it looked at nothing"
+            "no markdown files were examined {subject} — the link scan found nothing because \
+             it looked at nothing"
         );
     }
     Ok(result)
 }
 
-/// Every tracked `.md` file under the project root, from the **git index**.
-///
-/// The index rather than a worktree walk, for the same reason
-/// `list_tracked_specs` uses it: an untracked draft is not yet part of the
-/// corpus anyone is claiming about, and a worktree walk would descend into
-/// `runtime/target`. Returns `false` when there is no index to read — when
-/// no git repository contains the project the repository scope has no
-/// subject at all, which the caller turns into `guidance` rather than a clean
-/// verdict. The repository is discovered rather than opened at the project
-/// root, and the index names files from the work tree, so a project in a
-/// subdirectory of its repository reads its own files by their names and
-/// leaves another project's out (spec 059).
+/// Every tracked `.md` file under the project root, from the **git index**,
+/// through the same walk `list_tracked_specs` uses
+/// ([`super::tracked_project_paths`]): an untracked draft is not yet part of
+/// the corpus anyone is claiming about, and a worktree walk would descend
+/// into `runtime/target`. Returns `false` when there is no index to read —
+/// no git repository contains the project, or its index could not be read —
+/// so the repository scope has no subject at all, which the caller turns into
+/// `guidance` rather than a clean verdict.
 fn collect_tracked_markdown(repo: &Path, out: &mut Vec<PathBuf>) -> bool {
-    let Ok(project) = ProjectRepository::discover(repo) else {
+    let Ok(Some(tracked)) = super::tracked_project_paths(repo) else {
         return false;
     };
-    let Ok(index) = project.repository.index() else {
-        return false;
-    };
-    for entry in index.iter() {
-        let Ok(tracked) = String::from_utf8(entry.path) else {
-            continue;
-        };
-        let Some(rel) = project.to_project(&tracked) else {
-            continue;
-        };
-        if Path::new(rel)
+    for rel in tracked {
+        if Path::new(&rel)
             .extension()
             .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
         {
@@ -354,8 +345,11 @@ fn classify(
         return;
     }
     // Resolution is **lexical**, against the citing file's own directory —
-    // except for a root-absolute target, which every markdown renderer
-    // resolves against the *repository* root rather than the filesystem's.
+    // except for a root-absolute target, which is resolved against the
+    // project root rather than the filesystem's. A markdown renderer resolves
+    // it against the repository root, which is the same directory only when
+    // the project is the repository's root; in a project in a subdirectory of
+    // its repository the two differ, and this check keeps the project's.
     // Never canonicalized: canonicalization would make the result depend on
     // symlinks, so the same corpus would answer differently in two checkouts.
     let base = if rel.starts_with('/') { repo } else { here };
@@ -425,8 +419,7 @@ fn lexical_join(base: &Path, rel: &str) -> PathBuf {
             // dropped rather than pushed: `PathBuf::push` of an absolute path
             // *replaces* the buffer, so pushing it would resolve `/foo`
             // against the filesystem root — while the caller has already
-            // chosen the repo root as the base, which is where a markdown
-            // renderer resolves it.
+            // chosen the project root as the base.
             Component::CurDir | Component::RootDir | Component::Prefix(_) => {}
         }
     }
@@ -688,8 +681,9 @@ mod tests {
     }
 
     #[test]
-    fn a_root_absolute_target_resolves_against_the_repo_root() {
-        // What a markdown renderer does with `/specs/...`. Resolving it
+    fn a_root_absolute_target_resolves_against_the_project_root() {
+        // At the repository's root, what a markdown renderer does with
+        // `/specs/...`. Resolving it
         // against the *filesystem* root instead would report every one of
         // them broken, or — worse on a machine that happens to have the
         // path — report a link to somewhere outside the repo as fine.
@@ -856,6 +850,35 @@ mod tests {
         );
         assert!(result.skipped.is_empty(), "{:?}", result.skipped);
         assert!(result.broken.is_empty(), "{:?}", result.broken);
+    }
+
+    /// A subdirectory project that tracks no markdown, beside another project
+    /// that does. The guidance names the subject that was empty — the
+    /// project's tracked files — rather than the spec root, which the
+    /// repository scope never walked.
+    #[test]
+    fn an_empty_repository_scope_names_its_own_subject() {
+        use crate::primitives::git_fixture;
+        let tmp = tempdir().unwrap();
+        let (repo, project) = git_fixture::subdirectory_project(tmp.path());
+        write(tmp.path(), "other/doc.md", "# Other\n");
+        git_fixture::commit_all(&repo, "base");
+
+        let result = run(
+            &CheckCorpusLinksArgs {
+                scope: LinkScope::Repository,
+            },
+            &project,
+        )
+        .unwrap();
+        assert!(result.examined.is_empty(), "{:?}", result.examined);
+        assert!(
+            result
+                .guidance
+                .contains("among the project's tracked files"),
+            "{}",
+            result.guidance
+        );
     }
 
     #[test]

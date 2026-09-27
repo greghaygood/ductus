@@ -51,17 +51,21 @@ use crate::schema::primitives::{DeriveDependenciesArgs, DeriveDependenciesResult
 ///
 /// # Errors
 ///
-/// Returns [`PrimitiveError::Io`] when a spec cannot be read or the rewrite
-/// cannot be persisted. A cycle is a **domain outcome** reported in the
-/// result, not an error: the caller decides whether it blocks.
+/// Returns [`super::PrimitiveError::Io`] when a spec cannot be read or the
+/// rewrite cannot be persisted, and [`super::PrimitiveError::Git`] when a
+/// repository contains the project but its index or status cannot be read —
+/// the listing of which specs to derive then has no answer, and guessing one
+/// would rewrite drafts or skip specs silently. A cycle is a **domain
+/// outcome** reported in the result, not an error: the caller decides whether
+/// it blocks.
 pub fn run(args: &DeriveDependenciesArgs, repo: &Path) -> Result<DeriveDependenciesResult> {
     let specs_root = paths::Paths::load(repo).specs_root;
     let specs_dir = repo.join(&specs_root);
 
-    let tracked = super::list_tracked_specs(repo, &specs_root);
-    let untracked = super::list_untracked_specs(repo, &specs_root);
+    let tracked = super::list_tracked_specs(repo, &specs_root)?;
+    let untracked = super::list_untracked_specs(repo, &specs_root)?;
     let staged = if args.staged {
-        Some(super::list_staged_specs(repo, &specs_root))
+        Some(super::list_staged_specs(repo, &specs_root)?)
     } else {
         None
     };

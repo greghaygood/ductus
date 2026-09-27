@@ -41,7 +41,7 @@ The prefix is built exactly as `compute_review_scope`'s private `history_prefix`
 
 ### An unresolvable project path is the no-repository case, not the root
 
-`workdir_prefix` returns `None` when the repository has no work tree, the project cannot be canonicalized, or the project lies outside the work tree (`mod.rs:1353-1356`). After a successful discovery that happens only under `GIT_DIR`/`GIT_WORK_TREE` or `core.worktree` overrides. `history_prefix` reads it as an empty prefix ("reads history from the root as before", `compute_review_scope.rs:140-141`), which silently finds no history. The spec's edge case chooses the no-repository path instead. `discover` returns an error in that case, so each reader takes the branch it already takes with no repository. Every one of those branches is already distinguishable from a clean result:
+`workdir_prefix` returns `None` when the repository has no work tree, the project cannot be canonicalized, or the project lies outside the work tree (`mod.rs:1353-1356`). After a successful discovery that happens only for a bare repository or under a `core.worktree` override; discovery does not read `GIT_DIR` or `GIT_WORK_TREE`, which libgit2 consults only when a repository is opened from the environment (`repository.c`, the `use_env` branch). `history_prefix` reads it as an empty prefix ("reads history from the root as before", `compute_review_scope.rs:140-141`), which silently finds no history. The spec's edge case chooses the no-repository path instead. `discover` returns an error in that case, so each reader takes the branch it already takes with no repository. Every one of those branches is already distinguishable from a clean result:
 
 | Reader | No-repository branch today |
 | --- | --- |
@@ -61,14 +61,16 @@ The prefix is built exactly as `compute_review_scope`'s private `history_prefix`
 | --- | --- | --- |
 | `check_stuck.rs:41-45` | `spec_rel`, `tasks_rel` | — |
 | `check_artifacts.rs:419-420` | the `tasks.md` history path | — |
-| `diff_cross_spec.rs:55-106` | `spec_prefix`, `root_prefix`, `inbox_rel`, the diff pathspec | every `cross_spec_paths` entry; a path outside the project is dropped |
+| `diff_cross_spec.rs:55-106` | `spec_prefix` for `first_commit_for_prefix`, and the diff pathspec, matched literally | every diff path, before it is matched against the project-relative spec root, feature directory and inbox; a path outside the project is dropped |
 | `derive_boundary.rs:45-95` | `spec_prefix` for `first_commit_for_prefix` and the own-directory skip | every changed path before `zone_glob`; a path outside the project is dropped |
 | `analyze_subjects.rs:303-321` | each candidate before `changed_beyond_spelling` | — (candidates stay project-relative in the result) |
-| `payload.rs:1122`, `:1132` | each Affected Files path before `status_should_ignore` | — |
+| `payload.rs:1122`, `:1132` | the canonical path of each Affected Files entry, named from the project root, before `status_should_ignore` — the file read, not the plan's spelling of it | — |
 | `list_tracked_specs` (`mod.rs:2193`) | — | each index entry before `is_spec_path` |
-| `list_untracked_specs` (`mod.rs:2227`) | the status pathspec | each status entry before `is_spec_path` |
-| `list_staged_specs` (`mod.rs:2266`) | — | each delta path before `is_spec_path` |
+| `list_untracked_specs` (`mod.rs:2227`) | the status pathspec, matched literally | each status entry before `is_spec_path` |
+| `list_staged_specs` (`mod.rs:2266`) | the delta pathspec, matched literally | each delta path before `is_spec_path` |
 | `collect_tracked_markdown` (`check_corpus_links.rs:132`) | — | each index entry before `repo.join`; a path outside the project is skipped |
+
+A pathspec carrying the project's path from the work tree is matched literally (`disable_pathspec_match`): that path may hold `*`, `?` or `[`, which as a glob would match no file, and the empty result would read as clean. A found repository whose index or status cannot be read is an error for every spec listing, never the worktree walk or an empty list.
 
 `find_in_progress_commit` and `first_commit_for_prefix` are unchanged. They already take a git path, and `compute_review_scope` already hands the first one a prefixed path (`compute_review_scope.rs:59-60`). `derive-boundary`'s spec glob and guidance stay project-relative, because the boundary is enforced against project paths.
 
