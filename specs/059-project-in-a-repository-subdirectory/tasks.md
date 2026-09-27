@@ -84,9 +84,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 11. `/ductus` wires the hooks directory named from the work tree (AC9, wiring half)
 
-- [ ] `framework/bootstrap/ductus-procedure.md` §Hook Installation: compute `P` with `git rev-parse --show-prefix` and `H = {P}.githooks`; run the ladder against `H`; add the pre-059 rewire case; look for third-party markers at the work-tree root too; add the pre-059 outer-stub precondition with its warning
-- [ ] Update the two-files description (`ductus-procedure.md:233-234`) and the manual integration snippet (`./{P}.githooks/ductus-pre-commit`)
-- [ ] Walk the ladder by hand against each spec edge case (root project, subdirectory project, pre-059 value, someone else's `.githooks`, third-party marker at the work-tree root, pre-059 outer stub, second project in one repository) and confirm each reaches the stated branch
+- [x] `framework/bootstrap/ductus-procedure.md` §Hook Installation: compute `P` with `git rev-parse --show-prefix` and `H = {P}.githooks`; run the ladder against `H`; add the pre-059 rewire case; look for third-party markers at the work-tree root too; add the pre-059 outer-stub precondition with its warning
+- [x] Update the two-files description (`ductus-procedure.md:233-234`) and the manual integration snippet (`./{P}.githooks/ductus-pre-commit`)
+- [x] Walk the ladder by hand against each spec edge case (root project, subdirectory project, pre-059 value, someone else's `.githooks`, third-party marker at the work-tree root, pre-059 outer stub, second project in one repository) and confirm each reaches the stated branch
 
 - **Done when**: every edge case in the spec maps to exactly one ladder branch, and a root project's walk is unchanged.
 
