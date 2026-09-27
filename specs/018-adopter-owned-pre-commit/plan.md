@@ -57,8 +57,9 @@ The end-to-end ACs (AC8, AC9, AC11) require a real `/ductus` run against a sandb
 | --- | --- | --- |
 | `framework/bootstrap/hooks/pre-commit` | Rename → `ductus-pre-commit`, then re-create at original path with new content | Old contents become the inner file (ductus-owned); new contents at the same path become the outer stub (adopter-owned) |
 | `framework/bootstrap/hooks/ductus-pre-commit` | Create (via rename) | Ductus-owned generator orchestration; sentinel on line 2 preserved |
-| `framework/bootstrap/hooks/install.sh` | Delete | Replaced by inlined actions in `ductus.md` §Hook Installation |
-| `framework/bootstrap/ductus.md` | Modify | §Shared Files manifest (split 1 row → 2); §Hook Installation (rewrite ladder, add Migration subsection, inline `core.hooksPath` + `chmod`); update Manual integration snippet path |
+| `framework/bootstrap/hooks/install.sh` | Delete | Replaced by inlined actions in §Hook Installation |
+| `framework/bootstrap/ductus.md` | Modify | §Shared Files manifest (split 1 row → 2) |
+| `framework/bootstrap/ductus-procedure.md` | Modify | §Hook Installation (rewrite ladder, add Migration subsection, inline `core.hooksPath` + `chmod`); update Manual integration snippet path. Written in `framework/bootstrap/ductus.md`; spec 056's archive-boundary split moved the section here |
 | `specs/017-derive-dont-ask/spec.md` | Modify (signpost only) | Insert block-quote signpost after the H1; do not touch body, ACs, or resolved questions |
 | `specs/018-adopter-owned-pre-commit/plan.md` | Create | This file |
 | `specs/018-adopter-owned-pre-commit/tasks.md` | Create | Task breakdown |
