@@ -1,38 +1,46 @@
 ---
 spec: 018-adopter-owned-pre-commit
-diff-base: 91741dfb77a5e46e184257c2313afa9684f2da62
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-13T13:14:20Z
-reviewed-against: 91741dfb77a5e46e184257c2313afa9684f2da62
+last-run: 2026-09-27T14:14:09Z
+reviewed-against: 3534aa173293f50899a3f44c2331a9367cb573e9
+diff-base: 23f664154577f13b3bac280c65ff38a4a3b5fbf2
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 5
-scope: 7
+examined: 8
+scope: 9
+skipped-passes: []
 reviewed-digest: {}
 blocking: false
+dispositions:
+  fixed: 1
+  routed: 1
+  discarded: 0
+  undispositioned: 0
+decisions:
+  - key: "convention: 017's post-018 signpost and AC21 point at `framework/bootstrap/ductus.md` §Hook Installation, which 056 moved to `ductus-procedure.md` — `specs/017-derive-dont-ask/spec.md`"
+    outcome: routed
+    target: specs/059-project-in-a-repository-subdirectory/tasks.md
+    decided-at: 2026-09-27T14:14:09Z
+    decided-by: andy@stone.dev
 ---
 
 # Review — 018-adopter-owned-pre-commit
 
 ## Summary
 
-First review of 018 to record `examined` against a derived `scope`; the prior record predated both fields, so its `0/0/0` could not be distinguished from a run whose five passes never fired. No MUST or SHOULD violation. **All thirteen criteria verified against the tree and every one holds** — no correction, so 018 never left `done`.
+Re-review of 018 after its reopen for spec 059's cross-spec correction (`done -> in-progress` at `b1617519`). No MUST violation and, after one fix made in this run, no SHOULD violation.
 
-**What this review read: 5 of the 7 files in scope, and here is the other 2.** Read in full: `framework/bootstrap/ductus.md` (1181 lines), `framework/bootstrap/hooks/ductus-pre-commit`, `framework/bootstrap/hooks/pre-commit`, and this spec's `plan.md` and `tasks.md`. **Not examined:** `specs/017-derive-dont-ask/spec.md` — another spec's artifact, read only at the two places 018's criteria reach into it (the signpost block after its H1, and its `dependencies:` line); and `framework/bootstrap/hooks/install.sh`, which **does not exist**, because AC12 deleted it. A scope entry naming a file this spec's own criterion removed is the plan behaving as a design record, not drift.
+**Diff base and scope.** The derived base is `23f66415`, the parent of the reopen commit, so the window holds this reopen's own commits and nothing older. The plan's Affected Files named `framework/bootstrap/ductus.md` for §Hook Installation, which spec 056 moved to `framework/bootstrap/ductus-procedure.md`; `a8653715` added the procedure file to the table before the passes ran, so the scope covers the file AC5, AC6, AC7 and AC12 name.
 
-**The seven skipped criteria, walked by hand.** `check-artifacts` reports six `not-a-live-claim` and one `ships-to-adopter` on this spec — the largest skip set in the zero-contract tier. Per AGENTS.md those are the manual worklist: a criterion in that bucket has had **nothing** check the substance of its claim, ever. Each was checked against the tree this run and each holds. The `not-a-live-claim` exemptions are correct in every case — AC12 says `install.sh` *is deleted*, AC1 and AC13 carry supersession annotations naming `.ductus/scripts/` as gone, and a path-existence family would report those backwards.
+**What this review read: 8 of the 9 files in scope.** Read in full: `framework/bootstrap/ductus-procedure.md`, `framework/bootstrap/ductus.md` (all 814 lines), `framework/bootstrap/hooks/ductus-pre-commit`, `framework/bootstrap/hooks/pre-commit`, `specs/017-derive-dont-ask/spec.md`, and this spec's `spec.md`, `plan.md` and `tasks.md`. **Not examined:** `framework/bootstrap/hooks/install.sh`, which does not exist — AC12 deleted it, and the plan still lists it as the file it deleted. All eleven rule files under `framework/rules/` were read in full. The scope is bootstrap prose and two bash hooks, so no frontend rule and none of the backend design-time rules (api, concurrency, observability, performance, reliability) has a trigger here; the rules that bear on it are `quality-cross.md` and the shell and transport rules in `security-backend.md` (argument-vector invocation, no `curl -k`, digest verification), which the hooks and the acquisition steps satisfy.
 
-**How each criterion was checked.** AC1: the inner hook ships, carries `# managed-by: ductus` on **line 2** exactly, and orchestrates `derive-dependencies` / `derive-references` plus `git add` staging — the criterion's own annotation already records that the shell generators it named became primitives. AC2: the outer stub invokes `./.githooks/ductus-pre-commit` and carries no sentinel anywhere — checked by reading the whole file, since "no sentinel" is a claim about absence. AC3, AC4: the manifest rows sit at lines 768 and 785, which fall inside the `strategy: update` and `strategy: create` subsections respectively — the strategy is positional here, so the row alone would not have proved it. AC5: the ladder is four items, and the sentinel-detected branch is gone, with prose stating why. AC6: the manual-integration snippet names `./.githooks/ductus-pre-commit`. AC7: §Migration from spec-017 hook carries the three-part trigger, the tracked/untracked branch, both recovery paths, and the summary line. AC10: 017's signpost sits immediately after its H1 and names AC21–AC23. AC12: the file is gone, and no **live** artifact references it — the surviving mentions are all in 017's and 018's own bodies, plans and tasks, which are design records. AC13: `derive-dependencies` excludes blockquote-prefixed lines, and 017's `dependencies:` is `[]`; I confirmed the behaviour independently earlier today when a blockquote signpost added to 006 induced no edge.
+**One SHOULD found and fixed in the run — `QUAL-CLAIM-001`, `framework/bootstrap/ductus-procedure.md` §Hook Installation.** Since 018 dropped spec 017's "existing `.githooks/pre-commit` not from `/ductus`" conflict case, the ladder reported `pre-commit hook installed` or `already wired up` over an outer hook of the project's own that never invokes `ductus-pre-commit` — the manifest's `create` pass leaves such a file in place — so ductus's passes never ran while the run reported success, and case 5 activated a hook the project had not activated. 018's own §Migration text said such a file gets "skip wiring, manual integration snippet"; the ladder did not implement it. Fixed as 018 task 12 in `c686a81f` and `3534aa17`: a precondition on cases 1, 2 and 5 skips wiring with the snippet when no non-comment line of `.githooks/pre-commit` names `ductus-pre-commit`, stated in new AC14. The quality pass re-ran over the changed sections and the precondition was walked against real hook contents from history — the current stub and the pre-059 stub proceed, a spec-017-era file and a project's own hook are skipped — with the `ductus-rename` migration re-pointing an older `govern-pre-commit` invocation before the ladder runs.
 
-**Three criteria I did not re-verify, and why that is stated rather than implied.** AC8, AC9 and AC11 are end-to-end claims about a real `/ductus` run against a sandbox adopter — migration path and fresh-install path. The plan names manual sandbox verification as their discharge criterion and `tasks.md` task 9 records both runs. Re-running a bootstrap was out of scope here, so what this review verified is the **procedure** they rest on — the ladder, the migration subsection, the manifest strategies and the `chmod`/`core.hooksPath` inlining — not the runs themselves. AGENTS.md is explicit that a real adopter run is the only test of composition this project has; nothing in this repo substitutes for it.
+**Observations.** Two stale claims in 018's body were fixed in the same commits. 017's signpost and AC21 still point at `ductus.md` §Hook Installation; that correction is already 059's task 17, so it is routed there rather than made twice.
 
-**The hook read as code, not just as a manifest entry.** `ductus-pre-commit` halts rather than skips on an unreachable runtime, and additionally probes each primitive's `--help` before calling it, so an old-but-present binary fails with an actionable message instead of a bare clap error. Its `set -e` idioms are the safe ones throughout — `[ -f "$f" ] || continue` rather than a trailing `&&`, and `{ grep … || true; }` around the staged-spec match so a no-match does not abort the run. The staged-spec regex matches the spec root by *shape* rather than by the literal `specs`, which is what keeps it correct for a project that renamed its spec tree.
+**Criteria.** AC14 is new and unticked; `/ductus:implement`'s completion gate verifies it and every ticked criterion against the tree, including the 059 narrowing annotations on AC2, AC5, AC6, AC9 and AC12. AC8, AC9 and AC11 are end-to-end claims about sandbox `/ductus` runs that this review did not re-run; it verified the procedure they rest on.
 
-**On the diff base.** No commit records 018 entering `in-progress`, so the natural derivation is empty and `write-review` would collapse the denominator to `scope: 0` under a non-zero `examined`. `HEAD` is passed instead. 018 has no scenarios and no data model, so `reviewed-digest` is `{}` — taken and empty, which reads as current.
-
-**Checked and clean elsewhere.** `README.md` and `docs/` carry no description of the two-file hook model, so there is no mirror to drift. The shipped adopter CI template was checked because `tasks.md` records a boundary expansion into it: its error message no longer names the deleted `gen-spec-deps.sh` and correctly points at `ductus derive-dependencies --write`.
+018 has no scenarios and no data model, so `reviewed-digest` is `{}` — taken and empty, which reads as current.
 
 ## MUST violations (blocking)
 
@@ -50,13 +58,10 @@ First review of 018 to record `examined` against a derived `scope`; the prior re
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- bug: 018's body named a `framework/bootstrap/hooks/pre-commit-stub` (or similar) that never shipped, and said `framework/bootstrap/hooks/pre-commit` ships the inner body today — both false since 018 made that path the outer stub — `specs/018-adopter-owned-pre-commit/spec.md` — **fixed**
+- convention: 017's post-018 signpost and AC21 point at `framework/bootstrap/ductus.md` §Hook Installation, which 056 moved to `ductus-procedure.md` — `specs/017-derive-dont-ask/spec.md` — **routed** to `specs/059-project-in-a-repository-subdirectory/tasks.md`
 
 ## Skipped passes
 
