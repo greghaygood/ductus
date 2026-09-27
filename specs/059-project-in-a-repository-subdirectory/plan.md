@@ -16,7 +16,7 @@ The runtime changes ship in a patch release, `0.54.1`. The hook, procedure, and 
 
 The runtime has twelve production call sites that open a repository. Measured by `grep -rn "Repository::discover\|Repository::open"` over `runtime/src`, excluding test modules, they are in `interpreter/payload.rs`, `mod.rs` (three), and `check_stuck`, `check_artifacts`, `diff_cross_spec`, `derive_boundary`, `analyze_subjects`, `check_corpus_links`, `compute_review_scope`, and `inbox_standing`. No reader shells out to `git`. Ten of the twelve are this spec's. `compute_review_scope` and `inbox_standing` are 058's fixes.
 
-Each reader today repeats one of two mistakes. The `discover` sites join a project-relative path into a lookup that git keys from the work tree. The `open` sites (`mod.rs:2193`, `:2227`, `:2266`, `check_corpus_links.rs:133`) do not search upward at all. The fix is one type in `runtime/src/primitives/mod.rs`, beside `workdir_prefix` (`mod.rs:1362`):
+Each reader today repeats one of two mistakes. The `discover` sites join a project-relative path into a lookup that git keys from the work tree. The `open` sites (`mod.rs:2193`, `:2227`, `:2266`, `check_corpus_links.rs:133`) do not search upward at all (git2 0.21 documents `open` as "at `path`" and `discover` as "at or above `path`"). The fix is one type in `runtime/src/primitives/mod.rs`, beside `workdir_prefix` (`mod.rs:1362`):
 
 ```rust
 /// A repository opened for a project, with the project's path from its work tree.
@@ -91,9 +91,9 @@ The first case must not use a name the basename secret check already catches, or
 
 ### The hook finds its project root from its own location
 
-`framework/bootstrap/hooks/ductus-pre-commit:47-48` changes to its own directory's parent: `ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`. That is the project root, because the manifest always places the file at `{project}/.githooks/ductus-pre-commit`. Git runs hooks from the work-tree root (githooks(5)), so the toplevel says nothing about which project a hook belongs to, while the file's location does. At the repository root both answers are the same directory.
+`framework/bootstrap/hooks/ductus-pre-commit:47-48` changes to its own directory's parent: `ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`. That is the project root, because the manifest always places the file at `{project}/.githooks/ductus-pre-commit` (`framework/bootstrap/ductus.md:661`, §Shared Files, destinations named from the project root). Git runs hooks from the work-tree root (githooks(5)), so the toplevel says nothing about which project a hook belongs to, while the file's location does. At the repository root both answers are the same directory.
 
-The staged-spec listing gains `--relative` (`ductus-pre-commit` `staged_specs=…`). `git diff --cached --name-only` names paths from the work-tree root whatever the working directory, and the shape pattern accepts exactly one leading segment, so without `--relative` a subdirectory project's staged specs match nothing, and none are labelled or re-staged. `--relative` names them from the project root and drops other projects' paths. It changes nothing at the root.
+The staged-spec listing gains `--relative` (`ductus-pre-commit` `staged_specs=…`). `git diff --cached --name-only` names paths from the work-tree root whatever the working directory (git-diff(1) `--relative`: only that option shows pathnames relative to a subdirectory; audit Family 22's subdirectory case observes it), and the shape pattern accepts exactly one leading segment, so without `--relative` a subdirectory project's staged specs match nothing, and none are labelled or re-staged. `--relative` names them from the project root and drops other projects' paths. It changes nothing at the root.
 
 The outer stub, `framework/bootstrap/hooks/pre-commit`, invokes the inner hook by its own location, `"$(dirname "${BASH_SOURCE[0]}")/ductus-pre-commit"`, rather than `./.githooks/ductus-pre-commit` from the toplevel. It keeps its `cd` to the toplevel, since that is where an adopter's own checks have always run.
 
@@ -104,7 +104,7 @@ The outer stub, `framework/bootstrap/hooks/pre-commit`, invokes the inner hook b
 1. `core.hooksPath` is `H` — already wired, as today.
 2. **New.** `P` is non-empty, `core.hooksPath` is `.githooks`, and the work-tree root has no `.githooks` directory. That is the value a pre-059 `/ductus` wrote from the subdirectory, pointing at nothing, so it is rewired to `H` as in case 5.
 3. `core.hooksPath` points at any other path — skip and warn, as today.
-4. A third-party hook system is detected. The markers are now checked at the project root **and** the work-tree root. `pre-commit` (python) installs into `.git/hooks` without setting `core.hooksPath`, so a marker at the work-tree root that the project root cannot see would otherwise be clobbered by setting it.
+4. A third-party hook system is detected. The markers are now checked at the project root **and** the work-tree root. `pre-commit` (python) installs into `.git/hooks` without setting `core.hooksPath` (`_hook_paths` and `install` in `pre_commit/commands/install_uninstall.py`), so a marker at the work-tree root that the project root cannot see would otherwise be clobbered by setting it.
 5. No conflicts — `git config core.hooksPath H`.
 
 Cases 2 and 5 are guarded by one precondition. If `{project}/.githooks/pre-commit` exists and still invokes `./.githooks/ductus-pre-commit` (the pre-059 stub line) while `P` is non-empty, wiring is skipped. The warning names the line to replace. The outer file is adopter-owned (`create` strategy), so `/ductus` never edits it, and wiring it as it stands would make every commit fail on a path that does not exist.
@@ -117,7 +117,7 @@ The manual integration snippet names the inner hook by its path from the work-tr
 
 ### The CI template names the working directory a subdirectory project sets
 
-`framework/templates/ci/adopter-generators.yml` gains a commented job-level `defaults.run.working-directory`, with a comment explaining it is set to the project's path when the project is not at the repository root. Every step that calls `.ductus/bin/ductus` or reads `.ductus/` and the spec root is a `run` step. `git status --porcelain` reports the whole work tree from any directory. The checkout step is a `uses` step and is unaffected by the default.
+`framework/templates/ci/adopter-generators.yml` gains a commented job-level `defaults.run.working-directory`, with a comment explaining it is set to the project's path when the project is not at the repository root. Every step that calls `.ductus/bin/ductus` or reads `.ductus/` and the spec root is a `run` step. `git status --porcelain` reports the whole work tree from any directory, with every path named from the repository root (git-status(1), OUTPUT and porcelain v1). The checkout step is a `uses` step and is unaffected by the default.
 
 ### Spec 018 is corrected, which discharges the declared impact
 
