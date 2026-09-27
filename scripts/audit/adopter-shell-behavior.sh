@@ -48,16 +48,23 @@ set -uo pipefail
 audit_family adopter-shell-behavior
 
 HOOK="$ROOT/framework/bootstrap/hooks/ductus-pre-commit"
+OUTER="$ROOT/framework/bootstrap/hooks/pre-commit"
 
-if [ ! -f "$HOOK" ]; then
-  emit "${HOOK#"$ROOT"/}" "shipped adopter hook is missing — the fixture cannot be built" \
-    "restore it; this family cannot verify adopter behavior without it"
-  exit "$drift"
-fi
+for shipped in "$HOOK" "$OUTER"; do
+  if [ ! -f "$shipped" ]; then
+    emit "${shipped#"$ROOT"/}" "shipped adopter hook is missing — the fixture cannot be built" \
+      "restore it; this family cannot verify adopter behavior without it"
+    exit "$drift"
+  fi
+done
 
-# scaffold FIXTURE SPECS_DIR [FEATURE] — lay down an adopter-shaped tree.
-# Returns non-zero when the fixture could not be built (a finding, never a
+# scaffold FIXTURE SPECS_DIR [FEATURE] [GIT_ROOT] — lay down an adopter-shaped
+# tree. Returns non-zero when the fixture could not be built (a finding, never a
 # skip).
+#
+# GIT_ROOT defaults to FIXTURE. Naming a directory above it makes the project a
+# subdirectory of its repository (spec 059), which is the layout where the work
+# tree's root and the project root stop being the same directory.
 #
 # FEATURE defaults to `001-example`. It is a parameter because the hook
 # matches spec paths by *shape*, and a fixture that only ever uses a
@@ -66,7 +73,7 @@ fi
 # spec 051 task 24: a spec numbered past 999, and every branch-scoped spec,
 # went unstaged and therefore unlabelled.
 scaffold() {
-  local fixture="$1" specs_dir="$2" feature="${3:-001-example}"
+  local fixture="$1" specs_dir="$2" feature="${3:-001-example}" git_root="${4:-$1}"
   mkdir -p "$fixture/.ductus/bin" "$fixture/.githooks" \
            "$fixture/$specs_dir/$feature" || return 1
   cp "$HOOK" "$fixture/.githooks/ductus-pre-commit" || return 1
@@ -92,13 +99,13 @@ next-criterion: 1
 SPEC
 
   (
-    cd "$fixture" || exit 1
+    cd "$git_root" || exit 1
     git init -q . 2>/dev/null
     git config user.email audit@example.invalid
     git config user.name audit
     git add -A > /dev/null 2>&1
   )
-  [ -f "$fixture/.git/HEAD" ] || return 1
+  [ -f "$git_root/.git/HEAD" ] || return 1
 }
 
 # install_stub FIXTURE — a runtime that records its invocations and simulates
@@ -210,7 +217,7 @@ build_and_run() {
   if grep -q '000-stale-entry' "$fixture/$specs_dir/$feature/spec.md" 2>/dev/null; then
     emit "framework/bootstrap/hooks/ductus-pre-commit" \
       "with specs-root '$specs_dir' and feature '$feature' the seeded stale dependency survived — the hook's derivation step never reached the spec" \
-      "invoke derive-dependencies from the repo root so it enumerates the configured spec tree"
+      "invoke derive-dependencies from the project root so it enumerates the configured spec tree"
   fi
 
   # Assertion 4 — staged-spec scoping reaches any configured root. The
@@ -280,6 +287,69 @@ check_survives_deleted_spec() {
   rm -rf "$fixture"
 }
 
+# --- Case 4: a project in a subdirectory of its repository -------------------
+#
+# Git runs a hook from the work tree's root and resolves a relative
+# `core.hooksPath` from there (githooks(5)), so a project that is not the work
+# tree's root has two places a hook can mistake for its own. Before spec 059
+# both shipped hooks changed to `git rev-parse --show-toplevel` and looked for
+# `.githooks/` and `.ductus/` there, where a subdirectory project keeps neither:
+# the outer stub could not find the inner hook, and the inner hook could not
+# find the runtime or match a staged spec, whose path git names from the work
+# tree. A real `git commit` drives it, so git's own hook resolution is under
+# test too rather than assumed.
+check_subdirectory_project() {
+  local repo_root project commit_out commit_status invoked committed
+  repo_root="$(mktemp -d 2>/dev/null)" || repo_root=""
+  project="$repo_root/proj"
+  if [ -z "$repo_root" ] || ! scaffold "$project" specs 001-example "$repo_root" \
+    || ! cp "$OUTER" "$project/.githooks/pre-commit" \
+    || ! chmod +x "$project/.githooks/pre-commit"; then
+    emit "scripts/audit/adopter-shell-behavior.sh" \
+      "could not build the subdirectory-project fixture" \
+      "ensure mktemp and git work here — a skipped run must not read as a pass"
+    [ -n "$repo_root" ] && rm -rf "$repo_root"
+    return
+  fi
+  install_stub "$project"
+
+  commit_out="$(cd "$repo_root" && PATH=/usr/bin:/bin \
+    git -c core.hooksPath=proj/.githooks commit -qm seed 2>&1)"
+  commit_status=$?
+  if [ "$commit_status" -ne 0 ]; then
+    emit "framework/bootstrap/hooks/pre-commit" \
+      "a commit in a project in a subdirectory of its repository failed in the shipped hooks (exit $commit_status): ${commit_out:-<no output>}" \
+      "find the inner hook, the runtime and the spec root from the hook's own location, not from the work tree's root"
+    rm -rf "$repo_root"
+    return
+  fi
+
+  invoked="$(cat "$project/.ductus-stub-invoked" 2>/dev/null)"
+  for call in "derive-dependencies --write --staged" "derive-references --write --staged" \
+    "label-criteria --feature 001-example"; do
+    case "$invoked" in
+      *"$call"*) ;;
+      *) emit "framework/bootstrap/hooks/ductus-pre-commit" \
+           "in a project in a subdirectory of its repository the hook never ran \`$call\`" \
+           "list staged specs from the project root (git diff --cached --relative), so the shape match sees the project's own paths" ;;
+    esac
+  done
+
+  # The stub rewrote the spec on disk; only the hook's re-stage loop puts that
+  # rewrite into the commit.
+  committed="$(cd "$repo_root" && git show HEAD:proj/specs/001-example/spec.md 2>/dev/null)"
+  case "$committed" in
+    "") emit "scripts/audit/adopter-shell-behavior.sh" \
+          "the subdirectory-project commit holds no proj/specs/001-example/spec.md to inspect" \
+          "the fixture did not commit the spec — a skipped assertion must not read as a pass" ;;
+    *000-stale-entry*) emit "framework/bootstrap/hooks/ductus-pre-commit" \
+          "in a project in a subdirectory of its repository the commit captured the stale dependency the derivation had already rewritten on disk" \
+          "re-stage each rewritten spec by its path from the project root" ;;
+  esac
+
+  rm -rf "$repo_root"
+}
+
 check_halts_without_runtime
 build_and_run specs      # default root — isolates runtime resolution
 build_and_run features   # configured root (spec 040) — isolates scoping
@@ -291,5 +361,6 @@ build_and_run features   # configured root (spec 040) — isolates scoping
 build_and_run specs 1000-thousandth   # sequential past the three-digit pad
 build_and_run specs 1234.1-staged     # branch-scoped staging form (spec 051)
 check_survives_deleted_spec
+check_subdirectory_project
 
 exit "$drift"

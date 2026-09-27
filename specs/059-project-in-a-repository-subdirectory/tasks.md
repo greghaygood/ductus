@@ -75,10 +75,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 10. The hook runs from the project root (AC9, hook half)
 
-- [ ] `framework/bootstrap/hooks/ductus-pre-commit`: replace the toplevel `cd` (`:47-48`) with the project root from `${BASH_SOURCE[0]}`; add `--relative` to the staged-spec listing, and update the comments that describe both
-- [ ] `framework/bootstrap/hooks/pre-commit`: invoke the inner hook by its own location rather than `./.githooks/ductus-pre-commit` from the toplevel
-- [ ] `scripts/audit/adopter-shell-behavior.sh`: add a fixture with the project at `proj/`, run the outer stub and the inner hook from the work-tree root, and assert the stub runtime ran, the staged spec was labelled and re-staged, and the hook exited 0
-- [ ] Show the new fixture failing against the current hook before trusting it
+- [x] `framework/bootstrap/hooks/ductus-pre-commit`: replace the toplevel `cd` (`:47-48`) with the project root from `${BASH_SOURCE[0]}`; add `--relative` to the staged-spec listing, and update the comments that describe both
+- [x] `framework/bootstrap/hooks/pre-commit`: invoke the inner hook by its own location rather than `./.githooks/ductus-pre-commit` from the toplevel
+- [x] `scripts/audit/adopter-shell-behavior.sh`: add a fixture with the project at `proj/`, run the outer stub and the inner hook from the work-tree root, and assert the stub runtime ran, the staged spec was labelled and re-staged, and the hook exited 0
+- [x] Show the new fixture failing against the current hook before trusting it
 
 - **Done when**: Family 22 passes with the new fixture, the fixture fails against the pre-change hook, and the existing root fixtures still pass.
 
