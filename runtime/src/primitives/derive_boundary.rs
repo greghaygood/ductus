@@ -15,7 +15,7 @@ use std::path::Path;
 
 use git2::{Repository, Sort};
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, ProjectRepository, Result};
 use crate::schema::paths;
 use crate::schema::primitives::{DeriveBoundaryArgs, DeriveBoundaryResult};
 
@@ -42,7 +42,12 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
             feature: args.feature.clone(),
         });
     }
-    let repository = Repository::discover(repo)?;
+    // History and the diff name every path from the git work tree, which is
+    // not the project root when the project sits in a subdirectory of its
+    // repository. The boundary is enforced against the project's paths, so
+    // it is matched in git's names and reported in the project's.
+    let project = ProjectRepository::discover(repo)?;
+    let repository = &project.repository;
     let spec_prefix = format!("{}/{}/", layout.specs_root, args.feature);
     // The spec-dir glob needs no history — it is the feature's own zone —
     // so it is the whole boundary in the no-history case below.
@@ -53,9 +58,9 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
     // no commits at all — the fresh-repo case where `/ductus:specify` and
     // `/ductus:plan` both run before the first commit). `head` is resolved
     // once so the no-history arm can still report it when it exists.
-    let head = head_oid(&repository)?;
+    let head = head_oid(repository)?;
     let Some((first_commit, head_oid)) =
-        first_commit_for_prefix(&repository, &spec_prefix)?.zip(head)
+        first_commit_for_prefix(repository, &project.to_git(&spec_prefix))?.zip(head)
     else {
         return Ok(DeriveBoundaryResult {
             boundary: vec![spec_glob],
@@ -82,10 +87,14 @@ pub fn run(args: &DeriveBoundaryArgs, repo: &Path) -> Result<DeriveBoundaryResul
                 .flatten()
             {
                 let s = path.to_string_lossy().replace('\\', "/");
-                if s.starts_with(&spec_prefix) {
+                // Another project's change is not this feature's zone.
+                let Some(inside) = project.to_project(&s) else {
+                    continue;
+                };
+                if inside.starts_with(&spec_prefix) {
                     continue;
                 }
-                boundary.insert(zone_glob(&s));
+                boundary.insert(zone_glob(inside));
             }
             true
         },
@@ -310,6 +319,47 @@ mod tests {
         assert!(
             !boundary.contains("runtime/src/main.rs"),
             "exact non-root paths are subsumed by their zone glob: {boundary:?}"
+        );
+    }
+
+    /// A project in a subdirectory of its repository, beside another project
+    /// changed in the same window. History names the spec directory from the
+    /// work tree, so asked by the path from the project root there was no
+    /// first commit and the boundary was the spec directory alone; the
+    /// boundary is found, named from the project root, and the other
+    /// project's change is not in it (spec 059).
+    #[test]
+    fn a_subdirectory_project_derives_its_boundary_from_its_root() {
+        use crate::primitives::git_fixture;
+        let tmp = tempfile::tempdir().unwrap();
+        let (repo, project) = git_fixture::subdirectory_project(tmp.path());
+        git_fixture::commit_all(&repo, "chore: init");
+        write(
+            &project.join("specs/020-demo/spec.md"),
+            "---\nstatus: planned\n---\n\n# 020\n",
+        );
+        let first = git_fixture::commit_all(&repo, "feat(020): plan");
+        write(&project.join("runtime/src/main.rs"), "fn main() {}\n");
+        write(&project.join("README.md"), "# proj\n");
+        write(&tmp.path().join("other/src/x.rs"), "fn x() {}\n");
+        git_fixture::commit_all(&repo, "feat(020): implement");
+
+        let result = run(
+            &DeriveBoundaryArgs {
+                feature: "020-demo".into(),
+            },
+            &project,
+        )
+        .unwrap();
+        assert_eq!(result.first_commit, first.to_string());
+        assert_eq!(result.guidance, None);
+        assert_eq!(
+            result.boundary,
+            vec![
+                "README.md".to_string(),
+                "runtime/src/**".to_string(),
+                "specs/020-demo/**".to_string(),
+            ]
         );
     }
 

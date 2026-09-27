@@ -23,10 +23,10 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use git2::{DiffOptions, Repository};
+use git2::DiffOptions;
 
 use crate::primitives::derive_boundary::first_commit_for_prefix;
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, ProjectRepository, Result};
 use crate::schema::paths;
 use crate::schema::primitives::{DiffCrossSpecArgs, DiffCrossSpecResult};
 
@@ -52,12 +52,16 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
             feature: args.feature.clone(),
         });
     }
-    let repository = Repository::discover(repo)?;
-    let root_prefix = format!("{}/", layout.specs_root);
-    let spec_prefix = format!("{}/{}/", layout.specs_root, args.feature);
-    let inbox_rel = format!("{}/inbox.md", layout.specs_root);
+    // A diff and history name every path from the git work tree, which is
+    // not the project root when the project sits in a subdirectory of its
+    // repository. Matched in git's names, reported in the project's.
+    let project = ProjectRepository::discover(repo)?;
+    let repository = &project.repository;
+    let root_prefix = project.to_git(&format!("{}/", layout.specs_root));
+    let spec_prefix = project.to_git(&format!("{}/{}/", layout.specs_root, args.feature));
+    let inbox_rel = project.to_git(&format!("{}/inbox.md", layout.specs_root));
 
-    let Some(first_commit) = first_commit_for_prefix(&repository, &spec_prefix)? else {
+    let Some(first_commit) = first_commit_for_prefix(repository, &spec_prefix)? else {
         return Ok(DiffCrossSpecResult {
             first_commit: String::new(),
             current_head: String::new(),
@@ -79,7 +83,7 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
     // One diff, first-commit tree → working tree, scoped to the spec root.
     // Untracked files (a brand-new sibling scenario) must surface too.
     let mut opts = DiffOptions::new();
-    opts.pathspec(&layout.specs_root)
+    opts.pathspec(project.to_git(&layout.specs_root))
         .include_untracked(true)
         .recurse_untracked_dirs(true);
     let diff = repository.diff_tree_to_workdir_with_index(Some(&first_tree), Some(&mut opts))?;
@@ -93,9 +97,15 @@ pub fn run(args: &DiffCrossSpecArgs, repo: &Path) -> Result<DiffCrossSpecResult>
             {
                 let s = path.to_string_lossy().replace('\\', "/");
                 // Belt and braces over the pathspec: keep spec-root paths
-                // only, and drop the feature's own dir and the inbox.
-                if s.starts_with(&root_prefix) && !s.starts_with(&spec_prefix) && s != inbox_rel {
-                    cross_spec.insert(s);
+                // only, and drop the feature's own dir and the inbox. A path
+                // under the spec root is inside the project, so `to_project`
+                // names every one that survives.
+                if s.starts_with(&root_prefix)
+                    && !s.starts_with(&spec_prefix)
+                    && s != inbox_rel
+                    && let Some(inside) = project.to_project(&s)
+                {
+                    cross_spec.insert(inside.to_string());
                 }
             }
             true
@@ -204,6 +214,51 @@ mod tests {
         );
         assert!(!result.first_commit.is_empty());
         assert!(!result.current_head.is_empty());
+    }
+
+    /// A project in a subdirectory of its repository, beside another project
+    /// whose spec changes in the same window. History and the diff name
+    /// every path from the work tree, so asked by the path from the project
+    /// root there was no first commit and the impact read as unknown; the
+    /// window is found, reported from the project root, and the other
+    /// project's spec is not this one's impact (spec 059).
+    #[test]
+    fn a_subdirectory_project_reports_its_own_siblings_from_its_root() {
+        use crate::primitives::git_fixture;
+        let tmp = tempfile::tempdir().unwrap();
+        let (repo, project) = git_fixture::subdirectory_project(tmp.path());
+        let other = tmp.path().join("other");
+        write(
+            &project.join("specs/007-sibling/spec.md"),
+            "---\nstatus: done\n---\n\n# 007\n",
+        );
+        write(
+            &other.join("specs/007-sibling/spec.md"),
+            "---\nstatus: done\n---\n\n# other 007\n",
+        );
+        git_fixture::commit_all(&repo, "chore: init");
+        write(
+            &project.join("specs/020-demo/spec.md"),
+            "---\nstatus: planned\n---\n\n# 020\n",
+        );
+        let first = git_fixture::commit_all(&repo, "feat(020): plan");
+        write(
+            &project.join("specs/007-sibling/spec.md"),
+            "---\nstatus: done\n---\n\n# 007\n\nNew criterion.\n",
+        );
+        write(
+            &other.join("specs/007-sibling/spec.md"),
+            "---\nstatus: done\n---\n\n# other 007\n\nChanged.\n",
+        );
+        git_fixture::commit_all(&repo, "feat(020): implement");
+
+        let result = run(&args("020-demo"), &project).unwrap();
+        assert_eq!(result.first_commit, first.to_string());
+        assert_eq!(result.guidance, None);
+        assert_eq!(
+            result.cross_spec_paths,
+            vec!["specs/007-sibling/spec.md".to_string()]
+        );
     }
 
     #[test]

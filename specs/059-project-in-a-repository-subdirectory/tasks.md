@@ -27,9 +27,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 4. `diff-cross-spec` and `derive-boundary` (AC3)
 
-- [ ] `diff_cross_spec.rs`: open through the helper; `to_git` on `spec_prefix`, `root_prefix`, `inbox_rel`, and the pathspec; `to_project` on every reported path, dropping those outside the project
-- [ ] `derive_boundary.rs`: open through the helper; `to_git` on `spec_prefix`; `to_project` on every changed path before `zone_glob`, dropping those outside the project; the spec glob and guidance stay project-relative
-- [ ] Tests, each in a subdirectory project with a sibling project changed in the same window: the first spec-directory commit is found; every reported path is project-relative; the sibling project's paths are absent
+- [x] `diff_cross_spec.rs`: open through the helper; `to_git` on `spec_prefix`, `root_prefix`, `inbox_rel`, and the pathspec; `to_project` on every reported path, dropping those outside the project
+- [x] `derive_boundary.rs`: open through the helper; `to_git` on `spec_prefix`; `to_project` on every changed path before `zone_glob`, dropping those outside the project; the spec glob and guidance stay project-relative
+- [x] Tests, each in a subdirectory project with a sibling project changed in the same window: the first spec-directory commit is found; every reported path is project-relative; the sibling project's paths are absent
 
 - **Done when**: the tests pass for both primitives, and each fails with its conversion removed.
 
