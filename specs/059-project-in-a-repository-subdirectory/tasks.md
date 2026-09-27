@@ -107,11 +107,11 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 and 16 ar
 
 Operator-approved (2026-09-26, with the `cross-spec-impact:` declaration; confirmed 2026-09-27): this task writes to `specs/018-adopter-owned-pre-commit/`, outside 059's derived write boundary, and reopens 018 once.
 
-- [ ] Reopen `018-adopter-owned-pre-commit` (`done → in-progress`) through the status primitive
-- [ ] Replace its embedded outer stub (`spec.md:30-44`) with a pointer to `framework/bootstrap/hooks/pre-commit`; replace the ladder (`:52-61`) and snippet (`:63-75`) with pointers to `framework/bootstrap/ductus-procedure.md` §Hook Installation; add a signpost that links back to 059 with a relative markdown link in the body (the gate's discharge test), not under `## See also`
-- [ ] Repoint every other `framework/bootstrap/ductus.md` §Hook Installation reference in 018's `spec.md` (the ladder's lead-in, §Affected Surfaces, and AC5, AC6, AC7, AC12) to `framework/bootstrap/ductus-procedure.md`, where 056 moved the section and its migration subsection; §Shared Files still lives in `ductus.md`
-- [ ] Read 018's ticked criteria against the new behavior and annotate, rather than rewrite, each one 059 supersedes for a subdirectory project: AC6's snippet path and AC9's and AC12's `core.hooksPath .githooks` still hold at the repository root, and 059's AC9 governs a subdirectory
-- [ ] With 018 targeted, run `/ductus:review` and `/ductus:analyze`, then `/ductus:implement`'s completion gate, which returns 018 to `done`; target 059 again afterwards
+- [x] Reopen `018-adopter-owned-pre-commit` (`done → in-progress`) through the status primitive
+- [x] Replace its embedded outer stub (`spec.md:30-44`) with a pointer to `framework/bootstrap/hooks/pre-commit`; replace the ladder (`:52-61`) and snippet (`:63-75`) with pointers to `framework/bootstrap/ductus-procedure.md` §Hook Installation; add a signpost that links back to 059 with a relative markdown link in the body (the gate's discharge test), not under `## See also`
+- [x] Repoint every other `framework/bootstrap/ductus.md` §Hook Installation reference in 018's `spec.md` (the ladder's lead-in, §Affected Surfaces, and AC5, AC6, AC7, AC12) to `framework/bootstrap/ductus-procedure.md`, where 056 moved the section and its migration subsection; §Shared Files still lives in `ductus.md`
+- [x] Read 018's ticked criteria against the new behavior and annotate, rather than rewrite, each one 059 supersedes for a subdirectory project: AC6's snippet path and AC9's and AC12's `core.hooksPath .githooks` still hold at the repository root, and 059's AC9 governs a subdirectory
+- [x] With 018 targeted, run `/ductus:review` and `/ductus:analyze`, then `/ductus:implement`'s completion gate, which returns 018 to `done`; target 059 again afterwards
 
 - **Done when**: 018 is `done`, its body links to 059, and `check-review-gate` on 059 reports the impact discharged.
 
