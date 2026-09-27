@@ -27,3 +27,5 @@
         `- [ ] {Brief description of the issue and any relevant context}`
 
      When an item is migrated, remove it from this list. -->
+
+- [ ] Updates should pull from the latest release tag instead of main, so an adopter can no longer update onto a breaking work-in-progress commit on main. `/ductus`: default source is the latest tag; its first parameter overrides the source to `main`, and it should also accept a specific tag. The install script gets the same options, also defaulting to the latest tag.
