@@ -30,8 +30,11 @@ pub struct AssessSpecQualityRule {
     pub id: String,
     /// Verification phrase from the rule's definition.
     pub verification: String,
-    /// Obligation level of the rule being assessed. `Unspecified` (the empty
-    /// string on the wire) is the state where the step prose named no tier.
+    /// Obligation level of the rule being assessed: the tier its Statement's
+    /// RFC 2119 keyword states, never the asking step's (spec 060). The exec
+    /// walker sends only MUST- and SHOULD-tier rules; `Unspecified` (the
+    /// empty string on the wire) is what a request built with no rule
+    /// supplied carries.
     pub severity: RuleSeverity,
 }
 

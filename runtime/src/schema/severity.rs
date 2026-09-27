@@ -130,10 +130,10 @@ impl AnalyzeSeverity {
 /// level of the *rule* being assessed, not of a finding against it.
 ///
 /// [`Unspecified`](Self::Unspecified) is the fourth state and serializes to
-/// the empty string, preserving the wire shape `severity_from_step_prose`
-/// has always produced when a step's prose names no tier. It is a named
-/// state rather than an absent one precisely so it cannot be confused with a
-/// tier that failed to parse.
+/// the empty string: what `severity_from_step_prose` returns for a step
+/// whose prose names no tier, and what a request built with no rule supplied
+/// carries. It is a named state rather than an absent one precisely so it
+/// cannot be confused with a tier that failed to parse.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum RuleSeverity {
@@ -143,7 +143,7 @@ pub enum RuleSeverity {
     Should,
     /// INFO-tier rule.
     Info,
-    /// The step prose named no tier.
+    /// No tier: a step's prose named none, or no rule was supplied.
     #[default]
     #[serde(rename = "")]
     Unspecified,
