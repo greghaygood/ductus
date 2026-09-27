@@ -1118,8 +1118,12 @@ fn load_plan_relevant_files(
     // per-path `Repository::discover` re-walked the filesystem for every
     // Affected Files entry. A directory that is not a git repo (discover
     // fails) yields no repository, and every path is treated as not-ignored
-    // — the same degradation the per-path form gave.
-    let git_repo = git2::Repository::discover(&canon_repo).ok();
+    // — the same degradation the per-path form gave. Git reads ignore rules
+    // by the path from the work tree, which is not the project root when the
+    // project sits in a subdirectory of its repository: asked by the
+    // project-relative path, the project's own `.gitignore` never applied,
+    // and a root pattern could refuse a path it does not name (spec 059).
+    let git_repo = crate::primitives::ProjectRepository::discover(&canon_repo).ok();
     let mut out = Vec::new();
     for rel in paths {
         if let Some(pattern) = secret_pattern(&rel) {
@@ -1128,8 +1132,8 @@ fn load_plan_relevant_files(
                 pattern: pattern.into(),
             });
         }
-        if let Some(repository) = git_repo.as_ref()
-            && is_gitignored(repository, &rel)
+        if let Some(project) = git_repo.as_ref()
+            && is_gitignored(&project.repository, &project.to_git(&rel))
         {
             return Err(PayloadError::SecretExfiltration {
                 path: rel,
@@ -1449,12 +1453,13 @@ fn secret_pattern(path: &str) -> Option<&'static str> {
     None
 }
 
-/// Ask libgit2 whether `path` is gitignored from `repository`'s perspective.
-/// Returns `false` when libgit2 errors — the secret-pattern check above is
-/// the floor; gitignore is an opt-in second layer. The caller hoists
-/// `Repository::discover` above the Affected Files loop (BE-QUERY-001) and
-/// only calls this when discovery succeeded, so a directory that is not a
-/// git repo skips the query entirely and every path stays not-ignored.
+/// Ask libgit2 whether `path`, named from the work tree, is gitignored from
+/// `repository`'s perspective. Returns `false` when libgit2 errors — the
+/// secret-pattern check above is the floor; gitignore is an opt-in second
+/// layer. The caller hoists `ProjectRepository::discover` above the Affected
+/// Files loop (BE-QUERY-001) and only calls this when discovery succeeded,
+/// so a directory that is not a git repo skips the query entirely and every
+/// path stays not-ignored.
 fn is_gitignored(repository: &git2::Repository, path: &str) -> bool {
     repository
         .status_should_ignore(Path::new(path))
@@ -1768,6 +1773,90 @@ mod tests {
             PayloadError::SecretExfiltration { path, pattern } => {
                 assert_eq!(path, "secret-config.toml");
                 assert_eq!(pattern, ".gitignore");
+            }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
+        }
+    }
+
+    /// A project at `root/proj`, in a subdirectory of its repository, whose
+    /// feature `123-foo` plans `entry` as its one affected file. Returns the
+    /// project root.
+    fn subdirectory_plan(root: &Path, entry: &str) -> PathBuf {
+        let (_, project) = crate::primitives::git_fixture::subdirectory_project(root);
+        let feature_dir = project.join("specs/123-foo");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(
+            feature_dir.join("plan.md"),
+            format!(
+                "## Affected Files\n\n\
+                 | File | Action |\n| --- | --- |\n\
+                 | `{entry}` | Edit |\n"
+            ),
+        )
+        .unwrap();
+        project
+    }
+
+    /// A project in a subdirectory of its repository plans a file its own
+    /// `.gitignore` ignores through an anchored pattern, under a name no
+    /// secret pattern matches. Git reads ignore rules by the path from the
+    /// work tree, so asked by the project-relative path the project's
+    /// `.gitignore` never applied and the file went into the payload
+    /// (spec 059).
+    #[test]
+    fn a_subdirectory_projects_own_gitignore_refuses_its_file() {
+        let tmp = tempdir().unwrap();
+        let project = subdirectory_plan(tmp.path(), "config/local.toml");
+        fs::write(project.join(".gitignore"), "/config/local.toml\n").unwrap();
+        fs::create_dir_all(project.join("config")).unwrap();
+        fs::write(project.join("config/local.toml"), "token=value").unwrap();
+        assert_eq!(secret_pattern("config/local.toml"), None);
+
+        let err = load_plan_relevant_files("123-foo", &project).unwrap_err();
+        match err {
+            PayloadError::SecretExfiltration { path, pattern } => {
+                assert_eq!(path, "config/local.toml");
+                assert_eq!(pattern, ".gitignore");
+            }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
+        }
+    }
+
+    #[test]
+    fn a_root_pattern_does_not_refuse_a_subdirectory_file_it_does_not_name() {
+        // `/config/` ignores the work tree's own `config/`, not the project's.
+        // Read from the work tree's root, the project-relative path matched
+        // it and a file git tracks was refused.
+        let tmp = tempdir().unwrap();
+        let project = subdirectory_plan(tmp.path(), "config/app.toml");
+        fs::write(tmp.path().join(".gitignore"), "/config/\n").unwrap();
+        fs::create_dir_all(project.join("config")).unwrap();
+        fs::write(project.join("config/app.toml"), "name=app").unwrap();
+
+        let files = load_plan_relevant_files("123-foo", &project).unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "config/app.toml");
+    }
+
+    /// Converting the path for git must not open a way out of the project.
+    /// Which layer refuses it is libgit2's call rather than this module's: it
+    /// answers "ignored" for any path containing `..`, so inside a git
+    /// repository the gitignore layer refuses before the containment check
+    /// can, as it already did at the work tree's root.
+    #[test]
+    fn a_subdirectory_plan_path_escaping_the_project_is_still_refused() {
+        let tmp = tempdir().unwrap();
+        let project = subdirectory_plan(tmp.path(), "../outside.txt");
+        fs::write(tmp.path().join("outside.txt"), "leaked").unwrap();
+
+        let err = load_plan_relevant_files("123-foo", &project).unwrap_err();
+        match err {
+            PayloadError::SecretExfiltration { path, .. } => {
+                assert_eq!(path, "../outside.txt");
             }
             other @ PayloadError::UnknownExtension { .. } => {
                 panic!("expected SecretExfiltration, got {other:?}")

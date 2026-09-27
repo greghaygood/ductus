@@ -35,10 +35,10 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 5. Exec payload gitignore guard (AC5)
 
-- [ ] `payload.rs:1122`: open through the helper; `is_gitignored` asks about `to_git(rel)`
-- [ ] Test: a file the project's own `.gitignore` ignores through an anchored pattern, under a name the basename secret check does not catch, is refused with the `.gitignore` pattern
-- [ ] Test: a project file that a pattern anchored at the work-tree root would match if the path were read from the root is not refused
-- [ ] Test: a plan path escaping the project is still refused as out-of-repo
+- [x] `payload.rs:1122`: open through the helper; `is_gitignored` asks about `to_git(rel)`
+- [x] Test: a file the project's own `.gitignore` ignores through an anchored pattern, under a name the basename secret check does not catch, is refused with the `.gitignore` pattern
+- [x] Test: a project file that a pattern anchored at the work-tree root would match if the path were read from the root is not refused
+- [x] Test: a plan path escaping the project is still refused (inside a git repository libgit2 answers "ignored" for a `..` path, so the label is `.gitignore`; see the disposition task below)
 
 - **Done when**: all three pass, and the first two fail with `to_git` removed.
 
@@ -119,3 +119,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 - [ ] Run audit Family 20
 
 - **Done when**: Family 20 passes and the changelog section names every runtime change. The tag is cut after 059 and 018 are `done`.
+
+## 16. Disposition out-of-spec finding: an escaping plan path in a git repository is refused under the `.gitignore` label, not `out-of-repo`
+
+- [ ] `runtime/src/interpreter/payload.rs` — libgit2's `status_should_ignore` answers `true` for a path containing `..`, so in any git repository an Affected Files entry such as `../outside.txt` is refused by the gitignore layer and labelled `.gitignore` before the containment check can label it `out-of-repo`. The refusal holds; only the label misleads. Measured at the repository root before 059's change (probe: `should_ignore("../outside.txt") = Ok(true)`), so it predates 059 and is not about subdirectory projects. The existing escape tests run outside a git repository, where the label is `out-of-repo`.
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.

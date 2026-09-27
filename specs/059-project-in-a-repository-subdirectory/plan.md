@@ -72,7 +72,7 @@ The prefix is built exactly as `compute_review_scope`'s private `history_prefix`
 
 `find_in_progress_commit` and `first_commit_for_prefix` are unchanged. They already take a git path, and `compute_review_scope` already hands the first one a prefixed path (`compute_review_scope.rs:59-60`). `derive-boundary`'s spec glob and guidance stay project-relative, because the boundary is enforced against project paths.
 
-A plan path that escapes the project (`../x`) becomes `proj/../x` under `to_git`. libgit2 then either answers or errors, and an error reads as not ignored (`payload.rs:1458-1462`). `classify_contained` still refuses the path as out-of-repo (`payload.rs:1139-1153`). The gitignore guard is one layer of three, and the order of the layers is unchanged.
+A plan path that escapes the project (`../x`) becomes `proj/../x` under `to_git`. libgit2 answers "ignored" for any path containing `..`, so inside a git repository the gitignore layer refuses it, labelled `.gitignore`. That was already true at the work tree's root before this change: a probe there returned `should_ignore("../outside.txt") = Ok(true)`. Outside a repository, `classify_contained` refuses it as out-of-repo (`payload.rs:1139-1153`). Either way it is refused, and the order of the three layers is unchanged. The misleading label predates 059 and is recorded as a disposition task.
 
 ### `check-corpus-links` names the reason it could not run
 
