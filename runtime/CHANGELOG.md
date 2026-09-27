@@ -22,6 +22,11 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
   under the new could-not-be-read reason `rule-file-unreadable`. One
   rule-section parser (`runtime/src/primitives/rule_sections.rs`), sharing
   `check-rule-ids`' heading grammar, replaces the walker's two. Spec 060.
+- **A failed assessment whose finding named `info` or the empty tier counted
+  in no tier.** Validation accepts both, and the tally took the finding's
+  tier first, so such a failure left the record reading as though the rule
+  had passed. It now counts in the asked rule's tier unless the finding
+  names MUST or SHOULD. Spec 060.
 - **`ductus exec clarify` asked only the first open question.** Clarify step
   6 promises one `askClarifyQuestion` round trip per question; the walker
   sent one per step and the builder fell back to the first. The step now
