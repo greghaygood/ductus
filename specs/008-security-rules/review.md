@@ -1,48 +1,40 @@
 ---
 spec: 008-security-rules
-scenario: a-statement-carries-one-obligation-keyword
-last-run: 2026-09-27T21:19:32Z
-reviewed-against: aaabeac83d5010822a76b2763332a6dcf54ec358
-diff-base: f0b59a9eba1f17dbe584c25734e4728490c163f2
+scenario: x-frame-options-carries-one-strength
+last-run: 2026-09-27T21:41:10Z
+reviewed-against: e13765301207955bb901ba321d899fcfa9b391ad
+diff-base: f76b222737b0c53d2a638e3aa5578f0574988475
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 18
-scope: 23
+examined: 5
+scope: 9
 skipped-passes: []
 reviewed-digest:
   data-model.md: 4ab1f01634418baee8b7f06d1348ceacbfff8b665703782bfcb408ecb3cf89bb
-  scenarios/a-statement-carries-one-obligation-keyword.md: 30253c5d9973feb19132ecd42268a2c53268b1361c90574bd766adfa522ed0ca
-  scenarios/x-frame-options-carries-one-strength.md: a8563493f3d5c96be5fc64563421da861a4bd22cfaeb8ef13488ddafe2197940
+  scenarios/a-statement-carries-one-obligation-keyword.md: 346b88a803f48662192dda28a853aa0d8bd879e1d2b4108f9a3a08f2bb81ecc2
+  scenarios/x-frame-options-carries-one-strength.md: 8cf5c99537d8f9cf81233184b4b13d76f7c3bc66a0ce96f0effb075572e53fc4
 blocking: false
 dispositions:
-  fixed: 5
-  routed: 1
+  fixed: 1
+  routed: 0
   discarded: 0
   undispositioned: 0
-decisions:
-  - key: "bug: BE-API-001 lists X-Frame-Options among its minimum-required headers at MUST tier while FE-CSP-008 states it as SHOULD — `framework/rules/security-backend.md`"
-    outcome: routed
-    target: specs/008-security-rules/scenarios/x-frame-options-carries-one-strength.md
-    decided-at: 2026-09-27T21:19:32Z
-    decided-by: andy@stone.dev
 ---
 
 # Review — 008-security-rules
 
 ## Summary
 
-Re-review for the reopen on scenario `a-statement-carries-one-obligation-keyword` (task 9) and the disposition task it produced (task 10). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers, no stored decisions. Six observations: five fixed in the run, one routed.
+Re-review for task 11, scenario `x-frame-options-carries-one-strength`, the route the previous review (f76b2227) made. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers. One observation, fixed in the run. The previous review's one stored decision, the X-Frame-Options route, expired because its finding no longer fires.
 
-**What changed.** 14 of the 16 rule Statements carrying both MUST- and SHOULD-tier keywords were split into a MUST rule under the existing ID and a SHOULD rule under a new one: `BE-ERRENV-003`, `BE-PAGE-003`, `FE-LOAD-003`, `FE-LOAD-004`, `FE-FONT-003`, `BE-AUTHN-015`, `BE-AUTHN-016`, `BE-AUTHN-017`, `BE-ERR-004`, `BE-LOG-007`, `FE-XSS-009`, `FE-STORAGE-004`, `FE-CSP-008` and `FE-PII-004`. `BE-DEPS-001` and `FE-CSP-001` dropped a SHOULD clause their own MUST already implied. The format states the invariant in tier terms, with MAY as a tierless permission and without "one sentence", in 008's, 017's and 036's data models and the constitution's §rules summary. The runtime gained the corpus test `no_shipped_statement_mixes_tiers`, and `runtime.yml` now triggers on `framework/rules/**`.
+**What changed.** `X-Frame-Options` is a SHOULD in both security rule files. `BE-API-001`'s minimum-required header table no longer lists it, and its Rationale points at the new `BE-API-012`. `BE-API-012` (SHOULD) mirrors `FE-CSP-008` for a backend that serves HTML without loading the frontend rules, and `FE-CSP-008` names it. That makes 207 shipped rules, none mixing tiers, with every citation in both files resolving (`check-rule-ids`, 0 missing) and the rule-section corpus tests green.
 
-**Base.** `diff-base` f0b59a9e, 060's `done` commit, passed with `--since` in place of the derived base f1fe19b1, the parent of 008's reopen commit 05f42d3a. 008 was reopened during 060's clarify, so the derived window held 060's whole implementation: 36 commits and 52 files, 30 of them covered by 060's review fd960cb1 and 022's reviews dba5175f and 5715ed7b. The narrowed window holds every 008 commit except the reopen itself, whose three files later commits modify again.
+**Base.** `diff-base` f76b2227, the previous review's commit, passed with `--since`. That review recorded 0 MUST and 0 SHOULD over 23 files from base f0b59a9e, 18 of them read in full, and everything outside this delta is unchanged since. The derived base, the parent of 008's reopen commit, would re-cover the same 52-file window that review narrowed for the reason its Summary gives.
 
-**Scope.** 23 in scope, examined 18, each read in full: the four edited rule files, `runtime/src/primitives/rule_sections.rs`, `.github/workflows/runtime.yml`, `framework/constitution.md` (read in full this session, one line changed since), 008's `data-model.md`, `research.md`, `spec.md`, `tasks.md` and both scenarios, 017's and 036's `spec.md` and `data-model.md`, and 050's new scenario. The five not counted: `AGENTS.md`, whose only change in the window is one project-only gotcha line from 9e4a0880, which was read; `framework/bootstrap/ductus.md` and `framework/commands/analyze.md`, this spec's historical Affected Files, unchanged in the window; 050's `spec.md`, whose only change is its status line, read as a diff; and 050's `tasks.md`, of which lines 180–233, holding the appended task 25, were read.
+**Scope.** 9 in scope, examined 5: the five files changed since the base. For each, this review read its whole change since f76b2227 in context. All five were also read in full earlier the same session: the X-Frame-Options scenario while it was clarified, and the other four by f76b2227's review. The four not counted are plan-listed Affected Files with no change since the base: `framework/constitution.md` and `specs/008-security-rules/data-model.md`, both read in full by f76b2227's review, and `framework/bootstrap/ductus.md` and `framework/commands/analyze.md`, not read.
 
-**Passes.** Loaded: api-backend, concurrency-backend, configuration-cross, observability-backend, performance-backend, quality-cross, reliability-backend, security-backend. Security and efficiency found nothing: the code in scope is one test module and a CI trigger list. Quality: every rule parses with a Verification and one tier, and every citation of the 16 IDs resolves (`check-rule-ids`, 0 missing). The full runtime suite passed at 767b5b89, and the rule-section tests, fmt and clippy passed again after the `tokens()` refactor. Reuse produced one observation, fixed. Simplicity found nothing.
-
-**Observations.** Five were fixed with confirmation, in dccec94f and aaabeac8. The second commit corrected a line citation the first had made stale. One was routed: `BE-API-001` lists `X-Frame-Options` as minimum-required at MUST tier while `FE-CSP-008` states it as SHOULD. The disagreement predates the split. It is now scenario `x-frame-options-carries-one-strength`, with an open question, and task 11.
+**Passes.** Loaded: api-backend, concurrency-backend, configuration-cross, observability-backend, performance-backend, quality-cross, reliability-backend, security-backend. Security and efficiency found nothing: the change is rule prose. Quality: `BE-API-012` parses SHOULD-tier with a Verification, and `BE-API-001`'s Statement still asks for "frame protection", which its CSP `frame-ancestors` row provides. A sweep for claims task 11 falsified found one, fixed in e1376530. Reuse: `BE-API-012` restates `FE-CSP-008` deliberately, as `BE-AUTHN-014` does `FE-STORAGE-002`, and says so in its Rationale, so it is not an observation. Simplicity found nothing.
 
 ## MUST violations (blocking)
 
@@ -62,12 +54,7 @@ Re-review for the reopen on scenario `a-statement-carries-one-obligation-keyword
 
 ## Observations
 
-- convention: the keyword scenario's Q2 resolution named the tier check as part of every_shipped_rule_is_assessable, which was built as no_shipped_statement_mixes_tiers, and cited rule_sections.rs lines that had moved — `specs/008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md` — **fixed**
-- convention: the keyword scenario's Context described the pre-split state in the present tense, which the split made false — `specs/008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md` — **fixed**
-- convention: spec.md's RFC 2119 keyword enumeration omitted MAY, which the rule format now permits as a tierless permission — `specs/008-security-rules/spec.md` — **fixed**
-- convention: runtime.yml's header said framework edits stay off the workflow, while its command-file and rule-file paths trigger it — `.github/workflows/runtime.yml` — **fixed**
-- reuse: the corpus check's mixes_tiers re-implemented RuleSection::tier's tokenization, so the two could drift — `runtime/src/primitives/rule_sections.rs` — **fixed**
-- bug: BE-API-001 lists X-Frame-Options among its minimum-required headers at MUST tier while FE-CSP-008 states it as SHOULD — `framework/rules/security-backend.md` — **routed** to `specs/008-security-rules/scenarios/x-frame-options-carries-one-strength.md`
+- convention: the keyword scenario's Q1 measured cost said the two SHOULD-half citations are re-pointed to the new ID, which task 11 made false for the security-backend one — `specs/008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md` — **fixed**
 
 ## Skipped passes
 
