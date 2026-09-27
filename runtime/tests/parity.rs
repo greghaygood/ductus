@@ -417,7 +417,8 @@ fn exec_analyze_on_a_written_session(prepare: impl FnOnce(&Path)) -> (tempfile::
 /// `paths`, and a `key=value` argument cannot supply a list, so exec analyze
 /// derives both: the walk completes, assesses the fixture's rule from the
 /// derived rule file against the spec the session's directory names, and
-/// records the run.
+/// records the run. The rule's Statement is MUST-tier, so it is asked about
+/// once, at step 11, and its verdict counts once (spec 060, AC4).
 #[test]
 fn analyze_completes_on_the_session_write_session_writes() {
     let (staged, stdout) = exec_analyze_on_a_written_session(|_| {});
@@ -426,15 +427,17 @@ fn analyze_completes_on_the_session_write_session_writes() {
         .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
         .filter(|envelope| envelope["type"] == "llm-request")
         .collect();
-    assert_eq!(requests.len(), 2, "{stdout}");
-    for request in &requests {
-        assert_eq!(request["request"]["spec-path"], "specs/003-analyze/spec.md");
-        assert_eq!(request["request"]["rule"]["id"], "CFG-CONST-001");
-    }
+    assert_eq!(requests.len(), 1, "{stdout}");
+    assert_eq!(
+        requests[0]["request"]["spec-path"],
+        "specs/003-analyze/spec.md"
+    );
+    assert_eq!(requests[0]["request"]["rule"]["id"], "CFG-CONST-001");
+    assert_eq!(requests[0]["request"]["rule"]["severity"], "must");
     let analysis = fs::read_to_string(staged.path().join("specs/003-analyze/analysis.md")).unwrap();
-    // The fixture's two scripted assessments: a MUST and a SHOULD.
+    // The fixture's one scripted MUST verdict, counted once.
     assert!(analysis.contains("\nblocking-findings: 1\n"), "{analysis}");
-    assert!(analysis.contains("\nadvisory: 1\n"), "{analysis}");
+    assert!(analysis.contains("\nadvisory: 0\n"), "{analysis}");
     assert!(
         !analysis.contains("rule-citations-not-checked"),
         "{analysis}"
@@ -443,10 +446,9 @@ fn analyze_completes_on_the_session_write_session_writes() {
 
 /// With no rule-file directory the derived list is empty, so nothing is
 /// checked against a rule: step 5 records the spec's citation unexamined, not
-/// missing, and steps 11 and 12 ask about no rule, so the fixture's scripted
-/// MUST and SHOULD verdicts count in no tier and both steps are recorded
-/// unexamined. No finding is raised against a spec nothing was checked
-/// against.
+/// missing, and steps 11 and 12 send no request, so the fixture's scripted
+/// verdict is never read and each step is recorded unexamined. No finding is
+/// raised against a spec nothing was checked against.
 #[test]
 fn analyze_with_no_rule_directory_records_its_citations_unexamined() {
     let (staged, _) = exec_analyze_on_a_written_session(|root| {

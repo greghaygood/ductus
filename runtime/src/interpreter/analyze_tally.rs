@@ -47,7 +47,7 @@ pub(crate) struct AnalyzeTally {
     advisory: u32,
     /// What the walk did not examine, by reason: the host detection it never
     /// runs, the targets its detection steps report they could not reach, and
-    /// the assessments it asked about no rule.
+    /// the loaded rules steps 11 and 12 did not ask the host about.
     unexamined: BTreeMap<String, u32>,
 }
 
@@ -148,49 +148,47 @@ impl AnalyzeTally {
         }
     }
 
-    /// What an `assessSpecQuality` request asks the host about, read before
-    /// the request is handed off, for [`Self::record_assessment`].
-    pub(crate) fn assessed(request: &Value) -> Assessed {
-        let verification = request
-            .pointer("/rule/verification")
-            .and_then(Value::as_str)
-            .unwrap_or_default();
-        if verification.trim().is_empty() {
-            Assessed::Nothing
-        } else {
-            Assessed::Rule(rule_tier(request, "/rule/severity"))
-        }
-    }
-
     /// Steps 11 and 12: a failed `assessSpecQuality` assessment joins the
     /// blocking tier for a MUST rule and the advisory tier for a SHOULD rule.
+    /// A rule whose trigger does not fire is answered `passed: true` and
+    /// counts in no tier.
     ///
     /// The tier is the finding's own when the host returned one, and
-    /// otherwise the tier of the rule the walker put in the request: a
-    /// failure the host reported without a finding still failed, and
-    /// dropping it would record the rule as passed. Either is read through
-    /// [`RuleSeverity`], case-insensitively, as validation accepts it. An
-    /// INFO rule has no analyze tier to join, and an unspecified one comes
-    /// from a step naming no tier, which steps 11 and 12 never are.
-    ///
-    /// A request that asked about no rule ([`Assessed::Nothing`]) examined
-    /// nothing, so the step is recorded unexamined whatever the host
-    /// answered. Counting its verdict would raise a finding against a spec
-    /// nothing was checked against, the reasoning step 5 applies to a
-    /// citation checked against no rule file.
-    pub(crate) fn record_assessment(&mut self, assessed: Assessed, response: &Value) {
-        let Assessed::Rule(assessed) = assessed else {
-            self.record_unexamined("rule-assessments-not-checked", 1);
-            return;
-        };
+    /// otherwise `asked`, the tier of the rule the walker asked about, which
+    /// its Statement states (spec 060): a failure the host reported without a
+    /// finding still failed, and dropping it would record the rule as passed.
+    /// The finding's tier comes first so a rule carrying both keywords, asked
+    /// as MUST-tier, can still fail advisory on its SHOULD clause alone. It
+    /// is read through [`RuleSeverity`], case-insensitively, as validation
+    /// accepts it. An INFO or unspecified tier has no analyze tier to join.
+    pub(crate) fn record_assessment(&mut self, asked: RuleSeverity, response: &Value) {
         if response.get("passed") == Some(&Value::Bool(true)) {
             return;
         }
-        match rule_tier(response, "/finding/severity").or(assessed) {
-            Some(RuleSeverity::Must) => self.blocking += 1,
-            Some(RuleSeverity::Should) => self.advisory += 1,
-            Some(RuleSeverity::Info | RuleSeverity::Unspecified) | None => {}
+        match rule_tier(response, "/finding/severity").unwrap_or(asked) {
+            RuleSeverity::Must => self.blocking += 1,
+            RuleSeverity::Should => self.advisory += 1,
+            RuleSeverity::Info | RuleSeverity::Unspecified => {}
         }
+    }
+
+    /// Record what loading the walk's rule set could not bring to an
+    /// assessment, once per walk rather than once per step, so a rule that
+    /// belongs to neither step's tier is not counted twice: each rule file it
+    /// could not read under `rule-file-unreadable`, and each rule with no
+    /// Verification or no RFC 2119 keyword under
+    /// `rule-assessments-not-checked`.
+    pub(crate) fn record_rule_set(&mut self, unreadable_files: u32, unassessable: u32) {
+        self.record_unexamined("rule-file-unreadable", unreadable_files);
+        self.record_unexamined("rule-assessments-not-checked", unassessable);
+    }
+
+    /// Record an assessment step that asked the host about no rule because it
+    /// had none it could: the walk loaded no rule at all, or the step's prose
+    /// names no MUST or SHOULD tier to select rules by. Either way the step
+    /// examined nothing, and its record must not read as clean.
+    pub(crate) fn record_step_asking_nothing(&mut self) {
+        self.record_unexamined("rule-assessments-not-checked", 1);
     }
 
     /// Bind the tally as `write-analysis`' tier arguments, over any the context
@@ -233,18 +231,6 @@ impl AnalyzeTally {
             }
         }
     }
-}
-
-/// What an `assessSpecQuality` request put to the host.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Assessed {
-    /// A rule with a Verification to assess the spec by, and the rule's tier
-    /// when the request names one.
-    Rule(Option<RuleSeverity>),
-    /// No rule with a Verification: the walker read no rule file, or none it
-    /// read carries one, so the request asks the host to assess the spec
-    /// against nothing.
-    Nothing,
 }
 
 /// The rule tier at `pointer` in an `assessSpecQuality` payload.
@@ -334,17 +320,14 @@ mod tests {
             &context,
         );
         tally.record_assessment(
-            Assessed::Rule(Some(RuleSeverity::Must)),
+            RuleSeverity::Must,
             &json!({ "passed": false, "finding": { "severity": "must" } }),
         );
         tally.record_assessment(
-            Assessed::Rule(Some(RuleSeverity::Should)),
+            RuleSeverity::Should,
             &json!({ "passed": false, "finding": { "severity": "should" } }),
         );
-        tally.record_assessment(
-            Assessed::Rule(Some(RuleSeverity::Must)),
-            &json!({ "passed": true }),
-        );
+        tally.record_assessment(RuleSeverity::Must, &json!({ "passed": true }));
 
         let bindings = bound(&tally);
         assert_eq!(bindings["hard-fail"], 1);
@@ -457,63 +440,72 @@ mod tests {
         );
     }
 
-    /// Validation accepts a capitalized tier, so the tally does too; and a
-    /// failed assessment with no finding counts in its rule's tier rather
-    /// than vanishing.
+    /// Validation accepts a capitalized tier, so the tally does too; a
+    /// finding counts in its own tier before the asked rule's, so a rule
+    /// carrying both keywords, asked as MUST-tier, fails advisory on its
+    /// SHOULD clause alone; and a failed assessment with no finding counts in
+    /// the asked rule's tier rather than vanishing.
     #[test]
     fn an_assessment_counts_whatever_its_case_and_with_or_without_a_finding() {
         let mut tally = AnalyzeTally::new();
         tally.record_assessment(
-            Assessed::Rule(None),
+            RuleSeverity::Should,
             &json!({ "passed": false, "finding": { "severity": "MUST" } }),
         );
         tally.record_assessment(
-            Assessed::Rule(None),
+            RuleSeverity::Must,
             &json!({ "passed": false, "finding": { "severity": "Should" } }),
         );
         let failed = json!({ "passed": false });
-        tally.record_assessment(Assessed::Rule(Some(RuleSeverity::Must)), &failed);
-        tally.record_assessment(Assessed::Rule(Some(RuleSeverity::Should)), &failed);
-        tally.record_assessment(Assessed::Rule(Some(RuleSeverity::Info)), &failed);
+        tally.record_assessment(RuleSeverity::Must, &failed);
+        tally.record_assessment(RuleSeverity::Should, &failed);
+        tally.record_assessment(RuleSeverity::Info, &failed);
         let bindings = bound(&tally);
         assert_eq!(bindings["blocking-findings"], 2);
         assert_eq!(bindings["advisory"], 2);
     }
 
-    /// A request assesses a rule only when it carries the rule's
-    /// Verification: with none resolved, the walker sends an empty rule, and
-    /// a rule id alone gives the host nothing to assess the spec by.
+    /// A rule whose trigger does not fire is answered `passed: true`: it was
+    /// examined and nothing was found, so it counts in no tier and is not
+    /// unexamined either.
     #[test]
-    fn the_assessed_rule_is_read_from_the_request() {
-        let request = json!({ "rule": { "id": "X-1", "verification": "v", "severity": "should" } });
-        assert_eq!(
-            AnalyzeTally::assessed(&request),
-            Assessed::Rule(Some(RuleSeverity::Should))
-        );
-        for rule in [
-            json!({ "id": "", "verification": "", "severity": "must" }),
-            json!({ "id": "X-1", "verification": "  ", "severity": "must" }),
-        ] {
-            assert_eq!(
-                AnalyzeTally::assessed(&json!({ "rule": rule })),
-                Assessed::Nothing,
-                "{rule}"
-            );
-        }
+    fn a_passed_assessment_counts_nowhere() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_assessment(RuleSeverity::Must, &json!({ "passed": true }));
+        tally.record_assessment(RuleSeverity::Should, &json!({ "passed": true }));
+        let bindings = bound(&tally);
+        assert_eq!(bindings["blocking-findings"], 0);
+        assert_eq!(bindings["advisory"], 0);
+        assert_eq!(bindings["unexamined-by-reason"], host_detection());
     }
 
-    /// An assessment of no rule examined nothing: whatever the host answers,
-    /// failed with a MUST finding or passed, it counts in no tier and the
-    /// step is recorded unexamined.
+    /// What loading the rule set could not bring to an assessment is recorded
+    /// under its reason, and a rule set with nothing missing adds no entry.
     #[test]
-    fn an_assessment_of_no_rule_is_unexamined_whatever_the_host_answers() {
+    fn a_rule_set_records_its_unreadable_files_and_unassessable_rules() {
         let mut tally = AnalyzeTally::new();
-        tally.record_assessment(
-            Assessed::Nothing,
-            &json!({ "passed": false, "finding": { "severity": "must" } }),
+        tally.record_rule_set(0, 0);
+        assert_eq!(bound(&tally)["unexamined-by-reason"], host_detection());
+        tally.record_rule_set(1, 2);
+        assert_eq!(
+            bound(&tally)["unexamined-by-reason"],
+            json!([
+                ["applicable-rules-not-checked", 1],
+                ["grounding-not-checked", 1],
+                ["references-not-checked", 1],
+                ["rule-assessments-not-checked", 2],
+                ["rule-file-unreadable", 1]
+            ])
         );
-        tally.record_assessment(Assessed::Nothing, &json!({ "passed": false }));
-        tally.record_assessment(Assessed::Nothing, &json!({ "passed": true }));
+    }
+
+    /// A step that asked about no rule examined nothing: it is recorded once,
+    /// and raises no finding.
+    #[test]
+    fn a_step_asking_nothing_is_recorded_unexamined() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_step_asking_nothing();
+        tally.record_step_asking_nothing();
         let bindings = bound(&tally);
         assert_eq!(bindings["blocking-findings"], 0);
         assert_eq!(bindings["advisory"], 0);
@@ -523,7 +515,7 @@ mod tests {
                 ["applicable-rules-not-checked", 1],
                 ["grounding-not-checked", 1],
                 ["references-not-checked", 1],
-                ["rule-assessments-not-checked", 3]
+                ["rule-assessments-not-checked", 2]
             ])
         );
     }

@@ -73,11 +73,13 @@ fn walks_a_procedure_exercising_every_step_kind() {
                 prose: "Invoke `read-spec` for the targeted feature.".into(),
                 location: loc(),
             },
-            // Step 3: extension point — host echoes back a response.
+            // Step 3: extension point — host echoes back a response. A
+            // single-request point; `assessSpecQuality` fans out per loaded
+            // rule and is exercised by the interpreter's own tests.
             Step::Extension {
                 number: StepNumber(vec![3]),
-                identifier: "assessSpecQuality".into(),
-                prose: "Ask the LLM to assess spec quality.".into(),
+                identifier: "askClarifyQuestion".into(),
+                prose: "Ask the user the open question.".into(),
                 location: loc(),
             },
             // Step 4: gate trigger via prose.
@@ -97,7 +99,7 @@ fn walks_a_procedure_exercising_every_step_kind() {
     // llm-response (request-id req-1) and one gate-response
     // (request-id req-2). Counter starts at 1 per Walker::fresh_request_id.
     let host_responses = "\
-        {\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"passed\":true}}\n\
+        {\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"answer\":\"yes\"}}\n\
         {\"type\":\"gate-response\",\"request-id\":\"req-2\",\"confirmed\":true}\n\
     ";
 
@@ -121,7 +123,7 @@ fn walks_a_procedure_exercising_every_step_kind() {
 
     // Expected sequence:
     //   progress(read-spec dispatch)           — step 2
-    //   llm-request(assessSpecQuality)         — step 3
+    //   llm-request(askClarifyQuestion)        — step 3
     //   progress(received llm-response)        — step 3
     //   gate-confirm(step-4)                   — step 4
     //   progress(gate confirmed)               — step 4
@@ -146,7 +148,7 @@ fn walks_a_procedure_exercising_every_step_kind() {
     // envelopes.
     assert_eq!(envelopes[0]["primitive"], "read-spec");
     assert_eq!(envelopes[0]["step"], "2");
-    assert_eq!(envelopes[1]["extension-point"], "assessSpecQuality");
+    assert_eq!(envelopes[1]["extension-point"], "askClarifyQuestion");
     assert_eq!(envelopes[1]["request-id"], "req-1");
     assert_eq!(envelopes[3]["request-id"], "req-2");
     assert_eq!(envelopes[3]["gate"], "step-4");
@@ -379,7 +381,7 @@ fn stray_and_malformed_stdin_lines_are_ignored_while_awaiting_llm_response() {
         command: "noise".into(),
         steps: vec![Step::Extension {
             number: StepNumber(vec![1]),
-            identifier: "assessSpecQuality".into(),
+            identifier: "askClarifyQuestion".into(),
             prose: String::new(),
             location: loc(),
         }],
@@ -391,8 +393,8 @@ fn stray_and_malformed_stdin_lines_are_ignored_while_awaiting_llm_response() {
         {\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n\
         this is not json\n\
         \n\
-        {\"type\":\"llm-response\",\"request-id\":\"req-0\",\"response\":{\"passed\":false}}\n\
-        {\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"passed\":true}}\n\
+        {\"type\":\"llm-response\",\"request-id\":\"req-0\",\"response\":{\"answer\":\"stale\"}}\n\
+        {\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"answer\":\"yes\"}}\n\
     ";
     let mut reader = Cursor::new(host_lines.to_string());
     let mut writer: Vec<u8> = Vec::new();
@@ -478,7 +480,7 @@ fn stdin_eof_while_awaiting_response_is_an_operational_error() {
         command: "eof".into(),
         steps: vec![Step::Extension {
             number: StepNumber(vec![1]),
-            identifier: "assessSpecQuality".into(),
+            identifier: "askClarifyQuestion".into(),
             prose: String::new(),
             location: loc(),
         }],

@@ -4,29 +4,29 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Rule-section parser (AC6)
 
-- [ ] Create `runtime/src/primitives/rule_sections.rs` with `RuleSection`, `parse_rule_sections`, and `RuleSection::tier`; register it `pub(crate)` in `runtime/src/primitives/mod.rs`
-- [ ] Move `heading_id_regex` from `runtime/src/primitives/check_rule_ids.rs` into the new module and import it back, leaving `check-rule-ids`' behavior unchanged
-- [ ] Unit tests: MUST alone, MUST NOT alone, SHOULD alone, SHOULD NOT alone, both keywords (MUST-tier), neither (no tier), lowercase "must" only (no tier), no Verification, an empty Verification, a Verification wrapped across lines, a `**Statement:**`-prefixed block quote, a deprecated section (parsed like any other), a category `##` heading that is not a rule, and a section ending at the next same-or-higher heading
-- [ ] Run the parser over `framework/rules/*.md` in a test and assert 192 sections, 167 MUST-tier, 25 SHOULD-tier, and every one carrying a Verification, so the clarification's measurement is pinned against the files
+- [x] Create `runtime/src/primitives/rule_sections.rs` with `RuleSection`, `parse_rule_sections`, and `RuleSection::tier`; register it `pub(crate)` in `runtime/src/primitives/mod.rs`
+- [x] Move `heading_id_regex` from `runtime/src/primitives/check_rule_ids.rs` into the new module and import it back, leaving `check-rule-ids`' behavior unchanged
+- [x] Unit tests: MUST alone, MUST NOT alone, SHOULD alone, SHOULD NOT alone, both keywords (MUST-tier), neither (no tier), lowercase "must" only (no tier), no Verification, an empty Verification, a Verification wrapped across lines, a `**Statement:**`-prefixed block quote, a deprecated section (parsed like any other), a category `##` heading that is not a rule, and a section ending at the next same-or-higher heading
+- [x] Run the parser over `framework/rules/*.md` in a test asserting that every rule heading parses into a section carrying a Verification and a tier; confirm once that it reproduces the clarification's measurement (192 sections, 167 MUST-tier, 25 SHOULD-tier), without pinning those counts in the test, since they change whenever a rule is added or split
 
-- **Done when**: the parser tests pass, `check_rule_ids` tests pass unchanged, and the corpus test reports 167 and 25.
+- **Done when**: the parser tests pass, `check_rule_ids` tests pass unchanged, and the parser reproduces the clarification's 167 and 25.
 
 ## 2. Walker asks about each rule once, in its own tier (AC1, AC2, AC5, AC7)
 
-- [ ] Write the tests first and see them fail against the current walker: rewrite `an_exec_analyze_records_the_assessments_it_receives` (`runtime/src/interpreter/mod.rs:1397`) as the multi-rule test the plan describes (MUST, SHOULD, mixed, keyword-less, and Verification-less rules plus one unreadable `rule-files` path), and add a test that a malformed response partway through the loop writes no `analysis.md`
-- [ ] Add the lazy rule-set load to `Walker`, recording unreadable files under `rule-file-unreadable` and unassessable rules under `rule-assessments-not-checked` once per walk
-- [ ] In `handle_extension`, build and send one `assessSpecQuality` request per assessable rule of the step's tier, in file then heading order; emit a progress envelope for a step that asks about no rule; record one `rule-assessments-not-checked` for a step when no rule is loaded, and for a step whose prose names no MUST or SHOULD tier
-- [ ] In `runtime/src/interpreter/payload.rs`, replace `build_assess_spec_quality_request`, `resolve_assessed_rule`, `extract_rule_verification` and `first_rule_with_verification` with the per-rule builder; remove `build_extension_request`'s `assessSpecQuality` arm and update its doc comment; move or delete their tests
-- [ ] In `runtime/src/interpreter/analyze_tally.rs`, take the asked rule's tier directly, remove `Assessed` and its `Nothing` arm with that arm's test, and add the rule-set and empty-step records with tests
+- [x] Write the tests first and see them fail against the current walker: rewrite `an_exec_analyze_records_the_assessments_it_receives` (`runtime/src/interpreter/mod.rs:1397`) as the multi-rule test the plan describes (MUST, SHOULD, mixed, keyword-less, and Verification-less rules plus one unreadable `rule-files` path), and add a test that a malformed response partway through the loop writes no `analysis.md`
+- [x] Add the lazy rule-set load to `Walker`, recording unreadable files under `rule-file-unreadable` and unassessable rules under `rule-assessments-not-checked` once per walk
+- [x] In `handle_extension`, build and send one `assessSpecQuality` request per assessable rule of the step's tier, in file then heading order; emit a progress envelope for a step that asks about no rule; record one `rule-assessments-not-checked` for a step when no rule is loaded, and for a step whose prose names no MUST or SHOULD tier
+- [x] In `runtime/src/interpreter/payload.rs`, replace `build_assess_spec_quality_request`, `resolve_assessed_rule`, `extract_rule_verification` and `first_rule_with_verification` with the per-rule builder; remove `build_extension_request`'s `assessSpecQuality` arm and update its doc comment; move or delete their tests
+- [x] In `runtime/src/interpreter/analyze_tally.rs`, take the asked rule's tier directly, remove `Assessed` and its `Nothing` arm with that arm's test, and add the rule-set and empty-step records with tests
 
 - **Done when**: the new tests pass, having failed before the change; `cargo test --release --locked` passes for the `interpreter` and `primitives` modules; and no request is built without a rule.
 
 ## 3. Fixture, golden and parity (AC4)
 
-- [ ] Give the `analyze-basic` fixture's `CFG-CONST-001` Statement a MUST keyword
-- [ ] Drop the `req-2` response from `runtime/tests/fixtures/analyze-basic/stdin.jsonl`
-- [ ] Update `analyze_completes_on_the_session_write_session_writes` to assert one request, `blocking-findings: 1` and `advisory: 0`; leave `analyze_with_no_rule_directory_records_its_citations_unexamined`'s `rule-assessments-not-checked: 2` as it is, and confirm it still passes
-- [ ] Re-bless with `BLESS=1 cargo test --release --locked analyze_basic_stream_matches_golden` only, and confirm the golden's diff is the dropped `req-2` request, its progress line, and the step-12 no-rule progress line, and nothing else
+- [x] Give the `analyze-basic` fixture's `CFG-CONST-001` Statement a MUST keyword
+- [x] Drop the `req-2` response from `runtime/tests/fixtures/analyze-basic/stdin.jsonl`
+- [x] Update `analyze_completes_on_the_session_write_session_writes` to assert one request, `blocking-findings: 1` and `advisory: 0`; leave `analyze_with_no_rule_directory_records_its_citations_unexamined`'s `rule-assessments-not-checked: 2` as it is, and confirm it still passes
+- [x] Re-bless with `BLESS=1 cargo test --release --locked analyze_basic_stream_matches_golden` only, and confirm the golden's diff is the dropped `req-2` request, its progress line, and the step-12 no-rule progress line, and nothing else
 
 - **Done when**: every parity test passes and the golden diff contains only the lines named above.
 

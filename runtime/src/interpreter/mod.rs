@@ -9,7 +9,9 @@
 //!   envelope (`Step::Primitive`). See [`Walker::merge_primitive_result`]
 //!   for the merge policy.
 //! - Emits an `llm-request` envelope and reads a matching
-//!   `llm-response` from stdin (`Step::Extension`).
+//!   `llm-response` from stdin (`Step::Extension`). An `assessSpecQuality`
+//!   step emits one per loaded rule of its tier, each carrying one rule
+//!   (spec 060); every other extension step emits exactly one.
 //! - Blocks on a confirmation gate: emits a `gate-confirm` envelope and
 //!   reads a `gate-response` back. A denied gate is a clean `complete`
 //!   (per §partial-failure-semantics), never an error.
@@ -57,7 +59,9 @@ use serde_json::{Map, Value};
 
 use crate::io::{read_envelope, write_envelope};
 use crate::primitives;
-use crate::schema::extensions::{self, PerformReviewResponse, ValidationError, WriteCodeResponse};
+use crate::schema::extensions::{
+    self, AssessSpecQualityRule, PerformReviewResponse, ValidationError, WriteCodeResponse,
+};
 use crate::schema::primitives::{
     AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
     CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
@@ -76,8 +80,12 @@ use crate::schema::primitives::{
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
+use crate::schema::severity::RuleSeverity;
 
 const GATE_TRIGGER: &str = "ask the user to approve";
+
+/// The extension point `/analyze` steps 11 and 12 ask per rule through.
+const ASSESS_SPEC_QUALITY: &str = "assessSpecQuality";
 
 /// One run of the walker. The caller owns the procedure, repo path, and
 /// reader/writer streams; the walker borrows them for its lifetime.
@@ -95,6 +103,9 @@ pub struct Walker<'a, R: BufRead, W: Write> {
     /// The tier counts an `/analyze` walk's detection steps produce, bound to
     /// its `write-analysis` step; `None` for every other command.
     analyze_tally: Option<analyze_tally::AnalyzeTally>,
+    /// The rules `assessSpecQuality` steps ask about, loaded from
+    /// `rule-files` at the walk's first such step; `None` until then.
+    rules: Option<payload::LoadedRules>,
 }
 
 /// Top-level outcome of [`Walker::run`].
@@ -137,6 +148,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             writer,
             request_counter: 0,
             analyze_tally: analyze.then(analyze_tally::AnalyzeTally::new),
+            rules: None,
         }
     }
 
@@ -367,6 +379,113 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         identifier: &str,
         prose: &str,
     ) -> std::io::Result<Option<WalkOutcome>> {
+        if identifier == ASSESS_SPEC_QUALITY {
+            return self.handle_assessments(number, prose);
+        }
+        let response = match self.exchange(identifier, prose)? {
+            Ok(response) => response,
+            Err(outcome) => return Ok(Some(outcome)),
+        };
+        self.accept_response(number, identifier, response)?;
+        Ok(None)
+    }
+
+    /// `/analyze` steps 11 and 12: ask the host about each loaded rule of
+    /// the step's tier, one `assessSpecQuality` request per rule, so every
+    /// rule is asked about once and in the tier its own Statement carries
+    /// (spec 060). The step's prose selects the tier; each request carries
+    /// the rule's.
+    ///
+    /// A step that asks about nothing says so in the stream. With no rule
+    /// loaded at all, or with prose naming no MUST or SHOULD tier, it also
+    /// records itself unexamined: it examined nothing, and the record must
+    /// not read as clean. A tier that is merely empty while the other has
+    /// rules records nothing, because every loaded rule was asked about.
+    fn handle_assessments(
+        &mut self,
+        number: &StepNumber,
+        prose: &str,
+    ) -> std::io::Result<Option<WalkOutcome>> {
+        let step = Some(format_step_number(number));
+        self.load_rules_once();
+        let tier = payload::severity_from_step_prose(prose);
+        let (loaded_none, asked): (bool, Vec<AssessSpecQualityRule>) = match &self.rules {
+            Some(rules) => (
+                rules.is_empty(),
+                rules
+                    .assessable
+                    .iter()
+                    .filter(|rule| rule.severity == tier)
+                    .cloned()
+                    .collect(),
+            ),
+            None => (true, Vec::new()),
+        };
+        if loaded_none || !matches!(tier, RuleSeverity::Must | RuleSeverity::Should) {
+            if let Some(tally) = &mut self.analyze_tally {
+                tally.record_step_asking_nothing();
+            }
+            let message = if loaded_none {
+                "no rule loaded to assess; recorded under `rule-assessments-not-checked`"
+            } else {
+                "step names no MUST or SHOULD tier to select rules by; recorded under `rule-assessments-not-checked`"
+            };
+            self.emit_progress(message.into(), step, None)?;
+            return Ok(None);
+        }
+        if asked.is_empty() {
+            self.emit_progress(
+                format!(
+                    "no {}-tier rule loaded to assess",
+                    tier.as_str().to_uppercase()
+                ),
+                step,
+                None,
+            )?;
+            return Ok(None);
+        }
+        for rule in asked {
+            let asked_tier = rule.severity;
+            let seeded = serde_json::to_value(&rule).map_err(std::io::Error::other)?;
+            self.context
+                .insert(payload::ASSESSED_RULE_KEY.into(), seeded);
+            let exchanged = self.exchange(ASSESS_SPEC_QUALITY, prose);
+            self.context.remove(payload::ASSESSED_RULE_KEY);
+            let response = match exchanged? {
+                Ok(response) => response,
+                Err(outcome) => return Ok(Some(outcome)),
+            };
+            if let Some(tally) = &mut self.analyze_tally {
+                tally.record_assessment(asked_tier, &response);
+            }
+            self.accept_response(number, ASSESS_SPEC_QUALITY, response)?;
+        }
+        Ok(None)
+    }
+
+    /// Load the walk's rule set from its `rule-files` the first time an
+    /// assessment step needs it, recording what it could not bring to an
+    /// assessment then — once per walk, not once per step.
+    fn load_rules_once(&mut self) {
+        if self.rules.is_some() {
+            return;
+        }
+        let loaded = payload::load_rules(&self.context, &self.repo);
+        if let Some(tally) = &mut self.analyze_tally {
+            tally.record_rule_set(loaded.unreadable_files, loaded.unassessable);
+        }
+        self.rules = Some(loaded);
+    }
+
+    /// Build one extension request from the walker context, send it, and
+    /// await and validate its response. `Ok(Err(outcome))` when the walk
+    /// halts: the request could not be built, or the response failed
+    /// validation.
+    fn exchange(
+        &mut self,
+        identifier: &str,
+        prose: &str,
+    ) -> std::io::Result<Result<Value, WalkOutcome>> {
         let request_id = self.fresh_request_id();
         let request = match payload::build_extension_request(
             identifier,
@@ -380,23 +499,26 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 let code = err.code().to_string();
                 let message = err.to_string();
                 self.emit_error(code.clone(), message.clone(), None)?;
-                return Ok(Some(WalkOutcome::Errored { code, message }));
+                return Ok(Err(WalkOutcome::Errored { code, message }));
             }
         };
-        // What an assessment request asks about, taken before the request is
-        // handed off: its rule's tier counts a failed assessment the host
-        // returned no finding for, and a request carrying no rule counts none.
-        let assessed = analyze_tally::AnalyzeTally::assessed(&request);
         self.emit_llm_request(identifier, &request_id, request)?;
         let response = self.await_llm_response(&request_id)?;
         if let Some(outcome) = self.validate_llm_response(identifier, &response)? {
-            return Ok(Some(outcome));
+            return Ok(Err(outcome));
         }
-        if identifier == "assessSpecQuality"
-            && let Some(tally) = &mut self.analyze_tally
-        {
-            tally.record_assessment(assessed, &response);
-        }
+        Ok(Ok(response))
+    }
+
+    /// Thread a validated response into the walk: accumulate a
+    /// `performReview` pass's outputs, keep the response under
+    /// `llm:{identifier}`, and report it received.
+    fn accept_response(
+        &mut self,
+        number: &StepNumber,
+        identifier: &str,
+        response: Value,
+    ) -> std::io::Result<()> {
         // `performReview` runs once per pass; accumulate each pass's
         // findings and observations into the shared context keys so a later
         // `write-review` step consumes the union across all passes. An
@@ -429,7 +551,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             Some(format_step_number(number)),
             None,
         )?;
-        Ok(None)
+        Ok(())
     }
 
     /// Block until the host delivers an `llm-response` matching
@@ -1110,19 +1232,20 @@ mod tests {
         assert_eq!(lines[1]["type"], "error");
     }
 
+    /// A single-request extension step: one request out, its response in.
+    /// (`assessSpecQuality` fans out per rule and has its own tests.)
     #[test]
     fn extension_step_emits_llm_request_and_consumes_response() {
         let procedure = Procedure {
             command: "test".into(),
             steps: vec![Step::Extension {
                 number: StepNumber(vec![1]),
-                identifier: "assessSpecQuality".into(),
+                identifier: "askClarifyQuestion".into(),
                 prose: String::new(),
                 location: loc(),
             }],
         };
-        let response =
-            "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"passed\":true}}\n";
+        let response = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"answer\":\"yes\"}}\n";
         let mut reader = Cursor::new(response.to_string());
         let mut writer: Vec<u8> = Vec::new();
         let mut walker = Walker::new(
@@ -1142,7 +1265,7 @@ mod tests {
         // llm-request, progress(received), complete
         assert_eq!(lines.len(), 3);
         assert_eq!(lines[0]["type"], "llm-request");
-        assert_eq!(lines[0]["extension-point"], "assessSpecQuality");
+        assert_eq!(lines[0]["extension-point"], "askClarifyQuestion");
         assert_eq!(lines[0]["request-id"], "req-1");
         assert_eq!(lines[1]["type"], "progress");
         assert_eq!(lines[2]["type"], "complete");
@@ -1385,16 +1508,9 @@ mod tests {
         assert!(analysis.contains("  undispositioned: 2\n"), "{analysis}");
     }
 
-    /// Steps 11 and 12 feed each `assessSpecQuality` response into the tally
-    /// the record is written from. A finding counts in its own tier whatever
-    /// the case validation accepted it in, and a failed assessment the host
-    /// returned no finding for counts in the tier of the rule the walker asked
-    /// about. The capitalized finding answers a SHOULD-tier request, so only
-    /// its own tier, read case-insensitively, counts it as blocking. The rule
-    /// file gives each request a rule to assess; without one, nothing is
-    /// assessed and no verdict counts.
-    #[test]
-    fn an_exec_analyze_records_the_assessments_it_receives() {
+    /// A tempdir holding a `clarified` spec at `specs/001-x/spec.md` and, when
+    /// `rules` is given, `framework/rules/quality-cross.md` carrying it.
+    fn analyze_repo(rules: Option<&str>) -> tempfile::TempDir {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().join("specs/001-x");
         std::fs::create_dir_all(&dir).unwrap();
@@ -1403,65 +1519,278 @@ mod tests {
             "---\nstatus: clarified\ndependencies: []\n---\n\n# x\n",
         )
         .unwrap();
-        let rules = tmp.path().join("framework/rules");
-        std::fs::create_dir_all(&rules).unwrap();
-        std::fs::write(
-            rules.join("quality-cross.md"),
-            "### X-1\n\n> A rule.\n\n**Verification:** the spec names its constants.\n",
-        )
-        .unwrap();
-        let assess = |n: u32, tier: &str| Step::Extension {
+        if let Some(rules) = rules {
+            let rules_dir = tmp.path().join("framework/rules");
+            std::fs::create_dir_all(&rules_dir).unwrap();
+            std::fs::write(rules_dir.join("quality-cross.md"), rules).unwrap();
+        }
+        tmp
+    }
+
+    /// An `assessSpecQuality` step, as `/analyze` steps 11 and 12 parse.
+    fn assess_step(n: u32, prose: &str) -> Step {
+        Step::Extension {
             number: StepNumber(vec![n]),
             identifier: "assessSpecQuality".into(),
-            prose: format!("For every loaded {tier}-tier rule, request a semantic assessment."),
+            prose: prose.into(),
             location: loc(),
-        };
-        let procedure = Procedure {
+        }
+    }
+
+    fn assess_tier(n: u32, tier: &str) -> Step {
+        assess_step(
+            n,
+            &format!("For every loaded {tier}-tier rule, request a semantic assessment."),
+        )
+    }
+
+    /// An `/analyze` procedure of `steps` closed by `write-analysis`.
+    fn analyze_procedure(mut steps: Vec<Step>) -> Procedure {
+        steps.push(Step::Primitive {
+            number: StepNumber(vec![19]),
+            name: "write-analysis".into(),
+            prose: String::new(),
+            location: loc(),
+        });
+        Procedure {
             command: "analyze".into(),
-            steps: vec![
-                assess(12, "SHOULD"),
-                assess(11, "MUST"),
-                assess(12, "SHOULD"),
-                assess(12, "SHOULD"),
-                Step::Primitive {
-                    number: StepNumber(vec![19]),
-                    name: "write-analysis".into(),
-                    prose: String::new(),
-                    location: loc(),
-                },
-            ],
-        };
-        let responses = concat!(
-            "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"passed\":false,\"finding\":{\"severity\":\"MUST\",\"rule-id\":\"X-1\",\"location\":{\"section\":\"x\",\"line\":1},\"message\":\"m\"}}}\n",
-            "{\"type\":\"llm-response\",\"request-id\":\"req-2\",\"response\":{\"passed\":false}}\n",
-            "{\"type\":\"llm-response\",\"request-id\":\"req-3\",\"response\":{\"passed\":false}}\n",
-            "{\"type\":\"llm-response\",\"request-id\":\"req-4\",\"response\":{\"passed\":true}}\n",
-        );
+            steps,
+        }
+    }
+
+    /// Walk `procedure` over `repo` targeting `001-x`, answering from
+    /// `responses`; returns the outcome and every envelope emitted.
+    fn walk_analyze(
+        procedure: &Procedure,
+        repo: &Path,
+        rule_files: Option<&[&str]>,
+        responses: &str,
+    ) -> (WalkOutcome, Vec<Value>) {
         let mut context = Map::new();
         context.insert("feature".into(), Value::String("001-x".into()));
         context.insert("path".into(), Value::String("specs/001-x".into()));
         context.insert(
             "analyzed-at".into(),
-            Value::String("2026-09-26T00:00:00Z".into()),
+            Value::String("2026-09-27T00:00:00Z".into()),
         );
         context.insert("analyzed-against".into(), Value::String("abc1234".into()));
+        if let Some(files) = rule_files {
+            context.insert(
+                "rule-files".into(),
+                Value::Array(files.iter().map(|f| Value::String((*f).into())).collect()),
+            );
+        }
         let mut reader = Cursor::new(responses.to_string());
         let mut writer: Vec<u8> = Vec::new();
-        let mut walker = Walker::new(
-            &procedure,
-            tmp.path().to_path_buf(),
+        let outcome = Walker::new(
+            procedure,
+            repo.to_path_buf(),
             context,
             &mut reader,
             &mut writer,
+        )
+        .run()
+        .unwrap();
+        let envelopes = String::from_utf8(writer)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        (outcome, envelopes)
+    }
+
+    /// One scripted `llm-response` line.
+    fn llm_response(n: u32, response: &str) -> String {
+        format!(
+            "{{\"type\":\"llm-response\",\"request-id\":\"req-{n}\",\"response\":{response}}}\n"
+        )
+    }
+
+    /// A failed assessment carrying a finding of `severity`.
+    fn failed_with(severity: &str, rule: &str) -> String {
+        format!(
+            "{{\"passed\":false,\"finding\":{{\"severity\":\"{severity}\",\"rule-id\":\"{rule}\",\"location\":{{\"section\":\"x\",\"line\":1}},\"message\":\"m\"}}}}"
+        )
+    }
+
+    fn requests(envelopes: &[Value]) -> Vec<&Value> {
+        envelopes
+            .iter()
+            .filter(|envelope| envelope["type"] == "llm-request")
+            .collect()
+    }
+
+    fn progress_at<'a>(envelopes: &'a [Value], step: &str) -> Vec<&'a str> {
+        envelopes
+            .iter()
+            .filter(|envelope| envelope["type"] == "progress" && envelope["step"] == step)
+            .filter_map(|envelope| envelope["message"].as_str())
+            .collect()
+    }
+
+    /// A rule file exercising every way a rule is read: one of each tier, one
+    /// carrying both keywords, one carrying neither, and one with no
+    /// Verification.
+    const EVERY_KIND_OF_RULE: &str = "# Quality rules\n\n## TS-A — Test rules\n\n\
+        ### TS-MUST-001\n\n> Specs MUST name their constants.\n\n**Verification:** the spec names its constants.\n\n\
+        ### TS-SHOULD-001\n\n> Specs SHOULD name an owner.\n\n**Verification:** the spec names an owner.\n\n\
+        ### TS-BOTH-001\n\n> Lists MUST paginate and SHOULD use cursors.\n\n**Verification:** the spec paginates its lists.\n\n\
+        ### TS-NONE-001\n\n> Constants live in one module.\n\n**Verification:** the spec centralizes constants.\n\n\
+        ### TS-NOVER-001\n\n> Rules MUST carry a Verification.\n\n**Rationale:** none given.\n";
+
+    /// Steps 11 and 12 ask about each loaded rule once, in the tier its
+    /// Statement carries (spec 060, AC1, AC2, AC4, AC5, AC7). The MUST rule
+    /// and the rule carrying both keywords are asked at step 11, the SHOULD
+    /// rule at step 12, and nothing twice. A finding counts in its own tier,
+    /// so the mixed rule's SHOULD-clause failure is advisory, and a failure
+    /// with no finding counts in the asked rule's tier. The rule with no
+    /// keyword, the rule with no Verification, and the rule file that does
+    /// not exist are recorded unexamined, never asked about as nothing.
+    #[test]
+    fn an_exec_analyze_asks_about_each_loaded_rule_once_in_its_own_tier() {
+        let repo = analyze_repo(Some(EVERY_KIND_OF_RULE));
+        let procedure = analyze_procedure(vec![assess_tier(11, "MUST"), assess_tier(12, "SHOULD")]);
+        let responses = [
+            llm_response(1, &failed_with("must", "TS-MUST-001")),
+            llm_response(2, &failed_with("should", "TS-BOTH-001")),
+            llm_response(3, "{\"passed\":false}"),
+        ]
+        .concat();
+        let (outcome, envelopes) = walk_analyze(
+            &procedure,
+            repo.path(),
+            Some(&[
+                "framework/rules/quality-cross.md",
+                "framework/rules/missing.md",
+            ]),
+            &responses,
         );
-        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
-        let analysis = std::fs::read_to_string(dir.join("analysis.md")).unwrap();
-        // The capitalized MUST finding, and the MUST assessment with none.
-        // Read case-sensitively, the finding would fall back to its SHOULD
-        // request and count as advisory instead.
-        assert!(analysis.contains("\nblocking-findings: 2\n"), "{analysis}");
-        // The SHOULD assessment with no finding; the passed one counts nowhere.
-        assert!(analysis.contains("\nadvisory: 1\n"), "{analysis}");
+        assert_eq!(outcome, WalkOutcome::Complete);
+        let asked: Vec<(&str, &str)> = requests(&envelopes)
+            .iter()
+            .map(|envelope| {
+                (
+                    envelope["request"]["rule"]["id"].as_str().unwrap(),
+                    envelope["request"]["rule"]["severity"].as_str().unwrap(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            asked,
+            [
+                ("TS-MUST-001", "must"),
+                ("TS-BOTH-001", "must"),
+                ("TS-SHOULD-001", "should"),
+            ]
+        );
+        for request in requests(&envelopes) {
+            assert_eq!(request["request"]["spec-path"], "specs/001-x/spec.md");
+            assert!(
+                !request["request"]["rule"]["verification"]
+                    .as_str()
+                    .unwrap()
+                    .is_empty()
+            );
+        }
+        let analysis =
+            std::fs::read_to_string(repo.path().join("specs/001-x/analysis.md")).unwrap();
+        assert!(analysis.contains("\nblocking-findings: 1\n"), "{analysis}");
+        assert!(analysis.contains("\nadvisory: 2\n"), "{analysis}");
+        assert!(
+            analysis.contains("  rule-assessments-not-checked: 2\n"),
+            "{analysis}"
+        );
+        assert!(
+            analysis.contains("  rule-file-unreadable: 1\n"),
+            "{analysis}"
+        );
+    }
+
+    /// A response that fails validation partway through a step's rules halts
+    /// the walk before `write-analysis`, so no record is written — never a
+    /// partial one counting only the rules answered so far.
+    #[test]
+    fn a_malformed_response_partway_through_the_rules_writes_no_record() {
+        let repo = analyze_repo(Some(
+            "### TS-MUST-001\n\n> A MUST.\n\n**Verification:** one.\n\n\
+             ### TS-MUST-002\n\n> Another MUST.\n\n**Verification:** two.\n",
+        ));
+        let procedure = analyze_procedure(vec![assess_tier(11, "MUST")]);
+        let responses = [
+            llm_response(1, "{\"passed\":true}"),
+            llm_response(2, "{\"passed\":\"no\"}"),
+        ]
+        .concat();
+        let (outcome, _) = walk_analyze(&procedure, repo.path(), None, &responses);
+        assert!(
+            matches!(&outcome, WalkOutcome::Errored { code, .. } if code == "schema-mismatch"),
+            "{outcome:?}"
+        );
+        assert!(!repo.path().join("specs/001-x/analysis.md").exists());
+    }
+
+    /// With no rule loaded, steps 11 and 12 send no request and each records
+    /// one target unexamined, and the stream says so at each step rather than
+    /// passing over it in silence.
+    #[test]
+    fn with_no_rule_loaded_each_step_asks_nothing_and_records_itself() {
+        let repo = analyze_repo(None);
+        let procedure = analyze_procedure(vec![assess_tier(11, "MUST"), assess_tier(12, "SHOULD")]);
+        let (outcome, envelopes) = walk_analyze(&procedure, repo.path(), None, "");
+        assert_eq!(outcome, WalkOutcome::Complete);
+        assert!(requests(&envelopes).is_empty(), "{envelopes:?}");
+        for step in ["11", "12"] {
+            assert!(
+                progress_at(&envelopes, step)
+                    .iter()
+                    .any(|message| message.starts_with("no rule loaded")),
+                "step {step}: {envelopes:?}"
+            );
+        }
+        let analysis =
+            std::fs::read_to_string(repo.path().join("specs/001-x/analysis.md")).unwrap();
+        assert!(
+            analysis.contains("  rule-assessments-not-checked: 2\n"),
+            "{analysis}"
+        );
+    }
+
+    /// A tier with no loaded rule, beside one that has rules, records nothing:
+    /// every loaded rule was asked about. A step whose prose names no MUST or
+    /// SHOULD tier cannot know which rules it covers, so it asks about none
+    /// and records itself unexamined.
+    #[test]
+    fn an_empty_tier_records_nothing_and_a_step_naming_no_tier_is_unexamined() {
+        let repo = analyze_repo(Some(
+            "### TS-MUST-001\n\n> A MUST.\n\n**Verification:** one.\n",
+        ));
+        let procedure = analyze_procedure(vec![
+            assess_tier(11, "MUST"),
+            assess_tier(12, "SHOULD"),
+            assess_step(13, "For every loaded rule, request a semantic assessment."),
+        ]);
+        let (outcome, envelopes) = walk_analyze(
+            &procedure,
+            repo.path(),
+            None,
+            &llm_response(1, "{\"passed\":true}"),
+        );
+        assert_eq!(outcome, WalkOutcome::Complete);
+        assert_eq!(requests(&envelopes).len(), 1, "{envelopes:?}");
+        assert!(
+            progress_at(&envelopes, "12")
+                .iter()
+                .any(|message| message.starts_with("no SHOULD-tier rule")),
+            "{envelopes:?}"
+        );
+        assert!(!progress_at(&envelopes, "13").is_empty(), "{envelopes:?}");
+        let analysis =
+            std::fs::read_to_string(repo.path().join("specs/001-x/analysis.md")).unwrap();
+        assert!(
+            analysis.contains("  rule-assessments-not-checked: 1\n"),
+            "{analysis}"
+        );
+        assert!(analysis.contains("\nblocking-findings: 0\n"), "{analysis}");
     }
 
     /// A session `write-session` wrote names the target alone, so an analyze
@@ -1579,13 +1908,14 @@ mod tests {
             command: "test".into(),
             steps: vec![Step::Extension {
                 number: StepNumber(vec![1]),
-                identifier: "assessSpecQuality".into(),
+                identifier: "askClarifyQuestion".into(),
                 prose: String::new(),
                 location: loc(),
             }],
         };
-        // Missing required `passed` field.
-        let response = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"finding\":null}}\n";
+        // Missing required `answer` field.
+        let response =
+            "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"reply\":null}}\n";
         let mut reader = Cursor::new(response.to_string());
         let mut writer: Vec<u8> = Vec::new();
         let mut walker = Walker::new(

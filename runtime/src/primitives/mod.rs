@@ -67,6 +67,7 @@ pub mod resolve_feature;
 pub mod resolve_references;
 pub mod retire_feature;
 pub mod rewrite_spec_links;
+pub(crate) mod rule_sections;
 pub mod run_generator;
 pub mod set_status;
 pub(crate) mod spec_links;

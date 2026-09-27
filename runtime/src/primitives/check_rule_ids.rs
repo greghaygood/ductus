@@ -9,6 +9,7 @@ use std::sync::OnceLock;
 
 use regex::Regex;
 
+use crate::primitives::rule_sections::heading_id_regex;
 use crate::primitives::{Result, parse_atx_heading, read_text, resolve_path};
 use crate::schema::primitives::{CheckRuleIdsArgs, CheckRuleIdsResult, RuleCitation};
 
@@ -85,21 +86,9 @@ pub fn run(args: &CheckRuleIdsArgs, repo: &Path) -> Result<CheckRuleIdsResult> {
     })
 }
 
-/// `### BE-AUTHN-001` — matches rule-ID headings inside a rule file. The
-/// category segment follows the schema grammar `[A-Z][A-Z0-9]*` (digits are
-/// permitted after the first letter, e.g. `FE-A11YFORM-001`), per
-/// `specs/008-security-rules/data-model.md`.
-fn heading_id_regex() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| {
-        Regex::new(r"(?m)^#{2,4}\s+([A-Z]{2,5}-[A-Z][A-Z0-9]+-\d{3,4})\b")
-            .expect("hard-coded regex compiles")
-    })
-}
-
 /// Plain text citations: `BE-AUTHN-001` anywhere in a body (not the heading
 /// line itself for the rule file's self-references). The category segment
-/// mirrors `heading_id_regex` and allows digit-bearing categories.
+/// mirrors [`heading_id_regex`] and allows digit-bearing categories.
 fn citation_regex() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| {
