@@ -136,7 +136,7 @@ Minimal — does not duplicate rule content into the constitution; the rule file
 
 ### Data model formalizes rule entry schema
 
-Like the workflow registry that spec `043-command-consolidation` now owns (introduced by the since-consolidated 005), the rule entry is structured data even though it lives in markdown. `data-model.md` documents the required fields, ID format, category enum, and Verification phrasing conventions. This is the contract validate relies on; future rule writers consult it to keep the rule files internally consistent.
+Like the workflow registry spec 005 introduced (since retired by `043-workflows-sunset`), the rule entry is structured data even though it lives in markdown. `data-model.md` documents the required fields, ID format, category enum, and Verification phrasing conventions. This is the contract validate relies on; future rule writers consult it to keep the rule files internally consistent.
 
 ## Affected Files
 
@@ -153,7 +153,7 @@ Like the workflow registry that spec `043-command-consolidation` now owns (intro
 
 ### Starter set vs. comprehensive coverage
 
-V1 targeted ~45 rules across 15 categories, leaving less common attack surfaces (GraphQL-specific, gRPC-specific, mobile-app-specific) uncovered. Acceptable because the rule format is designed for trivial extension — adding a rule is one heading, three paragraphs, one new ID number, and that is exactly how the gap closed: the shipped files now carry 73 backend and 32 frontend rules, including a GraphQL rule under `BE-INPUT`. Mobile-app-specific surfaces remain uncovered.
+V1 targeted ~45 rules across 15 categories, leaving less common attack surfaces (GraphQL-specific, gRPC-specific, mobile-app-specific) uncovered. Acceptable because the rule format is designed for trivial extension — adding a rule is one heading, three paragraphs, one new ID number, and that is exactly how the gap closed: the shipped files have grown well past the v1 target, including a GraphQL rule under `BE-INPUT`. Mobile-app-specific surfaces remain uncovered.
 
 ### Verification-by-prompt vs. Verification-by-pattern
 
@@ -169,7 +169,7 @@ Could expand the "Secure" principle into multiple paragraphs of guidance. Reject
 
 ### Rule files written in markdown vs. structured format (YAML/JSON)
 
-Per **Technical Decisions**, markdown wins. Heading-anchored rules are grep-friendly, render well in any viewer, and don't fight the rest of `ductus`'s markdown-first ethos. The trade-off is that programmatic tooling (if it ever appears) must parse markdown rather than load JSON — but governance has no programmatic tooling and is unlikely to add any.
+Per **Technical Decisions**, markdown wins. Heading-anchored rules are grep-friendly, render well in any viewer, and don't fight the rest of `ductus`'s markdown-first ethos. The trade-off is that programmatic tooling (if it ever appears) must parse markdown rather than load JSON. Governance had none when this plan was written; the runtime spec 022 introduced has since added some, and it parses the markdown rule files directly (`runtime/src/primitives/rule_sections.rs`), so the choice held.
 
 ## Open Questions Resolved
 
