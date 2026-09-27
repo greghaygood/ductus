@@ -358,7 +358,14 @@ For each loaded rule file:
 2. **The format the file declares in its own header**, which is where a rule file's ID prefix and category abbreviations are canonically declared (`.ductus/constitution.md` §rules) — e.g. `quality-cross.md` declares `QUAL-{CATEGORY}-{NNN}` with categories `STUB`, `GROUND`, `CLAIM`.
 3. **The generic rule-ID grammar** — an uppercase prefix, an `[A-Z][A-Z0-9]*` category abbreviation, and a zero-padded sequence number, as declared in `specs/008-security-rules/data-model.md` §Rule ID format. This is the shape `check-rule-ids` resolves citations against, so an ID that fails it cannot be cited from a spec regardless of what any header says.
 
-If any check above fails, the affected rule file is treated as unloadable for the remainder of this analyze pass.
+If any check above fails, the affected rule file is treated as unloadable for the remainder of this analyze pass — no rule from it is applied to the per-rule assessments (steps 11 and 12) — and the failure is reported as a **Blocking** finding, one of:
+
+- `Malformed rule file {path} at {location}: {reason}` — a missing required field, an ID-format violation, a malformed heading, or a file that does not parse
+- `Duplicate rule ID {ID} in {file}; refusing to load` — two rules in the same file share an ID
+
+A file whose rules drop out without a finding makes a malformed rule set indistinguishable from a clean one. These two messages have been the contract since 008, generalized from security files to every rule surface by 016; 022's parseable-procedure rewrite dropped them without a decision to drop them, and they are restored here.
+
+**Under `ductus exec` neither message is produced.** The walker checks no rule-file integrity: a rule with no Verification, or whose Statement carries no RFC 2119 keyword, is recorded unexamined under `rule-assessments-not-checked`, a file it cannot read is recorded under `rule-file-unreadable`, and a missing Rationale or a duplicate ID goes unnoticed — each such rule is assessed as though whole. The reduction is stated rather than silent, per the two-paths guarantee in §runtime-host-integration.
 
 A rule file is **never** unloadable merely for having no introducing spec, or for declaring no format in its header — those conditions select which tier governs, they are not themselves failures. A project-authored rule file has no introducing spec by construction; it is validated on exactly the same terms as a shipped one, at tier 2 when its header declares a format and tier 3 when it does not. Treating the absence of an introducing spec as a validation failure would make a supported adopter extension unloadable, silently dropping its rules from citation resolution and from the fired-rule set that steps 11 and 12 assess.
 

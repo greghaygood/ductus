@@ -170,3 +170,11 @@ Reopen surfaced upstream from an adopter: an `FE-DEPS` rule was missing for a de
 - [x] Implement the behavior described in `scenarios/x-frame-options-carries-one-strength.md`
 
 - **Done when**: the scenario's open question is resolved, `BE-API-001` and `FE-CSP-008` state one strength for `X-Frame-Options`, and `008` is re-reviewed back to `done`.
+
+## 12. Restore analyze's blocking report for a malformed or duplicate-ID rule file
+
+- [x] `framework/commands/analyze.md` §Rules (blocking and advisory): restore the two blocking messages 016 shipped and 022's parseable rewrite (`11aad341`) dropped without a recorded decision — `Malformed rule file {path} at {location}: {reason}` for a missing required field, an ID-format violation, or a malformed heading, and `Duplicate rule ID {ID} in {file}; refusing to load` — each blocking, with no rules from the unloadable file applied
+- [x] State the exec-path reduction beside them: under `ductus exec` the walker checks no rule-file integrity, records a rule with no Verification or tier as unexamined (`rule-assessments-not-checked`), and a file it cannot read as `rule-file-unreadable`, so neither message is produced there
+- [x] Verify AC18 and AC21 against the restored text and re-tick them; run the runtime suite, since command files are its input
+
+- **Done when**: `framework/commands/analyze.md` states both blocking messages and the exec reduction, AC18 and AC21 are re-verified and ticked, and `008` is re-reviewed and re-analyzed back to `done`.
