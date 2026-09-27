@@ -59,9 +59,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 8. `check-corpus-links --scope repository` (AC8)
 
-- [ ] `collect_tracked_markdown` (`check_corpus_links.rs:132`): open through the helper; `to_project` on each index entry, skipping those outside the project
-- [ ] Reword the repository-scope guidance (`check_corpus_links.rs:86-87`) to name both causes: no repository contains the project, or its index could not be read
-- [ ] Test: a repository with a broken link outside the project and a clean project examines only the project's tracked markdown, names each file project-relative, and reports no broken link
+- [x] `collect_tracked_markdown` (`check_corpus_links.rs:132`): open through the helper; `to_project` on each index entry, skipping those outside the project
+- [x] Reword the repository-scope guidance (`check_corpus_links.rs:86-87`) to name both causes: no repository contains the project, or its index could not be read
+- [x] Test: a repository with a broken link outside the project and a clean project examines only the project's tracked markdown, names each file project-relative, and reports no broken link
 
 - **Done when**: the test passes and fails with `to_project` removed.
 

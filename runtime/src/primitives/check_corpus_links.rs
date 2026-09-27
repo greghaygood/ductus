@@ -29,7 +29,7 @@ use std::path::{Component, Path, PathBuf};
 
 use crate::host::Host;
 use crate::primitives::spec_links::is_frontmatter_fence;
-use crate::primitives::{Result, inline_code_spans, rel_path};
+use crate::primitives::{ProjectRepository, Result, inline_code_spans, rel_path};
 use crate::schema::paths;
 use crate::schema::primitives::{
     BrokenCorpusLink, CheckCorpusLinksArgs, CheckCorpusLinksResult, CorpusLinkSkip, LinkScope,
@@ -83,8 +83,9 @@ pub fn run(args: &CheckCorpusLinksArgs, repo: &Path) -> Result<CheckCorpusLinksR
                 "the spec root `{specs_root}` could not be listed, so no link was checked — this \
                  is not the same as finding no broken links"
             ),
-            LinkScope::Repository => "the git index could not be read, so no link was checked — \
-                 this is not the same as finding no broken links"
+            LinkScope::Repository => "no git repository contains the project, or its git index \
+                 could not be read, so no link was checked — this is not the same as finding no \
+                 broken links"
                 .to_string(),
         };
         return Ok(result);
@@ -121,26 +122,33 @@ pub fn run(args: &CheckCorpusLinksArgs, repo: &Path) -> Result<CheckCorpusLinksR
     Ok(result)
 }
 
-/// Every tracked `.md` file in the repository, from the **git index**.
+/// Every tracked `.md` file under the project root, from the **git index**.
 ///
 /// The index rather than a worktree walk, for the same reason
 /// `list_tracked_specs` uses it: an untracked draft is not yet part of the
 /// corpus anyone is claiming about, and a worktree walk would descend into
-/// `runtime/target`. Returns `false` when there is no index to read — outside
-/// a git repository the repository scope has no subject at all, which the
-/// caller turns into `guidance` rather than a clean verdict.
+/// `runtime/target`. Returns `false` when there is no index to read — when
+/// no git repository contains the project the repository scope has no
+/// subject at all, which the caller turns into `guidance` rather than a clean
+/// verdict. The repository is discovered rather than opened at the project
+/// root, and the index names files from the work tree, so a project in a
+/// subdirectory of its repository reads its own files by their names and
+/// leaves another project's out (spec 059).
 fn collect_tracked_markdown(repo: &Path, out: &mut Vec<PathBuf>) -> bool {
-    let Ok(repository) = git2::Repository::open(repo) else {
+    let Ok(project) = ProjectRepository::discover(repo) else {
         return false;
     };
-    let Ok(index) = repository.index() else {
+    let Ok(index) = project.repository.index() else {
         return false;
     };
     for entry in index.iter() {
-        let Ok(rel) = String::from_utf8(entry.path) else {
+        let Ok(tracked) = String::from_utf8(entry.path) else {
             continue;
         };
-        if Path::new(&rel)
+        let Some(rel) = project.to_project(&tracked) else {
+            continue;
+        };
+        if Path::new(rel)
             .extension()
             .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
         {
@@ -806,6 +814,48 @@ mod tests {
             result.broken
         );
         assert_eq!(result.examined, vec!["tracked.md".to_string()]);
+    }
+
+    /// A project in a subdirectory of its repository, beside another project
+    /// carrying a broken link. The project root was opened as the repository,
+    /// which it is not, so the scope could not run; and the index names every
+    /// file from the work tree. The project's own files are examined by their
+    /// names, and the other project's are not its subject (spec 059).
+    #[test]
+    fn the_repository_scope_of_a_subdirectory_project_is_its_own_files() {
+        use crate::primitives::git_fixture;
+        let tmp = tempdir().unwrap();
+        let (repo, project) = git_fixture::subdirectory_project(tmp.path());
+        write(
+            &project,
+            "README.md",
+            "# Proj\n\n[spec](specs/042-demo/spec.md)\n",
+        );
+        write(&project, "specs/042-demo/spec.md", "# Demo\n");
+        write(
+            tmp.path(),
+            "other/doc.md",
+            "# Other\n\n[gone](./nowhere.md)\n",
+        );
+        git_fixture::commit_all(&repo, "base");
+
+        let result = run(
+            &CheckCorpusLinksArgs {
+                scope: LinkScope::Repository,
+            },
+            &project,
+        )
+        .unwrap();
+        assert!(result.guidance.is_empty(), "{}", result.guidance);
+        assert_eq!(
+            result.examined,
+            vec![
+                "README.md".to_string(),
+                "specs/042-demo/spec.md".to_string()
+            ]
+        );
+        assert!(result.skipped.is_empty(), "{:?}", result.skipped);
+        assert!(result.broken.is_empty(), "{:?}", result.broken);
     }
 
     #[test]
