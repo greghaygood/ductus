@@ -1,11 +1,11 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-27T18:20:57Z
-analyzed-against: 3dc7bbbb103109a9aeee2f3c88e184c12c0e4c3b
+last-run: 2026-09-27T18:21:39Z
+analyzed-against: f83b0922358c9292d27afe64b7397e4cfee91940
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 0
+unexamined: 2
 analyzed-digest:
   data-model.md: 98b6b5e54781654d83c62b2deb9ae6f5c175594c136853507270ad94f17a4968
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
@@ -116,6 +116,8 @@ analyzed-digest:
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: 49cc696c3b45a18d1e5872e4591aad88f3ddd3325ce0d6bd4573e499afd60a40
   tasks.md: 7cea97c80e32598a7a271fd4886c06803d6c5d0f2f85e352a88d11c36ec35493
+unexamined-by-reason:
+  not-a-live-claim: 2
 blocking: false
 dispositions:
   fixed: 0
@@ -128,7 +130,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -144,7 +146,7 @@ dispositions:
 
 ## Unexamined targets
 
-*None — every target was examined.*
+- not-a-live-claim: 2
 
 ## Fixed in this run
 
