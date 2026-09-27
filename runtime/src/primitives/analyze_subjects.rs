@@ -300,9 +300,14 @@ fn exempt_renames(
     if candidates.is_empty() || analyzed_against.trim().is_empty() {
         return candidates;
     }
-    let Ok(repository) = git2::Repository::discover(repo) else {
+    // The sweep index is keyed by git's names, from the work tree; the
+    // candidates are the project's. In a project in a subdirectory of its
+    // repository every lookup missed, and a missing path reads as a real
+    // change, so the exemption never ran (spec 059).
+    let Ok(project) = crate::primitives::ProjectRepository::discover(repo) else {
         return candidates;
     };
+    let repository = &project.repository;
     let base_tree = repository
         .revparse_single(analyzed_against.trim())
         .and_then(|object| object.peel_to_commit())
@@ -315,10 +320,10 @@ fn exempt_renames(
         return candidates;
     };
     let index =
-        crate::primitives::mechanical_sweep::SweepIndex::build(&repository, &base_tree, &head_tree);
+        crate::primitives::mechanical_sweep::SweepIndex::build(repository, &base_tree, &head_tree);
     candidates
         .into_iter()
-        .filter(|path| index.changed_beyond_spelling(path))
+        .filter(|path| index.changed_beyond_spelling(&project.to_git(path)))
         .collect()
 }
 
@@ -378,6 +383,7 @@ mod tests {
 
     use super::*;
     use std::fs;
+    use std::path::PathBuf;
     use tempfile::tempdir;
 
     fn seed(dir: &Path, analyze_block: &str) {
@@ -699,6 +705,101 @@ mod tests {
             before, after,
             "the comparison must not depend on commit status"
         );
+    }
+
+    /// A project at `proj/` in a subdirectory of its repository, with one
+    /// scenario and a data model, and a document in another project; each
+    /// names `/govern`. Commits that as the base, records both digests
+    /// against it, then rewrites each file as `edit` renders it and commits
+    /// again. Returns the project root and the analyze and review records.
+    fn swept_subdirectory_project(
+        root: &Path,
+        edit: impl Fn(&str, &str) -> String,
+    ) -> (
+        PathBuf,
+        AnalyzeBlock,
+        crate::schema::primitives::ReviewBlock,
+    ) {
+        use crate::primitives::git_fixture;
+        let (repository, project) = git_fixture::subdirectory_project(root);
+        let dir = project.join("specs/001-x");
+        seed(&dir, "");
+        let files = [
+            (
+                dir.join("scenarios/a.md"),
+                "# A\n\nRun `/govern`. Timeout is 30s.\n",
+            ),
+            (
+                dir.join("data-model.md"),
+                "# Model\n\nWritten by `/govern`.\n",
+            ),
+            (root.join("other/docs/x.md"), "Run `/govern` to sync.\n"),
+        ];
+        for (path, body) in &files {
+            git_fixture::write(path, body);
+        }
+        let base = git_fixture::commit_all(&repository, "base").to_string();
+        let analyze = AnalyzeBlock {
+            last_run: Some("2026-09-26T00:00:00Z".into()),
+            analyzed_against: Some(base.clone()),
+            analyzed_digest: subject_digest(&dir, is_analyze_subject).digests,
+            ..AnalyzeBlock::default()
+        };
+        let review = crate::schema::primitives::ReviewBlock {
+            last_run: Some("2026-09-26T00:00:00Z".into()),
+            reviewed_against: Some(base),
+            reviewed_digest: Some(subject_digest(&dir, is_review_contract).digests),
+            ..crate::schema::primitives::ReviewBlock::default()
+        };
+        for (path, body) in &files {
+            let name = path.file_name().unwrap().to_str().unwrap();
+            git_fixture::write(path, &edit(name, body));
+        }
+        git_fixture::commit_all(&repository, "sweep");
+        (project, analyze, review)
+    }
+
+    /// A uniform repo-wide rename, across two projects, in a project in a
+    /// subdirectory of its repository. The sweep index names paths from the
+    /// work tree, so looked up by the project's names every subject missed,
+    /// read as changed, and both records went stale over a rename (spec 059).
+    #[test]
+    fn a_rename_sweep_leaves_a_subdirectory_projects_records_current() {
+        let tmp = tempdir().unwrap();
+        let (project, analyze, review) =
+            swept_subdirectory_project(tmp.path(), |_, body| body.replace("/govern", "/ductus"));
+        let result = analyze_freshness(&project, "specs/001-x", Some(&analyze));
+        assert!(
+            matches!(result, RecordFreshness::Current { .. }),
+            "{result:?}"
+        );
+        let result = review_freshness(&project, "specs/001-x", Some(&review));
+        assert!(
+            matches!(result, RecordFreshness::Current { .. }),
+            "{result:?}"
+        );
+    }
+
+    #[test]
+    fn a_real_change_inside_a_sweep_still_stales_a_subdirectory_project() {
+        let tmp = tempdir().unwrap();
+        let (project, analyze, review) = swept_subdirectory_project(tmp.path(), |name, body| {
+            let swept = body.replace("/govern", "/ductus");
+            if name == "a.md" {
+                swept.replace("30s", "60s")
+            } else {
+                swept
+            }
+        });
+        let expected = vec!["specs/001-x/scenarios/a.md".to_string()];
+        match analyze_freshness(&project, "specs/001-x", Some(&analyze)) {
+            RecordFreshness::Stale { paths, .. } => assert_eq!(paths, expected),
+            other => panic!("expected stale, got {other:?}"),
+        }
+        match review_freshness(&project, "specs/001-x", Some(&review)) {
+            RecordFreshness::Stale { paths, .. } => assert_eq!(paths, expected),
+            other => panic!("expected stale, got {other:?}"),
+        }
     }
 
     /// The reach failure, not the read failure — the one that used to be

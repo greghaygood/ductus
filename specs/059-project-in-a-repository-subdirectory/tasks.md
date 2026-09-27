@@ -52,8 +52,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 7. Rename exemption (AC7)
 
-- [ ] `exempt_renames` (`analyze_subjects.rs:303`): open through the helper; look each candidate up as `to_git(path)`; the returned set stays project-relative
-- [ ] Test: in a subdirectory project, a uniform repo-wide rename leaves both the review and the analyze record current, and a real change to a subject still reads stale
+- [x] `exempt_renames` (`analyze_subjects.rs:303`): open through the helper; look each candidate up as `to_git(path)`; the returned set stays project-relative
+- [x] Test: in a subdirectory project, a uniform repo-wide rename leaves both the review and the analyze record current, and a real change to a subject still reads stale
 
 - **Done when**: both directions pass, and the first fails with `to_git` removed.
 
