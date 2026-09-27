@@ -422,6 +422,61 @@ mod tests {
         format!("---\nstatus: done\n{deps_line}\n---\n\n{body}\n")
     }
 
+    /// A project in a subdirectory of its repository, with two tracked specs
+    /// and an untracked draft. The project root is not a repository to open,
+    /// and the index names every path from the work tree, so every listing
+    /// took its no-repository path: `--write` rewrote the draft, nothing was
+    /// reported untracked, and `--staged` rewrote nothing (spec 059).
+    #[test]
+    fn a_subdirectory_project_derives_from_its_index() {
+        use crate::primitives::git_fixture;
+        let tmp = tempfile::tempdir().unwrap();
+        let (repository, project) = git_fixture::subdirectory_project(tmp.path());
+        let a = project.join("specs/001-a/spec.md");
+        let c = project.join("specs/003-c/spec.md");
+        git_fixture::write(&a, &spec("dependencies: []", "nothing"));
+        git_fixture::write(&c, &spec("dependencies: []", "nothing"));
+        git_fixture::commit_all(&repository, "feat: specs");
+        let draft_path = project.join("specs/002-draft/spec.md");
+        let draft = spec("dependencies: [999-wrong]", "[a](../001-a/spec.md)");
+        git_fixture::write(&draft_path, &draft);
+
+        let write = DeriveDependenciesArgs {
+            write: true,
+            staged: false,
+        };
+        let result = run(&write, &project).unwrap();
+        assert_eq!(std::fs::read_to_string(&draft_path).unwrap(), draft);
+        assert_eq!(result.examined, 2);
+        assert_eq!(result.untracked_skipped, vec!["specs/002-draft/spec.md"]);
+
+        // Both tracked specs drift; only the first is staged.
+        git_fixture::write(&a, &spec("dependencies: []", "[c](../003-c/spec.md)"));
+        git_fixture::write(&c, &spec("dependencies: []", "[a](../001-a/spec.md)"));
+        let mut index = repository.index().unwrap();
+        index
+            .add_path(Path::new("proj/specs/001-a/spec.md"))
+            .unwrap();
+        index.write().unwrap();
+        let staged = DeriveDependenciesArgs {
+            write: true,
+            staged: true,
+        };
+        let result = run(&staged, &project).unwrap();
+        assert_eq!(result.updated, vec!["specs/001-a/spec.md"]);
+        assert_eq!(result.unwritten, vec!["specs/003-c/spec.md"]);
+        assert!(
+            std::fs::read_to_string(&a)
+                .unwrap()
+                .contains("dependencies: [003-c]")
+        );
+        assert!(
+            std::fs::read_to_string(&c)
+                .unwrap()
+                .contains("dependencies: []")
+        );
+    }
+
     #[test]
     fn harvests_relative_and_rooted_links_sorted_and_deduped() {
         let root = "specs";

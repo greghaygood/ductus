@@ -2294,19 +2294,23 @@ pub(crate) fn spec_feature_slug(path: &str, specs_root: &str) -> Option<String> 
         .map(str::to_string)
 }
 
-/// Feature-spec paths tracked by git, repo-relative, sorted.
+/// Feature-spec paths tracked by git, named from the project root, sorted.
 ///
 /// Scoped to the git index rather than a worktree glob so an untracked
 /// in-progress draft is never rewritten and never enters a derived index
 /// (spec 017, `tracked-specs-not-worktree`). Falls back to a worktree walk
-/// only outside a git repo, where there is no index.
+/// only outside a git repo, where there is no index. The repository is
+/// discovered rather than opened at the project root, and index paths are
+/// named from the work tree: a project in a subdirectory of its repository
+/// took the fallback, and its untracked drafts were rewritten (spec 059).
 pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
-    if let Ok(repository) = git2::Repository::open(repo)
-        && let Ok(index) = repository.index()
+    if let Ok(project) = ProjectRepository::discover(repo)
+        && let Ok(index) = project.repository.index()
     {
         let mut out: Vec<String> = index
             .iter()
             .filter_map(|entry| String::from_utf8(entry.path).ok())
+            .filter_map(|path| project.to_project(&path).map(str::to_string))
             .filter(|path| is_spec_path(path, specs_root))
             .collect();
         out.sort();
@@ -2327,7 +2331,8 @@ pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
 }
 
 /// Feature-spec paths present in the worktree but not tracked by git —
-/// exactly the set [`list_tracked_specs`] excludes by design.
+/// exactly the set [`list_tracked_specs`] excludes by design — named from the
+/// project root.
 ///
 /// Exists so a generator can report what it did *not* examine. A zero rewrite
 /// count means "I rewrote nothing", not "everything is in sync": an untracked
@@ -2335,7 +2340,7 @@ pub(crate) fn list_tracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
 /// of files the generator cannot vouch for. Empty outside a git repo, where
 /// the fallback already walks everything.
 pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String> {
-    let Ok(repository) = git2::Repository::open(repo) else {
+    let Ok(project) = ProjectRepository::discover(repo) else {
         return Vec::new();
     };
     let mut opts = git2::StatusOptions::new();
@@ -2346,8 +2351,8 @@ pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String>
         // worktree status on every run — including the pre-commit path, where
         // it would scan build output and vendored trees to answer a question
         // only about `{specs-root}/`.
-        .pathspec(specs_root);
-    let Ok(statuses) = repository.statuses(Some(&mut opts)) else {
+        .pathspec(project.to_git(specs_root));
+    let Ok(statuses) = project.repository.statuses(Some(&mut opts)) else {
         return Vec::new();
     };
     let mut out: Vec<String> = Vec::new();
@@ -2358,7 +2363,9 @@ pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String>
         // `path()` errors on a non-UTF-8 path, which cannot be a spec under
         // the validated slug grammar anyway.
         let Ok(path) = entry.path() else { continue };
-        if is_spec_path(path, specs_root) {
+        if let Some(path) = project.to_project(path)
+            && is_spec_path(path, specs_root)
+        {
             out.push(path.to_string());
         }
     }
@@ -2367,16 +2374,18 @@ pub(crate) fn list_untracked_specs(repo: &Path, specs_root: &str) -> Vec<String>
     out
 }
 
-/// Feature-spec paths staged in the index for the pending commit — the
-/// `--staged` rewrite set, so committing one spec never rewrites the derived
-/// frontmatter of unrelated specs. Empty outside a git repo.
+/// Feature-spec paths staged in the index for the pending commit, named from
+/// the project root — the `--staged` rewrite set, so committing one spec
+/// never rewrites the derived frontmatter of unrelated specs. Empty outside a
+/// git repo.
 pub(crate) fn list_staged_specs(
     repo: &Path,
     specs_root: &str,
 ) -> std::collections::BTreeSet<String> {
-    let Ok(repository) = git2::Repository::open(repo) else {
+    let Ok(project) = ProjectRepository::discover(repo) else {
         return std::collections::BTreeSet::new();
     };
+    let repository = &project.repository;
     // HEAD tree against the index. An unborn HEAD (no commits yet) diffs the
     // index against nothing, which is the correct "everything staged" answer.
     let head_tree = repository
@@ -2390,6 +2399,7 @@ pub(crate) fn list_staged_specs(
     for delta in diff.deltas() {
         for file in [delta.new_file(), delta.old_file()] {
             if let Some(path) = file.path().and_then(Path::to_str)
+                && let Some(path) = project.to_project(path)
                 && is_spec_path(path, specs_root)
             {
                 out.insert(path.to_string());

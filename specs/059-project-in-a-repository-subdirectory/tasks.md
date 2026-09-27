@@ -44,9 +44,9 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 6. Index-scoped spec listing (AC6)
 
-- [ ] `list_tracked_specs`, `list_untracked_specs`, `list_staged_specs` (`mod.rs:2193`, `:2227`, `:2266`): open through the helper; `to_git` on the status pathspec; `to_project` on every index, status, and delta path before `is_spec_path`
-- [ ] `derive_dependencies.rs` tests in a subdirectory project with a tracked spec and an untracked draft: `--write` never rewrites the draft; the draft is reported in `untracked-skipped`; `--staged` rewrites exactly the staged spec
-- [ ] The same three assertions for `derive_references.rs`
+- [x] `list_tracked_specs`, `list_untracked_specs`, `list_staged_specs` (`mod.rs:2193`, `:2227`, `:2266`): open through the helper; `to_git` on the status pathspec; `to_project` on every index, status, and delta path before `is_spec_path`
+- [x] `derive_dependencies.rs` tests in a subdirectory project with a tracked spec and an untracked draft: `--write` never rewrites the draft; the draft is reported in `untracked-skipped`; `--staged` rewrites exactly the staged spec
+- [x] The same three assertions for `derive_references.rs`
 
 - **Done when**: the tests pass for both generators, and each fails with the conversion removed.
 

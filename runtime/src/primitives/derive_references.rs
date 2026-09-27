@@ -484,6 +484,59 @@ mod tests {
         format!("---\nstatus: done\ndependencies: []\n---\n\n{body}\n")
     }
 
+    /// [`crate::primitives::derive_dependencies`]'s subdirectory case, for
+    /// the other generator on the same listings: with the project in a
+    /// subdirectory of its repository, `--write` rewrote the untracked draft,
+    /// nothing was reported untracked, and `--staged` rewrote nothing
+    /// (spec 059).
+    #[test]
+    fn a_subdirectory_project_derives_from_its_index() {
+        use crate::primitives::git_fixture;
+        const LINK: &str = "[x](https://github.com/other/t/specs/003-user/spec.md)";
+        let tmp = tempfile::tempdir().unwrap();
+        let (repository, project) = git_fixture::subdirectory_project(tmp.path());
+        git_fixture::write(
+            &project.join(".ductus/config.toml"),
+            "[paths]\nspecs-root = \"specs\"\n\n\
+             [services.api]\nrepo = \"https://github.com/acme/api\"\npath = \"checkouts/api\"\n",
+        );
+        let a = project.join("specs/001-a/spec.md");
+        let b = project.join("specs/002-b/spec.md");
+        git_fixture::write(&a, &spec("nothing"));
+        git_fixture::write(&b, &spec("nothing"));
+        git_fixture::commit_all(&repository, "feat: specs");
+        let draft_path = project.join("specs/004-draft/spec.md");
+        let draft = spec(LINK);
+        git_fixture::write(&draft_path, &draft);
+
+        let write = DeriveReferencesArgs {
+            write: true,
+            staged: false,
+        };
+        let result = run(&write, &project).unwrap();
+        assert_eq!(std::fs::read_to_string(&draft_path).unwrap(), draft);
+        assert_eq!(result.examined, 2);
+        assert_eq!(result.untracked_skipped, vec!["specs/004-draft/spec.md"]);
+
+        // Both tracked specs drift; only the first is staged.
+        git_fixture::write(&a, &spec(LINK));
+        git_fixture::write(&b, &spec(LINK));
+        let mut index = repository.index().unwrap();
+        index
+            .add_path(Path::new("proj/specs/001-a/spec.md"))
+            .unwrap();
+        index.write().unwrap();
+        let staged = DeriveReferencesArgs {
+            write: true,
+            staged: true,
+        };
+        let result = run(&staged, &project).unwrap();
+        assert_eq!(result.updated, vec!["specs/001-a/spec.md"]);
+        assert_eq!(result.unwritten, vec!["specs/002-b/spec.md"]);
+        assert!(std::fs::read_to_string(&a).unwrap().contains("references:"));
+        assert!(!std::fs::read_to_string(&b).unwrap().contains("references:"));
+    }
+
     #[test]
     fn normalizes_trailing_slash_and_git_suffix() {
         assert_eq!(services::normalize_repo("https://h/o/r/"), "https://h/o/r");
