@@ -41,9 +41,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Prose-claim sweep
 
-- [ ] Grep live artifacts for claims of the old behavior by meaning, not only by identifier: one rule per step, a tier taken from the step's prose, the first cited rule, `resolve_assessed_rule`, and `rule-assessments-not-checked` counting requests. The live artifacts are `framework/`, `specs/` (022's scenarios included), `README.md`, `AGENTS.md`, and runtime doc comments
-- [ ] Grep for the count words of the reason set ("six reasons", "other six", "all six", "first two", "last four") across the same artifacts
-- [ ] Classify each hit: corrected here, historical (a changelog entry, a review record, a past-tense account), or corrected in task 6 as part of 022
+- [x] Grep live artifacts for claims of the old behavior by meaning, not only by identifier: one rule per step, a tier taken from the step's prose, the first cited rule, `resolve_assessed_rule`, and `rule-assessments-not-checked` counting requests. The live artifacts are `framework/`, `specs/` (022's scenarios included), `README.md`, `AGENTS.md`, and runtime doc comments
+- [x] Grep for the count words of the reason set ("six reasons", "other six", "all six", "first two", "last four") across the same artifacts
+- [x] Classify each hit: corrected here, historical (a changelog entry, a review record, a past-tense account), or corrected in task 6 as part of 022
 
 - **Done when**: every hit is corrected or classified, and no present-tense claim of the one-rule-per-step walk remains outside 022.
 
