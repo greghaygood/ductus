@@ -1132,18 +1132,16 @@ fn load_plan_relevant_files(
                 pattern: pattern.into(),
             });
         }
-        if let Some(project) = git_repo.as_ref()
-            && is_gitignored(&project.repository, &project.to_git(&rel))
-        {
-            return Err(PayloadError::SecretExfiltration {
-                path: rel,
-                pattern: ".gitignore".into(),
-            });
-        }
+        // Containment runs before the gitignore query. libgit2 answers
+        // "ignored" for any path containing `..`, so asked first it refused
+        // an escape under the `.gitignore` label in every git repository, and
+        // the `out-of-repo` label this check exists to give never appeared
+        // there. The refusal held either way; the label named the wrong cause.
         let canon_abs = match classify_contained(&canon_repo, Path::new(&rel)) {
             // Planned-new file or rename target — omit, don't error.
             // (`canonicalize` errors on missing files; existing behavior
-            // preserved.)
+            // preserved.) Nothing is read, so there is nothing to ask git
+            // about.
             Contained::Missing => continue,
             // Path traversal: `../foo`, absolute path, or symlink whose
             // canonical target escapes the repo root. BE-INPUT-004
@@ -1157,6 +1155,14 @@ fn load_plan_relevant_files(
             }
             Contained::Inside(abs) => abs,
         };
+        if let Some(project) = git_repo.as_ref()
+            && is_gitignored(&project.repository, &project.to_git(&rel))
+        {
+            return Err(PayloadError::SecretExfiltration {
+                path: rel,
+                pattern: ".gitignore".into(),
+            });
+        }
         let Ok(content) = std::fs::read_to_string(&canon_abs) else {
             continue;
         };
@@ -1843,10 +1849,11 @@ mod tests {
     }
 
     /// Converting the path for git must not open a way out of the project.
-    /// Which layer refuses it is libgit2's call rather than this module's: it
-    /// answers "ignored" for any path containing `..`, so inside a git
-    /// repository the gitignore layer refuses before the containment check
-    /// can, as it already did at the work tree's root.
+    /// `../outside.txt` from a project at `proj/` names a file the repository
+    /// holds but the project does not, and the containment check refuses it
+    /// as `out-of-repo`, the label its cause warrants. The check runs before
+    /// the gitignore query, which libgit2 answers "ignored" for any path
+    /// containing `..` and would otherwise label the escape `.gitignore`.
     #[test]
     fn a_subdirectory_plan_path_escaping_the_project_is_still_refused() {
         let tmp = tempdir().unwrap();
@@ -1855,8 +1862,43 @@ mod tests {
 
         let err = load_plan_relevant_files("123-foo", &project).unwrap_err();
         match err {
-            PayloadError::SecretExfiltration { path, .. } => {
+            PayloadError::SecretExfiltration { path, pattern } => {
                 assert_eq!(path, "../outside.txt");
+                assert_eq!(pattern, "out-of-repo");
+            }
+            other @ PayloadError::UnknownExtension { .. } => {
+                panic!("expected SecretExfiltration, got {other:?}")
+            }
+        }
+    }
+
+    /// The same escape from a project at the root of its git repository,
+    /// where libgit2's "ignored" answer for a `..` path labelled it
+    /// `.gitignore` before spec 059's task 16 put containment first. The
+    /// existing escape tests run outside any repository, where there is no
+    /// gitignore query to answer first, so they could not see it.
+    #[test]
+    fn a_root_project_in_a_git_repository_refuses_an_escape_as_out_of_repo() {
+        let outer = tempdir().unwrap();
+        let repo = outer.path().join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        git2::Repository::init(&repo).unwrap();
+        fs::write(outer.path().join("outside.txt"), "leaked").unwrap();
+        let feature_dir = repo.join("specs/123-foo");
+        fs::create_dir_all(&feature_dir).unwrap();
+        fs::write(
+            feature_dir.join("plan.md"),
+            "## Affected Files\n\n\
+             | File | Action |\n| --- | --- |\n\
+             | `../outside.txt` | Edit |\n",
+        )
+        .unwrap();
+
+        let err = load_plan_relevant_files("123-foo", &repo).unwrap_err();
+        match err {
+            PayloadError::SecretExfiltration { path, pattern } => {
+                assert_eq!(path, "../outside.txt");
+                assert_eq!(pattern, "out-of-repo");
             }
             other @ PayloadError::UnknownExtension { .. } => {
                 panic!("expected SecretExfiltration, got {other:?}")
