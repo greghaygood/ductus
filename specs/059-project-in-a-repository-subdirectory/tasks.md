@@ -13,8 +13,8 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 
 ## 2. `check-stuck` (AC1)
 
-- [ ] Open through `ProjectRepository`; build `spec_rel` and `tasks_rel` with `to_git` (`check_stuck.rs:41-45`)
-- [ ] Test: in a subdirectory project, the `in-progress` commit is found and the commits touching `tasks.md` since it are counted, the same numbers the root-layout test asserts
+- [x] Open through `ProjectRepository`; build `spec_rel` and `tasks_rel` with `to_git` (`check_stuck.rs:41-45`)
+- [x] Test: in a subdirectory project, the `in-progress` commit is found and the commits touching `tasks.md` since it are counted, the same numbers the root-layout test asserts
 
 - **Done when**: the new test passes and fails with `to_git` removed.
 

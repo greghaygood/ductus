@@ -17,7 +17,9 @@ use std::path::Path;
 
 use git2::{Repository, Sort};
 
-use crate::primitives::{PrimitiveError, Result, SkipScanner, frontmatter_status};
+use crate::primitives::{
+    PrimitiveError, ProjectRepository, Result, SkipScanner, frontmatter_status,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
 
@@ -38,12 +40,16 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
             feature: args.feature.clone(),
         });
     }
-    let repository = Repository::discover(repo)?;
-    let spec_rel = format!("{}/{}/spec.md", layout.specs_root, args.feature);
-    let tasks_rel = format!("{}/{}/tasks.md", layout.specs_root, args.feature);
+    // History names every path from the git work tree; a project in a
+    // subdirectory of its repository asked by the path from its own root
+    // found no transition, counted nothing, and never reported stuck.
+    let project = ProjectRepository::discover(repo)?;
+    let repository = &project.repository;
+    let spec_rel = project.to_git(&format!("{}/{}/spec.md", layout.specs_root, args.feature));
+    let tasks_rel = project.to_git(&format!("{}/{}/tasks.md", layout.specs_root, args.feature));
 
-    let since = find_in_progress_commit(&repository, &spec_rel)?;
-    let count = count_commits_touching(&repository, &tasks_rel, since.as_deref())?;
+    let since = find_in_progress_commit(repository, &spec_rel)?;
+    let count = count_commits_touching(repository, &tasks_rel, since.as_deref())?;
 
     // Second condition (per scenario check-stuck-tasks-md-advancement):
     // `stuck` only fires when the first incomplete subtask in tasks.md has
@@ -53,7 +59,7 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
     // index is unavailable (no tasks.md at since-sha, or no incomplete
     // subtasks remain at HEAD).
     let first_incomplete_unchanged = match since.as_deref() {
-        Some(s) => first_incomplete_index_unchanged(&repository, &tasks_rel, s)?,
+        Some(s) => first_incomplete_index_unchanged(repository, &tasks_rel, s)?,
         None => false,
     };
     let stuck = count >= args.threshold && first_incomplete_unchanged;
@@ -428,6 +434,45 @@ mod tests {
         assert_eq!(result.commit_count, 3);
         assert!(result.stuck);
         assert!(!result.since_sha.is_empty());
+    }
+
+    /// The same history as [`counts_commits_since_in_progress`], with the
+    /// project in a subdirectory of its repository: history names the spec
+    /// from the work tree, so asked by the path from the project root it found
+    /// no transition and counted nothing (spec 059).
+    #[test]
+    fn counts_commits_for_a_project_in_a_repository_subdirectory() {
+        use crate::primitives::git_fixture;
+        let tmp = tempfile::tempdir().unwrap();
+        let (repo, project) = git_fixture::subdirectory_project(tmp.path());
+        let spec_path = project.join("specs/010-demo/spec.md");
+        let tasks_path = project.join("specs/010-demo/tasks.md");
+        write(&spec_path, &spec("planned"));
+        write(&tasks_path, "# Tasks\n\n## 1. Bootstrap\n\n- [ ] start\n");
+        git_fixture::commit_all(&repo, "feat(010): plan");
+
+        write(&spec_path, &spec("in-progress"));
+        let begin = git_fixture::commit_all(&repo, "chore(010): begin");
+
+        for i in 1..=3 {
+            write(
+                &tasks_path,
+                &format!("# Tasks v{i}\n\n## 1. Bootstrap\n\n- [ ] still\n"),
+            );
+            git_fixture::commit_all(&repo, &format!("wip(010): pass {i}"));
+        }
+
+        let result = run(
+            &CheckStuckArgs {
+                feature: "010-demo".into(),
+                threshold: 3,
+            },
+            &project,
+        )
+        .unwrap();
+        assert_eq!(result.since_sha, begin.to_string());
+        assert_eq!(result.commit_count, 3);
+        assert!(result.stuck);
     }
 
     #[test]
