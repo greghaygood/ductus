@@ -4,6 +4,7 @@ status: in-progress
 dependencies: [007-govern-workflow]
 tags: [security, format]
 next-criterion: 29
+cross-spec-impact: [017-derive-dont-ask, 036-quality-cross-rules]
 ---
 
 # 008 — Security Rules
@@ -56,7 +57,7 @@ Rules for browser-side code, UI rendering, and client-server interaction.
 Each rule within a file follows a consistent structure:
 
 - **Rule ID** — short identifier formatted as `{surface}-{category}-{NNN}` (e.g., `BE-AUTHN-001`, `FE-XSS-001`) for reference in specs, plans, and `/{project}:analyze` output. See **ID stability** below.
-- **Rule statement** — one sentence declaring what must or must not happen
+- **Rule statement** — a block quote declaring what must or must not happen, with RFC 2119 keywords of one tier (see `data-model.md` § Severity classification)
 - **Rationale** — why this rule exists (threat it mitigates)
 - **Verification** — how `/{project}:analyze` or a reviewer checks compliance (code pattern, test requirement, configuration check, or documentation commitment — see **Verification phrasing** below)
 

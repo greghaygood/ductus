@@ -78,7 +78,7 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-LOAD-001
 
-> Non-critical resources (below-the-fold images, off-route JavaScript, third-party widgets, embedded media) MUST be lazy-loaded. Images SHOULD use `loading="lazy"`; iframes SHOULD use `loading="lazy"`; off-route JavaScript MUST be code-split per `FE-BUNDLE-002`.
+> Non-critical resources (below-the-fold images, off-route JavaScript, third-party widgets, embedded media) MUST be lazy-loaded. Off-route JavaScript MUST be code-split per `FE-BUNDLE-002`.
 
 **Rationale:** Eagerly loading every resource on initial page load competes for bandwidth and CPU with the critical-path content the user is waiting for. Lazy-loading defers non-critical work until it is actually needed, freeing the main thread and the network for what matters first.
 
@@ -88,13 +88,33 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-LOAD-002
 
-> The critical rendering path MUST be defined and documented per route — the minimum set of CSS and JavaScript required to render above-the-fold content. Critical CSS SHOULD be inlined in the document `<head>`; non-critical CSS SHOULD be loaded asynchronously (e.g., via `<link rel="preload" as="style" onload="this.rel='stylesheet'">`). Render-blocking JavaScript MUST be minimized; `<script>` tags MUST use `defer` or `async` unless inline execution is required for correctness (with the reason documented).
+> The critical rendering path MUST be defined and documented per route — the minimum set of CSS and JavaScript required to render above-the-fold content. Render-blocking JavaScript MUST be minimized; `<script>` tags MUST use `defer` or `async` unless inline execution is required for correctness (with the reason documented).
 
-**Rationale:** Render-blocking resources delay First Contentful Paint by their full round-trip time. Inlined critical CSS lets the browser render immediately on receipt of the HTML; deferred JavaScript lets parsing continue without waiting for downloads. The difference is measured in seconds on slow networks.
+**Rationale:** Render-blocking resources delay First Contentful Paint by their full round-trip time. Deferred JavaScript lets parsing continue without waiting for downloads, and a documented critical path is what tells a later change whether it adds to the render-blocking set. The difference is measured in seconds on slow networks.
 
-**Verification:** Any spec or plan that introduces a new route or that modifies the document `<head>` MUST commit to critical-path discipline and to `defer`/`async` on non-essential scripts. `/{project}:analyze` flags affected-files snippets with `<script>` tags lacking `defer` or `async` (other than documented inline-required scripts) and flags HTML specs that propose synchronous external stylesheets without an inline critical-CSS strategy.
+**Verification:** Any spec or plan that introduces a new route or that modifies the document `<head>` MUST commit to a documented critical rendering path and to `defer`/`async` on non-essential scripts. `/{project}:analyze` flags affected-files snippets with `<script>` tags lacking `defer` or `async` (other than documented inline-required scripts).
 
 **Source:** web.dev Critical Rendering Path, MDN script async/defer documentation
+
+### FE-LOAD-003
+
+> Lazy-loaded images and iframes SHOULD use the native `loading="lazy"` attribute.
+
+**Rationale:** The native attribute defers the fetch until the element nears the viewport without shipping or running any JavaScript, and the browser tunes the distance to the connection. A script-based loader costs main-thread time and leaves the element unloaded when its script fails.
+
+**Verification:** Any spec or plan that lazy-loads images or iframes SHOULD commit to the native `loading="lazy"` attribute. `/{project}:analyze` emits a warning when affected-files snippets lazy-load images or iframes through a script-based loader without a stated reason the native attribute does not fit.
+
+**Source:** MDN `loading` attribute documentation
+
+### FE-LOAD-004
+
+> Critical CSS SHOULD be inlined in the document `<head>`, and non-critical CSS SHOULD be loaded asynchronously (e.g., via `<link rel="preload" as="style" onload="this.rel='stylesheet'">`).
+
+**Rationale:** An external stylesheet blocks rendering for its full round trip. Inlining the critical CSS lets the browser paint above-the-fold content on receipt of the HTML, and loading the rest asynchronously keeps it off the critical path.
+
+**Verification:** Any spec or plan that introduces a new route or that modifies the document `<head>` SHOULD commit to an inline critical-CSS strategy. `/{project}:analyze` emits a warning when HTML specs propose synchronous external stylesheets without an inline critical-CSS strategy.
+
+**Source:** web.dev Critical Rendering Path
 
 ## FE-FONT — Web Font Discipline
 
@@ -110,10 +130,20 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-FONT-002
 
-> Self-hosted web fonts MUST be served as WOFF2 (broadest support, smallest size); legacy formats (TTF, OTF, EOT, WOFF) MUST NOT be served as the primary source. The font payload SHOULD be subset to the Unicode ranges actually used by the application.
+> Self-hosted web fonts MUST be served as WOFF2 (broadest support, smallest size); legacy formats (TTF, OTF, EOT, WOFF) MUST NOT be served as the primary source.
 
-**Rationale:** WOFF2 compresses approximately 30% smaller than WOFF and is supported by every browser the project plausibly targets. Subsetting (e.g., dropping CJK glyphs from a Latin-only application) routinely halves the font payload again. Together, the two reduce font bytes by roughly 65% versus unsubsetted TTF.
+**Rationale:** WOFF2 compresses approximately 30% smaller than WOFF and is supported by every browser the project plausibly targets.
 
-**Verification:** Any spec or plan that introduces self-hosted fonts MUST commit to WOFF2 delivery and to a subsetting strategy. `/{project}:analyze` flags affected-files snippets with `@font-face` rules that load `.ttf`/`.otf`/`.eot` URLs as the primary source.
+**Verification:** Any spec or plan that introduces self-hosted fonts MUST commit to WOFF2 delivery. `/{project}:analyze` flags affected-files snippets with `@font-face` rules that load `.ttf`/`.otf`/`.eot` URLs as the primary source.
+
+**Source:** web.dev Optimize WebFont Loading, Google Fonts documentation
+
+### FE-FONT-003
+
+> The font payload SHOULD be subset to the Unicode ranges the application actually uses.
+
+**Rationale:** Subsetting (e.g., dropping CJK glyphs from a Latin-only application) routinely halves the font payload again after WOFF2 compression. Together with `FE-FONT-002`, it reduces font bytes by roughly 65% versus unsubsetted TTF.
+
+**Verification:** Any spec or plan that introduces self-hosted fonts SHOULD commit to a subsetting strategy (a build-time subset, or `unicode-range` splits). `/{project}:analyze` emits a warning when a self-hosted font spec names no subsetting strategy.
 
 **Source:** web.dev Optimize WebFont Loading, Google Fonts documentation

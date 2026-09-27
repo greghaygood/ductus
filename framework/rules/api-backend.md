@@ -68,7 +68,7 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 ### BE-ERRENV-001
 
-> Error responses from HTTP APIs MUST use a single documented envelope shape across all endpoints. The default SHOULD be RFC 9457 `application/problem+json` (with at least `type`, `title`, `status`, `detail` fields). A project-specific envelope is acceptable when documented in `specs/system.md` and used uniformly.
+> Error responses from HTTP APIs MUST use a single documented envelope shape across all endpoints.
 
 **Rationale:** Without a uniform shape, every consumer writes per-endpoint error parsing — and gets it wrong for endpoints added later. A single shape lets clients write one error handler that works everywhere, and lets the API evolve error categories without breaking consumers. The security properties of the same envelope — no internal detail in production, a correlation ID surfaced to the client — are governed by `security-backend.md` §BE-ERR (`BE-ERR-001`, `BE-ERR-002`); this rule and `BE-ERRENV-002` govern its contract shape and code stability.
 
@@ -86,6 +86,16 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 **Source:** Stripe API error documentation, Google Cloud API Design Guide
 
+### BE-ERRENV-003
+
+> The error envelope SHOULD be RFC 9457 `application/problem+json`, with at least the `type`, `title`, `status`, and `detail` fields. A project-specific envelope is acceptable when it is documented in `specs/system.md` and used uniformly.
+
+**Rationale:** A standard envelope lets clients and shared tooling — HTTP client libraries, API gateways, observability pipelines — parse errors without project-specific code, and it gives every new endpoint a documented default rather than a fresh design decision. A documented project envelope serves the same purpose where the standard one does not fit, provided it is used as uniformly as `BE-ERRENV-001` requires.
+
+**Verification:** Any spec or plan that defines the project's error envelope SHOULD commit to RFC 9457 `application/problem+json` or name the project-specific envelope documented in `specs/system.md` that replaces it. `/{project}:analyze` emits a warning when an envelope definition is neither RFC 9457 nor a documented project envelope.
+
+**Source:** RFC 9457 (Problem Details for HTTP APIs, obsoletes RFC 7807)
+
 ## BE-STATUS — HTTP Status Code Discipline
 
 ### BE-STATUS-001
@@ -102,11 +112,11 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 
 ### BE-PAGE-001
 
-> List endpoints that can return more than a small fixed maximum number of items MUST paginate. The pagination strategy MUST be documented per endpoint and SHOULD default to cursor-based pagination (opaque continuation tokens) for any collection that supports concurrent inserts or deletes. Offset-based pagination MAY be used only for static or append-only-at-tail collections.
+> List endpoints that can return more than a small fixed maximum number of items MUST paginate. The pagination strategy MUST be documented per endpoint.
 
-**Rationale:** Unpaginated list endpoints are a DoS vector (large responses, slow queries) and an OOM-on-client risk. Offset pagination loses items when new rows arrive between page reads, and shows duplicates when rows are deleted; cursor pagination is stable under concurrent writes. Defaulting to cursors forces the safe choice without per-endpoint debate.
+**Rationale:** Unpaginated list endpoints are a DoS vector (large responses, slow queries) and an OOM-on-client risk. A strategy documented per endpoint tells clients how to walk the collection and what the walk guarantees when the collection changes underneath it.
 
-**Verification:** Any spec or plan that introduces a list endpoint MUST commit to a pagination strategy, a default page size, and a maximum page size — all as named constants per `CFG-CONST-003`. `/{project}:analyze` flags list-endpoint specs that omit pagination or that propose offset pagination on collections that accept concurrent inserts.
+**Verification:** Any spec or plan that introduces a list endpoint MUST commit to a pagination strategy, a default page size, and a maximum page size — all as named constants per `CFG-CONST-003`. `/{project}:analyze` flags list-endpoint specs that omit pagination or leave the strategy unnamed.
 
 **Source:** Stripe API pagination, GraphQL Cursor Connections Specification
 
@@ -117,6 +127,16 @@ Projects without a programmatic API can pin this file in `.ductus/config.toml` t
 **Rationale:** Inferring "more pages exist when `len(items) == page_size`" is wrong at the exact boundary where the total happens to equal the page size — the client requests an empty page on the next call. A dedicated `has_more` (or non-null `next_cursor`) makes the boundary unambiguous and saves one round trip.
 
 **Verification:** Any spec or plan that introduces a paginated endpoint MUST name the response envelope including the page-continuation field. `/{project}:analyze` flags paginated-endpoint specs that infer continuation from item count or that omit a continuation field.
+
+**Source:** Stripe API pagination, GraphQL Cursor Connections Specification
+
+### BE-PAGE-003
+
+> Pagination SHOULD default to cursor-based pagination (opaque continuation tokens) for any collection that supports concurrent inserts or deletes. Offset-based pagination MAY be used only for static or append-only-at-tail collections.
+
+**Rationale:** Offset pagination loses items when new rows arrive between page reads, and shows duplicates when rows are deleted; cursor pagination is stable under concurrent writes. Defaulting to cursors forces the safe choice without per-endpoint debate.
+
+**Verification:** Any spec or plan that introduces a list endpoint over a collection that accepts concurrent inserts or deletes SHOULD commit to cursor-based pagination. `/{project}:analyze` emits a warning when a list-endpoint spec proposes offset pagination on a collection that accepts concurrent inserts or deletes.
 
 **Source:** Stripe API pagination, GraphQL Cursor Connections Specification
 

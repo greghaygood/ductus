@@ -57,7 +57,7 @@ The full ID always includes the `CFG-` prefix to disambiguate from `BE-` (backen
 | Field | Required | Format | Notes |
 | --- | --- | --- | --- |
 | Rule ID | yes | Level-3 heading (`### {ID}`) | Matches the format above. The heading contains nothing but the ID. |
-| Statement | yes | Block quote (`> …`) | One sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). |
+| Statement | yes | Block quote (`> …`) | The rule's obligation, stated with RFC 2119 keywords of one tier — MUST and MUST NOT, or SHOULD and SHOULD NOT — and optionally MAY for a permission or scope boundary. See **Severity classification** below. |
 | Rationale | yes | Paragraph beginning `**Rationale:**` | Brief explanation of the threat or risk the rule mitigates. |
 | Verification | yes | Paragraph beginning `**Verification:**` | Instruction to `/{project}:analyze` — see **Verification phrasing** below. |
 | Source | no | Paragraph beginning `**Source:**` | Citation to authoritative origin (e.g., 12-Factor App, NIST SP 800, IEC 60027 for unit suffixes). Optional but recommended. |
@@ -81,7 +81,7 @@ Same as security rules:
 | MUST, MUST NOT | Error | Blocking |
 | SHOULD, SHOULD NOT | Warning | Non-blocking |
 
-Rules MUST use exactly one of the four keywords in the Statement. Mixed keywords are not permitted; split such rules into two entries.
+A Statement's obligation keywords MUST come from one tier: MUST and MUST NOT, or SHOULD and SHOULD NOT. Keywords of both tiers in one Statement are not permitted; split such rules into two entries. MAY may appear beside either tier as a permission or scope boundary, and carries no tier. The canonical statement, including how a split assigns IDs, is `specs/008-security-rules/data-model.md` § Severity classification.
 
 ## ID stability invariants
 

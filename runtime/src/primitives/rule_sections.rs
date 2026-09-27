@@ -10,9 +10,12 @@
 //! A section's tier is derived from its Statement's RFC 2119 keyword, as the
 //! rule-format data models state (`specs/008-security-rules/data-model.md`
 //! §Severity classification): MUST or MUST NOT is MUST-tier, SHOULD or SHOULD
-//! NOT is SHOULD-tier. A Statement carrying both states a blocking obligation
-//! and is MUST-tier. One carrying neither has no tier, and the walker records
-//! it unexamined rather than assessing it in a tier nobody stated.
+//! NOT is SHOULD-tier. The format keeps a Statement's keywords in one tier,
+//! and the shipped rule files are held to it by a test below. A Statement in
+//! a rule file a project authors or pins is not, so one carrying both still
+//! states a blocking obligation and is read as MUST-tier. One carrying
+//! neither has no tier, and the walker records it unexamined rather than
+//! assessing it in a tier nobody stated.
 
 #![allow(clippy::expect_used)]
 
@@ -228,6 +231,33 @@ mod tests {
         only(&rule("TS-RULE-001", statement, "v")).tier()
     }
 
+    /// Whether a section's Statement carries keywords of both tiers, read
+    /// with the whole-token, case-sensitive split [`RuleSection::tier`] uses.
+    fn mixes_tiers(section: &RuleSection) -> bool {
+        let tokens: Vec<&str> = section
+            .statement
+            .split(|c: char| !c.is_ascii_alphanumeric())
+            .collect();
+        tokens.contains(&"MUST") && tokens.contains(&"SHOULD")
+    }
+
+    fn statement_mixes_tiers(statement: &str) -> bool {
+        mixes_tiers(&only(&rule("TS-RULE-001", statement, "v")))
+    }
+
+    /// Every rule file shipped under `framework/rules/`, sorted.
+    fn shipped_rule_files() -> Vec<std::path::PathBuf> {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../framework/rules");
+        let mut files: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|ext| ext == "md"))
+            .collect();
+        files.sort();
+        assert!(!files.is_empty(), "no rule files under {}", dir.display());
+        files
+    }
+
     #[test]
     fn a_statement_s_keyword_gives_its_tier() {
         assert_eq!(tier_of("Tokens MUST expire."), Some(RuleSeverity::Must));
@@ -243,7 +273,8 @@ mod tests {
     }
 
     /// A Statement carrying both keywords states a blocking obligation, in
-    /// either order.
+    /// either order. No shipped rule has one; this is the reading for a rule
+    /// file a project authors or pins.
     #[test]
     fn a_statement_carrying_both_keywords_is_must_tier() {
         assert_eq!(
@@ -364,16 +395,8 @@ mod tests {
     /// unexamined on every exec analyze.
     #[test]
     fn every_shipped_rule_is_assessable() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../framework/rules");
-        let mut files: Vec<_> = std::fs::read_dir(&dir)
-            .unwrap()
-            .map(|entry| entry.unwrap().path())
-            .filter(|path| path.extension().is_some_and(|ext| ext == "md"))
-            .collect();
-        files.sort();
-        assert!(!files.is_empty(), "no rule files under {}", dir.display());
         let mut total = 0;
-        for file in &files {
+        for file in &shipped_rule_files() {
             let content = std::fs::read_to_string(file).unwrap();
             let headings = heading_id_regex().captures_iter(&content).count();
             let sections = parse_rule_sections(&content);
@@ -388,6 +411,54 @@ mod tests {
             }
             total += sections.len();
         }
-        assert!(total > 0, "no rule sections under {}", dir.display());
+        assert!(total > 0, "no rule sections in the shipped rule files");
+    }
+
+    /// The check below keeps a subject once the shipped files are clean: a
+    /// Statement spanning both tiers is caught in either order, and one that
+    /// pairs two keywords of a single tier, or adds MAY, is not.
+    #[test]
+    fn a_statement_mixing_tiers_is_caught_and_a_single_tier_one_is_not() {
+        assert!(statement_mixes_tiers(
+            "Lists MUST paginate and SHOULD use cursors."
+        ));
+        assert!(statement_mixes_tiers(
+            "Images SHOULD lazy-load; scripts MUST NOT block."
+        ));
+        assert!(!statement_mixes_tiers(
+            "Cookies MUST be Secure and MUST NOT be readable."
+        ));
+        assert!(!statement_mixes_tiers(
+            "Fonts SHOULD be subset and SHOULD NOT be inlined."
+        ));
+        assert!(!statement_mixes_tiers(
+            "Traffic MUST use TLS; loopback MAY use plaintext."
+        ));
+    }
+
+    /// No shipped rule's Statement spans both tiers. The rule format keeps a
+    /// Statement's keywords in one tier (`specs/008-security-rules/data-model.md`
+    /// §Severity classification) because a review waiver and cross-pass dedup
+    /// both key on the rule ID, so a mixed rule would waive or collapse a
+    /// blocking clause together with an advisory one. Every offender is named.
+    #[test]
+    fn no_shipped_statement_mixes_tiers() {
+        let mut total = 0;
+        let mut mixed = Vec::new();
+        for file in &shipped_rule_files() {
+            let content = std::fs::read_to_string(file).unwrap();
+            for section in parse_rule_sections(&content) {
+                total += 1;
+                if mixes_tiers(&section) {
+                    mixed.push(section.id);
+                }
+            }
+        }
+        assert!(total > 0, "no rule sections in the shipped rule files");
+        assert!(
+            mixed.is_empty(),
+            "{} shipped Statement(s) carry both MUST and SHOULD: {mixed:?}",
+            mixed.len()
+        );
     }
 }

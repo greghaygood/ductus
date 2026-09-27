@@ -65,6 +65,14 @@ The 17 violations identified during the audit, classified by disposition. Accept
 
 (Original audit numbered violations 1–17 across templates, commands, constitution, and AGENTS.md. The inventory above splits violation #18 — promoting constants + env-vars to a rule file — out as its own item because it requires creating a new rule file rather than editing existing artifacts.)
 
+> **Signpost ([008-security-rules](../008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md)):**
+> the configuration rule format's Statement field and severity invariant in this spec's
+> `data-model.md` are stated in tier terms: a Statement is a block quote whose obligation
+> keywords come from one tier, and MAY may appear beside either as a permission that carries
+> no tier. They previously read "one sentence" and "exactly one of the four keywords", which
+> most shipped Statements contradicted. 008 records the obligation in its
+> `cross-spec-impact:` frontmatter; this signpost is its discharge.
+
 ## Schema Changes
 
 Frontmatter schema (constitution §text-first-artifacts) after this spec:

@@ -70,11 +70,11 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 ### BE-AUTHN-007
 
-> The system MUST throttle authentication attempts (account lockout, exponential back-off, or rate limiting). Throttling MUST be account-scoped so distributed attacks against a single account cannot bypass IP-only limits, and SHOULD additionally layer per-IP and per-device limits as defense in depth.
+> The system MUST throttle authentication attempts (account lockout, exponential back-off, or rate limiting). Throttling MUST be account-scoped so distributed attacks against a single account cannot bypass IP-only limits.
 
-**Rationale:** Per-IP throttling alone is trivially bypassed with distributed botnets. Account-scoped throttling protects the actual target. Layered scopes contain both targeted and credential-stuffing patterns.
+**Rationale:** Per-IP throttling alone is trivially bypassed with distributed botnets. Account-scoped throttling protects the actual target.
 
-**Verification:** Any spec or plan covering login, password reset, or token-issuance endpoints MUST commit to a throttling mechanism, name its scope (account, plus optionally IP and device), and describe legitimate-recovery paths during lockout. `/{project}:analyze` flags auth specs without a documented throttle, and flags specs whose only documented throttle scope is per-IP.
+**Verification:** Any spec or plan covering login, password reset, or token-issuance endpoints MUST commit to a throttling mechanism, name its account scope, and describe legitimate-recovery paths during lockout. `/{project}:analyze` flags auth specs without a documented throttle, and flags specs whose only documented throttle scope is per-IP.
 
 **Source:** OWASP Authentication Cheat Sheet
 
@@ -100,7 +100,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 ### BE-AUTHN-010
 
-> Multi-factor authentication MUST be enforced for privileged accounts (administrators, role-managers, billing operators, security operators) and SHOULD be available to all accounts. Acceptable second factors are WebAuthn/passkeys (preferred), TOTP authenticator apps, or hardware security keys. SMS-delivered codes MUST NOT be the only available second factor for privileged accounts.
+> Multi-factor authentication MUST be enforced for privileged accounts (administrators, role-managers, billing operators, security operators). Acceptable second factors are WebAuthn/passkeys (preferred), TOTP authenticator apps, or hardware security keys. SMS-delivered codes MUST NOT be the only available second factor for privileged accounts.
 
 **Rationale:** Single-factor authentication is no longer sufficient against credential stuffing, phishing, and database leaks. Privileged accounts are the highest-value targets — compromising one administrator typically compromises the system. WebAuthn and TOTP are phishing-resistant or phishing-resilient; SMS is vulnerable to SIM-swap attacks and is the weakest mainstream second factor.
 
@@ -140,13 +140,43 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 ### BE-AUTHN-014
 
-> Cookies that carry session identifiers, authentication tokens, or any other privileged credential MUST be issued with the `HttpOnly`, `Secure`, and `SameSite` attributes set. `SameSite` MUST be `Lax` or `Strict`; `SameSite=None` MUST be used only when cross-site transmission is genuinely required, MUST be paired with `Secure`, and MUST be justified in the spec. The `Domain` attribute SHOULD be omitted unless cross-subdomain sharing is explicitly required.
+> Cookies that carry session identifiers, authentication tokens, or any other privileged credential MUST be issued with the `HttpOnly`, `Secure`, and `SameSite` attributes set. `SameSite` MUST be `Lax` or `Strict`; `SameSite=None` MUST be used only when cross-site transmission is genuinely required, MUST be paired with `Secure`, and MUST be justified in the spec.
 
 **Rationale:** These attributes are set server-side in the `Set-Cookie` response header — the server is the only place they can be enforced. `HttpOnly` denies JavaScript (and therefore XSS) access to the cookie; `Secure` keeps it off plaintext connections; `SameSite` blocks the cross-site request path CSRF relies on. A backend-only service that never loads the frontend rule set still issues these cookies, so the requirement lives here as well as in the client-facing `FE-STORAGE-002` / `FE-CSRF-002`.
 
-**Verification:** Any spec or plan that issues a session, authentication, or other privileged cookie MUST commit to `HttpOnly`, `Secure`, and `SameSite` on the `Set-Cookie` path, and MUST justify any `SameSite=None` or explicit `Domain`. `/{project}:analyze` flags cookie-issuing specs that omit any of the three attributes, that set `SameSite=None` without `Secure` and a justification, or that set `Domain` without justification.
+**Verification:** Any spec or plan that issues a session, authentication, or other privileged cookie MUST commit to `HttpOnly`, `Secure`, and `SameSite` on the `Set-Cookie` path, and MUST justify any `SameSite=None`. `/{project}:analyze` flags cookie-issuing specs that omit any of the three attributes, or that set `SameSite=None` without `Secure` and a justification.
 
 **Source:** OWASP Session Management Cheat Sheet, OWASP HTTP Headers Cheat Sheet
+
+### BE-AUTHN-015
+
+> Authentication throttling SHOULD layer per-IP and per-device limits on top of the account-scoped limit `BE-AUTHN-007` requires, as defense in depth.
+
+**Rationale:** An account-scoped limit contains attacks aimed at one account, but not credential stuffing, which spreads a few attempts across many accounts from the same sources. Per-IP and per-device limits contain that pattern, so layering the scopes covers both.
+
+**Verification:** Any spec or plan covering login, password reset, or token-issuance endpoints SHOULD name per-IP and per-device limits alongside the account-scoped throttle. `/{project}:analyze` emits a warning when an auth spec's only documented throttle scope is per-account.
+
+**Source:** OWASP Authentication Cheat Sheet
+
+### BE-AUTHN-016
+
+> Multi-factor authentication SHOULD be available to all accounts, with the second factors `BE-AUTHN-010` accepts.
+
+**Rationale:** Credential stuffing, phishing, and database leaks reach every account, not only privileged ones, and an ordinary account is often the foothold for escalating to a privileged one. Offering MFA to every account lets each user close that path for their own.
+
+**Verification:** Any spec or plan that introduces account authentication or account-security settings SHOULD commit to offering MFA enrollment to every account. `/{project}:analyze` emits a warning when an authentication spec restricts MFA to privileged accounts or omits enrollment for ordinary ones.
+
+**Source:** OWASP Authentication Cheat Sheet, NIST SP 800-63B
+
+### BE-AUTHN-017
+
+> The `Domain` attribute of a cookie that carries a session identifier, authentication token, or other privileged credential SHOULD be omitted unless cross-subdomain sharing is explicitly required.
+
+**Rationale:** Without `Domain`, the browser returns the cookie only to the exact host that set it. Setting `Domain` sends it to every subdomain as well, so any one compromised subdomain receives the credential.
+
+**Verification:** Any spec or plan that issues a session, authentication, or other privileged cookie SHOULD omit the `Domain` attribute, or justify cross-subdomain sharing where it sets one. `/{project}:analyze` emits a warning when a cookie-issuing spec sets `Domain` without justification.
+
+**Source:** OWASP Session Management Cheat Sheet
 
 ## BE-AUTHZ — Authorization
 
@@ -500,7 +530,7 @@ Rule IDs follow the format `BE-{CATEGORY}-{NNN}` and are permanent — once assi
 
 > All HTTP responses MUST include a documented set of security headers covering: HSTS, content-type options, frame protection, referrer policy, content security policy (for HTML responses), and cache control for sensitive responses.
 
-**Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache. CSP `frame-ancestors` is the modern clickjacking defense and supersedes `X-Frame-Options`; `X-Frame-Options: DENY` is set in addition for browsers that do not implement CSP Level 2 (see `FE-CSP-003`).
+**Rationale:** Each header converts the browser into a layered defense. HSTS prevents downgrade attacks; `X-Content-Type-Options` prevents MIME sniffing; frame-ancestors prevents clickjacking; `Referrer-Policy` controls Referer leakage; CSP defends against XSS and mixed content; `Cache-Control: no-store` keeps sensitive responses out of shared caches and the back-button cache. CSP `frame-ancestors` is the modern clickjacking defense and supersedes `X-Frame-Options`; `X-Frame-Options: DENY` is set in addition for browsers that do not implement CSP Level 2 (see `FE-CSP-008`).
 
 **Verification:** Any spec or plan that introduces an HTTP response (especially HTML) MUST commit to setting these headers, ideally at the framework or reverse-proxy layer for uniform coverage. `/{project}:analyze` flags response specs that omit any of the headers above, and specifically flags HTML-serving specs without a CSP commitment. The minimum required headers and their values:
 
@@ -632,13 +662,13 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 ### BE-ERR-002
 
-> Error responses MUST use a consistent, structured format with a stable error code, a human-readable message, and a request correlation ID. The format SHOULD follow RFC 9457 (Problem Details for HTTP APIs, which obsoletes RFC 7807).
+> Error responses MUST use a consistent, structured format with a stable error code, a human-readable message, and a request correlation ID.
 
 **Rationale:** Stable error codes let clients react programmatically (retry, surface a localized message, branch on specific failures). Correlation IDs let support debug a user's report against the server's logs without exposing internals to the user. The envelope's contract-quality requirements — codes documented in the published schema, stable across versions, and never parsed from the human-readable message — are specified in `api-backend.md` §BE-ERRENV; this rule covers the security angle (structured shape, correlation ID).
 
 **Verification:** Any spec or plan that describes error responses MUST commit to the structured format with code + message + correlation ID. `/{project}:analyze` flags error-response specs that emit only a string message or a raw exception name.
 
-**Source:** OWASP Error Handling Cheat Sheet, RFC 9457
+**Source:** OWASP Error Handling Cheat Sheet
 
 ### BE-ERR-003
 
@@ -649,6 +679,16 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 **Verification:** Any spec or plan covering the request-handling pipeline or `system.md` MUST commit to a global exception handler that produces a structured response. `/{project}:analyze` flags pipeline specs that omit this commitment.
 
 **Source:** OWASP Error Handling Cheat Sheet
+
+### BE-ERR-004
+
+> The structured error format SHOULD follow RFC 9457 (Problem Details for HTTP APIs, which obsoletes RFC 7807).
+
+**Rationale:** A standard format lets clients and intermediaries parse error responses with existing libraries rather than project-specific code. `api-backend.md` states the same preference as a contract concern (`BE-ERRENV-003`); it is stated here too because a project can load the security rules without the API contract rules.
+
+**Verification:** Any spec or plan that describes error responses SHOULD commit to RFC 9457 as the structured format, or name the documented format that replaces it. `/{project}:analyze` emits a warning when an error-response spec defines a structured format that is neither RFC 9457 nor documented in `specs/system.md`.
+
+**Source:** RFC 9457
 
 ## BE-LOG — Logging and Audit
 
@@ -674,11 +714,11 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 ### BE-LOG-003
 
-> Log storage MUST be separate from application data storage. Log access MUST be restricted and monitored. The system SHOULD implement tamper detection on log integrity (write-once storage, cryptographic chaining, or external archival).
+> Log storage MUST be separate from application data storage. Log access MUST be restricted and monitored.
 
-**Rationale:** If an attacker gains application database access, logs stored in the same database can be modified to cover tracks. Separation plus access control plus tamper detection escalate the attacker effort required to hide.
+**Rationale:** If an attacker gains application database access, logs stored in the same database can be modified to cover tracks. Separation plus access control escalate the attacker effort required to hide.
 
-**Verification:** Any spec or plan covering logging infrastructure or `system.md` MUST commit to log storage separation and access control. Tamper detection is a `SHOULD` flagged as advisory when missing.
+**Verification:** Any spec or plan covering logging infrastructure or `system.md` MUST commit to log storage separation and access control.
 
 **Source:** OWASP Logging Cheat Sheet
 
@@ -712,11 +752,21 @@ The HSTS `preload` directive commits the domain — and, with `includeSubDomains
 
 **Source:** W3C Trace Context, OWASP Logging Cheat Sheet, OpenTelemetry
 
+### BE-LOG-007
+
+> The system SHOULD implement tamper detection on log integrity (write-once storage, cryptographic chaining, or external archival).
+
+**Rationale:** Separation and access control (`BE-LOG-003`) make logs harder to reach. Tamper detection covers the attacker who reaches them anyway: an edit to write-once or cryptographically chained logs is detectable, so covering tracks leaves a trace of its own.
+
+**Verification:** Any spec or plan covering logging infrastructure or `system.md` SHOULD commit to a tamper-detection mechanism for logs. `/{project}:analyze` emits a warning when a logging-infrastructure spec names none.
+
+**Source:** OWASP Logging Cheat Sheet
+
 ## BE-DEPS — Dependency Management
 
 ### BE-DEPS-001
 
-> Project dependencies MUST be scanned for known vulnerabilities on every CI run. Dependencies with known critical or high-severity vulnerabilities MUST be updated, replaced, or have a documented exception. Scanning SHOULD be automated in CI/CD.
+> Project dependencies MUST be scanned for known vulnerabilities on every CI run. Dependencies with known critical or high-severity vulnerabilities MUST be updated, replaced, or have a documented exception.
 
 **Rationale:** Vulnerable dependencies are the most common path to compromise in modern web stacks. Continuous scanning catches CVEs as they're disclosed; a documented action policy ensures findings are addressed rather than ignored.
 

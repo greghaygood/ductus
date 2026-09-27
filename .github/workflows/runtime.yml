@@ -19,6 +19,11 @@ on:
       # comparison and nothing notices until an unrelated runtime commit
       # happens to trigger the workflow.
       - 'scripts/audit/review-freshness.sh'
+      # src/primitives/rule_sections.rs holds corpus tests over the shipped
+      # rule files (every rule assessable, no Statement mixing tiers), so an
+      # edit to a rule file is an edit to their subject. Without this path a
+      # rules-only change never runs them.
+      - 'framework/rules/**'
   push:
     branches:
       - main
@@ -28,6 +33,7 @@ on:
       - '.github/workflows/runtime.yml'
       - '.github/workflows/runtime-release.yml'
       - 'scripts/audit/review-freshness.sh'
+      - 'framework/rules/**'
 
 permissions:
   contents: read

@@ -378,7 +378,7 @@ Rule files ship under `specs/rules/{rule-set}.md` and are referenced from featur
 Every rule has four required fields:
 
 - **ID** — a permanent identifier (e.g., `BE-AUTHN-001`) cited from feature specs.
-- **Statement** — one sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). MUST/MUST NOT rules are blocking; SHOULD/SHOULD NOT are advisory.
+- **Statement** — a block quote stating the obligation with RFC 2119 keywords of one tier: MUST and MUST NOT rules are blocking, SHOULD and SHOULD NOT rules are advisory. MAY may appear beside either to state a permission, and carries no tier.
 - **Rationale** — the threat or risk the rule mitigates.
 - **Verification** — instruction to `/{project}:analyze` on how to check compliance against feature artifacts.
 

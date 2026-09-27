@@ -82,11 +82,21 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-XSS-008
 
-> Applications running in browsers that support the Trusted Types API SHOULD adopt it as a defense in depth against DOM XSS. When adopted, the CSP MUST include `require-trusted-types-for 'script'` and a `trusted-types` directive naming the allowed policy names; sinks that accept strings (`innerHTML`, `outerHTML`, `document.write`, `eval`, `Function`, script `src`) MUST receive `TrustedHTML`/`TrustedScript`/`TrustedScriptURL` values produced by a reviewed policy, not raw strings.
+> When an application adopts the Trusted Types API, its CSP MUST include `require-trusted-types-for 'script'` and a `trusted-types` directive naming the allowed policy names, and sinks that accept strings (`innerHTML`, `outerHTML`, `document.write`, `eval`, `Function`, script `src`) MUST receive `TrustedHTML`/`TrustedScript`/`TrustedScriptURL` values produced by a reviewed policy, not raw strings.
 
-**Rationale:** Trusted Types (Chromium-originated, increasingly cross-browser) shifts DOM XSS defense from "find every sink" to "centralize the sanitization." The CSP enforcement turns every unsanitized assignment into a runtime violation, surfacing latent sinks during development.
+**Rationale:** Trusted Types protects only what its enforcement covers. Without `require-trusted-types-for 'script'` the browser accepts raw-string assignments, so an adoption that omits it looks complete and blocks nothing, and a sink fed a raw string or an unreviewed policy's output is the unsanitized path the adoption exists to close. With the enforcement in place, every unsanitized assignment becomes a runtime violation, surfacing latent sinks during development.
 
-**Verification:** Any spec or plan covering rendering of dynamic HTML in a browser that supports Trusted Types SHOULD commit to adoption with the named CSP directives and policy-naming convention. `/{project}:analyze` emits a warning when frontend rendering specs in Trusted-Types-capable contexts omit the adoption discussion.
+**Verification:** Any spec or plan that adopts Trusted Types MUST commit to the `require-trusted-types-for 'script'` and `trusted-types` CSP directives, a policy-naming convention, and routing string-accepting sinks through reviewed policies. `/{project}:analyze` flags specs that adopt Trusted Types without naming both directives, or that describe string-accepting sinks receiving raw strings under an adoption.
+
+**Source:** W3C Trusted Types specification, MDN Trusted Types documentation
+
+### FE-XSS-009
+
+> Applications running in browsers that support the Trusted Types API SHOULD adopt it as a defense in depth against DOM XSS.
+
+**Rationale:** Trusted Types (Chromium-originated, increasingly cross-browser) shifts DOM XSS defense from "find every sink" to "centralize the sanitization." What an adoption must configure to be effective is `FE-XSS-008`.
+
+**Verification:** Any spec or plan covering rendering of dynamic HTML in a browser that supports Trusted Types SHOULD commit to adopting it. `/{project}:analyze` emits a warning when frontend rendering specs in Trusted-Types-capable contexts omit the adoption discussion.
 
 **Source:** W3C Trusted Types specification, MDN Trusted Types documentation
 
@@ -136,11 +146,11 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-STORAGE-002
 
-> Session and authentication cookies MUST set `HttpOnly` (denies JavaScript access), `Secure` (requires HTTPS transit), and `SameSite=Lax` or `Strict` (limits cross-site transmission); the `Domain` attribute SHOULD NOT be set unless cross-subdomain sharing is explicitly required.
+> Session and authentication cookies MUST set `HttpOnly` (denies JavaScript access), `Secure` (requires HTTPS transit), and `SameSite=Lax` or `Strict` (limits cross-site transmission).
 
-**Rationale:** Each attribute closes a specific attack vector: `HttpOnly` blocks XSS-based theft, `Secure` blocks plaintext interception, `SameSite` blocks CSRF, and omitting `Domain` confines the cookie to its exact origin (preventing subdomain hijacks).
+**Rationale:** Each attribute closes a specific attack vector: `HttpOnly` blocks XSS-based theft, `Secure` blocks plaintext interception, and `SameSite` blocks CSRF.
 
-**Verification:** Any spec or plan that introduces a session, authentication, or other privileged cookie MUST commit to setting all three required attributes and MUST justify any use of an explicit `Domain` value. `/{project}:analyze` flags cookie-issuing specs that omit `HttpOnly`, `Secure`, or `SameSite`, or that set `Domain` without justification.
+**Verification:** Any spec or plan that introduces a session, authentication, or other privileged cookie MUST commit to setting all three required attributes. `/{project}:analyze` flags cookie-issuing specs that omit `HttpOnly`, `Secure`, or `SameSite`.
 
 **Source:** OWASP Session Management Cheat Sheet
 
@@ -153,6 +163,16 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 **Verification:** Any spec or plan that describes how the client transmits sensitive values to the server MUST commit to request bodies or headers, not URL components. `/{project}:analyze` flags client-server specs that bind tokens, credentials, session IDs, or PII into URL paths, query strings, or fragments.
 
 **Source:** OWASP REST Security Cheat Sheet, OWASP Session Management Cheat Sheet
+
+### FE-STORAGE-004
+
+> The `Domain` attribute SHOULD NOT be set on session and authentication cookies unless cross-subdomain sharing is explicitly required.
+
+**Rationale:** Omitting `Domain` confines the cookie to its exact origin, so a compromised or attacker-controlled subdomain never receives it (preventing subdomain hijacks).
+
+**Verification:** Any spec or plan that introduces a session, authentication, or other privileged cookie SHOULD leave `Domain` unset, or justify cross-subdomain sharing where it sets one. `/{project}:analyze` emits a warning when a cookie-issuing spec sets `Domain` without justification.
+
+**Source:** OWASP Session Management Cheat Sheet
 
 ## FE-AUTHN — Authentication UX
 
@@ -190,9 +210,9 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-CSP-001
 
-> All HTML responses MUST be served with a `Content-Security-Policy` HTTP header; CSP MUST be delivered via the response header and SHOULD NOT be delivered via `<meta>` tag alone (which cannot enforce `frame-ancestors`, reporting, or `sandbox`).
+> All HTML responses MUST be served with a `Content-Security-Policy` HTTP header; CSP MUST be delivered via the response header.
 
-**Rationale:** CSP is the primary defense in depth against XSS. Header-delivered CSP applies before the browser parses any markup and supports the full directive set; `<meta>`-delivered CSP applies after the parser begins and supports only a subset. Header delivery is the only complete enforcement.
+**Rationale:** CSP is the primary defense in depth against XSS. Header-delivered CSP applies before the browser parses any markup and supports the full directive set; `<meta>`-delivered CSP applies after the parser begins and supports only a subset — it cannot enforce `frame-ancestors`, reporting, or `sandbox`. Header delivery is the only complete enforcement.
 
 **Verification:** Any spec or plan that describes serving HTML responses or configuring the edge/web server MUST commit to a CSP header on every HTML response. `/{project}:analyze` flags HTML-serving specs that omit a CSP commitment or that describe `<meta>`-only CSP delivery.
 
@@ -210,11 +230,11 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-CSP-003
 
-> The CSP policy MUST include `frame-ancestors 'none'` (or `'self'` if same-origin framing is required); legacy `X-Frame-Options: DENY` SHOULD also be set as a fallback for browsers that do not honor `frame-ancestors`.
+> The CSP policy MUST include `frame-ancestors 'none'` (or `'self'` if same-origin framing is required).
 
-**Rationale:** Clickjacking attacks embed the application in an attacker-controlled iframe and trick users into interacting with the framed UI. `frame-ancestors` is the modern defense; `X-Frame-Options` covers older browsers that do not implement CSP Level 2.
+**Rationale:** Clickjacking attacks embed the application in an attacker-controlled iframe and trick users into interacting with the framed UI. `frame-ancestors` is the modern defense.
 
-**Verification:** Any spec or plan that describes serving HTML responses MUST commit to `frame-ancestors 'none'` or `'self'` in CSP and SHOULD commit to `X-Frame-Options: DENY` (or `SAMEORIGIN`). `/{project}:analyze` flags HTML-serving specs that omit `frame-ancestors`, and emits a warning when `X-Frame-Options` is omitted.
+**Verification:** Any spec or plan that describes serving HTML responses MUST commit to `frame-ancestors 'none'` or `'self'` in CSP. `/{project}:analyze` flags HTML-serving specs that omit `frame-ancestors`.
 
 **Source:** OWASP HTTP Headers Cheat Sheet, OWASP Clickjacking Defense Cheat Sheet
 
@@ -257,6 +277,16 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 **Verification:** Any spec or plan that describes serving HTML responses MUST commit to a `Permissions-Policy` header naming the denied and allowed features. `/{project}:analyze` flags HTML-serving specs that omit `Permissions-Policy`, that leave privacy-sensitive features unrestricted, or that grant features without an origin scope.
 
 **Source:** W3C Permissions Policy specification, OWASP HTTP Headers Cheat Sheet, MDN Permissions-Policy documentation
+
+### FE-CSP-008
+
+> Legacy `X-Frame-Options: DENY` (or `SAMEORIGIN` where same-origin framing is required) SHOULD also be set as a clickjacking fallback for browsers that do not honor `frame-ancestors`.
+
+**Rationale:** `X-Frame-Options` covers older browsers that do not implement CSP Level 2, where the `frame-ancestors` directive `FE-CSP-003` requires has no effect.
+
+**Verification:** Any spec or plan that describes serving HTML responses SHOULD commit to `X-Frame-Options: DENY` (or `SAMEORIGIN`). `/{project}:analyze` emits a warning when HTML-serving specs omit `X-Frame-Options`.
+
+**Source:** OWASP HTTP Headers Cheat Sheet, OWASP Clickjacking Defense Cheat Sheet
 
 ## FE-DEPS — Dependency Management
 
@@ -334,10 +364,20 @@ Projects without a frontend can pin this file in `.ductus/config.toml` to skip i
 
 ### FE-PII-003
 
-> Pages displaying sensitive data MUST set `Cache-Control: no-store` to prevent browser, intermediate, and shared caching; the logout response SHOULD additionally include `Clear-Site-Data: "cache", "cookies", "storage"` to evict client-side artifacts.
+> Pages displaying sensitive data MUST set `Cache-Control: no-store` to prevent browser, intermediate, and shared caching.
 
-**Rationale:** Cached responses persist on disk and can be recovered after the session ends — by another user on a shared machine, a forensic analyst, or anyone with disk access. `Clear-Site-Data` instructs the browser to evict all locally stored artifacts at logout, closing the post-session leakage window.
+**Rationale:** Cached responses persist on disk and can be recovered after the session ends — by another user on a shared machine, a forensic analyst, or anyone with disk access.
 
-**Verification:** Any spec or plan that describes authenticated pages or logout flows MUST commit to `Cache-Control: no-store` on sensitive responses and SHOULD commit to `Clear-Site-Data` on logout. `/{project}:analyze` flags authenticated-page specs that omit `Cache-Control: no-store` and emits a warning when logout flows omit `Clear-Site-Data`.
+**Verification:** Any spec or plan that describes authenticated pages MUST commit to `Cache-Control: no-store` on sensitive responses. `/{project}:analyze` flags authenticated-page specs that omit `Cache-Control: no-store`.
 
-**Source:** OWASP Session Management Cheat Sheet, MDN Cache-Control / Clear-Site-Data documentation
+**Source:** OWASP Session Management Cheat Sheet, MDN Cache-Control documentation
+
+### FE-PII-004
+
+> The logout response SHOULD include `Clear-Site-Data: "cache", "cookies", "storage"` to evict client-side artifacts.
+
+**Rationale:** `Cache-Control: no-store` (`FE-PII-003`) keeps sensitive responses out of caches, but artifacts already stored on the client survive the session. `Clear-Site-Data` instructs the browser to evict them at logout, closing the post-session leakage window.
+
+**Verification:** Any spec or plan that describes logout flows SHOULD commit to `Clear-Site-Data` on the logout response. `/{project}:analyze` emits a warning when logout flows omit `Clear-Site-Data`.
+
+**Source:** OWASP Session Management Cheat Sheet, MDN Clear-Site-Data documentation

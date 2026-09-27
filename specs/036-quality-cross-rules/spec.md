@@ -43,6 +43,14 @@ Inaugural rule:
 > and a Verification clause, through this spec's back-edge because this spec owns the `QUAL`
 > surface. 050 records the obligation in its `cross-spec-impact:` frontmatter; this signpost is
 > its discharge.
+>
+> **Signpost ([008-security-rules](../008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md)):**
+> the severity invariant this spec's `data-model.md` inherits is stated in tier terms: a
+> Statement's obligation keywords come from one tier, and MAY may appear beside either as a
+> permission that carries no tier. It previously read "exactly one RFC 2119 keyword", which
+> 66 single-tier shipped Statements pairing MUST with MUST NOT, or SHOULD with SHOULD NOT,
+> contradicted. 008 records the obligation in its `cross-spec-impact:` frontmatter; this
+> signpost is its discharge.
 
 ## Acceptance Criteria
 

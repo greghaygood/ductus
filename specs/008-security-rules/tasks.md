@@ -158,3 +158,9 @@ Reopen surfaced upstream from an adopter: an `FE-DEPS` rule was missing for a de
 - [ ] Implement the behavior described in `scenarios/a-statement-carries-one-obligation-keyword.md`
 
 - **Done when**: the scenario's open questions are resolved, no rule in `framework/rules/` violates the severity-classification invariant as the data models then state it, and `008` is re-reviewed back to `done`.
+
+## 10. Disposition out-of-spec finding: the pre-commit hook restages a whole spec.md, so a status-only commit cannot be split from uncommitted body edits
+
+- [ ] `.githooks/pre-commit` and `framework/bootstrap/hooks/ductus-pre-commit` — both run `git add` on every staged `spec.md` from the working tree after `label-criteria`, so a status flip staged alone (by `git update-index` or hunk staging) commits the file's other uncommitted edits with it. Surfaced reopening 017 and 036: the first attempt, `09cd16b5`, committed the signposts under a status-only message and left `status: done`; it was undone before any push. The constitution's §spec-lifecycle advice to commit a status transition as its own step does not say the working file must hold only that change at commit time.
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task

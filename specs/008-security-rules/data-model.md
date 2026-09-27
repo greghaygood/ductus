@@ -72,7 +72,7 @@ A rule file is a markdown document with the following structure:
 | Field | Required | Format | Notes |
 | --- | --- | --- | --- |
 | Rule ID | yes | Level-3 heading (`### {ID}`) | Matches the format above. The heading contains nothing but the ID. |
-| Statement | yes | Block quote (`> …`) | One sentence using RFC 2119 keywords (MUST, MUST NOT, SHOULD, SHOULD NOT). |
+| Statement | yes | Block quote (`> …`) | The rule's obligation, stated with RFC 2119 keywords of one tier — MUST and MUST NOT, or SHOULD and SHOULD NOT — and optionally MAY for a permission or scope boundary. See **Severity classification** below. |
 | Rationale | yes | Paragraph beginning `**Rationale:**` | Brief explanation of the threat or risk the rule mitigates. |
 | Verification | yes | Paragraph beginning `**Verification:**` | Instruction to `/{project}:analyze` — see **Verification phrasing** below. |
 | Source | no | Paragraph beginning `**Source:**` | Citation to authoritative origin (e.g., OWASP cheat sheet name, RFC number, NIST publication, CIS Benchmark). Optional but recommended — aids `Learnable` (readers can trace the rule's grounding) and `Verified` (reviewers can audit the citation). |
@@ -117,7 +117,11 @@ The Statement's RFC 2119 keyword determines the severity `/{project}:analyze` re
 | MUST, MUST NOT | Error | Blocking |
 | SHOULD, SHOULD NOT | Warning | Non-blocking |
 
-Rules MUST use exactly one of the four keywords in the Statement. Mixed keywords (e.g., "MUST … SHOULD") are not permitted; split such rules into two entries.
+A Statement's obligation keywords MUST come from one tier: MUST and MUST NOT, or SHOULD and SHOULD NOT. Keywords of both tiers in one Statement (e.g., "MUST … SHOULD") are not permitted, because a review waiver and cross-pass dedup both key on the rule ID and would treat a blocking clause and an advisory one as one finding. Split such a rule into two entries: the MUST clauses keep the existing ID, and the SHOULD clauses take the next unused sequence number in the category. A SHOULD clause that its own MUST clause already implies is dropped rather than split off, since the rule it would mint could never fail on its own.
+
+MAY is permitted beside either tier, to state a permission or a scope boundary (e.g., "offset pagination MAY be used only for append-only collections"). It states no obligation and carries no tier, so a Statement using MAY alone has no tier and cannot be assessed.
+
+The shipped rule files are held to this by the runtime's corpus test (`no_shipped_statement_mixes_tiers` in `runtime/src/primitives/rule_sections.rs`). A rule file a project authors, or a pinned copy of a shipped one, is not checked; `/{project}:analyze` reads a Statement there that carries both tiers as MUST-tier.
 
 ## ID stability invariants
 
