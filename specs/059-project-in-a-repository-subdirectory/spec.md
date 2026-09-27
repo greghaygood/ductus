@@ -1,7 +1,7 @@
 ---
 status: in-progress
 dependencies: [058-findings-route-at-discovery]
-next-criterion: 11
+next-criterion: 12
 cross-spec-impact: [018-adopter-owned-pre-commit]
 ---
 
@@ -31,6 +31,8 @@ Two surfaces outside the runtime share the premise that the project root is the 
 - `/ductus` wires the hook with `git config core.hooksPath .githooks` (`framework/bootstrap/ductus-procedure.md` §Hook Installation). Git resolves a relative `core.hooksPath` from the root of the working tree (git-config(1) `core.hooksPath`; githooks(5) DESCRIPTION), so in a subdirectory project git never finds the project's hook, and none of its passes run. The hook also changes to `git rev-parse --show-toplevel` before running them (`framework/bootstrap/hooks/ductus-pre-commit:47-48`), where neither the runtime pointer nor the spec root is found. Audit Family 22 observes the resolution: a real commit with `core.hooksPath` set to the project's hooks directory, named from the work tree, runs the project's hook, and against the pre-059 hooks that hook then failed to find the inner hook at the work tree's root.
 - The adopter CI template calls `.ductus/bin/ductus` from the checkout root (`framework/templates/ci/adopter-generators.yml`). In a subdirectory project the step fails loudly, and the template gives the adopter no hint of the fix. Adopters copy it by hand (spec `043-workflows-sunset`).
 
+The prose-claim sweep during implementation found the same defect in two command sources, which tell a host to parse paths out of git output that names them from the work tree's root. `implement.md`'s markdown-only cross-spec check reads `git diff --stat`, and `amend.md`'s reconcile pass reads `git status --porcelain`, which names every path from the repository root whatever the working directory (git-status(1), porcelain v1). In a subdirectory project each reads the feature's own files as `proj/specs/…` and matches none of them. By operator decision these join 059.
+
 ## Edge Cases
 
 - **A project at the repository root.** Its path from the work tree is empty, and every reader, the hook, and the CI template behave exactly as they do today.
@@ -55,6 +57,7 @@ Two surfaces outside the runtime share the premise that the project root is the 
 - [ ] AC8: `check-corpus-links --scope repository` in a subdirectory project examines the tracked markdown files under the project root, names each one project-relative, and leaves out files outside the project
 - [ ] AC9: In a subdirectory project, `/ductus` sets `core.hooksPath` to the project's `.githooks` directory named from the work tree, recognizes that value as already wired on a later run, and `framework/bootstrap/hooks/ductus-pre-commit` runs its passes from the project root rather than from `git rev-parse --show-toplevel`
 - [ ] AC10: `framework/templates/ci/adopter-generators.yml` carries a commented `defaults.run.working-directory` that a project in a subdirectory sets to its path, so every step runs from the project root
+- [ ] AC11: Every git instruction in `framework/commands/` whose output a host parses for paths names them from the project root: `implement.md`'s markdown-only cross-spec check passes `--relative`, and `amend.md`'s reconcile pass lists its delta with `git status --short`, which names paths from the working directory
 
 ## Open Questions
 

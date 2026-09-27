@@ -131,3 +131,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–9 are runti
 - [ ] `specs/017-derive-dont-ask/spec.md` (the signpost at line 15 and AC21 at line 143) and `specs/022-deterministic-runtime/scenarios/adopter-generator-promotion.md:68` send a reader to `framework/bootstrap/ductus.md` §Hook Installation; the section has lived in `framework/bootstrap/ductus-procedure.md` since 056's archive-boundary split (`ca85c8b8`). Measured by `git grep` over the live-artifact set during 059's prose-claim sweep: those three, plus 018's six, which 059's task 14 corrects; plans and tasks files are design records and not counted. Predates 059. Pricing: 017 is a `spec.md` edit (reopen plus an analyze); 022's is a scenario, a durable contract (reopen plus 022's full five-pass re-review).
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
+
+## 18. Command-source git instructions name paths from the project root (AC11)
+
+- [x] `framework/commands/implement.md`: add `--relative` to the markdown-only `git diff --stat` in step 13's note and in the completion gate's step 4
+- [x] `framework/commands/amend.md` reconcile step 1 and its scope line: parse `git status --short --untracked-files=all`, which names paths from the working directory, instead of `git status --porcelain`, which names them from the repository root (`git status *` is in every agent's canonical permission set; `git ls-files *` is not)
+- [x] Show each command naming a subdirectory project's paths from the project root, and the replaced commands naming them from the repository root, in a throwaway repository
+- [x] Re-bless `implement-basic` (`cargo test --release --locked --test parity`) and confirm its diff is commit shas only
+
+- **Done when**: both command sources name a subdirectory project's paths from the project root, the parity suite passes, and the `implement-basic` re-bless changed only `first-commit`/`current-head`.
