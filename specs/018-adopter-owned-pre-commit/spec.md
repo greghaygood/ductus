@@ -1,7 +1,7 @@
 ---
 status: in-progress
 dependencies: [017-derive-dont-ask]
-next-criterion: 14
+next-criterion: 15
 ---
 
 # 018 — Adopter-Owned Pre-Commit
@@ -44,11 +44,11 @@ No `# managed-by: ductus` sentinel — this file is not managed by ductus after 
 
 ### Inner file (ductus-owned)
 
-The inner file's body is what `framework/bootstrap/hooks/pre-commit` ships today: run the adopter-relevant generators, then `git add` their outputs. The `# managed-by: ductus` sentinel stays on line 2 of the inner file as the marker that ductus owns it.
+The inner file's body is what `framework/bootstrap/hooks/pre-commit` shipped before this spec: run the adopter-relevant generators, then `git add` their outputs. The `# managed-by: ductus` sentinel stays on line 2 of the inner file as the marker that ductus owns it.
 
 ### Hook Installation logic
 
-The detection ladder lives in `framework/bootstrap/ductus-procedure.md` §Hook Installation, which is the current ladder; this spec does not restate it. What this spec changed there: it replaced the seven-item ladder with four cases — already wired, a custom hooks directory, a third-party hook system (`.husky/`, `.pre-commit-config.yaml`, `lefthook.yml`, or `lefthook-local.yml`), and no conflicts, which sets `core.hooksPath`. The manifest passes write the inner file (`update`) and the outer file (`create`) whichever case applies. The previous "existing `.githooks/pre-commit` from a prior `/ductus` run, detected by sentinel" branch went away — the outer file is no longer detected by sentinel because ductus doesn't own it. Migration of pre-existing ductus-installed hooks is handled separately (see §Migration below).
+The detection ladder lives in `framework/bootstrap/ductus-procedure.md` §Hook Installation, which is the current ladder; this spec does not restate it. What this spec changed there: it replaced the seven-item ladder with four cases — already wired, a custom hooks directory, a third-party hook system (`.husky/`, `.pre-commit-config.yaml`, `lefthook.yml`, or `lefthook-local.yml`), and no conflicts, which sets `core.hooksPath`. The manifest passes write the inner file (`update`) and the outer file (`create`) whichever case applies. The previous "existing `.githooks/pre-commit` from a prior `/ductus` run, detected by sentinel" branch went away — the outer file is no longer detected by sentinel because ductus doesn't own it. What decides whether the hook is wired is instead whether the outer file invokes the inner one: an outer file that does not is a hook of the project's own, which the `create` pass leaves in place, and wiring it would run that hook and never ductus's passes, so `/ductus` skips wiring with the manual integration snippet, as it does for a third-party hook system. Migration of pre-existing ductus-installed hooks is handled separately (see §Migration below).
 
 ### Manual integration snippet
 
@@ -68,13 +68,13 @@ Existing adopters who already ran `/ductus` from spec 017 have a ductus-owned `.
 4. Apply the `create` strategy for the new outer `.githooks/pre-commit`, writing the stub above. Because the old file has been renamed, the destination no longer exists and `create` proceeds.
 5. Report `migrated pre-commit hook: .githooks/pre-commit → .githooks/ductus-pre-commit; created adopter-owned .githooks/pre-commit stub`.
 
-If `.githooks/pre-commit` exists but does **not** carry the sentinel, leave it alone — it's an adopter file, follow the existing detection ladder (skip wiring, manual integration snippet). The new layout still installs `.githooks/ductus-pre-commit` via the manifest in this case (it's the inner file, useful even when not wired).
+If `.githooks/pre-commit` exists but does **not** carry the sentinel, leave it alone — it's an adopter file, and the detection ladder decides: it wires the hook when the file invokes the inner hook, and otherwise skips wiring with the manual integration snippet. The new layout still installs `.githooks/ductus-pre-commit` via the manifest in this case (it's the inner file, useful even when not wired).
 
 Adopters who edited their ductus-installed pre-commit despite the sentinel: their edits live in the renamed file (now `ductus-pre-commit`). The next `/ductus` will overwrite that file with the shipped version, dropping their edits. This is the same fate those edits had under the prior design — the migration does not make things worse, and the post-migration model gives adopters a safe place (the new outer file) to put edits going forward.
 
 ## Affected Surfaces
 
-- `framework/bootstrap/hooks/pre-commit` — split into two files. The current contents become `framework/bootstrap/hooks/ductus-pre-commit`. A new `framework/bootstrap/hooks/pre-commit-stub` (or similar) holds the adopter-owned outer file's initial content.
+- `framework/bootstrap/hooks/pre-commit` — split into two files. Its contents before this spec became `framework/bootstrap/hooks/ductus-pre-commit`, and the adopter-owned outer file's initial content took its place at the same path.
 - `framework/bootstrap/hooks/install.sh` — deleted. The two install actions (`git config core.hooksPath .githooks` and `chmod +x` on both hook files) are inlined into §Hook Installation, now in `framework/bootstrap/ductus-procedure.md`. The conflict-detection logic the script duplicated already lives in `/ductus`'s detection ladder, and a manual `bash install.sh` would not regenerate the outer file (only `/ductus` writes it via the manifest), so the satellite script's only remaining role goes away.
 - `framework/bootstrap/ductus-procedure.md` §Hook Installation — rewrite the detection ladder per §Design above; update the manual integration snippet path; add the migration step.
 - `framework/bootstrap/ductus.md` §Shared Files — replace the single `framework/bootstrap/hooks/pre-commit` → `.githooks/pre-commit` (`update`) row with two rows: inner file (`update`) and outer file (`create`).
@@ -110,6 +110,7 @@ Adopters who edited their ductus-installed pre-commit despite the sentinel: thei
 - [x] AC11: `/ductus` end-to-end run executed against a sandbox adopter directory (existing-install case and fresh-install case) produces the file layouts described in AC8 and AC9 with no manual intervention
 - [x] AC12: `framework/bootstrap/hooks/install.sh` is deleted; its install actions (`git config core.hooksPath .githooks` and `chmod +x` on the two hook files) are inlined into `framework/bootstrap/ductus-procedure.md` §Hook Installation; no other artifact references the deleted file — narrowed by 059-project-in-a-repository-subdirectory: the value set is `{P}.githooks`, which is `.githooks` at the repository root
 - [x] AC13: `.ductus/scripts/gen-spec-deps.sh` excludes block-quoted lines (lines matching `^[[:space:]]*>`) when extracting sibling-spec links from spec bodies. Signpost-style references inside a blockquote do not pollute the predecessor spec's `dependencies:` frontmatter. Effect: 017's `dependencies` returns to `[]` post-signpost, AND any pre-existing done spec whose `dependencies` was polluted by retroactively-added signpost blockquotes (000, 003, 006, 007, 008, 011) is corrected on the next generator run. The corrections remove forward-pointers to specs that were implemented later — those are signposts, not implement-time dependencies — superseded by 022-deterministic-runtime: the shell generators it names were promoted to runtime primitives, so `.ductus/scripts/` no longer exists — the derivation this criterion delivered now runs as `derive-dependencies` and `derive-references`
+- [ ] AC14: `/ductus` reports the hook installed or already wired only when a non-comment line of `.githooks/pre-commit` names `ductus-pre-commit`; otherwise it does not wire, leaves `core.hooksPath` as it found it, and reports the skip with the manual integration snippet
 
 ## Open Questions
 

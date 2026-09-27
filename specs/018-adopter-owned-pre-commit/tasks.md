@@ -123,3 +123,12 @@ Done when: all generators run cleanly; the only diffs in the working tree are th
 - [x] After AC1–AC13 are checked, update spec frontmatter `status` from `in-progress` → `done` per the standard pipeline
 
 Done when: spec frontmatter is `done`, all ACs checked, README table includes the 018 row, all working-tree diffs are intentional.
+
+## 12. Wire the hook only when `.githooks/pre-commit` invokes the inner hook
+
+- [x] `framework/bootstrap/ductus-procedure.md` §Hook Installation: add a wiring precondition for cases 1, 2 and 5 — when no non-comment line of `.githooks/pre-commit` names `ductus-pre-commit`, the file is the project's own hook, which the `create` pass left in place; do not wire, leave `core.hooksPath` as found, and report the skip with the manual integration snippet. Found by 018's review (QUAL-CLAIM-001): the ladder reported the hook installed or already wired over a hook that never runs ductus's passes, and case 5 activated a hook the project had not activated
+- [x] Name the new skip in the snippet's trigger list and in the post-scaffolding hook status line
+- [x] 018 `spec.md`: state the precondition in §Design, correct §Migration's account of a non-sentinel outer file, and add an unlabelled acceptance criterion for it, labelled by `label-criteria`
+- [x] Walk the ladder by hand: the project's own `.githooks/pre-commit` with `core.hooksPath` unset and with it set to `.githooks`, the shipped stub, the pre-059 stub at the repository root, and a spec-017 sentinel file left in place by a failed or blocked migration rename
+
+- **Done when**: the ladder wires or reports wired only an outer hook that invokes the inner hook, every walked case reaches the stated branch, and 018's spec states the precondition in a labelled criterion
