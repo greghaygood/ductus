@@ -1,19 +1,19 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-26T21:34:38Z
-analyzed-against: b27ac5ba557704639bcddbc08c2d445ddbe24123
+last-run: 2026-09-27T18:20:57Z
+analyzed-against: 3dc7bbbb103109a9aeee2f3c88e184c12c0e4c3b
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 0
 analyzed-digest:
-  data-model.md: b2a1c64496cc522f4ee1617bba118f9b283e3e9dda74bc24f5df28fcad0ceb4e
+  data-model.md: 98b6b5e54781654d83c62b2deb9ae6f5c175594c136853507270ad94f17a4968
   plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: 12d0018f96aec02133c5cfebaf93a336b315f22831a8577fe97a4fc115a8bc62
+  review.md: 13ac4416589364265145aeb5533cd8a8924e11c8eb20016e7ac0d0bc17936bc3
   scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
-  scenarios/adopter-generator-promotion.md: 52a49fff9ad4f3493a9d7f2daf51df20d3ac1f58776015ed64450b46d8a60154
+  scenarios/adopter-generator-promotion.md: 80ec329393c3b78c0926ef45f61792502c311b1bccaa0dba6526234bac53e161
   scenarios/an-empty-scope-flag-does-not-decide-the-denominator.md: 13366f629fea7637c497bbb44d7e1ed798500ff3c445e03eb560bb021032117b
   scenarios/analyze-artifact-checks.md: 5d8f5e76161fb02ff07c23d77a358349be4a04b7afae103b0136deb955c7e880
   scenarios/anchor-reference-kinds.md: 178e97f7cad2d6434284fa77f7c965635a6a85cee9bdeed7bd72c45c2c3fc9f2
@@ -114,7 +114,7 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: e51b02bec5198078c0e5ead2f527e62b0d04809cdfd40d7dd018e114810f7380
+  spec.md: 49cc696c3b45a18d1e5872e4591aad88f3ddd3325ce0d6bd4573e499afd60a40
   tasks.md: 7cea97c80e32598a7a271fd4886c06803d6c5d0f2f85e352a88d11c36ec35493
 blocking: false
 dispositions:
