@@ -55,7 +55,7 @@ Operator-approved (2026-09-27, with the `cross-spec-impact:` declaration): this 
 - [x] `specs/022-deterministic-runtime/data-model.md`: add `rule-file-unreadable` to the could-not-be-read row (`:473`); rewrite the `rule-assessments-not-checked` sentence and the reason counts in the prose (`:476`); add the exec per-rule and trigger-judgment note to the `assessSpecQuality` section (`:1273`)
 - [x] `specs/022-deterministic-runtime/spec.md`: add a **block-quoted** signpost beside the extension-point inventory (`:170`) linking to this spec, so `check-review-gate` reads the discharge and `derive-dependencies` induces no `022 → 060` edge; after committing, read the derivation's cycle report as well as its drift report
 - [x] Read 022's ticked criteria naming `assessSpecQuality` or the unexamined reasons against the new behavior, and correct or annotate any claim 060 supersedes
-- [ ] With 022 targeted, run `/ductus:review` and `/ductus:analyze`, then `/ductus:implement`'s completion gate, which returns 022 to `done`; target 060 again afterwards
+- [x] With 022 targeted, run `/ductus:review` and `/ductus:analyze`, then `/ductus:implement`'s completion gate, which returns 022 to `done`; target 060 again afterwards
 
 - **Done when**: 022 is `done`, its body links to 060 in a block quote, `derive-dependencies` reports no cycle, and `check-review-gate` on 060 reports the impact discharged.
 
@@ -69,8 +69,8 @@ Operator-approved (2026-09-27, with the `cross-spec-impact:` declaration): this 
 
 ## 8. Local gate
 
-- [ ] `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, and `cargo test --release --locked` under `runtime/`, as CI runs them
-- [ ] `bash scripts/audit/run-all.sh`, the generators, and `npx markdownlint-cli2` over every changed markdown file
+- [x] `cargo fmt --check`, `cargo clippy --release --all-targets --locked -- -D warnings`, and `cargo test --release --locked` under `runtime/`, as CI runs them
+- [x] `bash scripts/audit/run-all.sh`, the generators, and `npx markdownlint-cli2` over every changed markdown file
 - [ ] Commit, then run the checks that read git history again against the commit
 
 - **Done when**: every check passes against the committed tree, with each result read on the line that ran it.
