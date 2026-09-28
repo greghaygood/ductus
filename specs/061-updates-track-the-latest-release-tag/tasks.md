@@ -172,8 +172,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 20. Close-out checks
 
-- [ ] Confirm `{ref-floor}` in both copies equals the version the release will be cut at
-- [ ] Run the full local gate: `cargo test` from `runtime/` (counting result lines against targets), `scripts/audit/run-all.sh`, the framework-checks steps, and `lint-markdown` over the changed markdown
-- [ ] Confirm that none of tasks 1–8's commits has reached `origin` ahead of the release (plan, Rollout)
+- [x] Confirm `{ref-floor}` in both copies equals the version the release will be cut at
+- [x] Run the full local gate: `cargo test` from `runtime/` (counting result lines against targets), `scripts/audit/run-all.sh`, the framework-checks steps, and `lint-markdown` over the changed markdown
+- [x] Confirm that none of tasks 1–8's commits has reached `origin` ahead of the release (plan, Rollout)
 
 - **Done when**: the gate is green with its counts recorded, the floor matches the planned release, and AC16's nine back-links resolve.
+
+## 21. Disposition out-of-spec finding: cargo audit reports chacha20 0.10.1 as yanked
+
+- [ ] `runtime/Cargo.lock` — `chacha20` 0.10.1 (a dependency of `rand` 0.10.2) was yanked on crates.io on 2026-08-27, and 0.10.2 is current. `cargo audit` reports it as 1 allowed warning and exits 0. `cargo tree -e all --target all` finds no path to `rand` or `chacha20`, so neither crate is compiled into any target. The pin dates from d33c5333; 061 never touched `Cargo.lock`. The fix is `cargo update -p chacha20 --precise 0.10.2`, which the dry run shows changes that one entry
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
