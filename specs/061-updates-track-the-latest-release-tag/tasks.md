@@ -82,11 +82,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Pre-release exercise
 
-- [ ] In a scratch git repository, install the working-tree bootstrap and run `/ductus` with `--ref=main`, end to end, confirming all three fetches name `main` and `[source] ref = "main"` is recorded
-- [ ] Run it plain, confirming `latest` resolves to the current release and halts on the release floor with the pre-publication message, writing nothing past the Permission Setup seed
-- [ ] Run it with `--ref=` empty, an unknown value, `--ref` twice, and a nonexistent `ductus-v*` tag, confirming each halts naming its value
-- [ ] Set a `[migrations] last_applied` to an id present at `main` and absent from a lower tag's registry, and confirm the migration floor's lookup order (the lower tag is also below the release floor pre-release, so exercise the lookup by reading it rather than by relying on its halt)
-- [ ] Run `--ref=latest` with a recorded `main`, confirming the block is rewritten without `ref`
+- [x] In a scratch git repository, install the working-tree bootstrap and run `/ductus` with `--ref=main`, end to end, confirming all three fetches name `main` and `[source] ref = "main"` is recorded
+- [x] Run it plain, confirming `latest` resolves to the current release and halts on the release floor with the pre-publication message, writing nothing past the Permission Setup seed
+- [x] Run it with `--ref=` empty, an unknown value, `--ref` twice, and a nonexistent `ductus-v*` tag, confirming each halts naming its value
+- [x] Set a `[migrations] last_applied` to an id present at `main` and absent from a lower tag's registry, and confirm the migration floor's lookup order (the lower tag is also below the release floor pre-release, so exercise the lookup by reading it rather than by relying on its halt)
+- [x] Run `--ref=latest` with a recorded `main`, confirming the block is rewritten without `ref`
 
 - **Done when**: each outcome above is observed, and the observations are recorded for the review. The latest-release and named-tag success paths, which need a release carrying this spec, are named as unobservable before release (plan, Trade-offs).
 
