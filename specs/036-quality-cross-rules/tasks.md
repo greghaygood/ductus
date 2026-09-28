@@ -65,3 +65,19 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Verify: `scripts/lint-rule-ids.sh` passes, `npx markdownlint-cli2` is clean, and the full `cargo test --release --locked` passes, since `framework/rules/**` is a runtime CI input
 
 - **Done when**: `QUAL-DELEG-001`'s Rationale states its discriminator against `QUAL-CLAIM-001` and `QUAL-GROUND-001`, its Verification no longer carries it, and the rule's ID, Statement and trigger are unchanged — so AC10 holds as written.
+
+## 10. QUAL-TEST-001 — a test fails when the behavior it names is removed (routed by 050's third round)
+
+- [ ] `framework/rules/quality-cross.md`: add `QUAL-TEST-001` (SHOULD) with Statement, Rationale (its discriminator against `QUAL-CLAIM-001` and `QUAL-STUB-001`), Verification and Source, and declare the `TEST` category in the header
+- [ ] `data-model.md`: register `TEST` under Category abbreviations and add the `QUAL-TEST` namespace; extend the added-rules sentence, which enumerates the shipped set by design and says to extend it whenever a rule is added
+- [ ] `spec.md`: a `TEST` bullet under Added categories, the 050 signpost extended to name the third round, and an acceptance criterion for the rule
+- [ ] `framework/commands/analyze.md`: its example of the categories `quality-cross.md` declares is stale (it omits `DELEG`); restate it without enumerating the set
+- [ ] Verify: `scripts/lint-rule-ids.sh`, `npx markdownlint-cli2`, the audit, and the full `cargo test --release --locked`
+
+- **Done when**: `framework/rules/quality-cross.md` carries `QUAL-TEST-001` with all four fields, the `TEST` category is declared in the header and registered in the data model, 050 is linked back, and the local gate passes
+
+## 11. QUAL-GROUND-001 and QUAL-DELEG-001 say a SHOULD finding does not block done, which §implement-phase contradicts
+
+- [ ] Both Verifications end "it does not block `done`" / "does not block `done`", but constitution §implement-phase holds that a spec does not reach `done` with an outstanding SHOULD, and analyze's review-state drift reports a `done` spec whose review records one (`runtime/src/primitives/check_artifacts.rs:665`). Restate both as QUAL-TEST-001 does: the finding never sets the review's `blocking` flag, and like any outstanding SHOULD it is fixed or waived before the spec reaches `done`. Surfaced writing task 10
+
+- **Done when**: no rule in `quality-cross.md` claims a SHOULD finding leaves `done` unblocked

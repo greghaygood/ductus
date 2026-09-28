@@ -35,12 +35,13 @@ QUAL-{category}-{NNN}
 | Unverified external contracts | `GROUND` |
 | Unsubstantiated clean results | `CLAIM` |
 | Unenumerated delegation to shared code | `DELEG` |
+| Tests that cannot fail | `TEST` |
 
 The category set is declared in the `quality-cross.md` file header per the per-file category-declaration policy (`016-cross-cutting-rules`). It grows as concerns promote — adjacent categories (e.g. swallowed errors, dead code) are added when a concrete need appears, via `/ductus:amend` or a follow-on spec.
 
 ## Rule set
 
-`framework/rules/quality-cross.md` shipped its first version with one rule (`QUAL-STUB-001`); `QUAL-GROUND-001`, `QUAL-CLAIM-001` and `QUAL-DELEG-001` were added later per the category-growth policy above, each through this spec's back-edge rather than a spec of its own, per [§rules](../../framework/constitution.md#rules). Numbering is permanent. This sentence enumerates the shipped set and is therefore a claim of its own — extend it whenever a rule is added, per [§grounding](../../framework/constitution.md#grounding).
+`framework/rules/quality-cross.md` shipped its first version with one rule (`QUAL-STUB-001`); `QUAL-GROUND-001`, `QUAL-CLAIM-001`, `QUAL-DELEG-001` and `QUAL-TEST-001` were added later per the category-growth policy above, each through this spec's back-edge rather than a spec of its own, per [§rules](../../framework/constitution.md#rules). Numbering is permanent. This sentence enumerates the shipped set and is therefore a claim of its own — extend it whenever a rule is added, per [§grounding](../../framework/constitution.md#grounding).
 
 ### QUAL-STUB namespace (Silent stubs category)
 
@@ -57,6 +58,10 @@ The category set is declared in the `quality-cross.md` file header per the per-f
 ### QUAL-DELEG namespace (Delegation to shared code category)
 
 - `QUAL-DELEG-001` (SHOULD) — replacing a hand-rolled predicate, parser, validator, or comparator with a shared one is preceded by enumerating what the local version enforced *by construction* (character set, length or form, where the candidate ended, ordering, input trust level) rather than only what its name declares, and any property the shared implementation does not provide is kept local with the reason recorded on both sides. Distinct from `QUAL-CLAIM-001` (a result overstating what it verified) and `QUAL-GROUND-001` (an unverified assumption about an unowned contract): this rule governs a correct-looking substitution of one implementation for another, whose two failure directions are opposite — a widened predicate accepting input written verbatim into a structured file, and a narrowed one silently dropping input it used to accept. Verified at review time by `/ductus:review`'s quality pass. Added through this spec's back-edge by `050-constitution`'s second promotion round, which classified the rule as universal but code-governing, so [§rules](../../framework/constitution.md#rules) routes it to a rule file with a permanent ID rather than into the constitution.
+
+### QUAL-TEST namespace (Tests that cannot fail category)
+
+- `QUAL-TEST-001` (SHOULD) — a test fails when the behavior it names is removed or broken; one that exercises a path without asserting its result, pins only an incidental value, or passes because a fallback or default path satisfies its assertion as well as the primary path does is not coverage and is not added or counted as such. Distinct from `QUAL-CLAIM-001` (a code path's output overstating what it examined) and `QUAL-STUB-001` (an unimplemented path returning success): this rule governs the test itself, a check that reports a pass it could never withhold. Verified at review time by `/ductus:review`'s quality pass; a test whose report, commit or comment records how it was shown to fail is compliant. Added through this spec's back-edge by `050-constitution`'s third promotion round, which classified the rule as universal but code-governing, as its second round did `QUAL-DELEG-001`.
 
 ## Severity and ID-stability invariants
 

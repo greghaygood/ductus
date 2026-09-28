@@ -1,7 +1,7 @@
 ---
 status: in-progress
 dependencies: [008-security-rules, 016-cross-cutting-rules, 017-derive-dont-ask, 024-rule-loader, 033-rule-surface-setting]
-next-criterion: 11
+next-criterion: 12
 ---
 
 # 036 — Cross-cutting code-quality rules
@@ -33,6 +33,7 @@ Inaugural rule:
 - **`GROUND`** (`QUAL-GROUND-001`, SHOULD) — code whose correctness depends on an external contract it does not own (database schema, external API shape, config key, file/wire format) should bind to it so a wrong assumption fails loudly, rather than silently encoding a guess. The code-side counterpart to `/ductus:analyze`'s artifact-grounding check; both enforce constitution §grounding. Added after the inaugural delivery per the category-growth policy (`data-model.md` §Category abbreviations), consolidating the code-side grounding enforcement into this existing `QUAL`-surface home rather than a new spec.
 - **`CLAIM`** (`QUAL-CLAIM-001`, SHOULD) — a clean, empty, or in-sync result should distinguish *"examined the subject and found nothing"* from *"could not examine the subject"*, rather than emitting the same value for both. Where `STUB` governs unimplemented paths returning success and `GROUND` governs unverified assumptions inside logic, `CLAIM` governs a fully-implemented path whose **output** overstates what it verified — absence of evidence rendered as evidence of absence. Added per the same category-growth policy, derived from four instances observed in `ductus`'s own tooling rather than proposed speculatively. The rule's Source paragraph is the record of which they were, and of the later fifth instance an adopter surfaced.
 - **`DELEG`** (`QUAL-DELEG-001`, SHOULD) — replacing a hand-rolled predicate, parser, validator, or comparator with a shared one should be preceded by enumerating what the local version enforced *by construction* — character set, length or form, where the candidate ended, ordering, input trust level — rather than only what its name declares, with any property the shared implementation does not provide kept local and the reason recorded on both sides. Where `CLAIM` governs a result that overstates what it verified and `GROUND` an unverified assumption about an unowned contract, `DELEG` governs a correct-looking substitution of one implementation for another, whose two failure directions are opposite: a widened predicate accepting input written verbatim into a structured file, and a narrowed one silently dropping input it used to accept. Added per the same category-growth policy, routed here by `050-constitution`'s second promotion round — see the signpost below. Cited as a slug rather than linked: this is provenance, and 036 does not depend on 050.
+- **`TEST`** (`QUAL-TEST-001`, SHOULD) — a test should fail when the behavior it names is removed or broken; one that exercises a path without asserting its result, pins only an incidental value, or passes because a fallback or default path satisfies its assertion as well as the primary path does is not coverage. Where `CLAIM` governs a code path whose output overstates what it examined and `STUB` an unimplemented path returning success, `TEST` governs the test itself: a check that reports a pass it could never withhold. The fallback case is the one that survives review, because only breaking the code shows it. Routed here by `050-constitution`'s third promotion round, as its second routed `DELEG` — see the signpost below.
 
 > **Signpost ([050-constitution](../050-constitution/spec.md)):** `QUAL-DELEG-001` was added here rather than to the
 > constitution. 050's second promotion round classified the `AGENTS.md` entry
@@ -42,7 +43,9 @@ Inaugural rule:
 > [§rules](../../framework/constitution.md#rules) routes it to a rule file with a permanent ID
 > and a Verification clause, through this spec's back-edge because this spec owns the `QUAL`
 > surface. 050 records the obligation in its `cross-spec-impact:` frontmatter; this signpost is
-> its discharge.
+> its discharge. 050's third round routed a second entry the same way on 2026-09-28:
+> *a test must fail when the behavior it names is removed* is `QUAL-TEST-001`, universal by
+> the reword test and code-governing, so it lands here through the same back-edge.
 >
 > **Signpost ([008-security-rules](../008-security-rules/scenarios/a-statement-carries-one-obligation-keyword.md)):**
 > the severity invariant this spec's `data-model.md` inherits is stated in tier terms: a
@@ -64,6 +67,7 @@ Inaugural rule:
 - [x] AC8: `QUAL-GROUND-001` (SHOULD) is present with Statement / Rationale / Verification, the `GROUND` category is declared in the file header and registered in the data-model, and the rule is enforced by `/ductus:review`'s quality pass as the code-side counterpart to `/ductus:analyze`'s grounding check (constitution §grounding).
 - [x] AC9: `QUAL-CLAIM-001` (SHOULD) is present with Statement / Rationale / Verification, the `CLAIM` category is declared in the file header and registered in the data-model, and its Rationale states the discriminator against `QUAL-STUB-001` and `QUAL-GROUND-001` so a reviewer choosing between the three has the distinction in hand. Its Verification carries a promotion criterion to MUST, and its Source cites the observed instances it was derived from — naming which are confirmed and which are unassessed, so the rule does not itself assert more than was verified.
 - [x] AC10: `QUAL-DELEG-001` (SHOULD) is present with Statement / Rationale / Verification, the `DELEG` category is declared in the file header and registered in the data-model, and its Rationale states the discriminator against `QUAL-CLAIM-001` and `QUAL-GROUND-001` — this rule governs a correct-looking substitution of one implementation for another, whose two failure directions are opposite. The Verification clause names the enumeration a delegation owes (character set, length or form, termination, ordering, input trust level) and treats a test exercising **both** the widened and the narrowed direction as compliant, since one direction proves half.
+- [ ] AC11: `QUAL-TEST-001` (SHOULD) is present with Statement / Rationale / Verification, the `TEST` category is declared in the file header and registered in the data-model, and its Rationale states the discriminator against `QUAL-CLAIM-001` and `QUAL-STUB-001`. The Verification clause names the fallback case — an input on which the primary path and a fallback agree — and treats a test whose report, commit or comment records how it was shown to fail as compliant.
 
 ## Open Questions
 
