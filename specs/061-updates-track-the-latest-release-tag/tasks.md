@@ -164,8 +164,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 19. Discharge 056
 
-- [ ] `done → in-progress`
-- [ ] Correct the Resolved Question at spec line 147 to address the archive half through `{framework-root}`, with a signpost
+- [x] `done → in-progress`
+- [x] Correct the Resolved Question at spec line 147 to address the archive half through `{framework-root}`, with a signpost
 - [ ] Review, analyze, `→ done`
 
 - **Done when**: 056 is `done` with a current review and analysis, and links back to 061.
