@@ -72,11 +72,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Prose-claim sweep and release procedure
 
-- [ ] `README.md`: both one-liners become the `releases/latest/download/install.sh` form with `-L`, and *Installing (per agent)* describes the release default and `--ref`
-- [ ] `CLAUDE.md` Non-negotiables and the `AGENTS.md` Workflow entry: keep *commit directly to `main`*, restating the reason
-- [ ] `AGENTS.md` release entry: state that a framework-only change reaches default-source adopters at the next `ductus-v*` release and bumps like any other (AC15), and restate the *the commit is what breaks them* paragraph for a pin read at the resolved ref
-- [ ] `runtime/src/primitives/fetch_archive.rs`: correct the live-on-main doc comment
-- [ ] Re-run the plan's sweep: `git grep` for the claims by meaning, excluding review and analysis records and published history
+- [x] `README.md`: both one-liners become the `releases/latest/download/install.sh` form with `-L`, and *Installing (per agent)* describes the release default and `--ref`
+- [x] `CLAUDE.md` Non-negotiables and the `AGENTS.md` Workflow entry: keep *commit directly to `main`*, restating the reason
+- [x] `AGENTS.md` release entry: state that a framework-only change reaches default-source adopters at the next `ductus-v*` release and bumps like any other (AC15), and restate the *the commit is what breaks them* paragraph for a pin read at the resolved ref
+- [x] `runtime/src/primitives/fetch_archive.rs`: correct the live-on-main doc comment
+- [x] Re-run the plan's sweep: `git grep` for the claims by meaning, excluding review and analysis records and published history
 
 - **Done when**: the sweep returns only the nine declared specs' hits (tasks 11–19), 028 and 032 (task 10), and past-tense records (049, `runtime/CHANGELOG.md`, other specs' `plan.md` and `tasks.md` design records). AC7 and AC15 hold against the tree.
 

@@ -123,7 +123,7 @@ It walks the list one item at a time and routes each: a rule for a cross-cutting
 
 ### `/ductus` — the framework installed or updated in this project
 
-**Reach for it when adopting the framework, or pulling the latest version of it.** The installer that placed every other command. Idempotent — safe to re-run any time.
+**Reach for it when adopting the framework, or updating to its latest release.** The installer that placed every other command. Idempotent — safe to re-run any time. `--ref=main` or `--ref=<release tag>` moves the project to another source and records the choice; `--ref=latest` returns it to the default.
 
 ### `/configure` — agent permissions for the `ductus` commands
 

@@ -12,8 +12,9 @@
 > rather than by care.
 
 - **Commit directly to `main`. This repo is trunk-based — never branch first.**
-  `ductus` is live-on-main: the installer and everything `/ductus` fetches track
-  `main`, so there is no release branch and no feature-branch/PR step. The
+  Releases are cut from `main` by tag, and `main` is the integration branch an
+  adopter opts into with `--ref=main`, so there is no release branch and no
+  feature-branch/PR step. The
   general "branch off the default branch before committing" default does **not**
   apply here. Branch only when the user explicitly asks. Full entry, with its
   history, in `AGENTS.md` §Workflow.

@@ -18,7 +18,7 @@ AI agents are fast, but left to their own devices they're inconsistent: they gue
 Install `ductus` into any project:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/ductus/main/install.sh | sh
+curl --proto '=https' --tlsv1.2 -sSfL https://github.com/stonean/ductus/releases/latest/download/install.sh | sh
 ```
 
 This installs the `/ductus` bootstrap command for Claude Code — see [Installing](#installing-per-agent) to target Auggie, Antigravity, or OpenCode instead. Then, in your agent, run:
@@ -27,7 +27,7 @@ This installs the `/ductus` bootstrap command for Claude Code — see [Installin
 /ductus my-project
 ```
 
-That one command scaffolds the `specs/` directory, installs the full set of slash commands, acquires and wires the runtime, sets up the constitution and agent rules, and prints your next steps. It's idempotent — safe to re-run any time to pull the latest `ductus` files.
+That one command scaffolds the `specs/` directory, installs the full set of slash commands, acquires and wires the runtime, sets up the constitution and agent rules, and prints your next steps. It's idempotent — safe to re-run any time to update to the latest `ductus` release.
 
 The installed commands are **namespaced to your project**, so the name you passed becomes the prefix:
 
@@ -158,10 +158,10 @@ Add a file to the rule-file directory — `rules/` under your spec root, or [`fr
 
 ## Installing (per agent)
 
-`ductus` operates a **live-on-main** model — the installer fetches the latest from `main`. Omit the agent argument to install for Claude Code, or name one explicitly:
+The installer is attached to every `ductus` release, and the one-liner fetches the latest release's copy (`-L` follows GitHub's redirect to its asset host). By default it places the latest release's bootstrap, and `/ductus` then updates from that release — never from unreleased work on `main`. Omit the agent argument to install for Claude Code, or name one explicitly:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/ductus/main/install.sh | sh -s -- <agent>
+curl --proto '=https' --tlsv1.2 -sSfL https://github.com/stonean/ductus/releases/latest/download/install.sh | sh -s -- <agent>
 ```
 
 | Agent | Argument | Where the bootstrap lands | Note |
@@ -172,6 +172,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/d
 | OpenCode | `opencode` | `.opencode/command/ductus.md` | Reads `AGENTS.md` natively — no `CLAUDE.md`. `/ductus` writes the project's root `opencode.json`; because OpenCode loads config once at startup, restart it after the first wiring. |
 
 Then run `/ductus {project-name}` in your agent. The installer creates the right directory for your agent and drops the bootstrap command in place; it's safe to re-run.
+
+To start from another source, add `--ref` beside the agent argument — `sh -s -- claude --ref=main` for the tip of `main`, or `--ref=ductus-v0.55.0` for a named release — then run `/ductus --ref=<the same value> {project-name}`. The installer writes no project configuration, so that first `/ductus` run is what records the choice; a plain `/ductus` would use the latest release (see [Updating an adopted project](#updating-an-adopted-project)).
 
 The same bootstrap supports every agent, so re-run `/ductus --add-agent` from any adopted agent later to add others. `/ductus` acquires the runtime and wires it in the same run — automatically for Claude and OpenCode (both keep MCP config in a committed repo file), or by surfacing a one-time registration step for Auggie and Antigravity (see [Registering the runtime](docs/runtime.md#registering-the-runtime)).
 
@@ -209,7 +211,7 @@ The `ductus` runtime is the deterministic execution layer the pipeline runs on. 
 
 The pointer is what lets a committed MCP config work for the whole team: `.mcp.json` is shared, so a machine-specific absolute path in it would break every other contributor and every CI checkout. A repo-relative pointer resolves for all of them.
 
-`/ductus` compares the pin against the installed binary on every run and re-acquires on mismatch, so upgrading is a routine `/ductus`. A machine running two ductus projects pinned to different versions holds one binary — whichever ran most recently — until `/ductus` runs in the other.
+`/ductus` reads the pin from the release it updates from, compares it against the installed binary on every run, and re-acquires on mismatch, so upgrading is a routine `/ductus`. A machine running two ductus projects on different releases holds one binary — whichever ran most recently — and the two re-acquire it over each other, one `/ductus` run at a time. A project that needs its own binary sets `[runtime] path`.
 
 The runtime is **required**: acquisition failure halts the run rather than degrading, because a requirement that quietly is not one leaves both execution paths alive. For supplying your own binary, what to do when acquisition fails, and how the MCP server is registered per agent, see **[docs/runtime.md](docs/runtime.md)**.
 
@@ -236,7 +238,7 @@ surfaces = ["backend"]
 specs-root = "governance"
 ```
 
-`/ductus` also maintains `[host]`, `[project]`, and `[migrations]`; those are written for you and are not meant to be hand-edited. The fully commented schema — every section, with the values each key accepts — is in [`framework/bootstrap/ductus.md` §Project Configuration](framework/bootstrap/ductus.md#project-configuration); the `[services]` schema is declared in [specs/030-cross-service-references/data-model.md](specs/030-cross-service-references/data-model.md).
+`/ductus` also maintains `[host]`, `[project]`, `[source]`, and `[migrations]`; those are written for you and are not meant to be hand-edited — `[source]` records the release a project updates from, and changes with `/ductus --ref` (see [Updating an adopted project](#updating-an-adopted-project)). The fully commented schema — every section, with the values each key accepts — is in [`framework/bootstrap/ductus.md` §Project Configuration](framework/bootstrap/ductus.md#project-configuration); the `[services]` schema is declared in [specs/030-cross-service-references/data-model.md](specs/030-cross-service-references/data-model.md).
 
 ## Cross-service references
 
@@ -266,7 +268,7 @@ For the registry schema, the loading order, the resolution outcomes, and what th
 
 ## Updating an adopted project
 
-Re-run `/ductus` to pull the latest framework files. Each file is handled by one of three strategies:
+Re-run `/ductus` to update to the latest `ductus` release. Each file is handled by one of three strategies:
 
 | Strategy | Behavior | Examples |
 | --- | --- | --- |
@@ -275,6 +277,19 @@ Re-run `/ductus` to pull the latest framework files. Each file is handled by one
 | `skip` | Never overwritten | `AGENTS.md`, `CLAUDE.md` |
 
 `.gitignore` uses a `merge` strategy — `ductus` patterns are appended below a `# ductus` marker. Pin individual files you've customized with `[pinned]` in `.ductus/config.toml` (above). If you'd rather not run `/ductus` at all, the framework files are readable in this repo: diff them and apply changes at your own pace.
+
+### Choosing the source
+
+By default every `/ductus` run resolves the latest release — GitHub's latest, never a draft or a prerelease — and fetches the bootstrap, the runtime pin, and the framework files all from that one tag, so an update lands on a released state rather than on whatever `main` holds that moment. A change committed to `main` reaches a default project at the next `ductus-v*` release. Pass `--ref` to choose otherwise:
+
+| Flag | Source |
+| --- | --- |
+| *(none)* | the recorded source, else the latest release |
+| `--ref=main` | the tip of `main`, ahead of any release |
+| `--ref=ductus-v0.55.0` | that release, and it stays there when newer ones ship |
+| `--ref=latest` | the latest release, clearing a recorded choice |
+
+`--ref=main` or a tag is recorded in `.ductus/config.toml` `[source] ref`, which is committed, so the release a project is on is shared by the whole team, and every later plain run uses it. Every run prints `Source: …` naming what it resolved. A tag older than the first release that honors `--ref` (`ductus-v0.55.0`), or older than a migration your project has already applied, is refused before anything is written; so is a malformed value or a repeated `--ref`. An unresolvable latest release halts rather than falling back to `main`.
 
 ## Viewing artifacts
 

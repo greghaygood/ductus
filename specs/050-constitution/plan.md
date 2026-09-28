@@ -308,7 +308,7 @@ clause rather than as a principle in its own right.
 | --- | --- |
 | Commit directly to `main` — this repo uses trunk-based development (survey W1) | This repo's trunk-based flow; adopters choose their own branching |
 | Never create a repository named `govern` under this account again, and never reuse a retired project name (survey W2) | Concerns this project's distribution redirect, not an adopter's pipeline |
-| A `runtime/` change ships via a `ductus-v<version>` tag — the commit alone reaches nobody (survey W3) | Adopters have no `runtime/` and cut no release |
+| A change ships via a `ductus-v<version>` tag — the commit alone reaches no default-source adopter (survey W3) | Adopters have no `runtime/` and cut no release |
 | Never record another project's name in this repository — describe the shape instead (survey W8) | Arises from using outside projects to test this framework |
 | Read `framework/commands/{name}.md` before recommending, describing, or disambiguating a s (survey W9) | Loses nothing an adopter needs that §grounding does not already state |
 | A change to an agent-facing surface must cover every agent in the registry, not just Claude (survey W13) | The registry is the framework's own enumeration |

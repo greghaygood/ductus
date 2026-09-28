@@ -2,12 +2,12 @@
 //! sha256 against a sidecar file.
 //!
 //! The procedural use case is the `/ductus` bootstrap installer
-//! (scenario `ductus-bootstrap` on spec 022). The framework operates
-//! live-on-main, so the bootstrap fetches GitHub's auto-generated
-//! source tarball (`/archive/refs/heads/main.tar.gz`), which has no
-//! companion sha256 sidecar. Other procedural callers (release-asset
-//! installers, future runtime auto-update) do have sidecars and want
-//! verification.
+//! (scenario `ductus-bootstrap` on spec 022). The bootstrap fetches
+//! GitHub's auto-generated source tarball at the ref its run resolved
+//! (`codeload.github.com/<owner>/<repo>/tar.gz/{archive-ref}`, spec 061),
+//! which has no companion sha256 sidecar on any ref. Other procedural
+//! callers (release-asset installers, future runtime auto-update) do
+//! have sidecars and want verification.
 //!
 //! Behavior:
 //!
