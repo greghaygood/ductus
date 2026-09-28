@@ -1,15 +1,13 @@
 ---
 spec: 026-framework-self-audit
-scenario: family-18-marker-list-parity
-last-run: 2026-09-18T00:19:27Z
-reviewed-against: 7340a41d16af2b90fec56ff362c5a2da3952a9c9
-diff-base: 1ccd8fdf7fbcd8f32352dc6c86fb95150880516c
+last-run: 2026-09-28T13:21:20Z
+reviewed-against: f3d9fb69aa765f6d446803b221a7315b6566ebff
+diff-base: e4c2d1cb4518dce7ebde2bfddb470e35b982103e
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-captured-issues: 0
-examined: 13
-scope: 30
+examined: 2
+scope: 16
 skipped-passes: []
 reviewed-digest:
   scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
@@ -29,24 +27,23 @@ reviewed-digest:
   scenarios/family-28-audit-family-registry-parity.md: 0d7b15a3c103b50b3aeafa3145941910582c16dbda08148ebd804346da4ae15a
   scenarios/family-34-step-reference-integrity.md: 4d24ed6a08c54ae98f135ad108d3b8a7b85f782f5af7edf26c67d92aa509f067
   scenarios/family-35-manifest-destination-links.md: 8e94dce4172e2b326612da806327af31777d99b8c6ce89642c9d10a98dc148b3
-  scenarios/family-36-self-url-resolution.md: f5f69dd3e566a0e07ef2825d5843ec76cf18203355c7c7ddff8737673dfadb09
+  scenarios/family-36-self-url-resolution.md: 23716b0f5c3810890bab089c65258008842869e35616a71b86b663ed231bde18
   scenarios/host-namespace-parity.md: 05714fe6b728391f699ed7328e1aea252a48259ae489fa9c06e0d0609dc1d376
   scenarios/link-check-consolidation.md: f838133a535aa090e09d7f82903facc4dff8cc822c1dec5c22f9b4d1e17a5049
   scenarios/readme-command-parity.md: 3788aa1103dba1860af8cb9950a6425ed33e4a24498f825fcd980e0c9bb7f8bc
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 026-framework-self-audit
 
 ## Summary
 
-Five passes over Family 18's new `18e` arm, which binds the negated-creation predicate's two word lists across the same three restatements 18a-18c bind the phrase list. **0 MUST, 0 SHOULD outstanding.**
-
-One finding was surfaced by these passes and fixed in `a0036cbd`, before this record: 18e skipped a consumer whose derivation came back empty. That is a silent pass in precisely the shape this family exists to refuse — a restatement that still exists but no longer parses reads as agreement — and it is the fail-open 18a was written to avoid. It now emits, and the arm is proven by reformatting `analyze.md`'s bullet so its groups no longer parse while the bullet itself survives.
-
-**Grounding** — an exit code is not evidence a check ran, so 18e was verified by injected drift in four directions, not by the clean baseline: a word dropped from `CREATION_VERBS` (caught, with the stale declared length reported alongside), a word added to `analyze.md` alone, the canonical section renamed (the fail-closed empty derivation), and the unparseable-but-present restatement above. The restored baseline exits 0. **Reuse** — 18b and 18e parsed the same Rust array shape with a copy of the literal regex each; that is now one `rust_literals` helper. **Simplicity** — 18e reuses 18c's structural filter (only parenthesised groups that are entirely comma-separated code spans) rather than inventing a second convention, and compares the two word lists as one union, matching 18a-18c's stated position that the contract is the set and the grouping is editorial. **Security** — read-only, no writes outside the contract, unchanged. **Quality** — deliberately no count arm: the predicate's prose states no count, and that choice is recorded in the script, the scenario and the README rather than left implicit.
-
-**What these passes read: 13 of 30 in-scope files** — the audit family and its README entry, the runtime constants it binds, the three restatements, and the spec artifacts carrying the contract. **Not read:** the other family scripts under `scripts/audit/`, `run-all.sh`, `framework/commands/audit.md`, 026's `spec.md`, `plan.md` and its other scenarios, and the CI workflows. This change adds one arm to one family and touches none of them.
+Reopen for 061 (Family 36's main-URL rationale and slug source). Default diff base: the parent of this reopen's done -> in-progress commit, so the window is the reopen itself; compute-review-scope reports scope 16 from the plan's Affected Files, of which spec.md (the status flip) and scenarios/family-36-self-url-resolution.md (the restatement and signpost) were modified since the base. Five passes (security, reuse, quality, efficiency, simplicity) against all 11 rule files discover-rule-files selected, each read in full, plus AGENTS.md read in full. 0 MUST, 0 SHOULD, 0 low-confidence, 0 observations. examined: 2 of 16 -- spec.md and the scenario, both read in full; the scenario's two restated bullets were checked against scripts/audit/self-url-resolution.sh as committed at a654662a (read in full, outside this scope), whose slug grep now keys on the codeload tar.gz URL and whose report was byte-identical before and after that change. The only durable contract changed is this one scenario; the other twenty are unchanged in the window. NOT read against this reopen, named rather than counted, all unchanged in this window: .claude/commands/ductus/audit.md (generated), .github/workflows/runtime-release.yml, framework/commands/audit.md, runtime/legacy-prose-commands.txt, scripts/audit/{adopter-shell-behavior,check-zero,cross-doc-consistency,introducing-drift,manifest-parity,placeholder-roundtrip,sibling-coupling,ssot-invariants,template-alignment}.sh (runtime-release.yml and audit.md were edited by 061 tasks 6-7 before this window). ABSENT but in scope because the plan lists it: .github/workflows/markdown-only-pipeline.yml, removed by 048.
 
 ## MUST violations (blocking)
 
@@ -61,10 +58,6 @@ One finding was surfaced by these passes and fixed in `a0036cbd`, before this re
 *None.*
 
 ## Waived findings
-
-*None.*
-
-## Captured issues
 
 *None.*
 
