@@ -1,36 +1,28 @@
 ---
 spec: 056-bootstrap-archive-boundary-split
-diff-base: a345df4dcf16403c81adc189b43e6caa8069455b
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-15T13:51:08Z
-reviewed-against: 3d84712f0b5e75afb690c7f81c455be87b076bc6
+last-run: 2026-09-28T13:40:52Z
+reviewed-against: 7e5d9d3f16d90924adec16f39cc37dfab990f20f
+diff-base: 5e49a1e3ed5fcacc91953101a46da6bf86b22672
 must-violations: 0
 should-violations: 0
 low-confidence: 0
 examined: 6
 scope: 7
+skipped-passes: []
 reviewed-digest: {}
 blocking: false
+dispositions:
+  fixed: 2
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 056-bootstrap-archive-boundary-split
 
 ## Summary
 
-Five passes over 6 of the 7 in-scope files, against the 11 rule files `discover-rule-files` selected. 0 MUST, 0 SHOULD, 0 low-confidence.
-
-**Not read, and why.** `framework/bootstrap/govern.md` is a byte-identical copy of `framework/bootstrap/ductus.md`, held so by audit Family 21 and confirmed here with `cmp` and by running that family. Believing it correct and having read it are different claims, so it is named here and excluded from `examined` rather than folded into the numerator.
-
-**What the passes actually did.** The subject is a cut-and-paste of nine level-2 sections between two files, so the passes were aimed at what that can break rather than at code patterns. The nine moved sections were verified byte-identical to their pre-split source by sha256, before and again after the one repair below. Every excision seam in `ductus.md` and every block join in `ductus-procedure.md` was read directly and is `content / blank / heading`. Directional wording was scanned for targets that left the file — none broke; `Post-Write Integrity Check ... below` still points below.
-
-**Security.** The rule set is about application code and fires nowhere here, but the one security-relevant question the split raises was checked directly: §Runtime acquisition's digest verification and its *a missing sidecar is a failure here* clause both stay in the **installed** half (1 occurrence in `ductus.md`, 0 in the archive half), so the integrity step an adopter depends on is still in the file they install and byte-compare. The trust surface is otherwise unchanged: the framework archive already supplied executable migration procedure bodies and is already fetched without a sidecar digest, so moving prose into it introduces no path an attacker did not already have — the self-update byte-compare is a staleness check against the same origin, not an integrity check.
-
-**One defect found and fixed in-pass.** The split gave the installed half a *where a named section lives* convention and not its mirror, leaving 13 references across 8 sections pointing from `ductus-procedure.md` back into `ductus.md` with nothing saying where they resolve. Measured, not estimated. It fell inside the spec that was open, so it was fixed rather than captured (constitution §brownfield-inbox), in `3d84712f`, and the nine sections were re-hashed afterwards to confirm the repair touched no moved content. It maps to no loaded rule and is recorded here rather than as an observation, because capturing work already done would put a closed item in the inbox.
-
-**Reuse / efficiency / simplicity.** No duplication: the move was verified byte-identical, so no content exists twice, and the `govern.md` copy is required by Family 21 rather than incidental. The two convention notes state complementary rules in opposite directions and cannot be shared, since each file is read without the other. The change is itself the efficiency result — 36,536 bytes off every curl, install, context load and byte-compare. The single pointer was preferred to five in-place stubs, which would have added back bytes and created five places to drift.
-
-**Known limitation, already recorded in the plan's Trade-offs rather than left here.** Nothing detects a future section landing on the wrong side of the boundary, and the pointer names its nine sections by name, so a rename would stale it silently. That is prose discipline, stated rather than implied.
+Reopen for 061 (the archive half is addressed through the derived framework root). Default diff base: 5e49a1e3, the parent of this reopen's done -> in-progress commit (b0a3e44d), so the window is the reopen itself. compute-review-scope reports scope 7: the plan's five Affected Files, plus spec.md and 061's tasks.md, which joined the window when that task's subtasks were ticked (b2bca500). Five passes (security, reuse, quality, efficiency, simplicity) ran against all 11 rule files discover-rule-files selected, each read in full, plus AGENTS.md read in full. Result: 0 MUST, 0 SHOULD, 0 low-confidence. examined: 6 of 7. spec.md, plan.md, framework/bootstrap/ductus.md (914 lines), framework/bootstrap/ductus-procedure.md (443 lines), runtime/legacy-prose-commands.txt and 061's tasks.md were each read in full this session. NOT read, named rather than counted: framework/bootstrap/govern.md, confirmed byte-identical to ductus.md with cmp before and after the fix below; audit Family 21 passed on the fix commit. Claims checked against the tree: the corrected Resolved Question and the signpost match ductus.md §Archive fetch and extract step 2 and §The archive half, and ductus-procedure.md's header. The signpost's claim that GitHub names a release archive's directory ductus-<tag>/ was probed against the published ductus-v0.54.2 tag: its codeload tarball's single top-level directory is ductus-ductus-v0.54.2. Security: the --ref value reaches a URL only after the allowlist grammar in Source resolution step 2 validates it. {framework-root} is read from extract-archive, which blocks path traversal per entry. The runtime digest check stays in the installed half. Two observations, both fixed in the run and committed at 7e5d9d3f before this record. (1) plan.md:35 still placed the pointer at the first point where {tempdir}/ductus-main/ exists; it now carries the {framework-root} annotation line 37 already had. (2) ductus.md §Instructions step 8 called Pre-run Migrations the section 'above'; it now says it is in the archive half, and govern.md was re-copied. The affected passes were re-run over both lines after the fix. scripts/audit/run-all.sh exited 0 on 7e5d9d3f. 056 has no scenarios and no data model, so the durable-contract digest is empty.
 
 ## MUST violations (blocking)
 
@@ -48,13 +40,10 @@ Five passes over 6 of the 7 in-scope files, against the 11 rule files `discover-
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- other: the plan's rationale for placing the pointer still says §File Fetching is the first point at which `{tempdir}/ductus-main/` exists; since 061 the root is `{framework-root}`, derived from the extraction — `specs/056-bootstrap-archive-boundary-split/plan.md:35` — **fixed**
+- other: §Instructions step 8 calls **Pre-run Migrations** the section "above"; it lives in the archive half, and sat below §Instructions even before the split — `framework/bootstrap/ductus.md:42` — **fixed**
 
 ## Skipped passes
 
