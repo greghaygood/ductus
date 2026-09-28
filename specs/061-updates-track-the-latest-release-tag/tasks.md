@@ -191,3 +191,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] `check-review-gate` on 056 passes (its review stays current: 056 has no durable contracts, so its `reviewed-digest` is empty), then `set-status` in-progress → done, committed alone
 
 - **Done when**: 056 is `done` with a current analysis, and `check-review-gate` on 056 reports it already done
+
+## 23. Disposition out-of-spec finding: 057's Applicable Rules cites QUAL-CLAIM-001, whose code-path trigger cannot fire against spec artifacts
+
+- [ ] `specs/057-analyze-artifact-and-record-relocation/spec.md` `## Applicable Rules` cites `QUAL-CLAIM-001`. 061's analysis (ba106a11) judged, with the operator, that the rule's Verification is a code-path check for `/review` (`framework/rules/quality-cross.md`: "verify code patterns rather than design-time commitments"), so analyze step 14 fires an advisory on any `## Applicable Rules` citation of it. 057 is `done` and its analysis (426eae14) recorded 0 advisory; its next analyze would raise this finding. Surfaced at 061's completion gate, outside 061's scope
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
