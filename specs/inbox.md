@@ -27,3 +27,5 @@
         `- [ ] {Brief description of the issue and any relevant context}`
 
      When an item is migrated, remove it from this list. -->
+
+- [ ] Warn when a spec artifact exceeds the agent's single-read cap. Claude Code's Read returns only a partial first page past 25,000 tokens (measured 2026-09-28: 727 lines / ~54 KB of this repo's plan markdown; no line cap — 2,500 short lines read whole), so an adopter's 2,200-line plan.md is never read in full by /implement's single setup read (framework/commands/implement.md:111), and whether it is depends on the agent choosing to page. Proposed: an advisory (non-blocking), byte-based threshold (runtime has no tokenizer; default ~50 KB, configurable in .ductus/config.toml because the cap differs per host and per CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS) checked by /analyze and /plan's readiness check over spec.md, plan.md, tasks.md, data-model.md and scenarios (not research.md — no command reads it); an oversized spec.md or plan.md points at splitting the spec (can a slice reach done on its own?), an oversized tasks.md at /prune.
