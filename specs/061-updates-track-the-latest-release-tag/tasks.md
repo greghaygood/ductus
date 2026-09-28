@@ -130,9 +130,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 15. Discharge 026
 
-- [ ] `done → in-progress`
-- [ ] Restate `family-36-self-url-resolution` line 24's rationale and its slug-derivation description to match task 6, with a signpost
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Restate `family-36-self-url-resolution` line 24's rationale and its slug-derivation description to match task 6, with a signpost
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 026 is `done` with a current review and analysis, and its Family 36 scenario matches the script.
 
