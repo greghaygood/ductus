@@ -1,29 +1,33 @@
 ---
 spec: 016-cross-cutting-rules
-diff-base: 510eb25cfd96bc5ac2bcc714054c482a2c3cbfe1
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-13T12:30:07Z
-reviewed-against: 19a236adfd41281319991094525535ded7586e91
+last-run: 2026-09-28T14:53:58Z
+reviewed-against: d7b53be08dae2d7d8c4b50853def6268d5f6bbf7
+diff-base: c37e5723b893e5b9730349dec40da1c961b3bc99
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 7
-scope: 17
+examined: 8
+scope: 15
+skipped-passes: []
 reviewed-digest:
-  scenarios/applicable-rules-consistency-check.md: 654067cf29c934cccf9a88046d9aedf9b61728af9c5353037bb45ff4adf7d145
+  scenarios/applicable-rules-consistency-check.md: eac42f86ea49840c67eb395c8993822a3c61f581314db66d6cdde79d613f3056
 blocking: false
+dispositions:
+  fixed: 1
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 016-cross-cutting-rules
 
 ## Summary
 
-Reopened by a factual correction rather than by the filename sweep. 016's §Edge Cases bullet cited *"the README's 'Pinning files with …' section"*, and the README carries no such section under any name — it was restructured, and `[pinned]` is now documented under §Configuration. The pointer was dead before the sweep touched the filename inside it, which is why it could not ride the sweep's exemption: repointing rewords the line, and a reworded line is a factual correction that takes the back-edge. It now names §Configuration, which `resolve-anchor` classifies as a qualified reference. No MUST or SHOULD violation against the loaded rules is outstanding.
+Scoped re-review of 016's reopen, which exempts code-pattern rules from the Applicable Rules cited-but-does-not-fire check (task 10, surfaced by 061's analysis). Diff base is c37e5723, the parent of the reopen commit. 0 MUST, 0 SHOULD, 0 low-confidence; 1 observation, fixed; not blocking.
 
-**Criterion verification.** All eight ticked criteria were re-checked against the tree rather than taken as banked: AC1's `<!-- §rules -->` marker is present in `framework/constitution.md`; AC2's fourth decision-tree route is in §bug-handling; AC3's section in `framework/commands/analyze.md` is `### Rules (blocking and advisory)`, renamed from "Security rules" as required; AC4's `## Applicable Rules` section is in `framework/templates/spec/spec.md`; AC5's `rule` route is in `framework/commands/groom.md`'s decision tree; AC6's signpost is at the top of `specs/008-security-rules/spec.md` and links to 016; AC7 and AC8 re-verified by running `markdownlint-cli2` and the deterministic analyze families clean. Every `§` reference in the spec resolves — 11 of them, 0 unresolved.
+Examined 8 of the scope. Read in full as diffs over the window: framework/commands/analyze.md, framework/templates/spec/spec.md, specs/016-cross-cutting-rules/scenarios/applicable-rules-consistency-check.md, spec.md and tasks.md, and specs/058-findings-route-at-discovery/spec.md and tasks.md, which are in the window because 058's cycle followed this reopen. framework/constitution.md is unchanged in this window, and its one changed bullet (058's) was read. The exemption's claim was checked against framework/rules/quality-cross.md, which is outside this scope. There, 3 of the 4 rules' Verification reads "flags a code path" and QUAL-DELEG-001's reads "flags a change in scope". That is the observation, fixed at d7b53be0 by rewording both occurrences to "flagging code in scope"; lint, the 13 parity tests, parseability and the self-audit re-ran green afterwards.
 
-**What this review read, and what it did not.** The five passes read 7 of the 17 in-scope files: 016's `spec.md`, `framework/rules/quality-cross.md`, and the five artifacts AC1–AC6 assert against (`framework/constitution.md`, `framework/commands/analyze.md`, `framework/commands/groom.md`, `framework/templates/spec/spec.md`, `specs/008-security-rules/spec.md`). The rest are 016's `plan.md` and `tasks.md`, the two generated `.claude/commands/ductus/` copies, and 017's and 027's artifacts — the latter pulled in because they were modified in the same window by the sweep, not because 016 bears on them; they carry their own reviews. None of those was re-read this run.
+Not opened: .claude/commands/ductus/analyze.md and .claude/commands/ductus/groom.md, which are generated from their framework/commands/ sources (gen-claude-commands --check in sync). framework/commands/groom.md, specs/008-security-rules/spec.md and specs/016-cross-cutting-rules/plan.md are plan-affected but unchanged since 016's prior review. specs/058-findings-route-at-discovery/review.md and analysis.md are records written this session by write-review and write-analysis; only their frontmatter was read, to verify the recorded sha.
 
 ## MUST violations (blocking)
 
@@ -41,13 +45,9 @@ Reopened by a factual correction rather than by the filename sweep. 016's §Edge
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- convention: the code-pattern exemption says each quality-cross rule's Verification flags a code path, but QUAL-DELEG-001's flags a change in scope — `specs/016-cross-cutting-rules/scenarios/applicable-rules-consistency-check.md` — **fixed**
 
 ## Skipped passes
 
