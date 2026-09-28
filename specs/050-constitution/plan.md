@@ -106,7 +106,9 @@ every adopter fetches assets that do not exist. The constitution reaches
 adopters by the **Shared Files** manifest row copying
 `framework/constitution.md` to `.ductus/constitution.md`
 (`framework/bootstrap/ductus.md:714`), which tracks `main` — so no bump, and no
-tag.
+tag. (Since 061 the archive is the latest release's by default, so such a change
+reaches default-source adopters at the next release; see the spec's Resolved
+Question.)
 
 ### Verification is the audit, not a reading
 
