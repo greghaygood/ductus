@@ -1,16 +1,16 @@
 ---
 spec: 036-quality-cross-rules
-last-run: 2026-09-28T00:27:35Z
-reviewed-against: f6be2d8799a5663b19556cd2127ada02abfbb7a5
-diff-base: 7a791a9800eb2bce4d365e27c7972b67b88d1785
+last-run: 2026-09-28T15:10:44Z
+reviewed-against: aac499d331586f2cc4a171497535a4b6df2076f2
+diff-base: 47e29c72f8783e834aceb1c31b0fdd8849f5d57d
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 5
-scope: 6
+examined: 9
+scope: 12
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 22b7f0429322f20dbc1ab11dfe5f295e87248830c5bdf61f9cd903111007e109
+  data-model.md: 93794b99d80a5e03fe22e3b991a19cbdcfa3b6e3d16b2c5000bcda3842b2212b
 blocking: false
 dispositions:
   fixed: 0
@@ -23,13 +23,13 @@ dispositions:
 
 ## Summary
 
-Re-review for task 9, which the completion gate's criteria check raised. AC10 and task 8 put QUAL-DELEG-001's discriminator against QUAL-CLAIM-001 and QUAL-GROUND-001 in the Rationale, where both sibling rules state theirs, but it had shipped at the end of the Verification paragraph. f6be2d87 moves the sentence. The rule's ID, Statement and trigger are unchanged. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers, no stored decisions, no observations.
+Scoped re-review of 036's reopen for QUAL-TEST-001, which 050's third round routed here (task 10), and for task 11, which corrects two sibling rules' claim that a SHOULD finding leaves done unblocked. Diff base is 47e29c72, the parent of the reopen commit. 0 MUST, 0 SHOULD, 0 low-confidence, no observations; not blocking.
 
-**Base.** `diff-base` is 7a791a98, the previous review's commit, passed with `--since`. This follows the precedent 008's re-reviews set: everything outside this delta is covered by 7a791a98's record. The derived default, 6e3ef069, resolves 34 files. This base resolves 6.
+Examined 9 of 12, each read in full as a diff over the window: framework/rules/quality-cross.md (also read whole, including the new QUAL-TEST section), specs/036-quality-cross-rules/spec.md, data-model.md and tasks.md, framework/commands/analyze.md, framework/constitution.md, AGENTS.md, and specs/050-constitution/plan.md and tasks.md, which are in this window because 050's third round was reopened alongside. The quality pass checked that QUAL-TEST-001's Statement keeps one tier (SHOULD and SHOULD NOT) and carries all four fields. It checked that its discriminators against QUAL-CLAIM-001 and QUAL-STUB-001 hold. It checked task 11's corrected sentence against check_artifacts.rs:665, where analyze reports a done spec with an outstanding SHOULD as drift, and against constitution §implement-phase. It also checked that the promoted §scenarios paragraph matches append_task.rs:94-118. lint-rule-ids reports 208 rule IDs.
 
-**Scope.** 6 in scope, examined 5. Four were read in full: `framework/rules/quality-cross.md`, `scripts/lint-rule-ids.sh`, and this spec's `data-model.md` and `tasks.md`. The fifth, `analysis.md`, is 036's own record, read in full after it was written. For `quality-cross.md`, that means the whole file earlier in this session and the QUAL-DELEG section again after the edit. Not counted: `framework/bootstrap/ductus.md`, plan-listed and unchanged, read only at its manifest rows `:656`–`:659` in the previous review.
+Not opened: .claude/commands/ductus/analyze.md, generated from framework/commands/analyze.md (gen-claude-commands --check in sync); and framework/bootstrap/ductus.md and scripts/lint-rule-ids.sh, plan-affected but unchanged in this window. The new rule adds no manifest row, because quality-cross.md already ships, and the QUAL surface is already on the lint allowlist.
 
-**Passes.** All 11 rule files were loaded. Security, reuse, efficiency and simplicity found no subject in a one-sentence move within one rule's prose. Quality checked the move. The sentence now follows QUAL-CLAIM-001's Rationale form ("This differs from … which governs …; this rule governs …"). The Verification paragraph now ends at "does not block `done`", as QUAL-GROUND-001's does. Nothing else in the repository quotes the moved text; a grep for "correct-looking substitution" finds only the rule and the prose summaries in the spec and data model. `scripts/lint-rule-ids.sh` exits 0 (11 files, 207 headings), markdownlint is clean, and `cargo test --release --locked` passed 1713 with 0 failed, since `framework/rules/**` is a runtime CI input.
+Local gate after the change: every framework-checks step and scripts/audit/run-all.sh exit 0; cargo fmt, clippy -D warnings and cargo test --release --locked exit 0 (1713 passed, 20 result lines for 20 targets).
 
 ## MUST violations (blocking)
 
