@@ -1,29 +1,45 @@
 ---
 spec: 036-quality-cross-rules
-diff-base: 6cf0f3cc8ba180878a217cbb2666a4a3e37b5b5d
-captured-issues: 0
-skipped-passes: []
-last-run: 2026-09-15T19:06:55Z
-reviewed-against: b40aafc277e1971c6bd1e1b1afbe9403edbab20b
+last-run: 2026-09-28T00:23:33Z
+reviewed-against: 262adbcb2104709bcd8437a9b031d7e81a500c71
+diff-base: 6e3ef069d23b26d0f8a620dffe1273c48f17f781
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 6
-scope: 7
+examined: 5
+scope: 31
+skipped-passes: []
 reviewed-digest:
-  data-model.md: 225b8ae56e64c177e9d3703ac822cfc324bff3a78d7053a96c3179111aa71e31
+  data-model.md: 22b7f0429322f20dbc1ab11dfe5f295e87248830c5bdf61f9cd903111007e109
 blocking: false
+dispositions:
+  fixed: 1
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Review — 036-quality-cross-rules
 
 ## Summary
 
-Five passes over the 7-file scope resolved at diff-base 6cf0f3cc, the parent of this reopen's first commit. Examined 6 of 7 in full: AGENTS.md (read in 16 byte-bounded ranges, the whole file), framework/rules/quality-cross.md, scripts/lint-rule-ids.sh, and 036's data-model.md, spec.md and tasks.md. NOT examined: framework/bootstrap/ductus.md — 814 lines / 110,417 bytes, in scope because plan.md lists it. Only its Shared Files manifest region was opened, to confirm the framework/rules/quality-cross.md -> specs/rules/quality-cross.md row AC7 asserts and that Family 35 tests the destination against; the other ~800 lines were not read and this review makes no claim about them. It is named rather than counted, per the examined-counts-what-was-read rule.
+Re-review after the reopen at d52f79da, which restated the inherited severity invariant in tier terms (767b5b89: `data-model.md`'s § Severity and ID-stability invariants, plus a signpost in `spec.md`). 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers, and no stored decisions: the previous record predated dispositions. One observation, fixed as a chore in 262adbcb.
 
-Security: no code changed; the pass covered the one artifact that leaves this repository, framework/rules/quality-cross.md, for leaked paths, credentials or maintainer-local context. None. Reuse: QUAL-DELEG-001 cites QUAL-CLAIM-001 and QUAL-GROUND-001 for the discriminator rather than restating them, and data-model.md points at 008's schema rather than copying it. Quality: QUAL-CLAIM-001 turned on lint-rule-ids.sh, which is in scope and unchanged by this task — it already fails loudly on an empty rule-file set and reports examined counts to stderr, so it satisfies the rule it is adjacent to. Efficiency and simplicity: the rule lands as a fourth category in an existing file rather than a new file or spec, which is the routing §rules prescribes, and the 050 signpost is a blockquote so it discharges the cross-spec-impact declaration without inducing a dependency edge.
+**Base.** `diff-base` is 6e3ef069 (d52f79da^), the derived default. As in 017's review, no narrower base exists. 036's change landed in 767b5b89 together with 008's rule-file rewrite, and every later commit in the window follows it, so any base that keeps 036's change also keeps all of 008's. The window has grown since 017's review by 017's own re-review commits.
 
-Three defects were found by these passes and FIXED in b40aafc2 rather than recorded, per the fix-inside-the-spec-you-have-open rule; all three were introduced by this task's own first commit. (a) Family 35 red — the rule file ships to specs/rules/ while the constitution lands at .ductus/constitution.md, so its Source line's repo-relative links dangled in an adopter tree; re-spelled in prose to match the two sibling rules, probed red-before and green-after. (b) The spec's Added-categories section enumerated GROUND and CLAIM and omitted DELEG. (c) A markdown link to 050 in that section induced a false 036 -> 050 dependency edge; re-spelled as a backticked slug, drift true before and false after. Zero findings survive against the reviewed commit.
+**Scope.** 31 in scope: 28 modified since the base, unioned with 4 plan-listed Affected Files, one of which overlaps. Examined 5, each read in full: this spec's `spec.md` and `data-model.md`, `framework/rules/quality-cross.md`, `scripts/lint-rule-ids.sh`, and `framework/constitution.md`, read in full at session start and used here as the normative source. This spec's `plan.md` and `tasks.md` were also read in full, but they are outside the scope. Not counted, named by group:
+
+- `framework/bootstrap/ductus.md`: plan-listed and unchanged since the base. Read only at its Shared Files manifest rows, `:656`–`:659`, to confirm AC7's placement; the rest of the file was not read and this review makes no claim about it.
+- `AGENTS.md`: read only at a3b514c5's one added bullet, verified in 017's review against `runtime/src/interpreter/payload.rs:886`–`:894`.
+- 17 files of 008's work, covered by 008's records (f76b2227, 6f43a9d9, 7a8760fb): `.claude/commands/ductus/analyze.md`, `.github/workflows/runtime.yml`, `framework/commands/analyze.md`, the four rule files `api-backend.md`, `performance-frontend.md`, `security-backend.md` and `security-frontend.md`, `runtime/src/primitives/rule_sections.rs`, and 008's nine spec files. Of these, only 008's `data-model.md` § Severity classification was read for this pass, as the source 036's invariant points to.
+- 017's `spec.md`, `data-model.md`, `review.md` and `analysis.md`: 017's re-review and closure, covered by its own records (e584179d, 8241d3b0).
+- 050's `spec.md`, `tasks.md` and `scenarios/a-status-commit-holds-only-the-transition.md`: d3f5ff4a's amend, left to 050's review.
+
+**Passes.** All 11 rule files were loaded. Security, reuse, efficiency and simplicity found no subject in 036's change, which is spec prose and a data model; the window's code change is 008's. Reuse considered one question and raised nothing. `data-model.md`'s severity paragraph restates the inherited invariant in one clause, but it names `specs/008-security-rules/data-model.md` as the source, and the file's opening paragraph points at 008 for the schema.
+
+Quality found that the changed claims hold. All four QUAL Statements are single-tier: STUB is MUST, and GROUND, CLAIM and DELEG are SHOULD. The data model's grammar note matches the parser and the harvester (`runtime/src/primitives/rule_sections.rs:77`, `runtime/src/primitives/check_rule_ids.rs:95`). `scripts/lint-rule-ids.sh` exits 0 over 11 files and 207 headings, and `scripts/lint-rule-filenames.sh` exits 0.
+
+Quality raised one observation, on the signpost's figure of 66. It was re-derived by taking each rule's first block quote and counting Statements that pair MUST with MUST NOT, or SHOULD with SHOULD NOT, and carry no keyword of the other tier. That gives 66 of 192 at d178bdda, the clarify commit that recorded it, matching 008's scenario, and 68 of 207 at HEAD, because two split-off halves now pair MUST with MUST NOT. The figure was right but unbounded, so the signpost now names the corpus it was counted over.
 
 ## MUST violations (blocking)
 
@@ -41,13 +57,9 @@ Three defects were found by these passes and FIXED in b40aafc2 rather than recor
 
 *None.*
 
-## Captured issues
-
-*None.*
-
 ## Observations
 
-*None.*
+- convention: the 008 signpost recorded a count of 66 single-tier Statements without the corpus it was counted over, which re-derives as 68 at HEAD — `specs/036-quality-cross-rules/spec.md` — **fixed**
 
 ## Skipped passes
 
