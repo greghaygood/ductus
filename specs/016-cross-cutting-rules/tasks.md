@@ -60,6 +60,16 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Implement scenario: applicable-rules-consistency-check
 
-- [x] - [ ] Implement the behavior described in [`scenarios/applicable-rules-consistency-check.md`](scenarios/applicable-rules-consistency-check.md).
+- [x] Implement the behavior described in [`scenarios/applicable-rules-consistency-check.md`](scenarios/applicable-rules-consistency-check.md).
 
 - **Done when**: `/ductus:analyze` emits a finding for every rule cited under a spec's `## Applicable Rules` section whose Verification trigger does NOT fire against the spec's content. Severity (blocking vs advisory) is resolved during the scenario's `/ductus:clarify` walk and implemented per that decision.
+
+## 10. Exempt code-pattern rules from the cited-but-does-not-fire check
+
+- [ ] `scenarios/applicable-rules-consistency-check.md`: add the edge case: a cited rule whose file declares code-pattern verification (`quality-cross.md`) has no trigger against spec artifacts, so the check skips its citation; `/{project}:review` enforces it against code whatever the spec cites. Surfaced by 061's analysis
+- [ ] `framework/commands/analyze.md`: step 14 and **Applicable Rules citation consistency** state the exemption
+- [ ] `framework/templates/spec/spec.md`: the `## Applicable Rules` comment says code-pattern rules may be cited for visibility and that analyze does not check their citations
+- [ ] Normalize task 9's doubled checkbox marker (`- [x] - [ ]`), which shows an unchecked box under a completed task
+- [ ] Sweep live artifacts for claims that every `## Applicable Rules` citation is checked for a firing trigger; lint, generators, `scripts/audit/run-all.sh`, and `cargo test` from `runtime/`
+
+- **Done when**: the scenario, analyze.md and the template agree on the exemption, and the local gate passes

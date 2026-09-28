@@ -77,7 +77,10 @@ At least one concrete, testable criterion is required before `/{project}:clarify
      cutting requirements this spec depends on visible to reviewers and to
      /{project}:analyze, which checks every cited ID against the loaded rule
      files. See §rules in the constitution for when a concern belongs in a rule
-     vs an acceptance criterion vs a scenario.
+     vs an acceptance criterion vs a scenario. A rule whose file declares that
+     it verifies code patterns (e.g. `QUAL-*` in quality-cross.md) may be cited
+     for visibility: /{project}:review enforces it against code, and
+     /{project}:analyze does not check whether its trigger fires.
 
      Replace this comment block with a list of rule references when applicable:
 
