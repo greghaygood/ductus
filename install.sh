@@ -2,7 +2,7 @@
 # ductus installer — places the /ductus bootstrap command for your AI coding agent.
 #
 # Usage:
-#   curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/stonean/ductus/main/install.sh | sh
+#   curl --proto '=https' --tlsv1.2 -sSfL https://github.com/stonean/ductus/releases/latest/download/install.sh | sh
 #
 # Pick an agent explicitly (default: claude):
 #   ... | sh -s -- claude
@@ -10,24 +10,153 @@
 #   ... | sh -s -- antigravity   # 'agy' (the Antigravity CLI name) also works
 #   ... | sh -s -- opencode
 #
+# Pick the source (default: the latest release), in any position beside the agent:
+#   ... | sh -s -- claude --ref=main             # main, ahead of any release
+#   ... | sh -s -- --ref=ductus-v0.55.0 auggie   # a named release
+#   ... | sh -s -- --ref=latest                  # the default, spelled out
+#
+# The installer is attached to every release, and the one-liner above fetches
+# the latest release's copy (-L follows GitHub's redirect to its asset host).
+# By default it places the latest release's bootstrap, resolved from the
+# releases/latest redirect, so the installer and the bootstrap come from the
+# same release. --ref places another source's bootstrap instead. The installer
+# writes no project configuration, so run /ductus with the same --ref to record
+# the choice; a plain /ductus uses the latest release. Spec 061 is the contract.
+#
 # The script is idempotent — re-run it any time to refresh the bootstrap file.
-# ductus is live-on-main: the bootstrap (and everything /ductus fetches) tracks
-# main, so there is no release-pinning knob.
 set -eu
 
-RAW="https://raw.githubusercontent.com/stonean/ductus/main/framework/bootstrap/ductus.md"
+REPO_RAW="https://raw.githubusercontent.com/stonean/ductus"
+LATEST_URL="https://github.com/stonean/ductus/releases/latest"
 
-# Resolve the target agent: the optional positional argument, defaulting to claude.
-agent="${1:-claude}"
+# The first release whose bootstrap honors --ref. Every earlier release's
+# bootstrap fetches from main whatever ref it is given, so a tag below this
+# cannot be honored. framework/bootstrap/ductus.md carries the same value as
+# {ref-floor}, and /audit Family 14 asserts the two agree.
+REF_FLOOR="0.55.0"
+
+# is_tag VALUE — true when VALUE is ductus-v<MAJOR>.<MINOR>.<PATCH>, digits only.
+is_tag() {
+  case "$1" in ductus-v*) ;; *) return 1 ;; esac
+  v="${1#ductus-v}"
+  major="${v%%.*}"; rest="${v#*.}"
+  [ "$rest" != "$v" ] || return 1
+  minor="${rest%%.*}"; patch="${rest#*.}"
+  [ "$patch" != "$rest" ] || return 1
+  for n in "$major" "$minor" "$patch"; do
+    case "$n" in '' | *[!0-9]*) return 1 ;; esac
+  done
+}
+
+# version_lt A B — true when the X.Y.Z version A is below B, field by field.
+version_lt() {
+  a="$1"; b="$2"
+  for _ in 1 2 3; do
+    x="${a%%.*}"; y="${b%%.*}"
+    [ "$x" -lt "$y" ] && return 0
+    [ "$x" -gt "$y" ] && return 1
+    a="${a#*.}"; b="${b#*.}"
+  done
+  return 1
+}
+
+# Arguments: the first non-flag word is the agent; --ref=<value> may appear in
+# any position. A repeated --ref, an unknown flag, or a second word halts.
+agent=""
+ref=""
+ref_count=0
+ref_values=""
+for arg in "$@"; do
+  case "$arg" in
+    --ref=* | --ref)
+      ref="${arg#--ref}"; ref="${ref#=}"
+      ref_count=$((ref_count + 1))
+      ref_values="${ref_values:+$ref_values, }\"$ref\""
+      ;;
+    --*)
+      echo "ductus: unknown flag '$arg' (expected: --ref=<latest|main|ductus-vX.Y.Z>)" >&2
+      exit 1
+      ;;
+    *)
+      if [ -n "$agent" ]; then
+        echo "ductus: unexpected argument '$arg' — give one agent, and the source as --ref=<value>" >&2
+        exit 1
+      fi
+      agent="$arg"
+      ;;
+  esac
+done
+agent="${agent:-claude}"
+
+if [ "$ref_count" -gt 1 ]; then
+  echo "ductus: --ref was given $ref_count times ($ref_values) — give it once" >&2
+  exit 1
+fi
+if [ "$ref_count" -eq 1 ] && [ "$ref" != "latest" ] && [ "$ref" != "main" ] && ! is_tag "$ref"; then
+  echo "ductus: invalid --ref \"$ref\" — accepted forms are latest, main, or ductus-v<MAJOR>.<MINOR>.<PATCH>" >&2
+  exit 1
+fi
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "ductus: curl is required but was not found on PATH" >&2
   exit 1
 fi
 
+# Resolve the source. `latest` is GitHub's latest release — never a draft or a
+# prerelease — read from the redirect's Location header without following it.
+# There is no fallback to main: an unresolvable latest release halts.
+if [ -z "$ref" ] || [ "$ref" = "latest" ]; then
+  if ! headers="$(curl --proto '=https' --tlsv1.2 -sSI "$LATEST_URL" 2>&1)"; then
+    echo "ductus: could not resolve the latest release from $LATEST_URL — curl failed: $headers" >&2
+    echo "ductus: the installer does not fall back to main; pass --ref=main or --ref=<tag> to choose a source explicitly" >&2
+    exit 1
+  fi
+  headers="$(printf '%s\n' "$headers" | tr -d '\r')"
+  location="$(printf '%s\n' "$headers" | sed -n 's/^[Ll][Oo][Cc][Aa][Tt][Ii][Oo][Nn]:[[:space:]]*//p' | tail -n 1)"
+  tag="${location##*/releases/tag/}"
+  if [ -z "$location" ] || [ "$tag" = "$location" ] || ! is_tag "$tag"; then
+    status="$(printf '%s\n' "$headers" | sed -n '1p')"
+    echo "ductus: could not resolve the latest release from $LATEST_URL — got \"$status\" with Location \"${location:-no Location header}\"" >&2
+    echo "ductus: the installer does not fall back to main; pass --ref=main or --ref=<tag> to choose a source explicitly" >&2
+    exit 1
+  fi
+  raw_ref="$tag"
+  source_label="latest release $tag"
+elif [ "$ref" = "main" ]; then
+  tag=""
+  raw_ref="main"
+  source_label="main"
+else
+  tag="$ref"
+  raw_ref="$ref"
+  source_label="$ref"
+fi
+
+if [ -n "$tag" ] && version_lt "${tag#ductus-v}" "$REF_FLOOR"; then
+  if [ -z "$ref" ] || [ "$ref" = "latest" ]; then
+    echo "ductus: the latest release, $tag, is older than ductus-v$REF_FLOOR, the first release that carries this installer's bootstrap. That release may still be publishing. Re-run once it exists, or pass --ref=main to proceed now." >&2
+  else
+    echo "ductus: $tag is older than ductus-v$REF_FLOOR, the first release whose bootstrap honors --ref. Every earlier release's bootstrap fetches from main, so $tag could not be honored. Name ductus-v$REF_FLOOR or later, or pass --ref=main." >&2
+  fi
+  exit 1
+fi
+
+RAW="$REPO_RAW/$raw_ref/framework/bootstrap/ductus.md"
+
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
-curl --proto '=https' --tlsv1.2 -fsSL "$RAW" > "$tmp"
+if ! code="$(curl --proto '=https' --tlsv1.2 -sSL -o "$tmp" -w '%{http_code}' "$RAW")"; then
+  echo "ductus: could not fetch the bootstrap from $RAW — check network access" >&2
+  exit 1
+fi
+if [ "$code" = "404" ] && [ -n "$ref" ] && [ "$ref" != "latest" ] && [ "$ref" != "main" ]; then
+  echo "ductus: tag $ref does not exist — $RAW returned 404" >&2
+  exit 1
+fi
+if [ "$code" != "200" ]; then
+  echo "ductus: could not fetch the bootstrap from $RAW — HTTP $code" >&2
+  exit 1
+fi
 
 # Confirm the payload is actually the bootstrap before installing it. `curl -f`
 # rejects an HTTP error status, but a 200 carrying a captive-portal page, a
@@ -335,5 +464,9 @@ JSON
     ;;
 esac
 
-echo "ductus: installed the $agent bootstrap -> $dest"
-echo "ductus: now run '/ductus <project-name>' in your agent to scaffold the project."
+echo "ductus: installed the $agent bootstrap from $source_label -> $dest"
+if [ "$ref_count" -eq 1 ]; then
+  echo "ductus: now run '/ductus --ref=$ref <project-name>' in your agent to scaffold the project; that run records the source (a plain '/ductus' uses the latest release)."
+else
+  echo "ductus: now run '/ductus <project-name>' in your agent to scaffold the project."
+fi

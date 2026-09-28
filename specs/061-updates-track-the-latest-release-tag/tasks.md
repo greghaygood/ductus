@@ -34,10 +34,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. Installer
 
-- [ ] Replace `agent="${1:-claude}"` with a POSIX argument loop: the first non-flag word is the agent, `--ref=<value>` may appear in any position, and a repeated `--ref` or an unknown `--` flag halts. Leave every `case "$agent"` arm and its `dest=` byte-identical
-- [ ] Resolve and validate the ref as the bootstrap does (grammar, `latest` from the `Location` header, `{ref-floor}` by a POSIX SemVer comparison), and fetch the bootstrap from `{raw-ref}`, treating a 404 on a named tag as "does not exist", all before any write
-- [ ] When `--ref` was given, name `/ductus --ref=<value>` as the next command in the completion message
-- [ ] Replace the header comment's live-on-main and no-release-pinning claims, and document `--ref` and the release one-liner in its usage block
+- [x] Replace `agent="${1:-claude}"` with a POSIX argument loop: the first non-flag word is the agent, `--ref=<value>` may appear in any position, and a repeated `--ref` or an unknown `--` flag halts. Leave every `case "$agent"` arm and its `dest=` byte-identical
+- [x] Resolve and validate the ref as the bootstrap does (grammar, `latest` from the `Location` header, `{ref-floor}` by a POSIX SemVer comparison), and fetch the bootstrap from `{raw-ref}`, treating a 404 on a named tag as "does not exist", all before any write
+- [x] When `--ref` was given, name `/ductus --ref=<value>` as the next command in the completion message
+- [x] Replace the header comment's live-on-main and no-release-pinning claims, and document `--ref` and the release one-liner in its usage block
 
 - **Done when**: `sh -n install.sh` and shellcheck pass. Family 14 passes unchanged. The installer never writes a file for a ref that fails any check.
 
