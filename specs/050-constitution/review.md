@@ -1,13 +1,13 @@
 ---
 spec: 050-constitution
-last-run: 2026-09-28T13:29:20Z
-reviewed-against: a99314b536e687292b80a70be0f1bf51b825bfff
-diff-base: 545795e3353da654ba3abba7d9653ce6ca4ccc94
+last-run: 2026-09-28T15:11:13Z
+reviewed-against: dff464a543dfbf0973d991613be8fa5f82fe4351
+diff-base: ba689d02ce82ee7ab3073501a5c768ff6a1621e7
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 4
-scope: 6
+examined: 10
+scope: 14
 skipped-passes: []
 reviewed-digest:
   scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
@@ -24,7 +24,7 @@ reviewed-digest:
   scenarios/report-outcomes-not-edits.md: caf13342d7fe0a5af4108024cf424ab921030c896f0743307cf5111be2e163ab
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -34,7 +34,19 @@ dispositions:
 
 ## Summary
 
-Reopen for 061 (how a constitution-only change reaches adopters). Default diff base: the parent of this reopen's done -> in-progress commit, so the window is the reopen itself; compute-review-scope reports scope 6 from the plan's Affected Files, of which spec.md and plan.md were modified since the base. Five passes (security, reuse, quality, efficiency, simplicity) against all 11 rule files discover-rule-files selected, each read in full. 0 MUST, 0 SHOULD, 0 low-confidence. examined: 4 of 6 -- spec.md and plan.md, both read in full after their edits, and AGENTS.md and framework/constitution.md, both read in full this session in their current state (AGENTS.md after 061 task 8's edits; the constitution is unchanged by 061). One observation, fixed in the run and committed at a99314b5 before this record: AC12's closing clause said a constitution-only change never moves the pin, which 061's release policy made false for delivery; the criterion's own claim still holds and the clause is annotated. The twelve scenarios are unchanged in this window, so the durable-contract digest is unchanged. NOT read against this reopen, named rather than counted, unchanged in this window: specs/045-decision-state-drift-detection/spec.md and specs/inbox.md.
+Scoped re-review of 050's reopen for the third classification round (task 28), which classifies the 9 AGENTS.md entries the promotion-coverage notice reported unclassified. Diff base is ba689d02, the parent of the reopen commit. 0 MUST, 0 SHOULD, 0 low-confidence, no observations; not blocking.
+
+Examined 10 of the scope, each read in full as a diff over the window: specs/050-constitution/plan.md, tasks.md and spec.md, framework/constitution.md, AGENTS.md, framework/rules/quality-cross.md, framework/commands/analyze.md, and specs/036-quality-cross-rules/spec.md, data-model.md and tasks.md, which are in this window because 036 was reopened alongside for the rule this round routed there. The quality pass checked several things:
+
+- Each third-round key resolves to its entry: promotion-coverage reports 129 classified, 0 unclassified, and no unmatched keys.
+- The promoted §scenarios paragraph is the only normative statement of its rule; its distinctive phrase occurs once in framework/constitution.md and not in AGENTS.md (AC3).
+- The paragraph states the two no-write shapes append_task.rs:94-118 actually has, correcting the entry's drifted phased-file claim.
+- The constitution's anchor set is byte-identical to HEAD before the round (AC10).
+- 050's cross-spec-impact on 036 is still discharged by 036's extended signpost.
+
+Not opened: .claude/commands/ductus/analyze.md, generated from its source (gen-claude-commands --check in sync); specs/045-decision-state-drift-detection/spec.md and specs/inbox.md, plan-affected but unchanged in this window; and specs/036-quality-cross-rules/review.md, a record write-review wrote this session, of which only the frontmatter was read to verify the recorded sha.
+
+Local gate after the change: every framework-checks step and scripts/audit/run-all.sh exit 0; cargo fmt, clippy -D warnings and cargo test --release --locked exit 0 (1713 passed, 20 result lines for 20 targets).
 
 ## MUST violations (blocking)
 
@@ -54,7 +66,7 @@ Reopen for 061 (how a constitution-only change reaches adopters). Default diff b
 
 ## Observations
 
-- convention: AC12's closing clause said a constitution-only change never moves the pin, which 061's release policy made false for delivery — `specs/050-constitution/spec.md` — **fixed**
+*None.*
 
 ## Skipped passes
 
