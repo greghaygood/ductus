@@ -43,14 +43,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. Installer test
 
-- [ ] Create `scripts/tests/test-install.sh`. It runs `install.sh` in a temp repo with a stubbed `curl` on `PATH`, and asserts:
+- [x] Create `scripts/tests/test-install.sh`. It runs `install.sh` in a temp repo with a stubbed `curl` on `PATH`, and asserts:
   - the default resolves the tag the stub's `Location` names;
   - `--ref=main` and `--ref=<tag>` fetch `{raw-ref}`;
   - a missing `Location`, a non-`ductus-v*` tag, a tag below `{ref-floor}`, a 404 tag, an empty or unknown value, and a repeated `--ref` each halt with nothing written;
   - `--ref` in either position beside the agent key is accepted;
   - the completion message names `/ductus --ref=<value>`.
-- [ ] Break each check once and watch it fail, before trusting it
-- [ ] Wire the test into `.github/workflows/framework-checks.yml`, with `install.sh` and the test in the job's trigger paths
+- [x] Break each check once and watch it fail, before trusting it
+- [x] Wire the test into `.github/workflows/framework-checks.yml`, with `install.sh` and the test in the job's trigger paths
 
 - **Done when**: the test passes, each assertion has been seen to fail against a broken installer, and `framework-checks.yml` runs it.
 

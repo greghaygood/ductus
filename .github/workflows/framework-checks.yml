@@ -20,6 +20,8 @@ on:
       - 'specs/**'
       - '.claude/commands/**'
       - 'scripts/lint-*.sh'
+      - 'install.sh'
+      - 'scripts/tests/test-install.sh'
       - '.github/workflows/framework-checks.yml'
       - 'runtime/legacy-prose-commands.txt'
       - 'runtime/src/parser/**'
@@ -119,6 +121,15 @@ jobs:
         run: |
           bash scripts/lint-release-ordering.sh
           bash scripts/tests/test-lint-release-ordering.sh
+
+      # (l) The installer is piped to `sh` by people who cannot see its logic,
+      # and each check it makes on the source (spec 061) guards a silent
+      # outcome: a bootstrap from the wrong release, or a file written for a
+      # ref that should have halted. The test runs it against a stubbed curl,
+      # under the runner's /bin/sh (dash), so a bashism fails here rather than
+      # on an adopter's machine.
+      - name: (l) Installer source resolution
+        run: bash scripts/tests/test-install.sh
 
       # (j) The shell surface is the framework's own machinery — the audit
       # families that form the release gate, the generators, the lints, the
