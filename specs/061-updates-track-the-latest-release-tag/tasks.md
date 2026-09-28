@@ -166,7 +166,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] `done → in-progress`
 - [x] Correct the Resolved Question at spec line 147 to address the archive half through `{framework-root}`, with a signpost
-- [ ] Review, analyze, `→ done`
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 056 is `done` with a current review and analysis, and links back to 061.
 
