@@ -330,6 +330,8 @@ Scenarios use plain language. Given/When/Then syntax is not required.
 
 The scenario-creation primitive frames the body it is given: it writes the frontmatter, the heading, *and* the Open / Resolved Questions scaffolding. **Do not author those question headings in the body passed to it** — a body already carrying them produces two, which the markdown linter rejects as a duplicate heading. Pass Context, Behavior and Edge Cases only, then edit the scaffolded questions section afterwards; write the whole file directly when it needs questions at creation time.
 
+The task-append primitive can succeed while writing nothing, and **that is an outcome to read, not an error to retry**. It deduplicates in two ways. When a task already references the scenario being recorded, or, when asked to deduplicate on the title, a still-pending task carries the same title and items, it returns that task's number and leaves the file untouched. The right move is then to extend or work that task rather than open a second one for the same work. Read the fields it returns (whether it appended, whether it created the file) rather than its exit status, and when nothing was appended, open the task it names before trying again.
+
 #### Scenario lifecycle
 
 Scenarios do not have their own status field. A scenario is either written (merged) or not. When a scenario is created, a task is appended to the parent spec's `tasks.md` referencing the scenario. The task carries the completion status — the scenario itself is a permanent requirement document.

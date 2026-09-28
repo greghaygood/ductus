@@ -254,6 +254,36 @@ express; this spec declares that obligation in `cross-spec-impact:` so it gates
 
 `R` marks a verdict reached through the reword test rather than directly.
 
+### Third round — classified 2026-09-28
+
+The 9 entries the promotion-coverage notice reported unclassified on 2026-09-28, judged by the same reword test and recorded the same way (AC1): **1 to promote, 1 routes to a rule file rather than here, 7 project-only.** The verdicts are the operator's, confirmed 2026-09-28. Like the second round, this is a deliberate round rather than a standing requirement, and AC1 is unchanged.
+
+**Promoted the same day by task 28.** The promote row's canonical text is a paragraph in §scenarios, beside the scenario-creation paragraph its subject matches, and the entry's `AGENTS.md` line is now a pointer. Reading the primitive before promoting showed the entry had drifted. It named a phased `tasks.md` as one of its two no-write shapes, but `append_task.rs:94-118` has the scenario-slug dedup and the title dedup 058 added, while a phased file without a heading writes into a follow-on phase. The constitution states the code's two, and the pointer records the correction. The anchor set is unchanged. The rule-file row is `QUAL-TEST-001`, registered through `036`'s back-edge as the second round registered `QUAL-DELEG-001`. This spec's `cross-spec-impact:` already names `036`, and 036's signpost records this round.
+
+#### Third round — promote
+
+| Entry | Reason |
+| --- | --- |
+| `append-task` has two shapes that both return exit 0 while writing nothing, and neither is an error | **R** — stated as reading a primitive's returned fields rather than its exit status; both dedup shapes reach every adopter's task appends through groom, amend and implement |
+
+#### Third round — routes to a rule file, not here
+
+| Entry | Reason |
+| --- | --- |
+| A test must fail when the behavior it names is removed | Universal, but it governs *code* rather than the pipeline, so §rules puts it in a `quality-cross` rule with an ID, `QUAL-TEST-001`, as the second round routed `QUAL-DELEG-001` |
+
+#### Third round — project-only
+
+| Entry | Reason |
+| --- | --- |
+| No dead code — remove what nothing calls, reads, or reaches in the change that makes it dead | Recorded as this repository's rule at the operator's request (2026-09-25); promoted, it would govern code and route to a rule file |
+| Two extension points fan out in the exec walker, so neither is a stand-in for "one request, one response" in a test | This runtime's exec walker and its rule fixtures |
+| A word starting with `=` is a command lookup in zsh, so an unquoted `======` separator kills the command it sits in | A shell trap with no pipeline connection, like the zsh `path` entry |
+| Mutating code to prove a test fails: run unit tests in the dev profile, and rebuild the release binary after any parity mutation | This repository's cargo profiles and parity harness |
+| A boolean argument is a valueless flag on the CLI and a JSON boolean over MCP — `--checked true` is an error, `--checked` is the call | Tool-call hygiene for this runtime's CLI; generalized it stops biting, like *use repo-relative paths in tool calls* |
+| The project root is not the git work tree's root, and every path that crosses between them must be converted | Runtime and command-source authoring; an adopter receives the behavior, not the rule |
+| An `assessSpecQuality` step's prose chooses the tier of rules the exec walker asks about, so a `-tier` word added to that prose can change what the step covers | Concerns authoring this framework's command sources |
+
 Two entries were reclassified after checking the constitution rather than the
 survey: **W14 and W15 are already promoted.** They are cases (b) and (c) of
 §spec-lifecycle's mechanical-edit rule, and both `AGENTS.md` entries already
