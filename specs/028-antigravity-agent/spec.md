@@ -168,7 +168,7 @@ carries over. No plugin build, no `agy plugin install`, no chicken-and-egg.
 
 ## Update Story
 
-`/ductus` re-runs re-scaffold the `.agents/` files (live-on-main), exactly like
+`/ductus` re-runs re-scaffold the `.agents/` files (from the resolved source), exactly like
 the other file-scaffold agents — no install/registration step. Pinning via
 `.ductus/config.toml` and the manifest `update`/`create`/`skip` strategies apply
 unchanged.
@@ -279,7 +279,7 @@ unchanged.
   adopts by **file-scaffolding into `.agents/`** per project, exactly as for
   Claude/Auggie — not by building/installing a global plugin. Registry row:
   `config_dir = .agents`. **Detection** keys on `.agents/` existing in the
-  project. **Update** is re-scaffolding (live-on-main).
+  project. **Update** is re-scaffolding (from the resolved source).
 - **Permissions / `configure` (corrected from "N/A").** Antigravity **does** have
   a permissions file — `.agents/settings.json` (workspace; global form
   `~/.gemini/antigravity-cli/settings.json`), **not** `.claude/settings.local.json`
