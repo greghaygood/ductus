@@ -1,30 +1,55 @@
 ---
 spec: 017-derive-dont-ask
-last-run: 2026-09-15T16:30:40Z
-analyzed-against: 70ac18dd663a29958fd2e29b4293db6f143710c8
+last-run: 2026-09-28T00:12:33Z
+analyzed-against: a42351706b70e73d3907d943a8e88d3816989461
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 10
-captured-issues: 0
 analyzed-digest:
-  data-model.md: d2430c84cd4a126802f4a0d45b7611e0afa957e368a0bac5ec5551c0d199389b
+  data-model.md: bc0dbdffb2f2dc1409cbae6c53d9acc9b30c77bb7671ac1909ebbe1071adc01b
   plan.md: 371921636aa901292a365fd571854ce16a585733c5d0da8fe72a00bf235814ec
-  review.md: c8e8849daa260f54c5f6fd28bb3e5f36ca9bc0a7b6382703bcf525c60c6c984c
+  review.md: 5977fea2707e9a246e3ee2b6ea7c114680e6c0d123e915f4d8c952272c4718c6
   scenarios/detect-dependency-cycles.md: 2c426d44ce0a3a3cf5e91160fdf84ac054795737b25979152f70e89fe86005ab
   scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264
   scenarios/skip-prose-cross-references.md: 1b5c4bd36e2ca760437d63b948706e5b575ecd450b0779d1d10440cc77d0e086
   scenarios/tracked-specs-not-worktree.md: ba42aee5fbee0dfed38fce985200b0ba5775ecd03113a81aa792b25a18383829
-  spec.md: 5a6f3477b1315e63c5698ccffa0ed743c002ca986273ca0dd8e1d0be46a00d8c
+  spec.md: ca9ca894a64c4691151943de7fb975b7f5c87502bc3760b1229265d054358762
   tasks.md: 375377a3d6f43f25b3f0565d366a534d5841744f5db3653b31993ad0b57b37a7
 unexamined-by-reason:
   no-readable-state: 1
   not-a-live-claim: 9
 blocking: false
+dispositions:
+  fixed: 1
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Analysis — 017-derive-dont-ask
 
 ## Summary
 
-Relocated from the spec's frontmatter by the record-relocation migration. The counts above are the recorded run's; this report body begins at the next run.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 10 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
+
+## Hard failures
+
+*None.*
+
+## Blocking findings
+
+*None.*
+
+## Advisory findings
+
+*None.*
+
+## Unexamined targets
+
+- no-readable-state: 1
+- not-a-live-claim: 9
+
+## Fixed in this run
+
+- grounding — spec.md's CI safety net paragraph and AC24 stated the current CI behavior — generators run for real, then the tree is compared — without citing the workflows that do it — `specs/017-derive-dont-ask/spec.md` — **fixed**
