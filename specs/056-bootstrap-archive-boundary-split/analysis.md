@@ -1,22 +1,48 @@
 ---
 spec: 056-bootstrap-archive-boundary-split
-last-run: 2026-09-15T13:56:54Z
-analyzed-against: b4a94e113013cde1134a28e1bf82eaef2930bdd5
+last-run: 2026-09-28T13:42:22Z
+analyzed-against: fbb0f23f241ce529e319cfe7ebf25ff6333c8149
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 0
-captured-issues: 0
+unexamined: 2
 analyzed-digest:
-  plan.md: 3fd1e0a1b0f12b59399d16223f32746c0da68d4e7582d84a0bd5fbed69e0cb66
-  review.md: 65888222e14768b3919b8dd9f4bf9baefcec2706d1c2f26c75190091e460ffb1
-  spec.md: ef9c3a87c4688019f98bee5fb779db3a5a286eeda5aa507a0ff4b20d097c7694
+  plan.md: 19cdd520ce17b12fef27c4dc4ce1f391b154452b24472b11beff9367cd5f4897
+  review.md: d7ed45417b1ae1a923d89a64fc2fce102a29b6cf6d9e22d0d7451ca146b8d117
+  spec.md: eb01bd46806779804643fcae66de32c03548002a1b7a2fe71720f0a20b32e8af
   tasks.md: 65241ca0537450603e76b41e6976294870a888928f5627feeb4cd1a23a22fefd
+unexamined-by-reason:
+  not-a-live-claim: 2
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Analysis — 056-bootstrap-archive-boundary-split
 
 ## Summary
 
-Relocated from the spec's frontmatter by the record-relocation migration. The counts above are the recorded run's; this report body begins at the next run.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+
+## Hard failures
+
+*None.*
+
+## Blocking findings
+
+*None.*
+
+## Advisory findings
+
+*None.*
+
+## Unexamined targets
+
+- not-a-live-claim: 2
+
+## Fixed in this run
+
+*None.*
