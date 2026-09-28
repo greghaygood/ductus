@@ -34,7 +34,7 @@ Block E is the whole tail of the file, which is why the move is cheaper than the
 
 `ductus.md` gains a single `## The archive half` section immediately after `§File Fetching` — the first point in the file at which `{tempdir}/ductus-main/` exists — naming the file, what it holds, and when to read it. One pointer rather than five in-place stubs: five stubs would add back bytes the split exists to remove, and each would be a place for the two files to drift.
 
-The address is `{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md`. No new resolution mechanism is introduced: `§Archive fetch and extract` already computes that framework root and calls it "the local mirror of the `ductus` repo for the rest of the run", and that section stays installed.
+The address is `{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md` (since 061, `{framework-root}/framework/bootstrap/ductus-procedure.md`, the root derived from the extraction). No new resolution mechanism is introduced: `§Archive fetch and extract` already computes that framework root and calls it "the local mirror of the `ductus` repo for the rest of the run", and that section stays installed.
 
 ### The archive half is reference prose, and is allowlisted as such
 
