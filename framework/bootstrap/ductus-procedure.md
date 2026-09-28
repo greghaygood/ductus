@@ -6,9 +6,9 @@ description: The /ductus sections that run after the framework archive is extrac
 
 The half of the `/ductus` procedure that cannot run before the framework archive
 exists. It ships **in** that archive and is read from the extracted tree at
-`{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md`, where
-`{tempdir}/ductus-main/` is the framework root §Archive fetch and extract
-computes.
+`{framework-root}/framework/bootstrap/ductus-procedure.md`, where
+`{framework-root}` is the framework root §Archive fetch and extract derives
+from the extraction.
 
 Three things follow, and each is the point of the split:
 
@@ -332,6 +332,7 @@ The Hook Installation section above still runs and may set `core.hooksPath` rega
 
 After scaffolding, display:
 
+- The source line **Source resolution** emitted in pre-flight, repeated — `Source: {source-label}` — so the summary says which release the files above came from
 - Summary of files created, updated, unchanged, skipped, pinned, merged, and removed — grouped by agent for per-agent files, with shared files in their own group
 - Placeholder substitutions applied, as `apply-manifest` reports them: the total alongside the number of entries that ran substitution (`N substitutions across M files`). Both numbers, never just the total — zero across twenty substituted files is a malformed or incomplete map, while zero across zero is a manifest of pinned and skipped files behaving correctly, and one number cannot tell an operator which they are looking at.
 - For each scaffolded agent, the agent's `rules_file_note` from the registry

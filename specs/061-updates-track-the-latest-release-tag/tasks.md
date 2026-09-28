@@ -24,11 +24,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. Bootstrap: archive at the ref, derived framework root
 
-- [ ] Fetch the archive from `codeload.github.com/stonean/ductus/tar.gz/{archive-ref}`, keeping the direct-codeload rationale
-- [ ] Define `{framework-root}` as the single top-level directory the extraction produced (the first path component of `extract-archive`'s `files`, or the one directory `tar` created), halting on zero or several
-- [ ] Replace every `ductus-main/` in `framework/bootstrap/ductus.md` and `framework/bootstrap/ductus-procedure.md` with `{framework-root}`, including §The archive half's address
-- [ ] Add the source line to Post-Scaffolding Output in `framework/bootstrap/ductus-procedure.md`
-- [ ] Mirror to `framework/bootstrap/govern.md`
+- [x] Fetch the archive from `codeload.github.com/stonean/ductus/tar.gz/{archive-ref}`, keeping the direct-codeload rationale
+- [x] Define `{framework-root}` as the single top-level directory the extraction produced (the first path component of `extract-archive`'s `files`, or the one directory `tar` created), halting on zero or several
+- [x] Replace every `ductus-main/` in `framework/bootstrap/ductus.md` and `framework/bootstrap/ductus-procedure.md` with `{framework-root}`, including §The archive half's address
+- [x] Add the source line to Post-Scaffolding Output in `framework/bootstrap/ductus-procedure.md`
+- [x] Mirror to `framework/bootstrap/govern.md`
 
 - **Done when**: neither bootstrap file contains `ductus-main` or `refs/heads/main` outside a statement of the `main` source's own `{archive-ref}`, and `scripts/audit/run-all.sh` passes.
 

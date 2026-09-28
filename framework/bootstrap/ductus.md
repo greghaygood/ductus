@@ -27,7 +27,7 @@ The same `ductus.md` supports every agent the framework knows about. The set of 
 
 1. The walker context carries the inputs the host has already gathered and validated: project (the destination project name), description (one-line project description), languages (comma-separated), agents (registry keys), framework-version (release tag), archive-url and sha256-url (computed from framework-version), staging-dir, substitutions-map, manifest-entries (the per-strategy list described in **Shared Files** and **Per-Agent Scaffolding**), pinned-list (from `.ductus/config.toml`'s `[pinned] files` block), gitignore-block (the `.claude/`, `.augment/`, `.agents/`, `.opencode/`, `specs/.cache/`, etc. lines), host-block (the `project` value — the team-shared slash-command namespace — written to committed `.ductus/config.toml`, plus the per-contributor `cli-config-dir` written to the gitignored `.ductus/session.toml` since teammates may use different agents; the runtime reads both at `ductus exec` time to resolve the installed command file — `{cli-config-dir}/commands/{project}/<name>.md` for `claude-style`, then `{cli-config-dir}/command/{project}/<name>.md` for `opencode` (§Derived values **Command/skill path**; the runtime tries both, so either layout resolves)), enforce-directories (the slash-command directories whose top-level `*.md` files are pruned to the manifest), and the per-agent ductus-install entry with `keep-literals: ["project", "cli-config-dir"]`. The host runs the markdown-only reference below to collect inputs, derive registry values, validate `.ductus/config.toml`, and seed context; the runtime walks the procedure that follows.
 
-2. Invoke `fetch-archive` (MCP: `fetch-archive`) to download the framework tarball. The primitive verifies the sha256 against a sidecar URL when one is supplied; without a sidecar (the live-on-main case, since GitHub's auto-generated source tarballs ship without sidecars) it returns the computed digest and `verified: false`, leaving any out-of-band verification to the host. A sidecar mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
+2. Invoke `fetch-archive` (MCP: `fetch-archive`) to download the framework tarball. The primitive verifies the sha256 against a sidecar URL when one is supplied; without a sidecar (the framework archive's case on every source, since GitHub's auto-generated source tarballs ship without sidecars) it returns the computed digest and `verified: false`, leaving any out-of-band verification to the host. A sidecar mismatch halts the procedure with an `error` envelope so no partial state lands in the destination tree.
 
 3. Invoke `extract-archive` (MCP: `extract-archive`) to expand the verified tarball into the staging directory. Path-traversal protection is applied per entry; symlinks are skipped. Otherwise, follow the markdown-only path's `tar -xzf` workflow.
 
@@ -678,21 +678,21 @@ This section runs only after the **Pre-flight Phase** passes — that is, once *
 
 ### Archive fetch and extract
 
-Issue exactly one `curl` against GitHub's archive host, downloading into the temp directory established during the pre-flight phase:
+Issue exactly one `curl` against GitHub's archive host, at the ref **Source resolution** settled, downloading into the temp directory established during the pre-flight phase:
 
 ```text
-curl -fsSL https://codeload.github.com/stonean/ductus/tar.gz/refs/heads/main \
-  -o {tempdir}/main.tar.gz
+curl -fsSL https://codeload.github.com/stonean/ductus/tar.gz/{archive-ref} \
+  -o {tempdir}/framework.tar.gz
 ```
 
-This is the direct `codeload.github.com` endpoint — the target that `https://github.com/stonean/ductus/archive/refs/heads/main.tar.gz` 302-redirects to. Fetch it directly: the redirect form lands the command on a **new host mid-flight**, which some hosts (e.g. Antigravity) gate with a permission prompt even when a `curl` allow is pre-granted, because the grant matched the original host, not the redirect target. The direct URL has no redirect, so the bootstrap seed's `curl` pre-grant (`command(curl)` / `Bash(curl *)` / the Auggie `^curl` regex matcher) actually covers it. The archive's top-level directory is `ductus-main/`; the framework files live at `ductus-main/framework/...` after extraction.
+This is the direct `codeload.github.com` endpoint — the target that `https://github.com/stonean/ductus/archive/{archive-ref}.tar.gz` 302-redirects to. Fetch it directly: the redirect form lands the command on a **new host mid-flight**, which some hosts (e.g. Antigravity) gate with a permission prompt even when a `curl` allow is pre-granted, because the grant matched the original host, not the redirect target. The direct URL has no redirect, so the bootstrap seed's `curl` pre-grant (`command(curl)` / `Bash(curl *)` / the Auggie `^curl` regex matcher) actually covers it.
 
 After fetching:
 
-1. Extract the archive into the existing temp directory: `tar -xzf {tempdir}/main.tar.gz -C {tempdir}`.
-2. Compute the framework root: `{tempdir}/ductus-main/`. Treat this as the local mirror of the `ductus` repo for the rest of the run.
+1. Extract the archive into the existing temp directory: `tar -xzf {tempdir}/framework.tar.gz -C {tempdir}`.
+2. Derive the framework root, `{framework-root}`: **the single top-level directory the extraction produced** — on the runtime path, `{tempdir}/` joined with the first path component every entry in `extract-archive`'s `files` shares (those paths are relative to the extraction's destination); on the markdown path, the one directory `tar` created in `{tempdir}`. Treat it as the local mirror of the `ductus` repo for the rest of the run; the framework files live at `{framework-root}/framework/...`. GitHub names that directory after the ref — `ductus-main/` for `main`, `ductus-ductus-v0.55.0/` for that tag — and the rule is GitHub's, so it is read from the extraction rather than predicted from the ref, where a restated rule would break silently the day GitHub changed it.
 
-If the fetch or extraction fails — non-zero exit from `curl` or `tar`, or a missing `ductus-main/` directory after extract — abort the run with this error and do not continue scaffolding:
+If the fetch or extraction fails — non-zero exit from `curl` or `tar`, or an extraction that produced zero or several top-level directories, so that no single `{framework-root}` exists — abort the run with this error and do not continue scaffolding:
 
 > Failed to fetch or extract the `ductus` archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
 
@@ -702,7 +702,7 @@ A missing archive means **every** manifest entry would be missing, so partial sc
 
 For each manifest entry below (in **Shared Files** and **Per-Agent Scaffolding**):
 
-1. Compute the local source path: `{tempdir}/ductus-main/{source-path}`.
+1. Compute the local source path: `{framework-root}/{source-path}`.
 2. If the local source path does not exist — the file was renamed, removed upstream, or the manifest is out of sync — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining entries. This preserves the "do not abort on a single fetch error" guarantee at the per-entry level, even though the archive itself is fetched once.
 3. Apply the entry's strategy (`update`, `create`, `skip`, `merge`, `pinned`) using the local file as the new content. For `update` strategy, compare the local file against the existing destination file; only overwrite and report as "updated" if the content differs. If the content is identical, report as "unchanged" (or omit from the summary). Same semantics as before — no network round-trip per file.
 4. Apply placeholder substitution after reading the local source, before writing to the destination. Same rules as documented in **Placeholder Substitution** below, including the `ductus.md` self-install exception that keeps `{project}` and `{cli-config-dir}` literal.
@@ -717,9 +717,9 @@ The leftover directory is for inspection only — the next `/ductus` run creates
 
 The sections that follow the archive fetch do not live in this file. They ship
 **in** the archive this run just extracted, at
-`{tempdir}/ductus-main/framework/bootstrap/ductus-procedure.md` — the same
-framework root §Archive fetch and extract computed above and called the local
-mirror of the `ductus` repo for the rest of the run. Read them from there when
+`{framework-root}/framework/bootstrap/ductus-procedure.md` — the framework
+root §Archive fetch and extract derived above and called the local mirror of
+the `ductus` repo for the rest of the run. Read them from there when
 the run reaches them: **Pre-run Migrations**, **Frontmatter Migration**,
 **Security Audit (brownfield)**, **Hook Installation**, **What This Command Does
 NOT Do**, **Edge Cases**, **Post-Scaffolding Output**, **Idempotency**, and
@@ -903,7 +903,7 @@ In every copied file (except each selected agent's installed `ductus` file — `
 
 ## Post-Write Integrity Check
 
-After writing the agent's installed `ductus` file — whether via the **Pre-flight Phase** (stale-write path) or the **`ductus` self-installation** manifest step — verify it is well-formed. For `claude-style` (`{config_dir}/commands/ductus.md`) and `opencode` (`{config_dir}/command/ductus.md`), the file must start with a frontmatter block carrying a `description:` key, and the body after that frontmatter must start with `# ductus` — the installed copy is written verbatim, so the source's own frontmatter travels with it, and asserting against the first line alone fails on every correct write. For `antigravity` (`{config_dir}/skills/ductus/SKILL.md`), the file must start with a frontmatter block whose `name:` is `ductus`, and the body after that frontmatter must start with `# ductus`. If the check fails, the write was corrupted — report the error and re-read the source: `{tempdir}/ductus.md.upstream` for the self-update path, or `{tempdir}/ductus-main/framework/bootstrap/ductus.md` for the manifest path. Apply the check independently per agent.
+After writing the agent's installed `ductus` file — whether via the **Pre-flight Phase** (stale-write path) or the **`ductus` self-installation** manifest step — verify it is well-formed. For `claude-style` (`{config_dir}/commands/ductus.md`) and `opencode` (`{config_dir}/command/ductus.md`), the file must start with a frontmatter block carrying a `description:` key, and the body after that frontmatter must start with `# ductus` — the installed copy is written verbatim, so the source's own frontmatter travels with it, and asserting against the first line alone fails on every correct write. For `antigravity` (`{config_dir}/skills/ductus/SKILL.md`), the file must start with a frontmatter block whose `name:` is `ductus`, and the body after that frontmatter must start with `# ductus`. If the check fails, the write was corrupted — report the error and re-read the source: `{tempdir}/ductus.md.upstream` for the self-update path, or `{framework-root}/framework/bootstrap/ductus.md` for the manifest path. Apply the check independently per agent.
 
 ## Re-Run Behavior
 
