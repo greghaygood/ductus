@@ -1,14 +1,14 @@
 ---
 spec: 050-constitution
-last-run: 2026-09-28T00:46:08Z
-analyzed-against: 33b8f9d5b85f4359ae368977b5ca7646ab04ba52
+last-run: 2026-09-28T00:54:48Z
+analyzed-against: 328ed325e133f1b834a22f06054b18792214f096
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 1
 analyzed-digest:
-  plan.md: 60f14b2abee7945fe36c9c2f0c171527d5e31ca9d6824a26f7772282b1186abb
-  review.md: 0eb1e8685c1a2574d9697b4066c6dc3d7d3f9bc00f6b1381f3733a515f98c8a7
+  plan.md: 222c82d5b41d1dd4d3b5bbec05719021a18485aad06435d691e547b6d8ad6980
+  review.md: 433ca54ef35f722cf11034e27577171f63317a26fbd375af0510950fc5a6c479
   scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
   scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
   scenarios/a-measurement-states-its-method-and-units.md: 4c250a480c11e9788058f1012b647daa14aba2036d4a3baa9d0c1ba3c5965b2a
@@ -21,13 +21,13 @@ analyzed-digest:
   scenarios/governance-is-multi-source.md: ae59aca7a049317806297839a73cf335eeb3764db97999a7ddc0b12103e6ffeb
   scenarios/knowledge-routes-by-population-not-by-kind.md: 0e934ea65cbaf2bf31acc4f45c461bfb868be45deb5aa9fa6601c59b8c003c5c
   scenarios/report-outcomes-not-edits.md: caf13342d7fe0a5af4108024cf424ab921030c896f0743307cf5111be2e163ab
-  spec.md: b7812aac4f1e92dc7c530af6df7f8e0e21bc4874be6b2c068298175c5771941f
-  tasks.md: 0a67a0ea4b371896edef3a99aa11c3dbe9a069e74e49e4fcf75f2406efe4dbbf
+  spec.md: cfd8c5d367cc3b8920bf5e470ca5396bd3d1f401c6bc20933f936a343a210768
+  tasks.md: 66cd1406c1caabb79c867d5ffb99b8aaaa36674c5e55eecbb63ed3df2ec1a19d
 unexamined-by-reason:
   ships-to-adopter: 1
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -37,7 +37,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 1 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 1 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -57,4 +57,4 @@ dispositions:
 
 ## Fixed in this run
 
-- grounding — AC1 set the survey's 54 rule-bearing entries against an undated "89 entries" counted by a different method (all six sections' top-level bullets; 78 on the 54's own method at fbcd503e) — `specs/050-constitution/spec.md` — **fixed**
+*None.*
