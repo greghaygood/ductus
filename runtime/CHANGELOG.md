@@ -2,6 +2,79 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.55.0] — 2026-09-28
+
+Updates now track the latest release rather than `main` (spec 061). The
+release also carries rule-file and constitution changes from specs 008, 016,
+036, 050 and 058. The runtime's code is unchanged apart from a doc comment, a
+test and one lockfile entry. It is published at 0.55.0 anyway, because the
+version pin must always name a release whose assets exist.
+
+### Changed
+
+- **`/ductus` and the installer fetch from the latest release by default.**
+  Each run fetches from one ref: the latest `ductus-v*` release (read from the
+  `Location` header of GitHub's `releases/latest` redirect), `main`, or a
+  named tag. The bootstrap self-update, the runtime version pin and the
+  framework archive all use it. `--ref=<value>` chooses it (`latest`, `main`,
+  or `ductus-v<SemVer>`), in any position. A run given `main` or a tag records
+  it as `.ductus/config.toml` `[source] ref`, so later runs keep it, and
+  `--ref=latest` clears it. The run halts before anything is written on any
+  of these:
+  - a resolved tag below this release, the first whose bootstrap honors a ref;
+  - a tag below the `introduced_in` of the project's last applied migration;
+  - a latest release that cannot be resolved;
+  - an unknown or repeated `--ref`;
+  - a tag that does not exist.
+
+  The run reports its source, and the self-update's pre-flight abort names the
+  source it updated from. The framework root is now derived from the
+  extracted archive rather than spelled `ductus-main/`. Spec 061.
+- **The installer is a release asset.** Every release uploads `install.sh`,
+  and a post-release job compares the published copy byte-for-byte with the
+  tag's. The documented one-liner is
+  `curl --proto '=https' --tlsv1.2 -sSfL https://github.com/stonean/ductus/releases/latest/download/install.sh | sh`.
+  The installer takes the same `--ref` flag and applies the release floor.
+  Given `--ref`, it names `/ductus --ref=<value>` as the next command.
+  Spec 061.
+- **A framework-only change reaches default-source adopters at the next
+  release.** A project on `--ref=main` still sees it on commit. Spec 061.
+- **Every rule Statement carries one obligation tier.** The 16 shipped
+  Statements that mixed MUST and SHOULD are resolved. Fourteen are split: the
+  MUST clause keeps its ID and the SHOULD clause becomes a new rule
+  (`BE-ERRENV-003`, `BE-PAGE-003`, `FE-LOAD-003`, `FE-LOAD-004`,
+  `FE-FONT-003`, `BE-AUTHN-015`, `BE-AUTHN-016`, `BE-AUTHN-017`, `BE-ERR-004`,
+  `BE-LOG-007`, `FE-XSS-009`, `FE-STORAGE-004`, `FE-CSP-008`, `FE-PII-004`).
+  `BE-DEPS-001` and `FE-CSP-001` drop a SHOULD clause their own MUST already
+  implied. MAY may appear beside either tier as a permission, and a runtime
+  corpus test holds the shipped rule files to one tier each. X-Frame-Options
+  is now a SHOULD in both rule files: `BE-API-001` no longer lists it, and the
+  new `BE-API-012` mirrors `FE-CSP-008`. Spec 008.
+- **`QUAL-TEST-001`: a test fails when the behavior it names is removed.** A
+  new SHOULD rule in `quality-cross.md`, enforced by `/{project}:review`'s
+  quality pass. It names the case where a fallback path satisfies the
+  assertion meant for the primary one. `QUAL-GROUND-001` and `QUAL-DELEG-001`
+  no longer claim a SHOULD finding leaves `done` unblocked. Spec 036.
+- **`/{project}:analyze` reports a malformed or duplicate-ID rule file as
+  blocking again**, and withholds that file's rules from steps 11 and 12.
+  Spec 008.
+- **The Applicable Rules check skips code-pattern rules.** A cited rule whose
+  file declares code-pattern verification, as `quality-cross.md` does, is no
+  longer flagged as not firing, because `/{project}:review` enforces it
+  against code. Spec 016.
+- **The analyze record reads the re-check.** A finding the re-check no longer
+  produces is recorded `fixed`, whichever confirmed write removed it. `routed`
+  marks a finding that still fires. Spec 058.
+- **Constitution.** A status commit holds only the transition
+  (§spec-lifecycle). Nothing durable goes in a review record's body
+  (§implement-phase). A task append that writes nothing reports an outcome, so
+  read its returned fields rather than its exit status (§scenarios). Spec 050.
+
+### Fixed
+
+- **`runtime/Cargo.lock` pinned `chacha20` 0.10.1, which was yanked.** It is
+  now 0.10.2. No build target compiles it. Spec 061, task 21.
+
 ## [0.54.2] — 2026-09-27
 
 ### Fixed
