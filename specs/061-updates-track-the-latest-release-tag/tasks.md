@@ -15,10 +15,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Bootstrap: record the choice, self-update from the source
 
-- [ ] Add the `[source]` managed-block write (`# ductus (source)`, via `merge-managed-block`) after ductus runtime detection and before the Self-update check, covering the `--ref=latest` rewrite and the nothing-recorded no-op
-- [ ] Point the Small fetch at `{raw-ref}` and make the stale notice name `{source-label}`
-- [ ] Document `[source]` in §Project Configuration: the TOML example and a `source.ref` field description pointing at this spec's data model
-- [ ] Mirror to `framework/bootstrap/govern.md`
+- [x] Add the `[source]` managed-block write (`# ductus (source)`, via `merge-managed-block`) after ductus runtime detection and before the Self-update check, covering the `--ref=latest` rewrite and the nothing-recorded no-op
+- [x] Point the Small fetch at `{raw-ref}` and make the stale notice name `{source-label}`
+- [x] Document `[source]` in §Project Configuration: the TOML example and a `source.ref` field description pointing at this spec's data model
+- [x] Mirror to `framework/bootstrap/govern.md`
 
 - **Done when**: the procedure records a `--ref` before any path that can abort pre-flight, and a plain re-run after the stale abort resolves the recorded source. The stale notice names its source (AC14). §Project Configuration lists `[source]`. Family 21 passes.
 

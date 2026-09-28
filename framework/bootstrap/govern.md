@@ -448,6 +448,20 @@ There is no `ductus` runtime primitive for this merge: State B is the runtime-ab
 
 The permission write (State B step 4) still happens for these agents — it targets the project-level settings file the agent reads, independent of the home-level MCP-server location.
 
+### Recording the source
+
+A `--ref` is recorded in the project's committed configuration, so the choice outlives the run that made it. It is written here — after **ductus runtime detection**, because that is the first point at which `merge-managed-block` is reachable in both states (the MCP tool in State A, `{pointer-path} merge-managed-block` in State B), and before the **Self-update check**, because the self-update's stale path aborts pre-flight and the re-run that follows must read the choice back rather than resolve the default and replace the bootstrap again. Nothing is recorded before **Source resolution** has validated the ref, so a bad `--ref` never persists.
+
+Invoke `merge-managed-block` against the **active config file** (§Project Configuration) with `marker-style: "line-prefix"` and `marker: "ductus (source)"`:
+
+- **`--ref=main` or `--ref=<tag>`** — the block is two lines, `[source]` and `ref = "{value}"`, with the value exactly as given.
+- **`--ref=latest`, with a `# ductus (source)` block present** — the block is `[source]` alone. A bare `[source]` table reads as the default, so the project returns to the latest release.
+- **`--ref=latest` with no `[source]` table in the file, or no `--ref` at all** — write nothing. A recorded or default source is already what the file says.
+
+The primitive appends a new block at the end of the file, and a trailing TOML table cannot capture another table's keys, so appending is safe. It also removes lines elsewhere in the file that repeat the block's own lines, which is right for `.gitignore` and wrong for a hand-written `[source]` table outside the block: its header would go and its `ref` key would be left under whichever table precedes it. So when a `--ref` is given and the file carries a `[source]` table that is not inside a `# ductus (source)` block, halt instead of writing — `--ref=latest` included, since writing nothing would leave that table governing the next run:
+
+> Halt: `{active config file} has a [source] table outside its "# ductus (source)" managed block. Add that line directly above [source], or remove the table, then re-run /ductus --ref={value}.`
+
 ### Self-update check
 
 Verify the running session's `ductus.md` instructions are current.
@@ -456,12 +470,14 @@ Verify the running session's `ductus.md` instructions are current.
 
 `{tempdir}` already exists — the **Pre-flight Phase** created it before anything else, and **Source resolution** has already fetched the version pin into it. Do not create a second one.
 
-Issue exactly one `curl` against `raw.githubusercontent.com` for the upstream bootstrap file:
+Issue exactly one `curl` against `raw.githubusercontent.com` for the upstream bootstrap file, at the ref **Source resolution** settled:
 
 ```text
-curl -fsSL https://raw.githubusercontent.com/stonean/ductus/main/framework/bootstrap/ductus.md \
+curl -fsSL https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/framework/bootstrap/ductus.md \
   -o {tempdir}/ductus.md.upstream
 ```
+
+"Upstream" is the resolved source's copy, not `main`'s: a project on the latest release or a tag compares its installed bootstrap with that release's, so an update replaces it only with a released bootstrap.
 
 If the fetch fails — non-zero `curl` exit, network error, or a 404 — abort the run with this error and do not continue:
 
@@ -473,7 +489,7 @@ For each selected agent, compare the upstream `{tempdir}/ductus.md.upstream` aga
 
 - **`no installed copy`** — the installed file does not exist (first run for this agent). Continue.
 - **`current`** — the two files are byte-identical, **or** the installed file is byte-identical to upstream and listed in `.ductus/config.toml` `pinned.files` (the pin had nothing to suppress this run). Continue.
-- **`stale`** — the two files differ and the installed file is **not** pinned. The running session is using older instructions than what is current upstream.
+- **`stale`** — the two files differ and the installed file is **not** pinned. The running session is using instructions other than the resolved source's — usually older ones, or newer ones when the project has moved to an earlier release.
 - **`pinned-divergent`** — the two files differ and the installed file **is** listed in `.ductus/config.toml` `pinned.files`. The pin intentionally suppresses the update; continue, and emit a single advisory line in the post-scaffolding output.
 
 The check is scoped to **selected agents only** — agents whose `config_dir` exists in the project but are not in this run's selection are not diffed. An unselected stale agent will trip the check on its very next `/ductus` run targeting it.
@@ -488,7 +504,7 @@ If any selected agent is recorded as `stale`:
 4. Do not write `ductus.md` for `pinned-divergent` agents — the pin opts them out of automatic updates.
 5. Add each stale agent's overwrite to the **pending-restart set** and contribute this notice to the combined **Pre-flight abort** — do **not** abort here:
 
-> **The ductus command itself has updated.** Your installed copy was behind upstream and the running session is using the older instructions. The freshly fetched copy has been written to disk for stale agents.
+> **The ductus command itself has updated from {source-label}.** Your installed copy differed from that source's and the running session is using the older instructions. The freshly fetched copy has been written to disk for stale agents.
 >
 > Stale agents updated: {comma-separated names}.
 
@@ -512,7 +528,7 @@ After both checks have run, inspect **both** sets. They are **not** equivalent �
 - **State B wiring only — the deferred-restart set** — do **not** abort. The binary is on disk, the CLI is permission-seeded, and every remaining step's primitives are reachable as `{pointer-path} <primitive>`, so stopping here would defer the entire run to another session for nothing. Continue to **Collect Project Inputs** and carry the wiring notice to the **Closing restart**.
 - **Both empty** — no restart is needed at all. Proceed to **Collect Project Inputs**. (ductus detection resolved to State A, and the self-update check saw `current` / `no installed copy` / `pinned-divergent` for every selected agent.)
 
-On the **stale `ductus.md`** branch, everything past the pre-flight phase is skipped. That set is — **Collect Project Inputs**, **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output**. Five of those — **Pre-run Migrations**, **Frontmatter Migration**, **Security Audit**, **Post-Scaffolding Output**, and (with the rest of the tail) **Hook Installation** — are in the archive half and are skipped here for the stronger reason that this branch never fetches the archive that carries them. **This list names which sections are skipped, not the order they run in** — read as a sequence it would put **Pre-run Migrations** ahead of the **Archive fetch and extract**, which is impossible: that section's own step 1 reads `framework/migrations.toml` *from the fetched archive*, so it necessarily runs after extraction. The execution order is the numbered walker in §Instructions, which fetches at step 2 and extracts at step 3. On the **State B** branch none of it is: the run proceeds through all of it via the CLI and stops only at the **Closing restart**. The only writes performed are the additive **Permission Setup** entries, any per-stale-agent `ductus.md` overwrite, and any ductus wiring plus its permission entries. Because input collection now lives past this point, an aborted run never prompts the user for the project name, description, or languages — they are asked exactly once, in the session that proceeds to scaffold. The next `/ductus` run in a new session sees ductus live (or absent) and every selected agent `current` (or `no installed copy`), and proceeds normally without abort.
+On the **stale `ductus.md`** branch, everything past the pre-flight phase is skipped. That set is — **Collect Project Inputs**, **Pre-run Migrations**, **Project Configuration**, the **Archive fetch and extract**, **Frontmatter Migration**, **Shared Files**, **Per-Agent Scaffolding**, **Security Audit**, and **Post-Scaffolding Output**. Five of those — **Pre-run Migrations**, **Frontmatter Migration**, **Security Audit**, **Post-Scaffolding Output**, and (with the rest of the tail) **Hook Installation** — are in the archive half and are skipped here for the stronger reason that this branch never fetches the archive that carries them. **This list names which sections are skipped, not the order they run in** — read as a sequence it would put **Pre-run Migrations** ahead of the **Archive fetch and extract**, which is impossible: that section's own step 1 reads `framework/migrations.toml` *from the fetched archive*, so it necessarily runs after extraction. The execution order is the numbered walker in §Instructions, which fetches at step 2 and extracts at step 3. On the **State B** branch none of it is: the run proceeds through all of it via the CLI and stops only at the **Closing restart**. The only writes performed are the additive **Permission Setup** entries, any recorded source (**Recording the source**), any per-stale-agent `ductus.md` overwrite, and any ductus wiring plus its permission entries. Because input collection now lives past this point, an aborted run never prompts the user for the project name, description, or languages — they are asked exactly once, in the session that proceeds to scaffold. The next `/ductus` run in a new session sees ductus live (or absent) and every selected agent `current` (or `no installed copy`), and proceeds normally without abort.
 
 ## Collect Project Inputs
 
@@ -542,7 +558,7 @@ Validate the project name: must be lowercase, alphanumeric, and hyphens only. If
 
 `.ductus/config.toml` is the project's configuration and persisted-decisions store. Readers fall back through the earlier locations while it is absent — `.govern/config.toml` (042-era) then the repo root `.govern.toml` (pre-042) — and the newest existing file wins when more than one is present (specs 042, 049). If the file exists, read it before processing the file manifest. The file is optional — if it does not exist, use default behavior for every key. If the file exists but is malformed (TOML parse error), abort the run with a clear error rather than silently proceeding.
 
-**Write policy — the `/ductus` migration is the sole cutover (spec 042).** Every config write in this procedure (the `[host]` managed block, the `[project]`/`[rules]`/`[paths]` input persistence, `[migrations].last_applied`) and every session write targets the **active file**: the newest tier that exists — `.ductus/`, else `.govern/`, else the repo root — and the `.ductus/` file for a fresh project where none exists. No write outside the directory migrations ever creates `.ductus/config.toml` while an older config lingers — that partial file would win on read and strand the legacy file's other sections. The migration moves the whole file as one unit; the runtime's `config_path_for_write` / `session_path_for_write` resolvers are the canonical statement of this rule, and `write-session` applies it on every session write.
+**Write policy — the `/ductus` migration is the sole cutover (spec 042).** Every config write in this procedure (the `[host]` and `[source]` managed blocks, the `[project]`/`[rules]`/`[paths]` input persistence, `[migrations].last_applied`) and every session write targets the **active file**: the newest tier that exists — `.ductus/`, else `.govern/`, else the repo root — and the `.ductus/` file for a fresh project where none exists. No write outside the directory migrations ever creates `.ductus/config.toml` while an older config lingers — that partial file would win on read and strand the legacy file's other sections. The migration moves the whole file as one unit; the runtime's `config_path_for_write` / `session_path_for_write` resolvers are the canonical statement of this rule, and `write-session` applies it on every session write.
 
 The file is a flat collection of top-level sections. There is no umbrella namespace; each section is keyed to the thing it governs. The sections that may appear in the config file:
 
@@ -553,6 +569,13 @@ The file is a flat collection of top-level sections. There is no umbrella namesp
 # `cli-config-dir` lives in the gitignored `.ductus/session.toml` (teammates may
 # use different agents), never here.
 project = "my-service"
+
+# ductus (source)
+[source]
+# Where every /ductus fetch back into the ductus repository comes from:
+# "main", or a release tag such as "ductus-v0.55.0". Absent means the latest
+# release. Written by /ductus from --ref; --ref=latest removes the key.
+ref = "main"
 
 [project]
 # The inputs /ductus collects (§Collect Project Inputs), persisted so re-runs
@@ -626,6 +649,8 @@ last_applied = "rule-files-relocate"
 ```
 
 `host.project` — the project's slash-command namespace, written by `/ductus` into a managed block (`# ductus (host)` line-prefix marker) in committed `.ductus/config.toml` on every run (idempotent — re-runs update rather than append). The per-contributor `cli-config-dir` (the agent's config-dir name) is **not** committed: teammates on one project may each use a different agent, so `/ductus` writes it to the gitignored `.ductus/session.toml` instead (§Instructions step 7). The runtime reads `project` from `.ductus/config.toml` and `cli-config-dir` from the session file at `ductus exec` time to resolve the installed command file — `{cli-config-dir}/commands/{project}/<name>.md` for `claude-style`, then `{cli-config-dir}/command/{project}/<name>.md` for `opencode` (§Derived values **Command/skill path**; the runtime tries both, so either layout resolves); both fall back to `.claude` / the repo directory basename when absent. Adopters whose layout matches the defaults (this repo, anyone on Claude Code with the conventional `.claude/commands/<project>/`) never observe the difference; Auggie / OpenCode adopters and anyone with a non-standard layout do.
+
+`source.ref` — the source every fetch back into the `ductus` repository names (§Pre-flight Phase → **Source resolution**): `main`, or a `ductus-v<MAJOR>.<MINOR>.<PATCH>` release tag. Absent — or a bare `[source]` table — means the latest release, and that is the default. Written into a managed block (`# ductus (source)` line-prefix marker) by a run given `--ref=main` or a tag, rewritten without `ref` by `--ref=latest`, and never written by the installer, which reads and writes no project configuration (**Recording the source**). It is committed rather than per-contributor because the framework files `/ductus` scaffolds are committed, so the release a project is on is a fact the whole team shares. A value outside that grammar halts the run naming it. Change it with `--ref` rather than by hand; the full schema is declared in [`specs/061-updates-track-the-latest-release-tag/data-model.md`](https://github.com/stonean/ductus/blob/main/specs/061-updates-track-the-latest-release-tag/data-model.md).
 
 `project.name`, `project.description`, and `project.languages` — the project inputs collected at §Collect Project Inputs (name; one-line description for AGENTS.md; primary languages for .gitignore patterns), written into the `[project]` table additively (preserving every other section) and read back on every subsequent run so the inputs are asked at most once. `[project]` is the source of truth for the answers; `host.project` is written from `project.name` as the runtime's slash-command namespace (the derived runtime view of the same value), so the two cannot diverge. Editing a `[project]` value re-runs the corresponding scaffold step with the new value on the next `/ductus` — the documented way to rename a project or change its languages. The table is host-side state (the host gathers inputs before the runtime walks per §Instructions step 1), so it is written on every adoption path without a runtime primitive.
 
