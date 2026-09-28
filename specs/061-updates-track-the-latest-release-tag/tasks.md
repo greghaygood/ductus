@@ -64,9 +64,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Release workflow
 
-- [ ] In `release-assets` (`.github/workflows/runtime-release.yml`): check out the tag, stage `install.sh`, assert it in the complete-set step, and add it to the upload's `files`
-- [ ] Add a post-release job that fetches `releases/download/<tag>/install.sh` and compares it byte-for-byte with the tag's copy
-- [ ] Run `scripts/lint-release-ordering.sh` and `scripts/tests/test-lint-release-ordering.sh`, adjusting the lint only if the added job needs it
+- [x] In `release-assets` (`.github/workflows/runtime-release.yml`): check out the tag, stage `install.sh`, assert it in the complete-set step, and add it to the upload's `files`
+- [x] Add a post-release job that fetches `releases/download/<tag>/install.sh` and compares it byte-for-byte with the tag's copy
+- [x] Run `scripts/lint-release-ordering.sh` and `scripts/tests/test-lint-release-ordering.sh`, adjusting the lint only if the added job needs it
 
 - **Done when**: the release-ordering lint and its test pass, and the workflow uploads `install.sh` only from `release-assets`.
 

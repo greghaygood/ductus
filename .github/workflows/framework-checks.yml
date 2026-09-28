@@ -22,6 +22,8 @@ on:
       - 'scripts/lint-*.sh'
       - 'install.sh'
       - 'scripts/tests/test-install.sh'
+      - 'scripts/tests/test-lint-release-ordering.sh'
+      - '.github/workflows/runtime-release.yml'
       - '.github/workflows/framework-checks.yml'
       - 'runtime/legacy-prose-commands.txt'
       - 'runtime/src/parser/**'

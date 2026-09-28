@@ -472,6 +472,14 @@ jobs:
   # (a target added to the matrix but not here) publishes an extra asset;
   # drift in the dangerous direction (a target dropped from the matrix) fails
   # this gate loudly, which is the direction that matters.
+  #
+  # The installer rides the same complete set (spec 061). The documented
+  # one-liner fetches releases/latest/download/install.sh, so a release without
+  # it is a release whose install command 404s — and because that one-liner
+  # names the latest release, the 404 would reach every new adopter at once.
+  # It is copied from a checkout at the tag, so the asset is the installer the
+  # tag carries, and it has no sidecar: it is fetched over HTTPS and piped to
+  # `sh`, like the raw-file installer it replaces.
   release-assets:
     name: Publish release assets (complete set only)
     needs: publish
@@ -486,12 +494,20 @@ jobs:
         aarch64-unknown-linux-gnu
         x86_64-pc-windows-msvc
     steps:
+      # First, because checkout cleans the workspace and would delete a
+      # `staged/` downloaded ahead of it.
+      - uses: actions/checkout@v7
+
       - name: Download staged assets
         uses: actions/download-artifact@v4
         with:
           pattern: release-asset-*
           path: staged
           merge-multiple: true
+
+      - name: Stage the installer
+        shell: bash
+        run: cp install.sh staged/install.sh
 
       - name: Assert the asset set is complete
         shell: bash
@@ -521,6 +537,13 @@ jobs:
           else
             echo "ok: ductus.cdx.json + sidecar"
           fi
+          # Spec 061: the documented install one-liner fetches this asset.
+          if [ ! -s "staged/install.sh" ]; then
+            echo "::error::no installer (install.sh) among the staged assets"
+            missing=1
+          else
+            echo "ok: install.sh"
+          fi
           if [ "$missing" -ne 0 ]; then
             echo "::error::release withheld — the asset set is incomplete."
             echo "A partial release locks out every adopter on the missing platform."
@@ -535,6 +558,7 @@ jobs:
             staged/*.tar.gz.sha256
             staged/ductus.cdx.json
             staged/ductus.cdx.json.sha256
+            staged/install.sh
 
   # The constitution's **acquisition invariant** (§runtime-boundary) in its
   # literal form: fetch the PUBLISHED asset over the wire, verify its sidecar
@@ -562,3 +586,34 @@ jobs:
     name: Verify the published release is acquirable
     needs: release-assets
     uses: ./.github/workflows/runtime-acquisition.yml
+
+  # The installer's counterpart to verify-published (spec 061, AC12). The
+  # complete-set assertion proves install.sh was staged; this proves the
+  # published asset is the installer the tag carries, byte for byte, fetched
+  # from the URL an adopter's one-liner resolves to — so a release whose
+  # install command is broken is loud on the release run rather than on the
+  # first adopter who runs it. Like verify-published, it gates nothing: both
+  # halves are already out when it runs.
+  verify-installer:
+    name: Verify the published installer
+    needs: release-assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch the published installer and compare it with the tag's
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/install.sh"
+          # --retry-all-errors covers the brief window in which a just-uploaded
+          # asset can answer 404 from the download host.
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 5 --retry-delay 10 --retry-all-errors \
+            "$url" -o published-install.sh
+          if ! cmp -s published-install.sh install.sh; then
+            echo "::error::$url differs from install.sh at ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+          echo "ok: $url matches install.sh at ${GITHUB_REF_NAME}"
