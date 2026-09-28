@@ -106,9 +106,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 12. Discharge 007
 
-- [ ] `done → in-progress`
-- [ ] Correct `ductus-self-update-precheck` (line 23) to `{framework-root}` and `{raw-ref}`, with a signpost to 061
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Correct `ductus-self-update-precheck` (line 23) to `{framework-root}` and `{raw-ref}`, with a signpost to 061
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 007 is `done` with a current review and analysis, and links back to 061.
 
