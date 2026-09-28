@@ -187,7 +187,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 22. Re-close 056 after the Family 36 correction 061's review routed there
 
 - [x] 056 was reopened (e55a855d) and its consumer table and cross-spec-impact Resolved Question corrected to name the codeload `tar.gz/` URL as Family 36's subject (3e47e14f), routed by 061's review (1689d9af)
-- [ ] Run `/ductus:analyze` on 056: detection, then measure `unexamined` at `done` with the `set-status` round trip (not committed), then `write-analysis`, and commit
-- [ ] `check-review-gate` on 056 passes (its review stays current: 056 has no durable contracts, so its `reviewed-digest` is empty), then `set-status` in-progress → done, committed alone
+- [x] Run `/ductus:analyze` on 056: detection, then measure `unexamined` at `done` with the `set-status` round trip (not committed), then `write-analysis`, and commit
+- [x] `check-review-gate` on 056 passes (its review stays current: 056 has no durable contracts, so its `reviewed-digest` is empty), then `set-status` in-progress → done, committed alone
 
 - **Done when**: 056 is `done` with a current analysis, and `check-review-gate` on 056 reports it already done
