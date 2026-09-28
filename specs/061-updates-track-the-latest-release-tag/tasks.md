@@ -180,6 +180,6 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 21. Disposition out-of-spec finding: cargo audit reports chacha20 0.10.1 as yanked
 
-- [ ] `runtime/Cargo.lock` — `chacha20` 0.10.1 (a dependency of `rand` 0.10.2) was yanked on crates.io on 2026-08-27, and 0.10.2 is current. `cargo audit` reports it as 1 allowed warning and exits 0. `cargo tree -e all --target all` finds no path to `rand` or `chacha20`, so neither crate is compiled into any target. The pin dates from d33c5333; 061 never touched `Cargo.lock`. The fix is `cargo update -p chacha20 --precise 0.10.2`, which the dry run shows changes that one entry
+- [x] `runtime/Cargo.lock` — `chacha20` 0.10.1 (a dependency of `rand` 0.10.2) was yanked on crates.io on 2026-08-27, and 0.10.2 is current. `cargo audit` reports it as 1 allowed warning and exits 0. `cargo tree -e all --target all` finds no path to `rand` or `chacha20`, so neither crate is compiled into any target. The pin dates from d33c5333; 061 never touched `Cargo.lock`. The fix is `cargo update -p chacha20 --precise 0.10.2`, which the dry run shows changes that one entry — fixed
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task
