@@ -1,13 +1,13 @@
 ---
 spec: 050-constitution
-last-run: 2026-09-28T00:39:38Z
-reviewed-against: b2ab256509cc662c2ed40522f97af135a2bb7edd
-diff-base: e0a426a4a58c052e403d8b73929e23dc863ee34f
+last-run: 2026-09-28T00:54:02Z
+reviewed-against: 6072c266816079e07147b96ccdc2618d52100aa1
+diff-base: d2af331b14e8232ed7041eff9957d9495639b7c5
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 4
-scope: 30
+examined: 5
+scope: 8
 skipped-passes: []
 reviewed-digest:
   scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
@@ -34,23 +34,25 @@ dispositions:
 
 ## Summary
 
-Re-review after the reopen at d3f5ff4a, which added the scenario `a-status-commit-holds-only-the-transition` and its task 25. b2ab2565 implements it. §spec-lifecycle's restore bullet now states the condition its advice to commit a status transition as its own step depends on: when the commit is made, the working copy of the spec file holds the transition and nothing else. It also states the reason, which is that the pre-commit hook restages each staged spec file whole from the working tree, and the remedy. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers, no stored decisions, no observations.
+Re-review for tasks 26 and 27, which the completion gate's criteria check raised against AC2, AC3 and AC22. 0 MUST, 0 SHOULD, 0 low-confidence, not blocking. No waivers, no stored decisions, no observations.
 
-**Base.** `diff-base` is e0a426a4 (d3f5ff4a^), the derived default. No narrower base exists. 050's work in the window is d3f5ff4a and b2ab2565, and every commit between them belongs to 008, 017 or 036, so a base late enough to drop those commits would also drop d3f5ff4a. There is no earlier review of this reopen to narrow from; 050's previous review (79ddf0eb) predates it.
+**What changed (6072c266).** Task 26 re-promotes W6, *never record anything durable in `review.md`*, which 054 had withdrawn from the constitution on 2026-08-31 along with the superseded-criterion rule it was promoted inside. It is now a bullet under §implement-phase, worded for the waiver and decision lists 058 made persistent. The `AGENTS.md` entry is a pointer to it, with its lead phrase byte-identical, and `plan.md`'s W6 row records the round trip. The in-substance feature-directory entry gains a §numbering pointer for its universal half. Task 27 states the rule-file destination in the spec's own §Classification, as AC22 says; before this it was only in `plan.md`'s §Classification.
 
-**Scope.** 30 in scope: 27 modified since the base, unioned with 5 plan-listed Affected Files, two of which overlap. Examined 4, each read in full: `framework/constitution.md`, read in full at session start, with the changed bullet at `:203` written and re-read in this pass; this spec's `spec.md` and `tasks.md`; and `scenarios/a-status-commit-holds-only-the-transition.md`. Not counted, named by group:
+**Base.** `diff-base` is d2af331b, the previous review's commit, passed with `--since`, on the precedent 008's re-reviews set: everything before it is covered by d2af331b's record. The derived default, e0a426a4, resolves 32 files. This base resolves 8.
 
-- `AGENTS.md`: read only at a3b514c5's one added bullet, verified in 017's review. Its §spec-lifecycle mirror at `:78` was also read, and it points at the section rather than restating it, so it needs no change.
-- Three plan-listed files unchanged since the base, not read: `specs/050-constitution/plan.md`, `specs/inbox.md` and `specs/045-decision-state-drift-detection/spec.md`.
-- 13 files of 008's work, covered by 008's records (f76b2227, 6f43a9d9, 7a8760fb): `.claude/commands/ductus/analyze.md`, `.github/workflows/runtime.yml`, `framework/commands/analyze.md`, `framework/rules/security-backend.md`, `framework/rules/security-frontend.md`, `runtime/src/primitives/rule_sections.rs`, and 008's `analysis.md`, `plan.md`, `review.md`, `spec.md`, `tasks.md` and two scenarios.
-- 017's `spec.md`, `data-model.md`, `review.md` and `analysis.md`: covered by 017's records (e584179d, 8241d3b0).
-- 036's `spec.md`, `tasks.md`, `review.md` and `analysis.md`, and `framework/rules/quality-cross.md`: covered by 036's records (7a791a98, 5b953340, cf4ab36e).
+**Scope.** 8 in scope, examined 5, each read in full: `framework/constitution.md`, read in full at session start, with the new bullet written and read in this pass; this spec's `spec.md`, `plan.md` and `tasks.md`; and `analysis.md`, 050's own record. Not counted:
 
-**Passes.** All 11 rule files were loaded. Security, reuse, efficiency and simplicity found no subject in a constitution-prose change.
+- `AGENTS.md`: 217KB, read only at the two entries changed, `:47` and `:132`.
+- `specs/inbox.md` and `specs/045-decision-state-drift-detection/spec.md`: plan-listed and unchanged, not read.
 
-Quality checked the new text against the scenario and against the code it describes. It meets the scenario's Behavior: the condition, the reason stated with the rule, and both remedies. It meets all four Edge Cases, including the one where the parked copy predates the transition and has to be re-applied. The hook claim matches both hooks: `.githooks/pre-commit:121`–`:130` and the shipped `framework/bootstrap/hooks/ductus-pre-commit:157`–`:170` take the staged spec files, run `label-criteria` on each, then `git add` it from the working tree. No command source or `AGENTS.md` entry gives transition-commit advice the new text contradicts. The one sentence the edit moved, on stash, restore and hard reset, still belongs to the restore hazard it follows.
+**Passes.** All 11 rule files were loaded. Security, reuse, efficiency and simplicity found no subject in constitution and spec prose. Quality checked the new text against its sources:
 
-The full local surface is green: markdownlint, all six `scripts/lint-*.sh`, and `scripts/audit/run-all.sh`, whose promotion-coverage notice lists 8 unclassified entries, as before, and is informational. `cargo test --release --locked` passed 1713 with 0 failed.
+- The bullet's claim, that the report body is regenerated whole and only the waiver and decision lists carry forward, matches `framework/commands/review.md`: "The report is regenerated on every run — never appended", waivers preserved on survivors, and decisions persisting.
+- Both pointers use fragments the constitution resolves: `#implement-phase`, and `#numbering-convention`, which is what the constitution's own §numbering links use.
+- A 54-row check found every promoted, already-promoted, in-substance and rule-file row in `plan.md` §Classification resolving to an `AGENTS.md` entry that cites the constitution or `QUAL-DELEG-001`. The count was 52 before these tasks.
+- The anchor set is unchanged, and the spec and plan heading counts are unchanged.
+
+The full local surface is green: markdownlint, all six `scripts/lint-*.sh`, and `scripts/audit/run-all.sh`, whose promotion-coverage notice now counts 78 constitution-citing entries, up from 76, with 8 still unclassified. `cargo test --release --locked` passed 1713 with 0 failed.
 
 ## MUST violations (blocking)
 
