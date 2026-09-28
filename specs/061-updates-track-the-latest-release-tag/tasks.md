@@ -122,9 +122,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 14. Discharge 023
 
-- [ ] `done → in-progress`
-- [ ] Annotate the read-fallback Resolved Question: its premise that no version can be pinned was superseded by 061, and its decision stands. Add a signpost
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Annotate the read-fallback Resolved Question: its premise that no version can be pinned was superseded by 061, and its decision stands. Add a signpost
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 023 is `done` with a current review and analysis, and links back to 061.
 
