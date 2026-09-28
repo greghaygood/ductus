@@ -58,3 +58,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Verify: `scripts/lint-rule-ids.sh` passes, `check-rule-ids` reports the ID known against `examined: 11`, and `npx markdownlint-cli2` is clean
 
 - **Done when**: `framework/rules/quality-cross.md` carries `QUAL-DELEG-001` with Statement / Rationale / Verification, the `DELEG` category is declared in the file header and registered in `data-model.md`, `scripts/lint-rule-ids.sh` and `check-rule-ids` accept the ID, and `050-constitution`'s `cross-spec-impact:` declaration is discharged by the signpost this spec carries.
+
+## 9. Move QUAL-DELEG-001's discriminator into its Rationale
+
+- [x] Move the sentence distinguishing `QUAL-DELEG-001` from `QUAL-CLAIM-001` and `QUAL-GROUND-001` out of the Verification paragraph and into the Rationale of `framework/rules/quality-cross.md`, where both siblings state theirs
+- [x] Verify: `scripts/lint-rule-ids.sh` passes, `npx markdownlint-cli2` is clean, and the full `cargo test --release --locked` passes, since `framework/rules/**` is a runtime CI input
+
+- **Done when**: `QUAL-DELEG-001`'s Rationale states its discriminator against `QUAL-CLAIM-001` and `QUAL-GROUND-001`, its Verification no longer carries it, and the rule's ID, Statement and trigger are unchanged — so AC10 holds as written.
