@@ -417,3 +417,12 @@ Tasks derived from the [plan](plan.md). Complete in order. Tasks 1–11 are runt
 - [x] `analyze_with_no_rule_directory_records_its_citations_unexamined` asserts the corrected counts, and each new test is shown to fail with its behavior removed
 
 - **Done when**: exec analyze with no rule directory records no blocking or advisory count from steps 11–12 and names them unexamined; every new or changed test fails with its behavior removed; `cargo test --release --locked` and `clippy -D warnings` pass
+
+## 49. The analyze record reads the re-check: a finding gone from it is fixed, whatever confirmed write removed it (groomed from the inbox)
+
+- [ ] Spec body, §Order within a run: state that `analysis.md` records the re-check's outcome rather than the kind of write — a finding the re-check no longer produces is `fixed` (`live: false`) whether a chore or a confirmed route removed it, and `routed` marks a finding still firing until its routed work lands, the only state a stored decision is for
+- [ ] `framework/commands/analyze.md`: step 18 and the Fixed and Routed bullets under Finding dispositions say the same, naming `write-analysis`' refusal of any other outcome for a finding gone from the re-check
+- [ ] `framework/constitution.md` §brownfield-inbox, Finding dispositions: the *Detect, decide, re-check, record* bullet says the same for the analyze record
+- [ ] Sweep for claims that a body edit resolving a finding in the run is recorded as routed; lint the changed markdown, run the generators, `scripts/audit/run-all.sh`, and `cargo test` from `runtime/` (the parity tests read `framework/commands/analyze.md`)
+
+- **Done when**: 058's body, analyze.md and the constitution agree with `write_analysis.rs:294`, and the local gate passes

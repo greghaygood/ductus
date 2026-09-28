@@ -126,6 +126,16 @@ the review stale, because the review digest covers `scenarios/*.md`. That is
 intended: the scenario is new, unimplemented work, and its task holds the spec
 out of `done` until it is implemented and reviewed.
 
+`analysis.md` records what the re-check found, not which kind of write
+produced it. A finding the re-check no longer produces is recorded as fixed
+(`live: false`), whether a chore removed it or a confirmed route did. A body
+edit on the spec in hand that resolves the finding is the common route of
+that kind. A finding is recorded as routed only while it still fires, because
+its routed work has not landed yet: an open task, a scenario, a spec created
+for it. That is also the only state a stored decision exists for, since a
+finding that no longer fires has nothing to match against. `write-analysis`
+refuses any outcome but fixed for a finding gone from the re-check.
+
 ### `/{project}:analyze`
 
 Detection stays read-only. The read-only promise is narrowed to detection:
