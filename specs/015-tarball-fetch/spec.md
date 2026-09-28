@@ -30,13 +30,15 @@ A single archive fetch removes that overhead while keeping every other guarantee
 
 ### Source
 
-`/ductus` issues exactly one `curl` against GitHub's archive host — the direct `codeload.github.com` endpoint:
+`/ductus` issues exactly one `curl` for the framework against GitHub's archive host — the direct `codeload.github.com` endpoint, at the ref the run resolved:
 
 ```text
-https://codeload.github.com/stonean/ductus/tar.gz/refs/heads/main
+https://codeload.github.com/stonean/ductus/tar.gz/{archive-ref}
 ```
 
-This is the target that `https://github.com/stonean/ductus/archive/refs/heads/main.tar.gz` 302-redirects to; fetching it directly avoids a cross-host redirect that some agent hosts gate with a permission prompt even when `curl` is pre-granted (see [029 `archive-fetch-direct-codeload`](../029-bootstrap-runtime-autowire/scenarios/archive-fetch-direct-codeload.md)). The archive's top-level directory is `ductus-main/`; the framework files live at `ductus-main/framework/...` after extraction.
+`{archive-ref}` is `refs/heads/main` on the `main` source and `refs/tags/{tag}` on a release; the default source is the latest release. This is the target that `https://github.com/stonean/ductus/archive/{archive-ref}.tar.gz` 302-redirects to; fetching it directly avoids a cross-host redirect that some agent hosts gate with a permission prompt even when `curl` is pre-granted (see [029 `archive-fetch-direct-codeload`](../029-bootstrap-runtime-autowire/scenarios/archive-fetch-direct-codeload.md)). GitHub names the archive's top-level directory after the ref — `ductus-main/` for `main`, `ductus-ductus-v0.55.0/` for that tag — so the framework root is derived from the extraction rather than predicted (see **Extract**).
+
+> **Signpost:** the ref this section fetches at, and the framework root it derives, are [061 — Updates track the latest release tag](../061-updates-track-the-latest-release-tag/spec.md)'s. Every fetch a run makes back into the `ductus` repository — the version pin, the self-update bootstrap, and this archive — names one source resolved once per run: the latest release by default, or `main` or a named release tag through `--ref`, recorded in `.ductus/config.toml` `[source] ref`. This spec shipped against `main` and deferred exactly that option; the Tradeoffs entry and the Resolved Question below record the deferral and its adoption.
 
 External fetches that are **not** part of the `ductus` repo are unchanged: per-language `.gitignore` patterns continue to come from `https://raw.githubusercontent.com/github/gitignore/main/{Language}.gitignore` as separate `curl` calls. They are not in the archive, and bundling them is out of scope.
 
@@ -46,9 +48,9 @@ After fetching the archive:
 
 1. Create a **new** temp directory on every run: `mktemp -d -t ductus-XXXXXX`. On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run, even if one is still on disk — a fresh fetch is the only way `/ductus` picks up upstream changes, so the archive must be re-downloaded each invocation.
 2. Extract the archive into the temp directory: `tar -xzf {archive} -C {tempdir}`.
-3. Compute the framework root: `{tempdir}/ductus-main/`. Treat this as the local mirror of the `ductus` repo for the rest of the run.
+3. Derive the framework root, `{framework-root}`: the single top-level directory the extraction produced. Treat it as the local mirror of the `ductus` repo for the rest of the run.
 
-If the fetch or extraction fails — non-zero exit, missing `ductus-main/` directory, or any required manifest entry absent from the extract — abort the run with a clear error:
+If the fetch or extraction fails — non-zero exit, an extraction that produced zero or several top-level directories, or any required manifest entry absent from the extract — abort the run with a clear error:
 
 > Failed to fetch or extract the `ductus` archive ({reason}). Re-run after checking network connectivity, or report this if it persists.
 
@@ -58,7 +60,7 @@ Aborting on archive failure is intentional and a behavior change from the curren
 
 The manifest's source paths (e.g., `framework/constitution.md`, `framework/commands/specify.md`) are now resolved against the extracted framework root rather than concatenated with the raw URL prefix. For each manifest entry:
 
-1. Compute the local source path: `{tempdir}/ductus-main/{source-path}`.
+1. Compute the local source path: `{framework-root}/{source-path}`.
 2. If the local source path does not exist — the file was renamed, removed upstream, or the manifest is out of sync — warn `Source not found in archive: {source-path}; skipping.` and continue with the remaining entries. This preserves the current "do not abort on a single fetch error" guarantee.
 3. Apply the existing strategy (`update`, `create`, `skip`, `merge`, `pinned`) using the local file as the new content. Content comparison for `update` strategy is a local file diff against the destination — same semantics as today, just no network round-trip.
 4. Apply placeholder substitution after reading the local source, before writing to the destination. Same rules as today (including the `ductus.md` self-install exception that keeps `{project}` and `{cli-config-dir}` literal).
@@ -101,7 +103,7 @@ Adopters who ran the tarball flow before this fix shipped will already have seve
 
 The integrity check that re-fetches `ductus.md` on a corrupted write currently re-runs `curl`. With a tarball, re-fetch means reading the same file again from the extracted archive — no second network call. The check itself is unchanged; it just operates on the local source.
 
-The self-update notice (shown when the installed `ductus.md` differs from the fetched version) continues to fire identically: the comparison is between the destination file and the local source file from the archive.
+The self-update notice (shown when the installed `ductus.md` differs from the fetched version) continues to fire. The comparison has since moved ahead of the archive: `framework/bootstrap/ductus.md` §Self-update check fetches the bootstrap on its own in pre-flight, at the same resolved ref as the archive, so the copy it compares against is the one the archive carries for that ref.
 
 ## Tradeoffs
 
@@ -109,12 +111,12 @@ The self-update notice (shown when the installed `ductus.md` differs from the fe
 - **New permissions.** For Claude, two `Bash` additions (`tar`, `mktemp`) plus six `Read(...)` globs covering `ductus-*` temp paths under macOS (`/private/var/folders/**/T/`, `/var/folders/**/T/`) and Linux (`/tmp/`), with both single-leading-slash and double-leading-slash forms because Claude Code's permission matcher treats them as distinct prefixes (see **Permission bootstrap → Why both leading-slash forms**). For Auggie, just the two shell-command entries — `view` is unconditionally allowed by configure. Cost is one-time per adopter, applied on the same `/ductus` run that introduces the change. No `rm` allow is needed because the temp directory is left for the OS to sweep.
 - **Bytes over the wire.** The full archive is ~hundreds of KB compressed; today's per-file fetches collectively pull a similar volume but spread across ~35 round-trips. Net: fewer bytes once HTTP overhead is counted, fewer tool-call invocations, faster perceived run time.
 - **Loss of partial progress.** A network failure mid-fetch today produces ~10 successful files plus warnings on the rest; with a tarball, a network failure produces zero files and a clean abort. Both outcomes leave the project in a recoverable state — re-run resumes idempotently.
-- **Pinning at a ref.** Today fetches are hardcoded to `main`. The tarball URL also points at `main`. A `.ductus/config.toml` `[source] ref = "v0.1.0"` option that overrides the archive ref is a natural follow-up but out of scope for this spec — see **Resolved Questions**.
+- **Pinning at a ref.** When this spec shipped, every fetch was hardcoded to `main` and the tarball URL pointed at `main` too. A `.ductus/config.toml` `[source] ref` option overriding the ref was named as a natural follow-up and left out of scope — see **Resolved Questions**. **Adopted by 061**, which resolves the ref per run and defaults it to the latest release rather than `main`.
 
 ## Acceptance Criteria
 
 - [x] AC1: `framework/bootstrap/ductus.md`'s **File Fetching** section is replaced with the archive-fetch + extract + local-path-resolution flow above
-- [x] AC2: A successful `/ductus` run on a single-agent project issues exactly one `curl` against the `ductus` repo (plus per-language gitignore fetches, which remain unchanged)
+- [x] AC2: A successful `/ductus` run on a single-agent project issues exactly one `curl` against the `ductus` repo (plus per-language gitignore fetches, which remain unchanged) — **superseded in part.** The framework is still one archive download, which is what this criterion delivered. But pre-flight has since added small fetches of its own ahead of it: the runtime version pin (048), the self-update bootstrap (007's `ductus-self-update-precheck`), and since 061 the latest-release redirect and, when a migration has been applied, one or two registry reads for the migration floor. Annotated rather than rewritten because the claim was overtaken by later behavior, not renamed
 - [x] AC3: All existing manifest strategies (`update`, `create`, `skip`, `merge`, `pinned`) behave identically to today, sourcing files from the extracted archive
 - [x] AC4: A failed archive fetch produces a clean abort with a clear error message and no partial scaffolding
 - [x] AC5: A missing source file within the archive produces a per-entry warning and the remaining manifest continues
@@ -133,7 +135,7 @@ The self-update notice (shown when the installed `ductus.md` differs from the fe
 
 ## Resolved Questions
 
-- **`.ductus/config.toml` ref pinning** — defer. `.ductus/config.toml` already supports additive sections (currently `[pinned]`), so a `[source] ref = "..."` option can be added in a later spec without migration cost. No adopter has asked for ref pinning, and `main` parity with the current per-file flow keeps this spec's scope to the transport change. v0.1.0 is tagged, but until there is concrete demand, every adopter would still pin to `main` — adding the surface now means documenting and maintaining a feature nobody is using.
+- **`.ductus/config.toml` ref pinning** — defer. `.ductus/config.toml` already supports additive sections (currently `[pinned]`), so a `[source] ref = "..."` option can be added in a later spec without migration cost. No adopter has asked for ref pinning, and `main` parity with the current per-file flow keeps this spec's scope to the transport change. v0.1.0 is tagged, but until there is concrete demand, every adopter would still pin to `main` — adding the surface now means documenting and maintaining a feature nobody is using. **Adopted 2026-09-28 by 061**, which adds `[source] ref` and a `--ref` flag and makes the latest release the default. The trigger was not an adopter asking to pin but an update landing on an unfinished series on `main`; 061's Motivation records it.
 - **Fallback to per-file fetch on archive failure** — no fallback. `codeload.github.com` and `raw.githubusercontent.com` are both GitHub-fronted CDNs with correlated availability, so partial outages affecting only one are rare. Maintaining two transport code paths is a permanent tax for a transient failure mode; `/ductus` is idempotent and a re-run after the outage clears is the same recovery path used for any transient `curl` failure today. The clean abort already tells the user what happened.
 - **`rm` permission scope** — drop the `rm` permission entirely; let the OS sweep the temp directory. macOS (`/var/folders/.../T/`) and Linux (`/tmp` via systemd-tmpfiles) both auto-purge their temp roots, so a few hundred KB of extracted files waiting for the next sweep is acceptable. Granting `rm -rf` — even scoped — is a sharper allow than the rest of ductus's bootstrap permissions (`curl`, `ls`, `tar`, `mktemp` are all read-or-create) and adopters with custom `$TMPDIR` would have to edit settings to keep cleanup working. Skipping `rm` removes that friction.
 - **Auggie permission regex** — moot. Without an `rm` permission to express, there is no Auggie-regex problem to solve.

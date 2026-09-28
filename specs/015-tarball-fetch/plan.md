@@ -80,5 +80,5 @@ All four open questions resolved during `/ductus:clarify`. See the spec's **Reso
 ## Trade-offs
 
 - **Disk vs. memory for the archive** — the download-then-extract approach uses ~1 MB of temp disk. Piping `curl | tar` would skip the disk write but obscure which side failed (needed for the abort message) and force a second `curl` for the integrity-check re-read. The disk cost is negligible; the diagnostic clarity and re-read efficiency are not.
-- **Archive ref hardcoded to `main`** — same as the current per-file flow; ref pinning is deferred to a later spec (see Resolved Questions in the spec).
+- **Archive ref hardcoded to `main`** — same as the current per-file flow; ref pinning is deferred to a later spec (see Resolved Questions in the spec). Adopted since by 061, which resolves the ref per run and defaults it to the latest release.
 - **One-time bootstrap cost** — existing adopters get the new `tar`/`mktemp` allow entries on their next routine `/ductus` re-run. The merge logic is additive and idempotent, so no migration step is needed.
