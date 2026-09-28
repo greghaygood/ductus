@@ -46,7 +46,7 @@ What Source resolution settles once per run and every later step reads.
 | tag | `ductus-v<SemVer>` | Present when kind is `tag` |
 | `{raw-ref}` | `main`, or the tag | Path segment for `raw.githubusercontent.com` |
 | `{archive-ref}` | `refs/heads/main`, or `refs/tags/<tag>` | Path segment for `codeload.github.com` |
-| `{source-label}` | e.g. `latest release ductus-v0.55.0`, `main (recorded)`, `ductus-v0.55.0 (--ref)` | The reported source line (AC5) and the self-update notice (AC14) |
+| `{source-label}` | e.g. `latest release ductus-v0.55.0 (default)`, `main (recorded)`, `ductus-v0.55.0 (--ref)` | The reported source line (AC5) and the self-update notice (AC14) |
 
 ## Floors
 
