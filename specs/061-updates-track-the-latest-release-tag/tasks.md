@@ -138,9 +138,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 16. Discharge 029
 
-- [ ] `done → in-progress`
-- [ ] Correct `archive-fetch-direct-codeload` (lines 9, 16, 20) to `{archive-ref}` and `{framework-root}`, with a signpost
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Correct `archive-fetch-direct-codeload` (lines 9, 16, 20) to `{archive-ref}` and `{framework-root}`, with a signpost
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 029 is `done` with a current review and analysis, and links back to 061.
 
