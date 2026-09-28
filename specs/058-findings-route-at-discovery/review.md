@@ -1,13 +1,13 @@
 ---
 spec: 058-findings-route-at-discovery
-last-run: 2026-09-26T19:06:56Z
-reviewed-against: dad2bd4f0fc7bec0e6076dbbb628cc07ed46f73a
-diff-base: e52df370246768f81a50854c433c368c3dc17340
+last-run: 2026-09-28T14:50:29Z
+reviewed-against: b273bb103050ef77129484919cf6167b3960fa99
+diff-base: 446e4ced1c605a98a8ca784ed2ceb697e65059f0
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 8
-scope: 36
+examined: 11
+scope: 38
 skipped-passes: []
 reviewed-digest:
   data-model.md: eb5f2099c81634ab8f9dc5c7ff3073d2f6323dccf95c39a1cf1ec410d3b9b237
@@ -19,15 +19,9 @@ reviewed-digest:
 blocking: false
 dispositions:
   fixed: 0
-  routed: 1
-  discarded: 10
+  routed: 0
+  discarded: 0
   undispositioned: 0
-waivers:
-  - rule: QUAL-CLAIM-001
-    file: runtime/src/interpreter/analyze_tally.rs
-    reason: the unasked rules trace to exec analyze's single-rule request (022, ef1686eb); the fix is parked in draft spec 060-exec-analyze-assesses-each-loaded-rule by operator decision
-    waived-at: 2026-09-26T19:06:56Z
-    waived-by: andy@stone.dev
 decisions:
   - key: "perf: validate-frontmatter reads each record file twice — `runtime/src/primitives/validate_frontmatter.rs`"
     outcome: discarded
@@ -90,17 +84,13 @@ decisions:
 
 ## Summary
 
-058's fifth review, over what changed since the fourth (`--since=e52df370`): task 48 (`907d643c`) and the plan's release-scope fix (`dad2bd4f`). 0 MUST, 0 SHOULD outstanding, 0 low-confidence, not blocking. One SHOULD waived. 11 observations: 1 routed, 10 discarded (all 10 matched to stored decisions), none undispositioned.
+Scoped re-review of 058's reopen for the analyze record's fixed/routed rule (task 49, groomed from the inbox), against diff base 446e4ced, the parent of the reopen commit. The window also carries 016's reopen, so both changes are in scope. 0 MUST, 0 SHOULD, 0 low-confidence, no observations; not blocking.
 
-**The fourth review's work landed.** Its routed decision expired. With no rule file read, `AnalyzeTally::assessed` classes the request `Nothing`, and `record_assessment` records it under `rule-assessments-not-checked` and counts no tier. `analyze_with_no_rule_directory_records_its_citations_unexamined` asserts `blocking-findings: 0`, `advisory: 0` and `blocking: false` beside `rule-assessments-not-checked: 2`. The new reason is classified *could not be read* in `analyze.md`, 022's data model, and `AnalyzeBlock`'s doc, the only places the set is enumerated. `assessed` keys on the Verification rather than the id, which matches `resolve_assessed_rule`'s placeholder: a cited id whose Verification does not resolve. The eight `analyze_tally` tests, the walker test, and the parity test pass against this tree. The fourth review's 10 discards were re-observed and matched: the file each is anchored to is byte-unchanged since `e52df370`, and the promotion-coverage notice still lists 5 entries.
+Examined 11 of 38. Read in full as diffs over the window: framework/commands/analyze.md, framework/constitution.md, framework/templates/spec/spec.md, specs/058-findings-route-at-discovery/spec.md and tasks.md, specs/016-cross-cutting-rules/spec.md, tasks.md and scenarios/applicable-rules-consistency-check.md, and specs/inbox.md. runtime/src/primitives/write_analysis.rs was read at lines 260-360 and 840-880, where the rule the prose now states lives (line 294 refuses any outcome but fixed for a finding gone from the re-check; live decisions only at 346-351). runtime/src/interpreter/analyze_tally.rs was read at lines 1-247, all of its production code (249-546 is the test module), to judge the recorded QUAL-CLAIM-001 waiver: every not-examined state is now recorded under its own reason since 060 landed (9dcace0e), so the rule no longer fires there and the waiver expired. Not opened: .claude/commands/ductus/analyze.md, generated from framework/commands/analyze.md, which was read, with gen-claude-commands --check reported in sync; and the 26 plan-affected files unchanged in this window, reviewed at 058's prior review (dad2bd4f).
 
-**Waived.** `QUAL-CLAIM-001` on `analyze_tally.rs`. Steps 11 and 12 assess every loaded rule of their tier, but the exec walker asks the host about one rule per step, and the record names none of the rest unexamined. The single-rule request is 022's (`ef1686eb`); 058's task 41 began counting its verdicts. Waived by operator decision, with the fix parked in draft spec `060-exec-analyze-assesses-each-loaded-rule`.
+The 11 stored decisions are retained untouched (process-decisions restricted), because this scoped pass did not read the files they concern. That includes the routed one: payload.rs:880-894 shows 060 asks about each loaded rule once, in its own tier, so its routed work has landed, and the next unrestricted review prunes it.
 
-**Routed.** Both steps ask about the same rule under each step's tier: the golden's `req-1` and `req-2` both carry `CFG-CONST-001`. An exec run over `analyze-basic` recorded `blocking-findings: 1` and `advisory: 1` for that one rule. Routed by operator decision to 060, created in this run through `/ductus:specify`'s procedure.
-
-**Scope.** `diff-base` e52df370; 36 in scope (9 modified since, 27 plan-only); examined **8**. One reviewer read every hunk since the fourth review in `analyze_tally.rs` (read in full), `interpreter/mod.rs`, `schema/primitives.rs`, `tests/parity.rs`, `framework/commands/analyze.md`, 022's `data-model.md`, and 058's `plan.md` and `tasks.md`, and read `payload.rs`'s request builder for context. **Not read:** the `.claude` analyze mirror, which matches its source byte for byte after placeholder substitution; and the 27 plan-affected entries unchanged since the fourth review, three of them glob strings rather than paths.
-
-**Passes.** Security: no loaded backend rule fires on this change. Quality produced the waived SHOULD and the routed observation. Reuse, efficiency, and simplicity found nothing new in the change.
+Local gate after the change: framework-checks steps, shellcheck, parseability and scripts/audit/run-all.sh exit 0; cargo fmt, clippy -D warnings and cargo test --release --locked exit 0 (1713 passed, 20 result lines for 20 targets).
 
 ## MUST violations (blocking)
 
@@ -116,28 +106,11 @@ decisions:
 
 ## Waived findings
 
-### WAIVED: QUAL-CLAIM-001 — exec analyze records steps 11 and 12 as examined when each asked about one loaded rule
-
-- **File**: `runtime/src/interpreter/analyze_tally.rs:181-194`
-- **Rule**: A result that reports a clean, empty, or in-sync state SHOULD distinguish *"examined the subject and found nothing"* from *"could not examine the subject"*, rather than emitting the same value for both. When a code path skips part of its subject, cannot reach it, or has no basis to inspect it, its output SHOULD say so — through a distinct return variant, an accompanying status or guidance field, or a message naming what was not examined — instead of a bare zero, empty collection, or success string that a caller will read as positive assurance.
-- **Finding**: Steps 11 and 12 assess every loaded rule of their tier whose Verification fires. The exec walker asks the host about one rule per step (`resolve_assessed_rule`), and `record_assessment` records nothing for the rest, so `unexamined-by-reason` reads as though every rule was examined. This repository loads 192 rules with a Verification.
-- **Auto-fixable**: no
-- **Suggested fix**: Record the loaded rules a step did not ask about under a could-not-be-read reason, or ask the host about each rule; draft spec 060 carries both options.
-- **Waived**: the unasked rules trace to exec analyze's single-rule request (022, ef1686eb); the fix is parked in draft spec 060-exec-analyze-assesses-each-loaded-rule by operator decision
+*None.*
 
 ## Observations
 
-- perf: validate-frontmatter still reads each record file twice — `runtime/src/primitives/validate_frontmatter.rs` — **discarded**: bounded to two small files per spec; the decisions list is read apart from the record by design
-- convention: a duplicate-key decision still goes when its key expires or is re-decided — `runtime/src/primitives/decisions.rs` — **discarded**: mirrors the waiver list's expiry, and process-decisions still reports each duplicate before it goes
-- convention: an all-empty decision entry is still dropped on re-render — `runtime/src/primitives/decisions.rs` — **discarded**: an entry with no fields carries no decision to lose; render_waivers_at behaves the same
-- reuse: write_analysis::plain still strips bullet markers itself — `runtime/src/primitives/write_analysis.rs` — **discarded**: predates 058: moved from render_captured_plain, not introduced by it
-- other: the promotion-coverage notice still lists 5 unclassified AGENTS.md entries — `AGENTS.md` — **discarded**: a notice by design, never a gate; 050 makes classification rounds deliberate rather than standing
-- simplicity: render_list_entry still takes a base indent every caller passes empty — `runtime/src/primitives/write_review.rs` — **discarded**: predates 058 on render_waivers_at; no behavior depends on it
-- simplicity: describe and disposition_suffix still fall back on a validated companion — `runtime/src/primitives/process_decisions.rs` — **discarded**: DecisionRef is a wire type; carrying the companion inside the outcome variant would change its schema
-- perf: check-artifacts' history revwalk still runs on the async worker (predates 058) — `runtime/src/mcp/server.rs` — **discarded**: predates 058 (ccdd3ac6), not introduced by it
-- reuse: append_task.rs still parses a task heading two ways (predates 058) — `runtime/src/primitives/append_task.rs` — **discarded**: predates 058, not introduced by it
-- convention: check-review-gate, check-unfolded-specs, dashboard, and prune-tasks still name neither frontmatter variant under # Errors (predates 058) — `runtime/src/primitives/check_review_gate.rs` — **discarded**: predates 058; a doc-only omission, and each variant's own message names the file and the defect
-- bug: exec analyze's steps 11 and 12 ask the host about the same rule, each under its step's tier, so one rule's verdict counts twice (the request shape predates 058; task 41 began counting it) — `runtime/src/interpreter/payload.rs` — **routed** to `specs/060-exec-analyze-assesses-each-loaded-rule/spec.md`
+*None.*
 
 ## Skipped passes
 
