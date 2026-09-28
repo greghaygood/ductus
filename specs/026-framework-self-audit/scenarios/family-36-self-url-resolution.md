@@ -20,14 +20,16 @@ A `/{project}:audit` family resolves every absolute GitHub URL pointing back int
 
 The check is deliberately the obvious one. Every such URL has the form `<repo>/blob/<ref>/<path>` where `<path>` is a path in this repository, so stripping the prefix and testing the remainder is sufficient. No network call, no rate limit, no flake — and **stronger** than the relative-link check it replaced, because there is no depth arithmetic to get wrong. The dominant Family 26 finding is a scenario file one `../` short of its target; that failure mode does not exist here.
 
-- **The repository is derived, never hardcoded.** The slug comes from the installer's own archive URL in `framework/bootstrap/ductus.md` — the single place ductus states its canonical repository. A literal `stonean/ductus` in the family would be a second copy of exactly the fact under test, and it would make every finding *wrong* in a fork rather than merely absent.
-- **`main` URLs are resolved.** This project is live-on-main: the installer and everything `/ductus` fetches track it, so a `main` URL is a claim about the current tree and the working tree is the right authority for it.
+- **The repository is derived, never hardcoded.** The slug comes from the installer's own archive URL in `framework/bootstrap/ductus.md` — the `codeload.github.com/<owner>/<repo>/tar.gz/{archive-ref}` URL every `/ductus` run fetches, and the single place ductus states its canonical repository. A literal `stonean/ductus` in the family would be a second copy of exactly the fact under test, and it would make every finding *wrong* in a fork rather than merely absent.
+- **`main` URLs are resolved.** `main` is the trunk the working tree is checked out from, and every release is cut from it by tag, so a `main` URL is a claim about the current tree and the working tree is the right authority for it.
 - **A tag- or sha-pinned URL is deliberately historical.** It names a state the working tree is not, so resolving it against the working tree would manufacture findings. Those are **counted and reported on stderr**, never resolved and never silently dropped — "we did not check these" and "these were fine" must not read alike.
 
 Three findings, because three repairs differ:
 
 - **`unresolved`** — the path does not exist. A genuine 404 waiting for a reader.
 - **`blob-names-dir`** and **`tree-names-file`** — the URL kind disagrees with what the path is. GitHub redirects both, so neither is broken today; they are reported because the repairs differ from each other and from a genuine miss, and one message covering all three would send a maintainer looking for the wrong thing.
+
+> **Signpost:** both bullets above were restated for [061 — Updates track the latest release tag](../../061-updates-track-the-latest-release-tag/spec.md). This family used to justify resolving `main` URLs by the project being live-on-main — the installer and everything `/ductus` fetches tracking `main` — which 061 made false: an update now lands on the latest release by default. The resolution itself is unchanged, because a `main` URL still names the trunk this working tree is. The slug derivation moved from the `github.com/<owner>/<repo>/archive/` redirect form to the `codeload.github.com/<owner>/<repo>/tar.gz/` URL the bootstrap actually fetches, and reports the same slug and URL counts.
 
 ## Edge Cases
 
