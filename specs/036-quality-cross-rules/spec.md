@@ -49,7 +49,7 @@ Inaugural rule:
 > Statement's obligation keywords come from one tier, and MAY may appear beside either as a
 > permission that carries no tier. It previously read "exactly one RFC 2119 keyword", which
 > 66 single-tier shipped Statements pairing MUST with MUST NOT, or SHOULD with SHOULD NOT,
-> contradicted. 008 records the obligation in its `cross-spec-impact:` frontmatter; this
+> contradicted — counted over the 192 rules before 008 split its 16 mixed-tier ones. 008 records the obligation in its `cross-spec-impact:` frontmatter; this
 > signpost is its discharge.
 
 ## Acceptance Criteria
