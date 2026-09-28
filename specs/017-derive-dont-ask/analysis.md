@@ -1,11 +1,11 @@
 ---
 spec: 017-derive-dont-ask
-last-run: 2026-09-28T00:12:33Z
-analyzed-against: a42351706b70e73d3907d943a8e88d3816989461
+last-run: 2026-09-28T00:18:50Z
+analyzed-against: f73801f522563792e0fc7dafae38a3232ee78222
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
-unexamined: 10
+unexamined: 11
 analyzed-digest:
   data-model.md: bc0dbdffb2f2dc1409cbae6c53d9acc9b30c77bb7671ac1909ebbe1071adc01b
   plan.md: 371921636aa901292a365fd571854ce16a585733c5d0da8fe72a00bf235814ec
@@ -14,14 +14,14 @@ analyzed-digest:
   scenarios/generator-sync-claim-honesty.md: 0ee16bda3f0a5c0658100fee3d28ddae8214bc0eca9d57261811077aae314264
   scenarios/skip-prose-cross-references.md: 1b5c4bd36e2ca760437d63b948706e5b575ecd450b0779d1d10440cc77d0e086
   scenarios/tracked-specs-not-worktree.md: ba42aee5fbee0dfed38fce985200b0ba5775ecd03113a81aa792b25a18383829
-  spec.md: ca9ca894a64c4691151943de7fb975b7f5c87502bc3760b1229265d054358762
+  spec.md: 2a48f808ed19fd01533b7c182d11b5f2cfeb8c17e7030856991a5f82fd793124
   tasks.md: 375377a3d6f43f25b3f0565d366a534d5841744f5db3653b31993ad0b57b37a7
 unexamined-by-reason:
   no-readable-state: 1
-  not-a-live-claim: 9
+  not-a-live-claim: 10
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -31,7 +31,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 10 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 11 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -48,8 +48,8 @@ dispositions:
 ## Unexamined targets
 
 - no-readable-state: 1
-- not-a-live-claim: 9
+- not-a-live-claim: 10
 
 ## Fixed in this run
 
-- grounding — spec.md's CI safety net paragraph and AC24 stated the current CI behavior — generators run for real, then the tree is compared — without citing the workflows that do it — `specs/017-derive-dont-ask/spec.md` — **fixed**
+*None.*
