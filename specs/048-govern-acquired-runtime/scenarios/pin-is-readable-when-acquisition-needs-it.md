@@ -44,10 +44,11 @@ before anything writes to it.
   check, because the *first* check needs it. The self-update check no longer
   creates it and says so, so the two do not race to own it. One `mktemp` for
   the whole run, reused by the later archive fetch exactly as before.
-- **Runtime acquisition step 1 fetches the pin** from
-  `raw.githubusercontent.com/stonean/ductus/main/version` into
-  `{tempdir}/version` and reads it there.
-  `framework/bootstrap/ductus.md` §Derived values names that path.
+- **The pin is fetched in pre-flight** from
+  `raw.githubusercontent.com/stonean/ductus/{raw-ref}/version` into
+  `{tempdir}/version`, at the ref the run resolved, by **Source
+  resolution** step 5; **Runtime acquisition** step 1 reads it there.
+  `framework/bootstrap/ductus.md` §Derived paths names that path.
 - **The halt survives, with an accurate message.** A failed fetch, or an absent
   or unparseable file, still stops the run rather than guessing a version. Only
   the reason it could fail has changed.
@@ -65,15 +66,17 @@ one procedure a first-run adopter executes.
 ## Edge Cases
 
 - **The pin and the framework tree now arrive in two fetches.** They agree
-  because both name `main`. A push landing between them is the only divergence;
-  it is bounded by one run, and the next `/ductus` re-acquires against the newer
-  pin because acquisition is idempotent and re-probes the store. The prior
+  because both name the same resolved ref. A tag does not move between them;
+  on the `main` source a push landing between them is the only divergence,
+  it is bounded by one run, and the next `/ductus` re-acquires against the
+  newer pin because acquisition is idempotent and re-probes the store. The prior
   single-archive arrangement made that divergence impossible but did so by
   reading a file that was not there, which is not a trade worth keeping.
-- **The `[runtime] path` branch never reads the pin at all.** Branch 1 resolves
-  a project-supplied binary and only *compares* against `{pin}` to decide
-  whether to warn. A project on that branch was never blocked by this defect and
-  is unaffected by the fix.
+- **The `[runtime] path` branch was never blocked by this defect.** Branch 1
+  resolves a project-supplied binary and only *compares* against `{pin}` to
+  decide whether to warn, so it never needed the pin on disk to proceed. Since
+  the pin moved into **Source resolution**, it is fetched on every run, so that
+  comparison always has a value.
 - **An offline adopter fails at the pin rather than at the asset.** The failure
   moves one step earlier and names the pin URL instead of the release URL. Both
   halt, both name what could not be reached, and the `[runtime] path` escape
@@ -83,6 +86,13 @@ one procedure a first-run adopter executes.
   because every pre-rename adopter's self-update fetch still resolves to that
   path. A fix landing in only one of them ships the broken procedure to exactly
   the adopters who cannot yet reach the fixed one.
+
+> **Signpost:** the ref the pin is fetched at, and the step that fetches it,
+> are [061 — Updates track the latest release tag](../../061-updates-track-the-latest-release-tag/spec.md)'s.
+> When this scenario shipped the pin was always `main`'s and Runtime
+> acquisition step 1 fetched it; 061 moved the fetch into **Source
+> resolution** at the head of pre-flight, at the one ref the run resolves,
+> so State A has a pin to version-check against as well as State B.
 
 ## Open Questions
 

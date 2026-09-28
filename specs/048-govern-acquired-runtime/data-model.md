@@ -15,7 +15,7 @@ A repo-root file named `version`, containing exactly one line: a SemVer string w
 | Path | `version` (repo root) |
 | Format | one SemVer line, `MAJOR.MINOR.PATCH` |
 | Written by | the release commit, by hand, alongside `runtime/Cargo.toml` and `runtime/CHANGELOG.md` |
-| Read by | `/ductus`, fetched from `raw.githubusercontent.com/stonean/ductus/main/version` into the pre-flight temp directory and read there |
+| Read by | `/ductus`, fetched from `raw.githubusercontent.com/stonean/ductus/{raw-ref}/version` — the ref the run resolved, the latest release by default — into the pre-flight temp directory and read there |
 | Meaning | the runtime version this framework revision requires |
 
 **The agreement invariant.** These four must carry the same value, and a self-audit family asserts it:
@@ -69,6 +69,8 @@ Published under `https://github.com/stonean/ductus/releases/download/ductus-v{ve
 | `x86_64-unknown-linux-gnu` | `ductus-x86_64-unknown-linux-gnu.tar.gz` | `.sha256` |
 | `aarch64-unknown-linux-gnu` | `ductus-aarch64-unknown-linux-gnu.tar.gz` | `.sha256` |
 | `x86_64-pc-windows-msvc` | `ductus-x86_64-pc-windows-msvc.tar.gz` | `.sha256` |
+
+The complete set the release workflow asserts before publishing carries more than these five: the SBOM (`ductus.cdx.json` plus its `.sha256` sidecar) and, since [061](../061-updates-track-the-latest-release-tag/spec.md), the installer `install.sh`, staged from a checkout at the tag. The installer has no sidecar: it is fetched over HTTPS and piped to `sh`, and a post-release job compares the published copy byte for byte with the tag's.
 
 Windows publishes `.tar.gz` rather than `.zip` so extraction is `tar` on every platform — Windows 10+ ships `bsdtar`, and `tar` is already granted in all four permission grammars, so `unzip` never enters the permission surface.
 
