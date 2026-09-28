@@ -98,9 +98,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 11. Discharge 003
 
-- [ ] `done → in-progress`, in its own commit
-- [ ] Correct the `curl-sh-installer` scenario (lines 15 and 17) and add a `> **Signpost:**` back-link to 061
-- [ ] Review (scoped to the reopen), analyze, and `→ done`
+- [x] `done → in-progress`, in its own commit
+- [x] Correct the `curl-sh-installer` scenario (lines 15 and 17) and add a `> **Signpost:**` back-link to 061
+- [x] Review (scoped to the reopen), analyze, and `→ done`
 
 - **Done when**: 003 is `done` with a current review and analysis, and its scenario links back to 061.
 
