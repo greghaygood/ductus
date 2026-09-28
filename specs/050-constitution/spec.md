@@ -141,6 +141,17 @@ rule that cites `scripts/audit/` cannot be promoted as written, because that
 directory is this repository's own and never ships. The same test, applied to a
 narrower population, is what separates **shared** from **project-only**.
 
+One destination sits outside the table, because it turns on a rule's
+**subject** rather than its population. An entry that passes the reword test
+but states a requirement about **code** rather than about the pipeline is
+universal and still does not belong in the constitution:
+[§rules](../../framework/constitution.md#rules) puts a cross-cutting code
+concern in a rule file, with a permanent ID and a Verification clause
+`/{project}:review` can apply, which neither a constitution bullet nor an
+`AGENTS.md` entry can carry. It lands through the back-edge of the spec that
+owns that rule surface. The second round's one such entry became
+`QUAL-DELEG-001`, added through `036-quality-cross-rules`.
+
 This repository registers no `[constitutions.*]` entry — `.ductus/config.toml`
 carries `[host]`, `[review]` and `[runtime]` and no constitutions table, and
 `resolve-constitutions` reports `examined: 0` against it — so naming the tier

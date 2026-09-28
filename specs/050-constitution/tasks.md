@@ -230,3 +230,20 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 - [x] Implement the behavior described in `scenarios/a-status-commit-holds-only-the-transition.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 26. Re-promote W6, withdrawn by 054, and point the in-substance entry at §numbering
+
+- [x] Add W6's residue to `framework/constitution.md` §implement-phase as a bullet: `/{project}:review` regenerates the report body of `review.md` on every run and only its waiver and decision lists carry forward, so anything that must survive belongs on the artifact it describes. Word it for the lists 058 made persistent, which the `AGENTS.md` text predates
+- [x] Rewrite the `AGENTS.md` entry *Never record anything durable in `review.md`* as a pointer to §implement-phase, keeping its bolded lead phrase byte-identical so `plan.md`'s table key still resolves
+- [x] Add a §numbering pointer to the `AGENTS.md` entry *A feature directory is not necessarily `NNN-slug`*, naming the constitution as home of the universal half and the entry as this repository's Rust half
+- [x] Record on `plan.md` §Classification's W6 row that 054 withdrew the first promotion and this task re-promoted the residue
+- [x] Verify: every row in the promoted, already-promoted, and in-substance tables resolves to an `AGENTS.md` entry citing the constitution or its rule ID; markdownlint, the `scripts/lint-*.sh` set, `scripts/audit/run-all.sh` and `cargo test --release --locked` are clean
+
+- **Done when**: W6 has canonical normative text in `framework/constitution.md` and its `AGENTS.md` line is a pointer, so AC2 and AC3 hold for every promoted entry; the in-substance feature-directory entry points at §numbering; and the full local surface is green.
+
+## 27. State the rule-file destination in the spec's §Classification
+
+- [x] Add a paragraph to `spec.md` §Classification naming the destination the tier table cannot express: a universal entry that governs code rather than the pipeline routes to a rule file with a permanent ID through the owning spec's back-edge, per §rules, as `QUAL-DELEG-001` did through `036-quality-cross-rules`
+- [x] Cite 036 as a backticked slug rather than a link, so no `dependencies:` edge is added
+
+- **Done when**: The spec's §Classification states the fourth destination alongside the three population tiers, so AC22 holds as written.
