@@ -1,15 +1,14 @@
 ---
 spec: 026-framework-self-audit
-last-run: 2026-09-18T00:20:54Z
-analyzed-against: 9167ce7bf81d3175af0d04b514b8dca6c1a267db
+last-run: 2026-09-28T13:21:46Z
+analyzed-against: 7ecda8808ac94f47353fccd26198d3c7aabbe915
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 14
-captured-issues: 0
 analyzed-digest:
   plan.md: 9c4dc8504682605f915315025b7fa65a6dc7418bdd53dcf969871e1e35b045b3
-  review.md: 946fadc30d6f8cc6a8cd91c0e853febe5cd999b6a7eb5815955fbd76a6bcd0e2
+  review.md: 0c1c28b289c125ae954456ed6b6c6b2b886b8bbbe961d75a965b0aace8692915
   scenarios/audit-ci-hard-gate.md: a7bad7a167532019112d79a746696ad32d963171598d2283072af0e9f3234be7
   scenarios/audit-script-refactors.md: 035bb7ef52c236135d791f35c3ec407d7908c8d51a169483bce40bc26c7a46c8
   scenarios/family-10-migration-coverage.md: 8684e643e4ea938cbeeed6d1342aef27efc84a7bf7559b111b6a12cacacfa02b
@@ -27,22 +26,27 @@ analyzed-digest:
   scenarios/family-28-audit-family-registry-parity.md: 0d7b15a3c103b50b3aeafa3145941910582c16dbda08148ebd804346da4ae15a
   scenarios/family-34-step-reference-integrity.md: 4d24ed6a08c54ae98f135ad108d3b8a7b85f782f5af7edf26c67d92aa509f067
   scenarios/family-35-manifest-destination-links.md: 8e94dce4172e2b326612da806327af31777d99b8c6ce89642c9d10a98dc148b3
-  scenarios/family-36-self-url-resolution.md: f5f69dd3e566a0e07ef2825d5843ec76cf18203355c7c7ddff8737673dfadb09
+  scenarios/family-36-self-url-resolution.md: 23716b0f5c3810890bab089c65258008842869e35616a71b86b663ed231bde18
   scenarios/host-namespace-parity.md: 05714fe6b728391f699ed7328e1aea252a48259ae489fa9c06e0d0609dc1d376
   scenarios/link-check-consolidation.md: f838133a535aa090e09d7f82903facc4dff8cc822c1dec5c22f9b4d1e17a5049
   scenarios/readme-command-parity.md: 3788aa1103dba1860af8cb9950a6425ed33e4a24498f825fcd980e0c9bb7f8bc
-  spec.md: e2d891148dcdcfb386bdf39501c9dae3ea0e039145e910a1dbe9ac67fed74ee3
+  spec.md: 0ec33d54bbe8255e3d26ed49639d87a80052250c5c83962a1dc18fb12fcdec50
   tasks.md: 3b9b37e455b2e6ec40b3d6f991f1d491f5c061e1ffcf42d21f152098157c9a15
 unexamined-by-reason:
   not-a-live-claim: 14
 blocking: false
+dispositions:
+  fixed: 0
+  routed: 0
+  discarded: 0
+  undispositioned: 0
 ---
 
 # Analysis — 026-framework-self-audit
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 14 unexamined target(s). Findings route to the inbox — this report records them, `/{project}:groom` routes them.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 14 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -60,6 +64,6 @@ blocking: false
 
 - not-a-live-claim: 14
 
-## Captured issues
+## Fixed in this run
 
 *None.*
