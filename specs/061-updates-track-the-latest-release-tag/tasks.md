@@ -92,7 +92,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. 028 and 032: the descriptor substitution
 
-- [ ] Replace the parenthetical *(live-on-main)* in `specs/028-antigravity-agent/spec.md` and `specs/032-opencode-agent/spec.md` with one uniform replacement, in its own commit
+- [x] Replace the parenthetical *(live-on-main)* in `specs/028-antigravity-agent/spec.md` and `specs/032-opencode-agent/spec.md` with one uniform replacement, in its own commit
 
 - **Done when**: the commit's diff is that one substitution and nothing else, and neither spec's status moved.
 
