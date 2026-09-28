@@ -250,9 +250,9 @@ Implements `scenarios/a-retired-feature-leaves-no-spec.md`. The constitution sta
 
 ## 28. Third classification round — the 9 entries the promotion-coverage notice reports unclassified
 
-- [ ] `plan.md` §Classification: add *Third round — classified 2026-09-28* with the 9 rows keyed by lead phrase — 7 project-only, `append-task`'s no-write shapes promoted, and *a test must fail when the behavior it names is removed* routed to a rule file — each with its reason (operator decision, 2026-09-28)
-- [ ] `framework/constitution.md` §scenarios: promote the `append-task` entry, reworded by the reword test, beside the scenario-creation paragraph; the anchor set stays byte-identical
-- [ ] `AGENTS.md`: the `append-task` entry becomes a pointer to §scenarios and the test entry a pointer to `QUAL-TEST-001`, each keeping its story and its lead phrase byte-identical so the table keys still resolve
-- [ ] Verify: the promotion-coverage family reports 0 unclassified and 0 unmatched keys; the new rule's distinctive phrasing finds one normative statement and pointers only (AC3); lint, generators, audit and `cargo test`
+- [x] `plan.md` §Classification: add *Third round — classified 2026-09-28* with the 9 rows keyed by lead phrase — 7 project-only, `append-task`'s no-write shapes promoted, and *a test must fail when the behavior it names is removed* routed to a rule file — each with its reason (operator decision, 2026-09-28)
+- [x] `framework/constitution.md` §scenarios: promote the `append-task` entry, reworded by the reword test, beside the scenario-creation paragraph; the anchor set stays byte-identical
+- [x] `AGENTS.md`: the `append-task` entry becomes a pointer to §scenarios and the test entry a pointer to `QUAL-TEST-001`, each keeping its story and its lead phrase byte-identical so the table keys still resolve
+- [x] Verify: the promotion-coverage family reports 0 unclassified and 0 unmatched keys; the new rule's distinctive phrasing finds one normative statement and pointers only (AC3); lint, generators, audit and `cargo test`
 
 - **Done when**: the promotion-coverage notice reports 0 unclassified, the promoted text has one canonical home, and the local gate passes
