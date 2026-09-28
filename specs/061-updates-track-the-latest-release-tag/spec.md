@@ -2,7 +2,7 @@
 status: clarified
 dependencies: [003-bootstrap-automation, 015-tarball-fetch, 048-govern-acquired-runtime]
 cross-spec-impact: [003-bootstrap-automation, 007-govern-workflow, 015-tarball-fetch, 023-govern-refinement, 026-framework-self-audit, 029-bootstrap-runtime-autowire, 048-govern-acquired-runtime, 050-constitution, 056-bootstrap-archive-boundary-split]
-next-criterion: 17
+next-criterion: 18
 ---
 
 # 061 — Updates track the latest release tag
@@ -41,16 +41,18 @@ A run reports which source it used and the ref it resolved to. An adopter readin
 
 - **The latest release cannot be resolved, or resolves to a tag outside the `ductus-v*` scheme.** The run halts, naming what it tried and what it got. It does not fall back to `main`. A silent fallback would put the adopter on exactly the unreleased state this spec exists to keep them off, and would read identically to a successful resolution (§design-principles, `QUAL-CLAIM-001`).
 - **A named tag does not exist.** The run halts, naming the tag, before anything is written.
-- **A named tag is older than the first release that carries this spec.** The run halts, naming the tag and that release, before anything is written. Every earlier release's bootstrap fetches from `main` regardless of any ref, so once its bootstrap was placed, the named tag could not be honored.
-- **A named tag is older than a migration the project has already applied.** The run halts, naming the tag and the `introduced_in` of the project's `[migrations]` `last_applied`, before anything is written. Migrations run forward only, so moving below one would lay that release's pre-migration files over the migrated layout.
+- **A resolved tag, named or the latest release, is older than the first release that carries this spec.** The run halts, naming the tag and that release, before anything is written. Every earlier release's bootstrap fetches from `main` regardless of any ref, so once its bootstrap was placed, the tag could not be honored. The latest release reaches this floor only before the release carrying this spec is published, when `main`'s bootstrap is the only one that has it. The message says so, and says that re-running once the release exists, or passing `--ref=main`, proceeds.
+- **A resolved tag, named or the latest release, is older than a migration the project has already applied.** The run halts, naming the tag and the `introduced_in` of the project's `[migrations]` `last_applied`, before anything is written. Migrations run forward only, so moving below one would lay that release's pre-migration files over the migrated layout. The latest release reaches this floor when a project on `main` applied a migration no release carries yet, and then returns with `--ref=latest`.
 - **A `--ref` value, or a recorded `[source] ref`, is none of `latest`, `main`, or a `ductus-v*` tag name.** The run halts, naming the value, where it came from, and the accepted forms, before anything is written. An empty value, `--ref=`, is one of these.
 - **`--ref` is given more than once.** The run halts, naming every value given, before anything is written. Picking one would decide silently between two stated intents.
+
+*Before anything is written* is measured from source resolution, the first step that depends on the source. The Permission Setup seed runs before it: that seed is additive, idempotent and identical for every source (`framework/bootstrap/ductus.md`, §Permission Setup).
 
 ## Installer
 
 The installer is published as an asset of every release. The documented one-liner fetches the latest release's copy from `https://github.com/stonean/ductus/releases/latest/download/install.sh`, so by default the installer and the bootstrap it places come from the same release. The installer stays in the repository, so `main`'s copy remains fetchable.
 
-The installer defaults to the latest release and takes the same `--ref=<value>` flag as `/ductus`, in any position beside the agent key: `sh -s -- claude --ref=main`. It fetches the bootstrap from the ref it resolved. With `--ref`, the installer itself still comes from whichever release the one-liner named, while the bootstrap comes from the ref. The failure behavior above applies to the installer unchanged.
+The installer defaults to the latest release and takes the same `--ref=<value>` flag as `/ductus`, in any position beside the agent key: `sh -s -- claude --ref=main`. It fetches the bootstrap from the ref it resolved. With `--ref`, the installer itself still comes from whichever release the one-liner named, while the bootstrap comes from the ref. The failure behavior above applies to the installer, except for the two checks that read project configuration: the migration floor and a recorded `[source] ref`. The installer reads no project configuration, so the next `/ductus` run applies both.
 
 The installer writes no project configuration, so its `--ref` is not recorded. When `--ref` was given, its completion message names `/ductus --ref=<value>` as the next command, and that run records the choice. A plain `/ductus` instead lands on the latest release, and says so. The run reports the source it used, and the self-update's pre-flight abort names the source it replaced the installed bootstrap from.
 
@@ -82,6 +84,7 @@ The installer writes no project configuration, so its `--ref` is not recorded. W
 - [ ] AC14: The self-update's pre-flight abort names the source it updated the installed bootstrap from
 - [ ] AC15: The release procedure states that a framework-only change reaches default-source adopters at the next `ductus-v*` release, and that a framework-only release moves the version pin, the runtime crate version, and the changelog heading together like any other release
 - [ ] AC16: Every spec named in this spec's `cross-spec-impact:` carries its change with a back-link to this spec
+- [ ] AC17: When the latest release resolves below either floor, the run halts naming the tag and the floor before anything is written, and does not fall back to `main`
 
 ## Applicable Rules
 
