@@ -72,7 +72,7 @@ No other files change. The generator (`scripts/gen-claude-commands.sh`) does not
 
 All four open questions resolved during `/ductus:clarify`. See the spec's **Resolved Questions** section for the full record. Summary:
 
-- **Ref pinning** — defer to a later spec.
+- **Ref pinning** — defer to a later spec. Adopted since by 061.
 - **Per-file fallback** — none; archive failure aborts cleanly.
 - **`rm` permission scope** — drop `rm` entirely; the OS sweeps the temp directory.
 - **Auggie regex for `rm`** — moot, given no `rm` permission.
