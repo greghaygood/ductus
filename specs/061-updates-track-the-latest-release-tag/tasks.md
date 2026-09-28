@@ -156,9 +156,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 18. Discharge 050
 
-- [ ] `done → in-progress`
-- [ ] Correct the Resolved Question *"Does a constitution-only change need a version bump?"* per 061's first resolved question, with a signpost
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Correct the Resolved Question *"Does a constitution-only change need a version bump?"* per 061's first resolved question, with a signpost
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 050 is `done` with a current review and analysis, and the Resolved Question no longer rests on the archive tracking `main`.
 
