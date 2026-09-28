@@ -1,6 +1,6 @@
 ---
 description: Adopt or update ductus in an existing project.
-argument-hint: "[project] [--agents=key1,key2,...] [--add-agent]"
+argument-hint: "[project] [--agents=key1,key2,...] [--add-agent] [--ref=latest|main|ductus-vX.Y.Z]"
 parity:
   strict-files:
     - "{cli-config-dir}/commands/ductus.md"
@@ -115,6 +115,7 @@ Recognized flags in `$ARGUMENTS`:
 
 - `--agents=key1,key2,...` — explicit list of agent keys to scaffold. Bypasses any prompt. Reject unknown keys.
 - `--add-agent` — force the agent-selection prompt even when agents are already detected.
+- `--ref=<value>` — the source every fetch back into the `ductus` repository names: `latest` (the latest release), `main`, or a release tag such as `ductus-v0.55.0`. Leaving it out uses the project's recorded source, else the latest release. Validated and resolved by **Source resolution** (§Pre-flight Phase); the full contract is [061 — Updates track the latest release tag](https://github.com/stonean/ductus/blob/main/specs/061-updates-track-the-latest-release-tag/spec.md).
 
 Flags may appear in any order alongside the project name.
 
@@ -168,17 +169,95 @@ The wildcard is the minimal bootstrap grant; the enumerated per-tool set stays o
 
 ## Pre-flight Phase
 
-Run a single pre-flight phase after the **Permission Setup** seed (so the ductus binary probe is pre-authorized) and before **Pre-run Migrations** and the full archive fetch. The phase owns two restart-requiring checks — **ductus runtime detection** and the **ductus.md self-update check** — that can each force the session to restart: ductus detection to load a newly-wired MCP server, the self-update check to load a fresh `ductus.md`. Neither pays the cost of the multi-hundred-KB archive; both run on a small fetch or no fetch, so a restart-triggering abort never leaves archive work on disk.
+Run a single pre-flight phase after the **Permission Setup** seed (so the ductus binary probe is pre-authorized) and before **Pre-run Migrations** and the full archive fetch. It opens with **Source resolution**, which settles the one ref every later fetch back into the `ductus` repository names; that step restarts nothing, and each of its failures halts the run before anything is written. The phase then owns two restart-requiring checks — **ductus runtime detection** and the **ductus.md self-update check** — that can each force the session to restart: ductus detection to load a newly-wired MCP server, the self-update check to load a fresh `ductus.md`. Neither pays the cost of the multi-hundred-KB archive; both run on a small fetch or no fetch, so a restart-triggering abort never leaves archive work on disk.
 
 The phase runs both checks and sorts every restart-requiring write into one of **two** sets: the **pending-restart set**, which stops the run at once (a stale installed `ductus.md`), and the **deferred-restart set**, which does not (State B's acquisition and wiring) and is carried to the **Closing restart** at the end of the run. **Pre-flight abort** inspects both. If neither check needs a restart, the run proceeds to **Pre-run Migrations**. Running both checks before that inspection is what collapses the worst case — a stale `ductus.md` on an adopter who has never wired ductus — into one restart instead of two.
 
-**Create `{tempdir}` first, before either check.** Both checks fetch into it, and so does the later **Archive fetch and extract**:
+**Create `{tempdir}` first, before anything else in the phase.** Source resolution and both checks fetch into it, and so does the later **Archive fetch and extract**:
 
 ```text
 mktemp -d -t ductus-XXXXXX
 ```
 
-On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run — a fresh fetch is the only way `/ductus` picks up upstream changes. It is created here rather than inside either check because the checks run in order and the *first* of them needs it: **ductus runtime detection** fetches the version pin into it. Creating it inside the second check left the first with nowhere to fetch to, which is what made greenfield acquisition halt before it could start.
+On macOS/Linux this lands under `$TMPDIR` or `/tmp`. Never reuse a directory from a prior run — a fresh fetch is the only way `/ductus` picks up upstream changes. It is created here rather than inside any one step because the steps run in order and the *first* of them needs it: **Source resolution** fetches the version pin into it. Creating it inside a later step left the earlier ones with nowhere to fetch to, which is what made greenfield acquisition halt before it could start.
+
+### Source resolution
+
+Settle the run's one source before anything fetches from it. **One run, one source**: the version pin, the self-update fetch, and the framework archive all name the ref this step resolves, and nothing re-resolves it later, so a release published partway through the run cannot split the run across two releases. The values it settles — `{raw-ref}`, `{archive-ref}`, `{source-label}`, `{pin}` — and the `{ref-floor}` constant are listed in **Derived paths** below. The steps run in order, and each halt below fires before anything is written — only the **Permission Setup** seed, which is additive, idempotent and identical for every source, precedes this step.
+
+1. **Read the inputs.** Collect every `--ref` in `$ARGUMENTS` (§Inputs). Read the **active config file** (§Project Configuration) once, for its `[source] ref`, its `[migrations] last_applied`, and the `[runtime] path` that **Runtime acquisition** Branch 1 reads. A malformed config file aborts here under §Project Configuration's existing rule, since this is now the first step to read it.
+
+2. **Check the grammar.** An accepted value is exactly `latest`, `main`, or `ductus-v<MAJOR>.<MINOR>.<PATCH>` — digits only, no pre-release or build suffix, which is the form every release tag carries.
+   - `--ref` given more than once halts, naming every value given. Picking one would decide silently between two stated intents.
+
+     > Halt: `--ref was given {n} times ({values}) — give it once.`
+   - A `--ref` value outside the grammar halts, naming it. A bare `--ref` and `--ref=` are empty values and halt the same way.
+
+     > Halt: `invalid --ref "{value}" — accepted forms are latest, main, or ductus-v<MAJOR>.<MINOR>.<PATCH>.`
+   - With no `--ref`, the recorded `[source] ref` governs, and a recorded value outside the grammar halts, naming the file it came from. With a `--ref`, the record is not consulted: the flag replaces it, which is also how a bad record is repaired without a hand-edit.
+
+     > Halt: `invalid [source] ref "{value}" in {active config file} — accepted forms are latest, main, or ductus-v<MAJOR>.<MINOR>.<PATCH>. Fix or remove it, or re-run with --ref to replace it.`
+
+   The source is the `--ref` value, else the recorded value, else `latest`, and its origin is `--ref`, `recorded`, or `default` accordingly. A recorded `latest` is never written by `/ductus`, since the record's absence already means it, but reads as the default when present.
+
+3. **Resolve `latest`.** When the source is `latest`, read GitHub's latest release — never a draft or a prerelease — from the redirect, without following it:
+
+   ```text
+   curl -sSI https://github.com/stonean/ductus/releases/latest
+   ```
+
+   The tag is the last path segment of the `Location` header (`location` over HTTP/2) after `/releases/tag/`. A response carrying no `Location`, or one whose target has no `/releases/tag/` segment, halts; so does a tag outside the `ductus-v<MAJOR>.<MINOR>.<PATCH>` grammar. Neither falls back to `main`: a fallback would put the run on exactly the unreleased state the default exists to avoid, and would read identically to a successful resolution.
+
+   > Halt: `could not resolve the latest release from https://github.com/stonean/ductus/releases/latest — {what came back: the status line and the Location value, or "no Location header"}. /ductus does not fall back to main; pass --ref=main or --ref=<tag> to choose a source explicitly.`
+
+   The REST API's `releases/latest` means the same thing but is limited to 60 unauthenticated calls an hour, and the highest `ductus-v*` tag can name a tag whose release, and so whose runtime assets, does not exist yet. The redirect has neither problem (spec 061, Resolved Questions).
+
+4. **Check the release floor.** A resolved tag — named, recorded, or the latest release — below `ductus-v{ref-floor}` halts, naming the tag and the floor. Compare the three version fields numerically. Every release below the floor ships a bootstrap that fetches from `main` whatever ref it is given, so once its bootstrap was placed the tag could not be honored.
+
+   > Halt (a named or recorded tag): `{tag} is older than ductus-v{ref-floor}, the first release whose bootstrap honors --ref. Every earlier release's bootstrap fetches from main, so {tag} could not be honored. Name ductus-v{ref-floor} or later, or pass --ref=main.`
+
+   The latest release reaches this floor only before the release carrying this bootstrap is published — a pushed tag takes some minutes to become a release, and until then `main`'s bootstrap is the only one that has this step.
+
+   > Halt (the latest release): `the latest release, {tag}, is older than ductus-v{ref-floor}, the first release that carries this bootstrap. That release may still be publishing. Re-run once it exists, or pass --ref=main to proceed now.`
+
+5. **Fetch the pin at the ref.** One SemVer line, no `v` prefix:
+
+   ```text
+   curl -fsSL https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/version -o {tempdir}/version
+   ```
+
+   This fetch is also the existence check for a named or recorded tag, so a tag costs no extra request: every release at or above the floor carries a `version` file, so an HTTP 404 on a tag means the tag does not exist.
+
+   > Halt (404 on a named or recorded tag): `tag {tag} does not exist — https://raw.githubusercontent.com/stonean/ductus/{tag}/version returned 404.`
+
+   Any other failure, or a file that is **absent or unparseable**, halts naming the URL: guessing a version or falling through to another source silently installs a runtime the framework was never tested against.
+
+   > Halt: `could not read the runtime version pin from https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/version — /ductus cannot state which runtime this framework revision requires.`
+
+   The file's one line is `{pin}` for the rest of the run. It is fetched here rather than read out of the framework archive because acquisition runs in pre-flight, long before **Archive fetch and extract**, and State B is the first-run state by definition, so the pin must never depend on the archive.
+
+6. **Check the migration floor** — on a tag only, and only when `[migrations] last_applied` is set. Migrations run forward only (§Pre-run Migrations), so moving below one the project has applied would lay that release's pre-migration files over the migrated layout. `last_applied` holds a migration **id**, and the registry mapping ids to `introduced_in` ships in the archive, which pre-flight has not fetched, so read the tag's registry:
+
+   ```text
+   curl -fsSL https://raw.githubusercontent.com/stonean/ductus/{raw-ref}/framework/migrations.toml -o {tempdir}/migrations.toml.ref
+   ```
+
+   - **The id is an entry there**: the tag knows the migration, so it is not older than it. Pass.
+   - **The id is absent**: fetch `main`'s registry the same way, into `{tempdir}/migrations.toml.main`. Entries are appended, and removed only when they sunset.
+     - **An entry at `main`**: the migration was added after the tag. Halt.
+     - **Absent at `main` too**: the migration has been retired, so the project's layout predates every live entry. Pass, as §Pre-run Migrations' stale-reference behavior treats a retired id.
+
+   The tag's registry alone cannot tell a migration newer than the tag from a retired one, and those need opposite answers. The `main` read is a lookup that validates the tag, not a source fetch: nothing the run installs comes from it, so it does not break *one run, one source*. Either fetch failing halts naming its URL, as step 5's pin halt does.
+
+   > Halt: `{tag} is older than migration {id} (introduced in {introduced_in}), which this project has already applied ([migrations] last_applied). Migrations run forward only, so {tag}'s files would be laid over the migrated layout. Name a release at or after {introduced_in}, or pass --ref=main.`
+
+   The latest release reaches this floor when a project on `main` applied a migration no release carries yet; the same message covers it, and a later release clears it.
+
+7. **Report the source.** Emit one line, before any later step can halt or abort, so every run past this point says which source it used:
+
+   > `Source: {source-label}`
+
+   The line is repeated in **Post-Scaffolding Output**.
 
 ### ductus runtime detection
 
@@ -205,8 +284,12 @@ The reason is not tidiness. A retired-namespace server is a *different runtime a
 | `{store-dir}` | `~/.ductus/bin/` |
 | `{store-path}` | `~/.ductus/bin/ductus` (`ductus.exe` on Windows) |
 | `{pointer-path}` | `.ductus/bin/ductus` (repo-relative; `ductus.exe` on Windows) |
-| `{pin}` | the single SemVer line in `{tempdir}/version`, fetched by **Runtime acquisition** step 1 |
+| `{pin}` | the single SemVer line in `{tempdir}/version`, fetched by **Source resolution** step 5 |
 | `{triple}` | the host target triple, from the table in **Runtime acquisition** |
+| `{raw-ref}` | the path segment naming the resolved source on `raw.githubusercontent.com`: `main`, or the tag (`ductus-v0.55.0`) |
+| `{archive-ref}` | the path segment naming the resolved source on `codeload.github.com`: `refs/heads/main`, or `refs/tags/{tag}` |
+| `{source-label}` | the resolved source and its origin, as reported: `main (--ref)`, `ductus-v0.55.0 (recorded)`, `latest release ductus-v0.55.0 (default)` |
+| `{ref-floor}` | `0.55.0` — the version of the first release whose bootstrap carries **Source resolution**; `install.sh` carries the same value, and `/ductus:audit` Family 14 asserts the two agree |
 
 #### State A — runtime live this session
 
@@ -268,17 +351,9 @@ When `.ductus/config.toml` has a `[runtime]` `path` key, the project has taken r
 
 ##### Branch 2 — acquire the pinned release
 
-1. **Fetch and read the pin.** One SemVer line, no `v` prefix, fetched into the `{tempdir}` the **Pre-flight Phase** created:
+1. **Read the pin.** `{pin}` is the line **Source resolution** step 5 fetched into `{tempdir}/version` and validated; nothing is fetched here. Reading it from the framework archive is what this step once specified, and it halted every greenfield adoption: State B is the first-run state by definition, so the pin was never on disk when this step needed it. A one-line file keeps pre-flight's small-fetch-or-no-fetch property intact — it is the archive's multi-hundred-KB cost this phase avoids, not a `curl`.
 
-   ```text
-   curl -fsSL https://raw.githubusercontent.com/stonean/ductus/main/version -o {tempdir}/version
-   ```
-
-   It is fetched here rather than read out of the framework archive because acquisition runs in **pre-flight**, and the archive is not fetched until **Archive fetch and extract**, hundreds of lines later. Reading it from the archive is what this step used to specify, and it halted every greenfield adoption: State B is the first-run state by definition, so the pin was never on disk when this step needed it. A one-line file keeps pre-flight's small-fetch-or-no-fetch property intact — it is the archive's multi-hundred-KB cost this phase avoids, not a `curl`.
-
-   The pin and the framework tree now arrive in two fetches rather than one, so they agree only because both name `main`. A push landing between them is the sole divergence, it is bounded by one run, and the next `/ductus` re-acquires against the newer pin — acquisition is idempotent and re-probes the store. If the fetch fails, or the file is **absent or unparseable**, halt naming it: guessing a version or falling through to "latest" silently installs a runtime the framework was never tested against.
-
-   > Halt: `could not read the runtime version pin from https://raw.githubusercontent.com/stonean/ductus/main/version — /ductus cannot state which runtime this framework revision requires.`
+   The pin and the framework tree arrive in separate fetches, and they agree because both name the ref **Source resolution** settled. A tag does not move between them. `main` can: a push landing between the two fetches is the sole divergence on that source, it is bounded by one run, and the next `/ductus` re-acquires against the newer pin — acquisition is idempotent and re-probes the store. That exposure is what `--ref=main` opts into.
 
 2. **Probe the store for idempotency.** Execute `{store-path}` and read its reported version.
    - Reports `{pin}` ⇒ **already current**. Perform no download and leave the binary byte-unchanged. Continue to the pointer.
@@ -379,7 +454,7 @@ Verify the running session's `ductus.md` instructions are current.
 
 #### Small fetch
 
-`{tempdir}` already exists — the **Pre-flight Phase** created it before either check, and **ductus runtime detection** has already fetched the version pin into it. Do not create a second one.
+`{tempdir}` already exists — the **Pre-flight Phase** created it before anything else, and **Source resolution** has already fetched the version pin into it. Do not create a second one.
 
 Issue exactly one `curl` against `raw.githubusercontent.com` for the upstream bootstrap file:
 

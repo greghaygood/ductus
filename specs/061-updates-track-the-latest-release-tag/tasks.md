@@ -4,12 +4,12 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Bootstrap: `--ref` and Source resolution
 
-- [ ] Add `--ref=<value>` to §Inputs' recognized flags in `framework/bootstrap/ductus.md`, and to the frontmatter `argument-hint`
-- [ ] Add the Source resolution subsection at the head of the Pre-flight Phase, after `{tempdir}` creation. Its steps: read the inputs, check the grammar, resolve `latest` from the `Location` header, check the release floor, fetch the pin at the ref as the existence check, check the migration floor, and report the source line
-- [ ] Add `{raw-ref}`, `{archive-ref}`, `{source-label}` and `{ref-floor}` to Derived paths. `{ref-floor}` is the version the release carrying this spec will be cut at (planned `0.55.0`)
-- [ ] Make Runtime acquisition Branch 2 step 1 read the resolved pin instead of fetching `main/version`, and remove the paragraph on two fetches agreeing because both name `main`
-- [ ] Write every halt with the message the spec's Failure behavior requires, including the pre-publication wording on the release floor
-- [ ] Mirror the file byte-for-byte to `framework/bootstrap/govern.md`
+- [x] Add `--ref=<value>` to §Inputs' recognized flags in `framework/bootstrap/ductus.md`, and to the frontmatter `argument-hint`
+- [x] Add the Source resolution subsection at the head of the Pre-flight Phase, after `{tempdir}` creation. Its steps: read the inputs, check the grammar, resolve `latest` from the `Location` header, check the release floor, fetch the pin at the ref as the existence check, check the migration floor, and report the source line
+- [x] Add `{raw-ref}`, `{archive-ref}`, `{source-label}` and `{ref-floor}` to Derived paths. `{ref-floor}` is the version the release carrying this spec will be cut at (planned `0.55.0`)
+- [x] Make Runtime acquisition Branch 2 step 1 read the resolved pin instead of fetching `main/version`, and remove the paragraph on two fetches agreeing because both name `main`
+- [x] Write every halt with the message the spec's Failure behavior requires, including the pre-publication wording on the release floor
+- [x] Mirror the file byte-for-byte to `framework/bootstrap/govern.md`
 
 - **Done when**: every Failure behavior bullet in the spec maps to a halt in the Source resolution subsection with its named values. `framework/bootstrap/govern.md` and `framework/bootstrap/ductus.md` are byte-identical. Families 14 and 21 of `scripts/audit/run-all.sh` pass.
 

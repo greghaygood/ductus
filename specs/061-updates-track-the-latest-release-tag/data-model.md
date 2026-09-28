@@ -19,7 +19,8 @@ ref = "main"
 - **Written by** a `/ductus` run given `--ref=main` or `--ref=<tag>`, after the ref has passed every check and the runtime has been acquired, and before the self-update check.
 - **Rewritten without `ref`** by `--ref=latest` when a block exists. A bare `[source]` table is the default. With no block present, `--ref=latest` writes nothing.
 - **Never written by the installer**, which reads and writes no project configuration.
-- **A value outside the allowed set halts the run**, naming the value, `.ductus/config.toml` as its origin, and the accepted forms. `latest` is a flag value only. It is never recorded, because the record's absence already means it.
+- **A value outside the grammar halts the run**, naming the value, `.ductus/config.toml` as its origin, and the accepted forms. `latest` is a flag value: `/ductus` never records it, because the record's absence already means it. A hand-written `latest` is inside the spec's grammar (Failure behavior), so it does not halt and reads as the default.
+- **Consulted only when no `--ref` is given.** A `--ref` replaces the record, so a record outside the grammar is repaired by re-running with `--ref` rather than halting that run.
 
 ## `--ref` grammar
 
