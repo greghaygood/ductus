@@ -83,7 +83,7 @@ Frontmatter schema (constitution §text-first-artifacts) after this spec:
 | `scenarios/{slug}.md` | `section` | `spec-ref` (replaced by `section`), `tags` (deleted), `title` (deleted) |
 | `plan.md`, `tasks.md`, `data-model.md`, `research.md` | (none — frontmatter is optional) | `title` (deleted) |
 
-Validate severity changes:
+`/{project}:analyze` severity changes:
 
 - Hard fail: unchanged for `status`, `dependencies`, frontmatter parse.
 - Hard fail (new): `section` on scenario files (replaces `spec-ref`).
@@ -95,7 +95,7 @@ Validate severity changes:
 
 Existing `ductus` repo dogfood specs (000–016) and any adopter projects already on the current schema will have stale `title:`, `tags:`, `spec-ref:`, `track:` fields and `[simple]` task markers. Per constitution §spec-lifecycle, done specs are not rewritten retroactively: a meaningful body edit reopens a spec through the back-edge, so a bulk retroactive migration would reopen every one of them.
 
-- Existing `done` specs: no migration. Stale fields remain; the open-schema rule (constitution §text-first-artifacts) ignores unknown fields. Validate stops checking them, so they cause no findings.
+- Existing `done` specs: no migration. Stale fields remain; the open-schema rule (constitution §text-first-artifacts) ignores unknown fields. `/{project}:analyze` stops checking them, so they cause no findings.
 - New specs created after this lands: no longer have the deleted fields.
 - Adopter projects: receive the new templates on next `/ductus`. Existing specs in adopter projects are left alone for the same reason — a bulk rewrite would reopen each one through the back-edge.
 - Active in-flight specs in this repo (none at the moment beyond this spec): the author can strip the deleted fields opportunistically; it is not enforced.
@@ -152,7 +152,7 @@ Both repos run the generators in CI and fail the build on a non-empty diff. Catc
 - [x] AC22: `/ductus` installs the adopter hook on first run when no existing hook system is detected; updates on subsequent runs; warns and skips with a manual integration snippet when an existing hook system is detected (`.githooks/pre-commit` not from `/ductus`, husky, lefthook, pre-commit-py, or `core.hooksPath` pointing elsewhere); respects `.ductus/config.toml` pinning
 - [x] AC23: `.ductus/scripts/gen-spec-deps.sh` ships to adopter projects with `update` strategy on every `/ductus` run (pinnable via `.ductus/config.toml`); the shipped pre-commit hook references it via the project-relative path — superseded by 022-deterministic-runtime: the shell generators it names were promoted to runtime primitives, so `.ductus/scripts/` no longer exists — the derivation this criterion delivered now runs as `derive-dependencies` and `derive-references`
 - [x] AC24: A CI workflow runs all generators in dry-run mode and fails the build on non-empty diff, in both this repo and (as a shipped example) adopter projects; protects against contributors or adopters whose hook was skipped or never installed. Delivered as written; the CI step now runs the generators **for real** and compares the tree afterwards, which additionally catches a generator that creates a new output rather than modifying a tracked one — so the dry-run half is dated while the guarantee it names is unchanged.
-- [x] AC25: Capturing a review finding that maps to no loaded rule does not depend on the reviewer remembering a separate step: recording it in the report is what writes it to the inbox, so the two cannot diverge and an uncaptured observation is not a reachable state
+- [x] AC25: Capturing a review finding that maps to no loaded rule does not depend on the reviewer remembering a separate step: recording it in the report is what writes it to the inbox, so the two cannot diverge and an uncaptured observation is not a reachable state. Delivered as written; **the inbox half is superseded** — `058-findings-route-at-discovery` stopped writing observations to the inbox, the one destination no gate reads. Recording an observation in the report now puts it in front of the review's fix-and-route step, and the record counts it undispositioned, holding the spec out of `done`, until it is fixed, routed, or discarded. The guarantee this criterion names — no separate step to remember, no uncaptured observation — holds unchanged
 - [x] AC26: The routing rules that decide whether work becomes a new spec, a scenario on an existing spec, or a rule-file amendment bind wherever work enters — not only when it arrives through the inbox, where `/{project}:groom`'s decision tree happens to run
 
 ## Open Questions

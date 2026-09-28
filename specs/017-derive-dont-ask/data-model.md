@@ -11,7 +11,7 @@ A configuration rule file is a markdown document with the following structure (m
 
 {One-paragraph introduction stating the file's scope.}
 
-## {Category Name}
+## {ID prefix} — {Category Name}
 
 ### {Rule ID}
 
@@ -28,6 +28,7 @@ A configuration rule file is a markdown document with the following structure (m
 …
 ```
 
+- **ID prefix** is `CFG-CONST` or `CFG-ENV` — the `CFG-{category}` pair the section's rules share, so the heading carries the abbreviation a reader needs to cite a rule under it.
 - **Category Name** is `Constants` or `Environment variables`.
 - **Rule ID** appears as a level-3 heading and is the only level-3 heading content (no surrounding text). This makes rules grep-able by ID.
 
@@ -115,7 +116,7 @@ Updates the schema declared in `framework/constitution.md` §text-first-artifact
 | `status` | yes | string | `draft`, `clarified`, `planned`, `in-progress`, `done` | Spec lifecycle state |
 | `dependencies` | yes | list of strings | spec slugs (e.g., `002-events`); empty list permitted | **Generated** from body inline links; not hand-authored. Delivered here as `gen-spec-deps.sh`; since `022-deterministic-runtime`'s `adopter-generator-promotion` it is the `derive-dependencies` runtime primitive (AC23) |
 
-Removed: `tags` (deleted from schema and from validate). The `track` field on `spec-and-plan.md` is also removed; track is inferred from the filename.
+Removed: `tags` (deleted from schema and from `/{project}:analyze`). The `track` field on `spec-and-plan.md` is also removed; track is inferred from the filename.
 
 ### Scenario files (`scenarios/{slug}.md`)
 
@@ -131,7 +132,7 @@ Removed: `spec-ref` (replaced by `section`). `tags` removed.
 
 ### Open-schema rule (unchanged)
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Stale fields in done specs (`title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no validate findings after this spec.
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers. Stale fields in done specs (`title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no `/{project}:analyze` findings after this spec.
 
 ## Marker-comment convention for generated content blocks
 
@@ -174,7 +175,7 @@ The shipped adopter pre-commit hook contains a single sentinel line near the top
 
 All generator scripts and hook scripts:
 
-- Use `.sh` extension
+- Generator scripts use the `.sh` extension; hook scripts carry the name git invokes them by (`pre-commit`, and the adopter's `ductus-pre-commit`), with no extension
 - Begin with `#!/usr/bin/env bash`
 - Follow `set -euo pipefail` for fail-fast behavior
 - Are executable (`chmod +x`)
