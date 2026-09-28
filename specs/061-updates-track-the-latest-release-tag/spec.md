@@ -68,23 +68,23 @@ The installer writes no project configuration, so its `--ref` is not recorded. W
 
 ## Acceptance Criteria
 
-- [ ] AC1: With no source argument, `/ductus` fetches its bootstrap self-update, the runtime version pin, and the framework archive from the latest release tag
-- [ ] AC2: With the `main` override, `/ductus` fetches all three from `main`
-- [ ] AC3: With a named tag, `/ductus` fetches all three from that tag, and a tag that does not exist halts the run naming the tag before anything is written
-- [ ] AC4: When the latest release tag cannot be resolved, `/ductus` halts naming what it tried and does not fall back to `main`
-- [ ] AC5: A `/ductus` run reports the source it used and the ref that source resolved to
-- [ ] AC6: The installer defaults to the latest release tag and accepts the same `main` and named-tag overrides as `/ductus`
-- [ ] AC7: No live artifact still states that the installer or `/ductus` tracks `main` by default (the prose-claim sweep, §drift-prevention)
-- [ ] AC8: The latest release is resolved once per run, from the tag GitHub's latest-release redirect names, and a resolved tag outside the `ductus-v*` scheme halts the run naming what it got
-- [ ] AC9: A run given `--ref=main` or a tag records it as `[source] ref` in the project's committed configuration, a later run with no `--ref` uses the recorded value, and `--ref=latest` removes it
-- [ ] AC10: A named tag older than the first release that carries this spec, or older than the `introduced_in` of the project's last applied migration, halts the run naming the tag and the floor before anything is written
-- [ ] AC11: A `--ref` value or recorded `[source] ref` that is not `latest`, `main`, or a `ductus-v*` tag name, and a `--ref` given more than once, each halt the run naming the value or values and their origin before anything is written
-- [ ] AC12: The installer is attached to every release, and the documented install one-liner fetches the latest release's copy
-- [ ] AC13: When given `--ref`, the installer's completion message names `/ductus --ref=<value>` as the next command
-- [ ] AC14: The self-update's pre-flight abort names the source it updated the installed bootstrap from
-- [ ] AC15: The release procedure states that a framework-only change reaches default-source adopters at the next `ductus-v*` release, and that a framework-only release moves the version pin, the runtime crate version, and the changelog heading together like any other release
-- [ ] AC16: Every spec named in this spec's `cross-spec-impact:` carries its change with a back-link to this spec
-- [ ] AC17: When the latest release resolves below either floor, the run halts naming the tag and the floor before anything is written, and does not fall back to `main`
+- [x] AC1: With no source argument, `/ductus` fetches its bootstrap self-update, the runtime version pin, and the framework archive from the latest release tag
+- [x] AC2: With the `main` override, `/ductus` fetches all three from `main`
+- [x] AC3: With a named tag, `/ductus` fetches all three from that tag, and a tag that does not exist halts the run naming the tag before anything is written
+- [x] AC4: When the latest release tag cannot be resolved, `/ductus` halts naming what it tried and does not fall back to `main`
+- [x] AC5: A `/ductus` run reports the source it used and the ref that source resolved to
+- [x] AC6: The installer defaults to the latest release tag and accepts the same `main` and named-tag overrides as `/ductus`
+- [x] AC7: No live artifact still states that the installer or `/ductus` tracks `main` by default (the prose-claim sweep, §drift-prevention)
+- [x] AC8: The latest release is resolved once per run, from the tag GitHub's latest-release redirect names, and a resolved tag outside the `ductus-v*` scheme halts the run naming what it got
+- [x] AC9: A run given `--ref=main` or a tag records it as `[source] ref` in the project's committed configuration, a later run with no `--ref` uses the recorded value, and `--ref=latest` removes it
+- [x] AC10: A named tag older than the first release that carries this spec, or older than the `introduced_in` of the project's last applied migration, halts the run naming the tag and the floor before anything is written
+- [x] AC11: A `--ref` value or recorded `[source] ref` that is not `latest`, `main`, or a `ductus-v*` tag name, and a `--ref` given more than once, each halt the run naming the value or values and their origin before anything is written
+- [x] AC12: The installer is attached to every release, and the documented install one-liner fetches the latest release's copy
+- [x] AC13: When given `--ref`, the installer's completion message names `/ductus --ref=<value>` as the next command
+- [x] AC14: The self-update's pre-flight abort names the source it updated the installed bootstrap from
+- [x] AC15: The release procedure states that a framework-only change reaches default-source adopters at the next `ductus-v*` release, and that a framework-only release moves the version pin, the runtime crate version, and the changelog heading together like any other release
+- [x] AC16: Every spec named in this spec's `cross-spec-impact:` carries its change with a back-link to this spec
+- [x] AC17: When the latest release resolves below either floor, the run halts naming the tag and the floor before anything is written, and does not fall back to `main`
 
 ## Applicable Rules
 
