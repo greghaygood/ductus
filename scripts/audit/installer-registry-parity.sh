@@ -13,7 +13,8 @@
 #   antigravity  → {config_dir}/skills/ductus/SKILL.md
 #   opencode     → {config_dir}/command/ductus.md
 #
-# The check enforces per-key parity in three directions:
+# The check enforces per-key parity in three directions, then one shared
+# constant:
 #
 #   1. Every registry agent has a matching install.sh `case` arm whose
 #      dest equals the registry-derived path. (Catches: an agent added to
@@ -24,6 +25,9 @@
 #   3. Every settings file install.sh pre-seeds matches that agent's
 #      registry settings_template, compared as JSON. (Catches: the seeded
 #      permission copy silently drifting from the registry it duplicates.)
+#   4. install.sh's REF_FLOOR equals ductus.md's {ref-floor}, the first
+#      release whose bootstrap honors --ref (spec 061). (Catches: one entry
+#      point accepting a tag the other refuses.)
 #
 # Directions 1-2 are pure text extraction — no jq, no associative arrays
 # (macOS bash 3.2). Direction 3 uses python3 (already a ductus bootstrap
@@ -233,6 +237,26 @@ if [ -n "$seed_drift" ]; then
     [ -z "$loc" ] && continue
     emit "$loc" "$msg" "$fix"
   done <<< "$seed_drift"
+fi
+
+# Direction 4: the release floor. Both entry points refuse a tag older than
+# the first release whose bootstrap honors --ref (spec 061), and each carries
+# that version: install.sh as REF_FLOOR="X.Y.Z", ductus.md as the `{ref-floor}`
+# row of §Derived paths. Once that release exists the value never changes, but
+# until it is cut the two copies can drift, and a mismatch lets one entry point
+# accept a tag the other refuses. A copy this check cannot read is a finding,
+# not a pass: a floor it could not find is a floor it did not compare.
+installer_floor="$(sed -n 's/^REF_FLOOR="\([0-9][0-9.]*\)"$/\1/p' "$INSTALLER" | head -1)"
+bootstrap_floor="$(sed -n 's/^| `{ref-floor}` | `\([0-9][0-9.]*\)`.*/\1/p' "$DUCTUS" | head -1)"
+if [ -z "$installer_floor" ]; then
+  emit "$INSTALLER" "no REF_FLOOR=\"X.Y.Z\" line — the release floor was not compared" \
+    "restore install.sh's REF_FLOOR constant (spec 061)"
+elif [ -z "$bootstrap_floor" ]; then
+  emit "$DUCTUS" "no \`{ref-floor}\` row in §Derived paths — the release floor was not compared" \
+    "restore the {ref-floor} row in $DUCTUS §Derived paths (spec 061)"
+elif [ "$installer_floor" != "$bootstrap_floor" ]; then
+  emit "$INSTALLER" "REF_FLOOR is $installer_floor but $DUCTUS §Derived paths {ref-floor} is $bootstrap_floor" \
+    "set both to the version of the first release whose bootstrap honors --ref"
 fi
 
 exit "$drift"

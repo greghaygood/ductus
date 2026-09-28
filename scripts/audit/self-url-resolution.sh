@@ -37,8 +37,9 @@
 # WHAT IS AND IS NOT A SUBJECT.
 #
 #   - `blob/main/<path>` and `tree/main/<path>` are resolved. `main` is the
-#     trunk — this project is live-on-main, and everything `/ductus` fetches
-#     tracks it — so a `main` URL is a claim about the current tree and the
+#     trunk this worktree is checked out from — every release is cut from it
+#     by tag, and it is the source an adopter opts into with `--ref=main`
+#     (spec 061) — so a `main` URL is a claim about the current tree and the
 #     worktree is the right authority for it.
 #   - A URL pinned to a tag or a sha is deliberately historical: it names a
 #     state the worktree is not. Those are COUNTED and reported on stderr, not
@@ -77,17 +78,18 @@ audit_family self-url
 MANIFEST_FILE="framework/bootstrap/ductus.md"
 SELF="scripts/audit/self-url-resolution.sh"
 
-# The canonical repository, as the installer states it. `.../archive/refs/heads/main.tar.gz`
-# is the archive every `/ductus` run fetches, so the slug in it is the one
-# authority this repository has for its own identity.
-repo_slug="$(grep -oE 'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/archive/' "$MANIFEST_FILE" 2> /dev/null \
+# The canonical repository, as the installer states it.
+# `codeload.github.com/<owner>/<repo>/tar.gz/{archive-ref}` is the archive every
+# `/ductus` run fetches, whichever source it resolved, so the slug in it is the
+# one authority this repository has for its own identity.
+repo_slug="$(grep -oE 'https://codeload\.github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/tar\.gz/' "$MANIFEST_FILE" 2> /dev/null \
   | head -1 \
-  | sed -E 's#https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/archive/#\1#')"
+  | sed -E 's#https://codeload\.github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/tar\.gz/#\1#')"
 
 if [ -z "$repo_slug" ]; then
   emit "$MANIFEST_FILE" \
     "could not derive this repository's canonical slug from the installer's archive URL — no self-referencing URL was resolved" \
-    "restore the https://github.com/<owner>/<repo>/archive/refs/heads/main.tar.gz URL in the File Fetching section, or update this family's extraction"
+    "restore the https://codeload.github.com/<owner>/<repo>/tar.gz/{archive-ref} URL in §Archive fetch and extract, or update this family's extraction"
   exit "$drift"
 fi
 

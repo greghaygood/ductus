@@ -56,9 +56,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. Audit families
 
-- [ ] Family 14 (`scripts/audit/installer-registry-parity.sh`): assert that the `{ref-floor}` in `install.sh` equals the one in `framework/bootstrap/ductus.md`, and prove the assertion fails on a mismatch
-- [ ] Family 36 (`scripts/audit/self-url-resolution.sh`): derive the slug from the `codeload.github.com/<owner>/<repo>/tar.gz/` URL the bootstrap fetches, and restate the live-on-main rationale in its comment and remediation text
-- [ ] Update Family 36's line in `framework/commands/audit.md` and in `scripts/audit/README.md`
+- [x] Family 14 (`scripts/audit/installer-registry-parity.sh`): assert that the `{ref-floor}` in `install.sh` equals the one in `framework/bootstrap/ductus.md`, and prove the assertion fails on a mismatch
+- [x] Family 36 (`scripts/audit/self-url-resolution.sh`): derive the slug from the `codeload.github.com/<owner>/<repo>/tar.gz/` URL the bootstrap fetches, and restate the live-on-main rationale in its comment and remediation text
+- [x] Update Family 36's line in `framework/commands/audit.md` and in `scripts/audit/README.md`
 
 - **Done when**: `scripts/audit/run-all.sh` passes, and Family 36 reports the same slug and URL counts as before the change.
 
