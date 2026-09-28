@@ -114,9 +114,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 13. Discharge 015
 
-- [ ] `done → in-progress`
-- [ ] Correct §Source and the framework-root lines (spec lines 36, 39, 49, 51, 61), and mark the Resolved Question deferring ref pinning as adopted by 061, with a signpost
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Correct §Source and the framework-root lines (spec lines 36, 39, 49, 51, 61), and mark the Resolved Question deferring ref pinning as adopted by 061, with a signpost
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 015 is `done` with a current review and analysis, and no longer describes ref pinning as deferred.
 
