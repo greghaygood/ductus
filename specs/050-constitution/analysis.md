@@ -1,14 +1,14 @@
 ---
 spec: 050-constitution
-last-run: 2026-09-28T13:29:54Z
-analyzed-against: 6d0a5f9b8d6dbc1e586314099a248e870b4d8a1f
+last-run: 2026-09-28T15:12:15Z
+analyzed-against: 73f4ebb35b488cc9b7050a7ff6ca11f96cef1a66
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 1
 analyzed-digest:
-  plan.md: 58e4f5c5821b97abced1a41c5fda09804caf07651c3e9821e61a4368b24665a2
-  review.md: d3b91156d012aac144df8d2df3cb59ca5f4ca32baf0039adaaa3177d8ae2d93a
+  plan.md: 37db2a83547236253847c75d3fa3c9bcc3d9d860b6f722f5ed5865971fcd5415
+  review.md: cf2a523f26f98cd04919b1bde0b9b1dd5ae7019f3fee082f85bd64170257dab4
   scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
   scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
   scenarios/a-measurement-states-its-method-and-units.md: 4c250a480c11e9788058f1012b647daa14aba2036d4a3baa9d0c1ba3c5965b2a
@@ -22,7 +22,7 @@ analyzed-digest:
   scenarios/knowledge-routes-by-population-not-by-kind.md: 0e934ea65cbaf2bf31acc4f45c461bfb868be45deb5aa9fa6601c59b8c003c5c
   scenarios/report-outcomes-not-edits.md: caf13342d7fe0a5af4108024cf424ab921030c896f0743307cf5111be2e163ab
   spec.md: 79c6b9b0c83748023101d6246dd941fe2bffa6a191fbbcdb645a77fae3b0de68
-  tasks.md: 66cd1406c1caabb79c867d5ffb99b8aaaa36674c5e55eecbb63ed3df2ec1a19d
+  tasks.md: 60ef8aa3c350036e3191740c593718641751685d11249d15f536e844fae15993
 unexamined-by-reason:
   ships-to-adopter: 1
 blocking: false
