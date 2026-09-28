@@ -146,11 +146,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 17. Discharge 048
 
-- [ ] `done → in-progress`
-- [ ] Correct spec line 59, data-model line 18, and `pin-is-readable-when-acquisition-needs-it` lines 12 and 48 to the pin read at the resolved ref
-- [ ] Restate *Version currency, and what the store gives up* with the cost from 061's store answer
-- [ ] Add the installer to the release asset set, and add a signpost
-- [ ] Review, analyze, `→ done`
+- [x] `done → in-progress`
+- [x] Correct spec line 59, data-model line 18, and `pin-is-readable-when-acquisition-needs-it` lines 12 and 48 to the pin read at the resolved ref
+- [x] Restate *Version currency, and what the store gives up* with the cost from 061's store answer
+- [x] Add the installer to the release asset set, and add a signpost
+- [x] Review, analyze, `→ done`
 
 - **Done when**: 048 is `done` with a current review and analysis, and its pin, store-cost and asset-set statements match 061.
 
