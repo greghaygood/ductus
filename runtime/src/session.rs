@@ -19,11 +19,15 @@
 
 use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
 use crate::primitives::{PrimitiveError, Result, derive_slug, write_atomic};
 use crate::schema::paths;
+use crate::schema::primitives::{
+    SessionNotice, SessionNoticeKind, SessionPeer, SessionSource, SessionTarget,
+};
 
 /// The environment variable an operator sets at launch to name a session.
 pub const DUCTUS_SESSION_VAR: &str = "DUCTUS_SESSION";
@@ -326,6 +330,643 @@ pub fn lock_if_shared(repo: &Path) -> Result<Option<SessionLock>> {
     }
 }
 
+// -- time ---------------------------------------------------------------------
+
+/// How long a per-process target may go neither resolved nor written before
+/// the next write removes it: seven days (spec 062, Resolved Questions).
+pub const IDLE_EXPIRY: Duration = Duration::from_secs(7 * 86_400);
+
+/// Format `now` as an RFC 3339 / ISO 8601 UTC timestamp
+/// (`YYYY-MM-DDTHH:MM:SSZ`) — the shape `set-at` has always had.
+///
+/// Uses Howard Hinnant's date algorithms — the standard branchless
+/// civil-from-days computation. A `now` earlier than the epoch falls back to
+/// `1970-01-01T00:00:00Z`, which a session file never produces in practice.
+#[must_use]
+pub fn iso8601_utc(now: SystemTime) -> String {
+    let secs = now.duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    let days = secs / 86_400;
+    let tod = secs % 86_400;
+    let hour = tod / 3600;
+    let min = (tod / 60) % 60;
+    let sec = tod % 60;
+
+    // `days` from a post-1970 SystemTime fits in i64 with enormous headroom.
+    #[allow(clippy::cast_possible_wrap)]
+    let (year, month, day) = civil_from_days(days as i64);
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}Z")
+}
+
+/// Parse a timestamp [`iso8601_utc`] wrote back into a `SystemTime`. `None`
+/// for any other shape: a hand-edited or foreign value is not guessed at.
+#[must_use]
+pub fn parse_iso8601_utc(text: &str) -> Option<SystemTime> {
+    let b = text.as_bytes();
+    let shape_ok = b.len() == 20
+        && b[4] == b'-'
+        && b[7] == b'-'
+        && b[10] == b'T'
+        && b[13] == b':'
+        && b[16] == b':'
+        && b[19] == b'Z';
+    if !shape_ok {
+        return None;
+    }
+    let num = |range: std::ops::Range<usize>| text.get(range)?.parse::<u32>().ok();
+    let (year, month, day) = (num(0..4)?, num(5..7)?, num(8..10)?);
+    let (hour, min, sec) = (num(11..13)?, num(14..16)?, num(17..19)?);
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) || hour > 23 || min > 59 || sec > 59 {
+        return None;
+    }
+    let days = u64::try_from(days_from_civil(i64::from(year), month, day)).ok()?;
+    let secs = days * 86_400 + u64::from(hour) * 3600 + u64::from(min) * 60 + u64::from(sec);
+    Some(UNIX_EPOCH + Duration::from_secs(secs))
+}
+
+/// Convert days-since-1970-01-01 (Gregorian) into `(year, month, day)`.
+///
+/// Howard Hinnant's standard civil-from-days algorithm. The intermediate
+/// casts are part of the algorithm and safe for any post-1970, pre-year-9999
+/// input a session file will ever produce.
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
+#[must_use]
+pub fn civil_from_days(days: i64) -> (i64, u32, u32) {
+    let z = days + 719_468;
+    let era = if z >= 0 {
+        z / 146_097
+    } else {
+        (z - 146_096) / 146_097
+    };
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = y + i64::from(month <= 2);
+    (year, month as u32, day as u32)
+}
+
+/// The inverse of [`civil_from_days`]: Howard Hinnant's days-from-civil.
+fn days_from_civil(year: i64, month: u32, day: u32) -> i64 {
+    let y = year - i64::from(month <= 2);
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let mp = i64::from((month + 9) % 12);
+    let doy = (153 * mp + 2) / 5 + i64::from(day) - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe - 719_468
+}
+
+/// Whether a target last used at `used_at` has been idle past
+/// [`IDLE_EXPIRY`] at `now`. `None` when `used_at` is missing or unparseable:
+/// idleness that cannot be established is never assumed.
+fn idle_past_expiry(used_at: Option<&str>, now: SystemTime) -> Option<bool> {
+    let used = parse_iso8601_utc(used_at?)?;
+    Some(
+        now.duration_since(used)
+            .is_ok_and(|idle| idle > IDLE_EXPIRY),
+    )
+}
+
+// -- the shared default ---------------------------------------------------------
+
+/// On-disk shape of the shared default, `.ductus/session.toml`. Field order is
+/// the wire contract — the parity byte-equality check depends on it — and is
+/// unchanged by spec 062. `cli-config-dir` is serialized last so the target
+/// block keeps its byte-for-byte order.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct DefaultRecord {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    feature: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    scenario: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    scenario_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    set_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    cli_config_dir: Option<String>,
+}
+
+impl DefaultRecord {
+    fn target(&self) -> Option<SessionTarget> {
+        Some(SessionTarget {
+            feature: self.feature.clone()?,
+            path: self.path.clone().unwrap_or_default(),
+            scenario: self.scenario.clone(),
+            scenario_path: self.scenario_path.clone(),
+        })
+    }
+
+    fn set_target(&mut self, target: Option<&SessionTarget>, set_at: Option<String>) {
+        self.feature = target.map(|t| t.feature.clone());
+        self.path = target.map(|t| t.path.clone());
+        self.scenario = target.and_then(|t| t.scenario.clone());
+        self.scenario_path = target.and_then(|t| t.scenario_path.clone());
+        self.set_at = set_at;
+    }
+
+    fn store(&self, path: &Path) -> Result<()> {
+        // A struct of `Option<String>` has no unrepresentable value.
+        #[allow(clippy::expect_used)]
+        let body = toml::to_string(self).expect("session TOML serializes infallibly");
+        write_atomic(path, &body)
+    }
+}
+
+/// Best-effort read for a *write*: a missing or malformed default yields an
+/// empty record, so a write simply has nothing to preserve rather than failing
+/// — the write replaces the broken file, as it always has.
+fn read_default_lenient(path: &Path) -> DefaultRecord {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|content| toml::from_str(&content).ok())
+        .unwrap_or_default()
+}
+
+/// Strict read for a *resolution*: `None` when no default exists, an error
+/// naming the file when it does not parse — reported, never treated as absent
+/// (AC22), exactly as `dashboard` has always treated it.
+fn read_default_strict(repo: &Path) -> Result<Option<DefaultRecord>> {
+    let path = paths::session_path(repo);
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let content = std::fs::read_to_string(&path).map_err(|source| PrimitiveError::Io {
+        path: path.clone(),
+        source,
+    })?;
+    toml::from_str(&content)
+        .map(Some)
+        .map_err(|source| PrimitiveError::Toml { path, source })
+}
+
+// -- per-process files ----------------------------------------------------------
+
+impl ProcessRecord {
+    fn target(&self) -> Option<SessionTarget> {
+        if self.cleared {
+            return None;
+        }
+        Some(SessionTarget {
+            feature: self.feature.clone()?,
+            path: self.path.clone().unwrap_or_default(),
+            scenario: self.scenario.clone(),
+            scenario_path: self.scenario_path.clone(),
+        })
+    }
+
+    fn set_target(&mut self, target: Option<&SessionTarget>) {
+        self.feature = target.map(|t| t.feature.clone());
+        self.path = target.map(|t| t.path.clone());
+        self.scenario = target.and_then(|t| t.scenario.clone());
+        self.scenario_path = target.and_then(|t| t.scenario_path.clone());
+        self.cleared = target.is_none();
+    }
+}
+
+/// Every per-process file under `repo`, as `(identity, path)`, sorted by key
+/// so every scan visits them in one order. Dotfiles — the lock and the
+/// `.gitignore` — are not sessions.
+fn session_files(repo: &Path) -> Result<Vec<(Identity, PathBuf)>> {
+    let dir = sessions_dir(repo);
+    let entries = match std::fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(source) => return Err(PrimitiveError::Io { path: dir, source }),
+    };
+    let mut files: Vec<(Identity, PathBuf)> = entries
+        .filter_map(std::result::Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|ext| ext == "toml"))
+        .filter_map(|path| {
+            let key = path.file_stem()?.to_str()?.to_owned();
+            (!key.starts_with('.')).then(|| {
+                (
+                    Identity {
+                        key,
+                        source: NAMED_SOURCE.to_owned(),
+                    },
+                    path,
+                )
+            })
+        })
+        .collect();
+    files.sort_by(|a, b| a.0.key.cmp(&b.0.key));
+    Ok(files)
+}
+
+impl Identity {
+    /// Recover an identity from a per-process file's stem and recorded source.
+    fn with_source(mut self, source: Option<&str>) -> Self {
+        if let Some(source) = source {
+            source.clone_into(&mut self.source);
+        }
+        self
+    }
+}
+
+/// Other unexpired sessions whose target names `feature`, and the files that
+/// could not be parsed on the way. `own` is excluded.
+fn peers_of(
+    repo: &Path,
+    own: Option<&Identity>,
+    feature: &str,
+    now: SystemTime,
+) -> Result<(Vec<SessionPeer>, Vec<PathBuf>)> {
+    let mut peers = Vec::new();
+    let mut unreadable = Vec::new();
+    for (identity, path) in session_files(repo)? {
+        if own.is_some_and(|own| own.key == identity.key) {
+            continue;
+        }
+        let Ok(record) = ProcessRecord::load(&path) else {
+            unreadable.push(path);
+            continue;
+        };
+        let Some(target) = record.target() else {
+            continue;
+        };
+        if target.feature != feature
+            || idle_past_expiry(record.used_at.as_deref(), now) == Some(true)
+        {
+            continue;
+        }
+        peers.push(SessionPeer {
+            session: identity.with_source(record.source.as_deref()).label(),
+            feature: target.feature,
+            scenario: target.scenario,
+            last_used: record.used_at,
+        });
+    }
+    Ok((peers, unreadable))
+}
+
+/// Remove every per-process file idle past [`IDLE_EXPIRY`], never `keep`'s.
+/// Returns the removed sessions' labels and the files that could not be
+/// examined — unparseable, or with no parseable `used-at` — which are left in
+/// place: a file that cannot be read cannot be proven idle.
+///
+/// Callers hold the lock, and resolutions refresh `used-at` under the same
+/// lock, so a target used after this read its `used-at` cannot be removed
+/// (AC18).
+fn sweep(
+    repo: &Path,
+    keep: Option<&Identity>,
+    now: SystemTime,
+) -> Result<(Vec<String>, Vec<PathBuf>)> {
+    let mut expired = Vec::new();
+    let mut unreadable = Vec::new();
+    for (identity, path) in session_files(repo)? {
+        if keep.is_some_and(|keep| keep.key == identity.key) {
+            continue;
+        }
+        let Ok(record) = ProcessRecord::load(&path) else {
+            unreadable.push(path);
+            continue;
+        };
+        match idle_past_expiry(record.used_at.as_deref(), now) {
+            Some(true) => {
+                std::fs::remove_file(&path).map_err(|source| PrimitiveError::Io {
+                    path: path.clone(),
+                    source,
+                })?;
+                expired.push(identity.with_source(record.source.as_deref()).label());
+            }
+            Some(false) => {}
+            None => unreadable.push(path),
+        }
+    }
+    Ok((expired, unreadable))
+}
+
+// -- notices --------------------------------------------------------------------
+
+fn adopted_notice(identity: &Identity, target: &SessionTarget) -> SessionNotice {
+    SessionNotice {
+        kind: SessionNoticeKind::Adopted,
+        message: format!(
+            "Session {} had no target of its own and adopted {} from the shared default.",
+            identity.label(),
+            target.display()
+        ),
+    }
+}
+
+fn co_target_notice(feature: &str, peers: &[SessionPeer]) -> SessionNotice {
+    let described: Vec<String> = peers
+        .iter()
+        .map(|peer| match &peer.last_used {
+            Some(when) => format!("{} (last used {when})", peer.session),
+            None => peer.session.clone(),
+        })
+        .collect();
+    let (noun, verb) = if peers.len() == 1 {
+        ("Session", "also targets")
+    } else {
+        ("Sessions", "also target")
+    };
+    SessionNotice {
+        kind: SessionNoticeKind::CoTarget,
+        message: format!("{noun} {} {verb} {feature}.", described.join(", ")),
+    }
+}
+
+fn removal_notice(notice: &RemovalNotice) -> SessionNotice {
+    match &notice.to {
+        Some(to) => SessionNotice {
+            kind: SessionNoticeKind::Folded,
+            message: format!(
+                "Target {} was folded into {to} by session {}; this session now targets {to}.",
+                notice.from, notice.by
+            ),
+        },
+        None => SessionNotice {
+            kind: SessionNoticeKind::Consolidated,
+            message: format!(
+                "Target {} was removed by a consolidation in session {}; this session's \
+                 target is cleared — set a new one with the target command.",
+                notice.from, notice.by
+            ),
+        },
+    }
+}
+
+/// Recompute `record`'s peers on `feature`, and notice them when the set
+/// differs from the one this session was last told about (AC19). A set that
+/// empties is recorded silently: nobody left to name.
+fn refresh_peers(
+    repo: &Path,
+    identity: &Identity,
+    record: &mut ProcessRecord,
+    feature: &str,
+    now: SystemTime,
+    notices: &mut Vec<SessionNotice>,
+) -> Result<()> {
+    let (peers, _unreadable) = peers_of(repo, Some(identity), feature, now)?;
+    let labels: Vec<String> = peers.iter().map(|peer| peer.session.clone()).collect();
+    if labels != record.seen_peers {
+        if !peers.is_empty() {
+            notices.push(co_target_notice(feature, &peers));
+        }
+        record.seen_peers = labels;
+    }
+    Ok(())
+}
+
+// -- resolve --------------------------------------------------------------------
+
+/// The outcome of resolving a process's target.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Resolution {
+    /// The acting identity's display label; `None` when unidentified.
+    pub identity: Option<String>,
+    /// Where the target came from.
+    pub source: SessionSource,
+    /// The resolved target; `None` for [`SessionSource::Cleared`] and
+    /// [`SessionSource::None`].
+    pub target: Option<SessionTarget>,
+    /// Notices to display once.
+    pub notices: Vec<SessionNotice>,
+}
+
+/// Resolve the target of the process acting as `identity` in `repo`.
+///
+/// Unidentified (or on a legacy layout): the shared default, read-only. An
+/// identified process with a file of its own gets its own target — or none,
+/// when cleared — with `used-at` refreshed, a pending removal notice delivered
+/// and removed, and a co-target notice when its peers changed. One with no file
+/// adopts the shared default, pins it as its own and says so (AC17); with no
+/// default there is nothing to adopt and nothing is written.
+///
+/// # Errors
+///
+/// [`PrimitiveError::Toml`] naming the file when the process's own file, or the
+/// default it would adopt, does not parse — never adoption in its place (AC22);
+/// [`PrimitiveError::Io`] on a failed read, lock or write.
+pub fn resolve(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Result<Resolution> {
+    let Some(identity) = effective(repo, identity) else {
+        let target = read_default_strict(repo)?.and_then(|record| record.target());
+        return Ok(Resolution {
+            identity: None,
+            source: if target.is_some() {
+                SessionSource::Default
+            } else {
+                SessionSource::None
+            },
+            target,
+            notices: Vec::new(),
+        });
+    };
+
+    let _lock = lock(repo)?;
+    let own = own_path(repo, identity);
+    let mut notices = Vec::new();
+
+    if own.exists() {
+        let mut record = ProcessRecord::load(&own)?;
+        if let Some(notice) = record.notice.take() {
+            notices.push(removal_notice(&notice));
+        }
+        let target = record.target();
+        match &target {
+            Some(target) => {
+                refresh_peers(
+                    repo,
+                    identity,
+                    &mut record,
+                    &target.feature,
+                    now,
+                    &mut notices,
+                )?;
+            }
+            None => record.seen_peers.clear(),
+        }
+        record.used_at = Some(iso8601_utc(now));
+        record.store(&own)?;
+        return Ok(Resolution {
+            identity: Some(identity.label()),
+            source: if target.is_some() {
+                SessionSource::Own
+            } else {
+                SessionSource::Cleared
+            },
+            target,
+            notices,
+        });
+    }
+
+    let default = read_default_strict(repo)?;
+    let Some(target) = default.as_ref().and_then(DefaultRecord::target) else {
+        return Ok(Resolution {
+            identity: Some(identity.label()),
+            source: SessionSource::None,
+            target: None,
+            notices,
+        });
+    };
+    let mut record = ProcessRecord {
+        source: Some(identity.source.clone()),
+        set_at: default.and_then(|d| d.set_at),
+        used_at: Some(iso8601_utc(now)),
+        ..ProcessRecord::default()
+    };
+    record.set_target(Some(&target));
+    notices.push(adopted_notice(identity, &target));
+    refresh_peers(
+        repo,
+        identity,
+        &mut record,
+        &target.feature,
+        now,
+        &mut notices,
+    )?;
+    record.store(&own)?;
+    Ok(Resolution {
+        identity: Some(identity.label()),
+        source: SessionSource::Adopted,
+        target: Some(target),
+        notices,
+    })
+}
+
+// -- write ----------------------------------------------------------------------
+
+/// The three write shapes `write-session` has always had.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WriteShape {
+    /// Set the target.
+    Target(SessionTarget),
+    /// Remove the target.
+    Clear,
+    /// Set only `cli-config-dir`, preserving the default's target.
+    HostConfig,
+}
+
+/// What a write did.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WriteOutcome {
+    /// The shared default written.
+    pub default_path: PathBuf,
+    /// `true` when the default did not exist before the write.
+    pub created: bool,
+    /// The acting identity's display label; `None` when unidentified.
+    pub identity: Option<String>,
+    /// The per-process file written, when the process is identified.
+    pub own_path: Option<PathBuf>,
+    /// Other sessions targeting the written feature.
+    pub peers: Vec<SessionPeer>,
+    /// Labels of per-process targets the expiry sweep removed.
+    pub expired: Vec<String>,
+    /// Per-process files the write could not examine, left in place.
+    pub unreadable: Vec<PathBuf>,
+}
+
+/// Write the target of the process acting as `identity` in `repo`.
+///
+/// A target or clear write updates the shared default exactly as before spec
+/// 062 — preserving `cli-config-dir` unless `cli_config_dir` overrides it — and,
+/// for an identified process, its own file too, so the default always holds the
+/// working tree's most recent target change (AC16). A clear leaves the process
+/// with no target that never adopts the default (AC20). A host-config write
+/// touches the default alone. Target and clear writes then run the expiry sweep.
+///
+/// # Errors
+///
+/// [`PrimitiveError::Io`] on a failed lock, read or write.
+pub fn write(
+    repo: &Path,
+    identity: Option<&Identity>,
+    shape: &WriteShape,
+    cli_config_dir: Option<String>,
+    now: SystemTime,
+) -> Result<WriteOutcome> {
+    let identity = effective(repo, identity);
+    let lock = match identity {
+        Some(_) => Some(lock(repo)?),
+        None => lock_if_shared(repo)?,
+    };
+
+    let default_path = paths::session_path_for_write(repo);
+    let created = !default_path.exists();
+    let mut default = read_default_lenient(&default_path);
+    let stamp = iso8601_utc(now);
+
+    let mut outcome = WriteOutcome {
+        default_path: default_path.clone(),
+        created,
+        identity: identity.map(Identity::label),
+        own_path: None,
+        peers: Vec::new(),
+        expired: Vec::new(),
+        unreadable: Vec::new(),
+    };
+
+    match shape {
+        WriteShape::Target(target) => {
+            default.set_target(Some(target), Some(stamp.clone()));
+            if let Some(identity) = identity {
+                let (peers, unreadable) = peers_of(repo, Some(identity), &target.feature, now)?;
+                let mut record = ProcessRecord {
+                    source: Some(identity.source.clone()),
+                    set_at: Some(stamp.clone()),
+                    used_at: Some(stamp),
+                    seen_peers: peers.iter().map(|peer| peer.session.clone()).collect(),
+                    ..ProcessRecord::default()
+                };
+                record.set_target(Some(target));
+                let own = own_path(repo, identity);
+                record.store(&own)?;
+                outcome.own_path = Some(own);
+                outcome.peers = peers;
+                outcome.unreadable = unreadable;
+            }
+        }
+        WriteShape::Clear => {
+            default.set_target(None, None);
+            if let Some(identity) = identity {
+                let mut record = ProcessRecord {
+                    source: Some(identity.source.clone()),
+                    used_at: Some(stamp),
+                    ..ProcessRecord::default()
+                };
+                record.set_target(None);
+                let own = own_path(repo, identity);
+                record.store(&own)?;
+                outcome.own_path = Some(own);
+            }
+        }
+        WriteShape::HostConfig => {}
+    }
+    if let Some(dir) = cli_config_dir {
+        default.cli_config_dir = Some(dir);
+    } else if *shape == WriteShape::HostConfig {
+        // A host-config write with no value records none, as it always has.
+        default.cli_config_dir = None;
+    }
+    default.store(&default_path)?;
+
+    if lock.is_some() && *shape != WriteShape::HostConfig {
+        let (expired, unreadable) = sweep(repo, identity, now)?;
+        outcome.expired = expired;
+        for path in unreadable {
+            if !outcome.unreadable.contains(&path) {
+                outcome.unreadable.push(path);
+            }
+        }
+    }
+    Ok(outcome)
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -498,5 +1139,360 @@ mod tests {
         std::fs::write(&path, "feature = [unterminated").unwrap();
         let err = ProcessRecord::load(&path).unwrap_err();
         assert!(err.to_string().contains("bad.toml"), "{err}");
+    }
+
+    // -- resolve, write, sweep (task 2) --------------------------------------
+
+    fn t0() -> SystemTime {
+        // 2026-09-29T12:00:00Z
+        UNIX_EPOCH + Duration::from_secs(1_790_683_200)
+    }
+
+    fn at(secs: u64) -> SystemTime {
+        t0() + Duration::from_secs(secs)
+    }
+
+    fn id(name: &str) -> Identity {
+        Identity::named(name).unwrap()
+    }
+
+    fn target(feature: &str) -> SessionTarget {
+        SessionTarget {
+            feature: feature.into(),
+            path: format!("specs/{feature}"),
+            scenario: None,
+            scenario_path: None,
+        }
+    }
+
+    fn repo() -> tempfile::TempDir {
+        let tmp = tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        tmp
+    }
+
+    fn set(repo: &Path, who: Option<&Identity>, feature: &str, now: SystemTime) -> WriteOutcome {
+        write(repo, who, &WriteShape::Target(target(feature)), None, now).unwrap()
+    }
+
+    fn default_text(repo: &Path) -> String {
+        std::fs::read_to_string(repo.join(".ductus/session.toml")).unwrap()
+    }
+
+    fn feature_of(resolution: &Resolution) -> Option<&str> {
+        resolution.target.as_ref().map(|t| t.feature.as_str())
+    }
+
+    #[test]
+    fn a_target_write_in_one_process_leaves_the_others_target_alone() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), Some(&x), "055-a", t0());
+        set(tmp.path(), Some(&y), "056-b", at(1));
+        let rx = resolve(tmp.path(), Some(&x), at(2)).unwrap();
+        let ry = resolve(tmp.path(), Some(&y), at(2)).unwrap();
+        assert_eq!(
+            (rx.source, feature_of(&rx)),
+            (SessionSource::Own, Some("055-a"))
+        );
+        assert_eq!(
+            (ry.source, feature_of(&ry)),
+            (SessionSource::Own, Some("056-b"))
+        );
+    }
+
+    #[test]
+    fn a_process_adopts_the_default_once_and_is_pinned_to_it() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), None, "055-a", t0());
+
+        let first = resolve(tmp.path(), Some(&x), at(1)).unwrap();
+        assert_eq!(first.source, SessionSource::Adopted);
+        assert_eq!(feature_of(&first), Some("055-a"));
+        assert_eq!(first.notices.len(), 1);
+        assert_eq!(first.notices[0].kind, SessionNoticeKind::Adopted);
+        assert!(
+            first.notices[0].message.contains("055-a"),
+            "{:?}",
+            first.notices
+        );
+
+        set(tmp.path(), Some(&y), "056-b", at(2));
+        assert!(default_text(tmp.path()).contains("056-b"), "default moved");
+        let again = resolve(tmp.path(), Some(&x), at(3)).unwrap();
+        assert_eq!(
+            (again.source, feature_of(&again)),
+            (SessionSource::Own, Some("055-a"))
+        );
+        assert!(again.notices.is_empty(), "adoption is announced once");
+    }
+
+    #[test]
+    fn a_restarted_agent_resumes_the_most_recent_target() {
+        let tmp = repo();
+        set(tmp.path(), Some(&id("before-restart")), "055-a", t0());
+        let after = resolve(tmp.path(), Some(&id("after-restart")), at(1)).unwrap();
+        assert_eq!(feature_of(&after), Some("055-a"));
+    }
+
+    #[test]
+    fn an_empty_default_pins_nothing() {
+        let tmp = repo();
+        let x = id("x");
+        let r = resolve(tmp.path(), Some(&x), t0()).unwrap();
+        assert_eq!((r.source, r.target), (SessionSource::None, None));
+        assert!(!own_path(tmp.path(), &x).exists(), "nothing written");
+
+        set(tmp.path(), None, "055-a", at(1));
+        let later = resolve(tmp.path(), Some(&x), at(2)).unwrap();
+        assert_eq!(
+            later.source,
+            SessionSource::Adopted,
+            "nothing had been pinned"
+        );
+    }
+
+    #[test]
+    fn a_cleared_process_never_adopts_the_default() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), Some(&x), "055-a", t0());
+        write(tmp.path(), Some(&x), &WriteShape::Clear, None, at(1)).unwrap();
+        set(tmp.path(), Some(&y), "056-b", at(2));
+        let r = resolve(tmp.path(), Some(&x), at(3)).unwrap();
+        assert_eq!((r.source, r.target), (SessionSource::Cleared, None));
+    }
+
+    #[test]
+    fn the_default_always_holds_the_latest_target_change() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), Some(&x), "055-a", t0());
+        set(tmp.path(), Some(&y), "056-b", at(1));
+        assert!(default_text(tmp.path()).contains("feature = \"056-b\""));
+        write(tmp.path(), Some(&x), &WriteShape::Clear, None, at(2)).unwrap();
+        assert!(
+            !default_text(tmp.path()).contains("feature"),
+            "a clear clears it"
+        );
+    }
+
+    #[test]
+    fn cli_config_dir_survives_every_write() {
+        let tmp = repo();
+        write(
+            tmp.path(),
+            None,
+            &WriteShape::HostConfig,
+            Some(".claude".into()),
+            t0(),
+        )
+        .unwrap();
+        let x = id("x");
+        set(tmp.path(), Some(&x), "055-a", at(1));
+        assert!(default_text(tmp.path()).contains("cli-config-dir = \".claude\""));
+        write(tmp.path(), Some(&x), &WriteShape::Clear, None, at(2)).unwrap();
+        assert!(default_text(tmp.path()).contains("cli-config-dir = \".claude\""));
+        set(tmp.path(), None, "056-b", at(3));
+        assert_eq!(
+            default_text(tmp.path()),
+            "feature = \"056-b\"\npath = \"specs/056-b\"\nset-at = \"2026-09-29T12:00:03Z\"\n\
+             cli-config-dir = \".claude\"\n"
+        );
+    }
+
+    #[test]
+    fn an_unidentified_process_touches_only_the_default() {
+        let tmp = repo();
+        let out = set(tmp.path(), None, "055-a", t0());
+        assert_eq!((out.identity, out.own_path), (None, None));
+        assert!(
+            !tmp.path().join(".ductus/sessions").exists(),
+            "nothing created"
+        );
+        let r = resolve(tmp.path(), None, at(1)).unwrap();
+        assert_eq!(
+            (r.source, feature_of(&r)),
+            (SessionSource::Default, Some("055-a"))
+        );
+
+        set(tmp.path(), None, "056-b", at(2));
+        let shared = resolve(tmp.path(), None, at(3)).unwrap();
+        assert_eq!(
+            feature_of(&shared),
+            Some("056-b"),
+            "unidentified processes share it"
+        );
+    }
+
+    #[test]
+    fn co_targeting_is_noticed_once_per_side_and_again_when_the_set_changes() {
+        let tmp = repo();
+        let (x, y, z) = (id("x"), id("y"), id("z"));
+        set(tmp.path(), Some(&x), "055-a", t0());
+
+        let joined = set(tmp.path(), Some(&y), "055-a", at(1));
+        assert_eq!(joined.peers.len(), 1, "the writer is told at write time");
+        assert_eq!(joined.peers[0].session, "x");
+        assert_eq!(
+            joined.peers[0].last_used.as_deref(),
+            Some("2026-09-29T12:00:00Z")
+        );
+        let writer_next = resolve(tmp.path(), Some(&y), at(2)).unwrap();
+        assert!(
+            writer_next.notices.is_empty(),
+            "the writer is not told twice"
+        );
+
+        let told = resolve(tmp.path(), Some(&x), at(3)).unwrap();
+        assert_eq!(told.notices.len(), 1);
+        assert_eq!(told.notices[0].kind, SessionNoticeKind::CoTarget);
+        assert!(told.notices[0].message.contains('y'), "{:?}", told.notices);
+        let quiet = resolve(tmp.path(), Some(&x), at(4)).unwrap();
+        assert!(quiet.notices.is_empty(), "told once");
+
+        set(tmp.path(), Some(&z), "055-a", at(5));
+        let changed = resolve(tmp.path(), Some(&x), at(6)).unwrap();
+        assert_eq!(changed.notices.len(), 1, "the set changed");
+        assert!(
+            changed.notices[0].message.starts_with("Sessions y"),
+            "{:?}",
+            changed.notices
+        );
+    }
+
+    #[test]
+    fn a_target_idle_past_seven_days_is_swept_and_one_within_it_is_kept() {
+        let tmp = repo();
+        let (old, edge, writer) = (id("old"), id("edge"), id("writer"));
+        let week = IDLE_EXPIRY.as_secs();
+        set(tmp.path(), Some(&old), "055-a", t0());
+        set(tmp.path(), Some(&edge), "055-a", at(1));
+        let out = set(tmp.path(), Some(&writer), "056-b", at(week + 1));
+        assert_eq!(out.expired, vec!["old".to_owned()], "idle 7d+1s is swept");
+        assert!(!own_path(tmp.path(), &old).exists());
+        assert!(
+            own_path(tmp.path(), &edge).exists(),
+            "idle exactly 7d is kept"
+        );
+    }
+
+    #[test]
+    fn resolving_counts_as_use_and_the_writer_is_never_swept() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        let week = IDLE_EXPIRY.as_secs();
+        set(tmp.path(), Some(&x), "055-a", t0());
+        resolve(tmp.path(), Some(&x), at(week)).unwrap();
+        let out = set(tmp.path(), Some(&y), "056-b", at(week + 10));
+        assert!(out.expired.is_empty(), "{:?}", out.expired);
+
+        let late = set(tmp.path(), Some(&x), "055-a", at(10 * week));
+        assert!(!late.expired.contains(&"x".to_owned()));
+        assert!(own_path(tmp.path(), &x).exists());
+    }
+
+    #[test]
+    fn an_unparseable_file_is_reported_by_the_sweep_and_left_in_place() {
+        let tmp = repo();
+        let x = id("x");
+        set(tmp.path(), Some(&x), "055-a", t0());
+        let bad = tmp.path().join(".ductus/sessions/broken.toml");
+        std::fs::write(&bad, "feature = [").unwrap();
+        let out = set(
+            tmp.path(),
+            Some(&x),
+            "055-a",
+            at(100 * IDLE_EXPIRY.as_secs()),
+        );
+        assert_eq!(out.unreadable, vec![bad.clone()]);
+        assert!(bad.exists());
+    }
+
+    #[test]
+    fn a_malformed_own_file_is_an_error_never_an_adoption() {
+        let tmp = repo();
+        let x = id("x");
+        set(tmp.path(), None, "055-a", t0());
+        let own = own_path(tmp.path(), &x);
+        ensure_sessions_dir(tmp.path()).unwrap();
+        std::fs::write(&own, "feature = [").unwrap();
+        let err = resolve(tmp.path(), Some(&x), at(1)).unwrap_err();
+        assert!(err.to_string().contains("x.toml"), "{err}");
+        assert_eq!(std::fs::read_to_string(&own).unwrap(), "feature = [");
+    }
+
+    #[test]
+    fn a_malformed_default_is_an_error_when_it_would_be_adopted() {
+        let tmp = repo();
+        std::fs::write(tmp.path().join(".ductus/session.toml"), "feature = [").unwrap();
+        let err = resolve(tmp.path(), Some(&id("x")), t0()).unwrap_err();
+        assert!(err.to_string().contains("session.toml"), "{err}");
+        let err = resolve(tmp.path(), None, t0()).unwrap_err();
+        assert!(err.to_string().contains("session.toml"), "{err}");
+    }
+
+    #[test]
+    fn a_pending_removal_notice_is_delivered_once() {
+        let tmp = repo();
+        let x = id("x");
+        set(tmp.path(), Some(&x), "055-a", t0());
+        let own = own_path(tmp.path(), &x);
+        let mut record = ProcessRecord::load(&own).unwrap();
+        record.notice = Some(RemovalNotice {
+            cause: "fold".into(),
+            from: "1234.1-b".into(),
+            to: Some("055-a".into()),
+            by: "y".into(),
+        });
+        record.store(&own).unwrap();
+
+        let first = resolve(tmp.path(), Some(&x), at(1)).unwrap();
+        assert_eq!(first.notices.len(), 1);
+        assert_eq!(first.notices[0].kind, SessionNoticeKind::Folded);
+        assert!(first.notices[0].message.contains("1234.1-b"));
+        assert!(
+            resolve(tmp.path(), Some(&x), at(2))
+                .unwrap()
+                .notices
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn a_legacy_layout_resolves_and_writes_as_unidentified() {
+        let tmp = tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join(".govern.session.toml"),
+            "feature = \"055-a\"\npath = \"specs/055-a\"\n",
+        )
+        .unwrap();
+        let x = id("x");
+        let r = resolve(tmp.path(), Some(&x), t0()).unwrap();
+        assert_eq!((r.identity, r.source), (None, SessionSource::Default));
+        let out = set(tmp.path(), Some(&x), "056-b", at(1));
+        assert_eq!(out.own_path, None);
+        assert!(
+            !tmp.path().join(".ductus").exists(),
+            "no .ductus state created"
+        );
+    }
+
+    #[test]
+    fn timestamps_round_trip_and_foreign_shapes_are_refused() {
+        for secs in [0, 1_700_000_000, 1_790_683_200, 4_102_444_799] {
+            let t = UNIX_EPOCH + Duration::from_secs(secs);
+            assert_eq!(parse_iso8601_utc(&iso8601_utc(t)), Some(t), "{secs}");
+        }
+        for bad in [
+            "",
+            "2026-09-29",
+            "2026-09-29T12:00:00",
+            "2026-13-01T00:00:00Z",
+            "x",
+        ] {
+            assert_eq!(parse_iso8601_utc(bad), None, "{bad:?}");
+        }
     }
 }

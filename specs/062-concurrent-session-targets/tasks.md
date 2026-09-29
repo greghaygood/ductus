@@ -17,10 +17,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Session core: resolve, write, sweep
 
-- [ ] `resolve(repo, identity)`: the five sources (`own`, `adopted`, `default`, `cleared`, `none`); `used-at` refresh; adoption notice; co-target notice against `seen-peers`; pending removal notice delivered and removed; malformed own file is an error, never adoption
-- [ ] `write_target` / `write_clear` / host-config: own file plus default per the plan; `seen-peers` set at write time; peers returned
-- [ ] Expiry sweep after target and clear writes: remove per-process files idle more than seven days, never the caller's own, re-reading `used-at` under the lock; report unparseable files without deleting them
-- [ ] Unit tests: adoption and pin (a later write by another identity leaves the pinned target alone), empty default pins nothing, cleared never adopts, co-target notice fires once and again only when the peer set changes, expiry boundary, a target used after the sweep began is kept, malformed own file errors, unidentified process reads and writes the default only, default always holds the latest change, `cli-config-dir` preserved through every write
+- [x] `resolve(repo, identity)`: the five sources (`own`, `adopted`, `default`, `cleared`, `none`); `used-at` refresh; adoption notice; co-target notice against `seen-peers`; pending removal notice delivered and removed; malformed own file is an error, never adoption
+- [x] `write_target` / `write_clear` / host-config: own file plus default per the plan; `seen-peers` set at write time; peers returned
+- [x] Expiry sweep after target and clear writes: remove per-process files idle more than seven days, never the caller's own, re-reading `used-at` under the lock; report unparseable files without deleting them
+- [x] Unit tests: adoption and pin (a later write by another identity leaves the pinned target alone), empty default pins nothing, cleared never adopts, co-target notice fires once and again only when the peer set changes, expiry boundary, a target used after the sweep began is kept, malformed own file errors, unidentified process reads and writes the default only, default always holds the latest change, `cli-config-dir` preserved through every write
 
 - **Done when**: unit tests covering AC6, AC15, AC16, AC17, AC18, AC19, AC20 and AC22 pass against the core directly.
 

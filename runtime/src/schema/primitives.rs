@@ -2966,6 +2966,92 @@ pub struct WriteSessionResult {
     pub created: bool,
 }
 
+// -- session core (spec 062) --------------------------------------------------
+
+/// A session target: a feature, and optionally a scenario under it. The same
+/// shape the shared default and every per-process file carry.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct SessionTarget {
+    /// Feature directory name (e.g., `055-example`).
+    pub feature: String,
+    /// Repo-relative spec directory (e.g., `specs/055-example`).
+    pub path: String,
+    /// Targeted scenario slug, when a scenario is targeted.
+    pub scenario: Option<String>,
+    /// Repo-relative scenario file, present with `scenario`.
+    pub scenario_path: Option<String>,
+}
+
+impl SessionTarget {
+    /// `feature`, or `feature/scenario` when a scenario is targeted — the
+    /// form `/{project}:target` accepts.
+    #[must_use]
+    pub fn display(&self) -> String {
+        match &self.scenario {
+            Some(scenario) => format!("{}/{scenario}", self.feature),
+            None => self.feature.clone(),
+        }
+    }
+}
+
+/// Where a resolved target came from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum SessionSource {
+    /// The process's own target.
+    Own,
+    /// The process had none of its own and adopted the shared default, which
+    /// is now pinned as its own.
+    Adopted,
+    /// An unidentified process reading the shared default.
+    Default,
+    /// The process cleared its target, or had it cleared: no target, and the
+    /// default is not adopted in its place.
+    Cleared,
+    /// No target anywhere to resolve.
+    None,
+}
+
+/// What a session notice reports.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum SessionNoticeKind {
+    /// The process adopted the shared default as its own target.
+    Adopted,
+    /// Other sessions target the same feature.
+    CoTarget,
+    /// A fold removed the process's target and re-targeted it upstream.
+    Folded,
+    /// A consolidation removed the process's target and cleared it.
+    Consolidated,
+}
+
+/// One notice for the host to display, once.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct SessionNotice {
+    /// What the notice reports.
+    pub kind: SessionNoticeKind,
+    /// The rendered sentence the host displays verbatim.
+    pub message: String,
+}
+
+/// Another session targeting the same feature.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct SessionPeer {
+    /// The other session's display label.
+    pub session: String,
+    /// The feature both sessions target.
+    pub feature: String,
+    /// The other session's scenario, when it targets one.
+    pub scenario: Option<String>,
+    /// When the other session last resolved or wrote its target
+    /// (ISO 8601 UTC); absent when its file does not record it.
+    pub last_used: Option<String>,
+}
+
 // -- resolve-references ------------------------------------------------------
 
 /// Args for `resolve-references`. Resolves the consumer feature's derived
