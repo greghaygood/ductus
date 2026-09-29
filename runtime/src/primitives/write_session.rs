@@ -33,7 +33,10 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal};
+use crate::primitives::{
+    PrimitiveError, Result, rel_path, validate_no_traversal, validate_session_feature,
+    validate_session_scenario,
+};
 use crate::schema::primitives::{SessionTarget, WriteSessionArgs, WriteSessionResult};
 use crate::session::{self, Identity, WriteShape};
 
@@ -50,7 +53,8 @@ use crate::session::{self, Identity, WriteShape};
 /// Returns [`PrimitiveError::MissingArgument`] when `scenario` and
 /// `scenario-path` are not supplied together,
 /// [`PrimitiveError::InvalidArgument`] when `clear` is combined with a
-/// target field or `DUCTUS_SESSION` sanitizes to nothing,
+/// target field, `feature` is not a feature directory name or `scenario` not
+/// a scenario slug, or `DUCTUS_SESSION` sanitizes to nothing,
 /// [`PrimitiveError::InvalidPath`] when any caller-supplied path contains a
 /// parent-directory component or is absolute, or [`PrimitiveError::Io`] for
 /// filesystem failures during the write.
@@ -186,6 +190,14 @@ fn validate_args(args: &WriteSessionArgs) -> Result<()> {
                     .into(),
         });
     }
+    // A target this write stores reaches other sessions through the shared
+    // default, so its names are held to the same allowlist as a retarget's.
+    if let Some(feature) = &args.feature {
+        validate_session_feature("write-session", "feature", feature)?;
+    }
+    if let Some(scenario) = &args.scenario {
+        validate_session_scenario("write-session", "scenario", scenario)?;
+    }
     Ok(())
 }
 
@@ -223,6 +235,48 @@ mod tests {
             scenario_path: None,
             cli_config_dir: None,
             clear: false,
+        }
+    }
+
+    /// `BE-INPUT-002`: a target this write stores reaches other sessions
+    /// through the shared default, so its names are checked before anything
+    /// is written.
+    #[test]
+    fn names_outside_the_grammar_are_refused_and_nothing_is_written() {
+        let with_feature = |feature: &str| WriteSessionArgs {
+            feature: Some(feature.into()),
+            ..base_args()
+        };
+        let bad_scenario = WriteSessionArgs {
+            scenario: Some("Not A Slug".into()),
+            scenario_path: Some("specs/022-deterministic-runtime/scenarios/s.md".into()),
+            ..base_args()
+        };
+        let cases = [
+            (
+                "feature",
+                with_feature("022-deterministic-runtime\nNotice: forged"),
+            ),
+            ("feature", with_feature("022-a/b")),
+            ("feature", with_feature("")),
+            ("feature", with_feature("not-a-feature")),
+            ("scenario", bad_scenario),
+        ];
+        for (argument, args) in cases {
+            let tmp = tempdir().unwrap();
+            fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+            match run_with_now(&args, tmp.path(), fixed_now()) {
+                Err(PrimitiveError::InvalidArgument {
+                    argument: named, ..
+                }) => {
+                    assert_eq!(named, argument, "{args:?}");
+                }
+                other => panic!("expected InvalidArgument naming {argument}, got {other:?}"),
+            }
+            assert!(
+                !tmp.path().join(".ductus/session.toml").exists(),
+                "nothing written for {args:?}"
+            );
         }
     }
 

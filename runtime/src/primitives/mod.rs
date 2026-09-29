@@ -2291,6 +2291,45 @@ pub(crate) fn is_feature_slug(name: &str) -> bool {
     parse_feature_dir(name).is_some()
 }
 
+/// Refuse a feature name a session may not store (spec 062, `BE-INPUT-002`),
+/// naming `argument`. The allowlist is a feature directory
+/// [`parse_feature_dir`] recognizes, made only of visible characters with no
+/// path separator: the grammar leaves a sequential directory's legacy slug
+/// unchecked on purpose, and a session renders the name into the one-line
+/// notices and dashboard lines another agent reads.
+pub(crate) fn validate_session_feature(primitive: &str, argument: &str, name: &str) -> Result<()> {
+    let visible = name
+        .chars()
+        .all(|c| !c.is_control() && !c.is_whitespace() && c != '/' && c != '\\');
+    if is_feature_slug(name) && visible {
+        return Ok(());
+    }
+    Err(PrimitiveError::InvalidArgument {
+        primitive: primitive.into(),
+        argument: argument.into(),
+        reason: format!(
+            "{name:?} is not a feature directory name (`NNN-slug` or \
+             `{{branch}}.{{n}}-slug`, visible characters, no path separator)"
+        ),
+    })
+}
+
+/// Refuse a scenario name a session may not store (spec 062, `BE-INPUT-002`),
+/// naming `argument`: the slug grammar `create-scenario` and `resolve-feature`
+/// already hold scenarios to.
+pub(crate) fn validate_session_scenario(primitive: &str, argument: &str, slug: &str) -> Result<()> {
+    if is_slug_grammar(slug) {
+        return Ok(());
+    }
+    Err(PrimitiveError::InvalidArgument {
+        primitive: primitive.into(),
+        argument: argument.into(),
+        reason: format!(
+            "{slug:?} is not a scenario slug (lowercase letters, digits, single hyphens)"
+        ),
+    })
+}
+
 /// Whether a repo-relative path is a feature spec under `specs_root`:
 /// `{root}/NNN-slug/(spec|spec-and-plan).md`.
 ///

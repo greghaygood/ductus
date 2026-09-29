@@ -13,7 +13,10 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal};
+use crate::primitives::{
+    PrimitiveError, Result, rel_path, validate_no_traversal, validate_session_feature,
+    validate_session_scenario,
+};
 use crate::schema::primitives::{
     RetargetCause, RetargetSessionsArgs, RetargetSessionsResult, SessionTarget,
 };
@@ -28,7 +31,9 @@ const PRIMITIVE: &str = "retarget-sessions";
 ///
 /// [`PrimitiveError::InvalidArgument`] / [`PrimitiveError::MissingArgument`]
 /// when the arguments do not describe exactly one of a fold with a new target
-/// or a consolidation with `clear`; [`PrimitiveError::InvalidPath`] on a
+/// or a consolidation with `clear`, and [`PrimitiveError::InvalidArgument`]
+/// naming `from`, `feature` or `scenario` when it is not a feature directory
+/// name or a scenario slug; [`PrimitiveError::InvalidPath`] on a
 /// traversing path; [`PrimitiveError::Io`] on a failed lock, read or write.
 pub fn run(args: &RetargetSessionsArgs, repo: &Path) -> Result<RetargetSessionsResult> {
     let identity = session::process_identity()?;
@@ -55,9 +60,24 @@ pub(crate) fn run_as(
     })
 }
 
+/// The removal the arguments describe, with every name they carry checked.
+fn validate(args: &RetargetSessionsArgs) -> Result<(Option<SessionTarget>, RemovalCause)> {
+    let shape = validate_shape(args)?;
+    // Every name here is written into other sessions' files and rendered into
+    // their notices, so each is held to an allowlist (`BE-INPUT-002`).
+    validate_session_feature(PRIMITIVE, "from", &args.from)?;
+    if let Some(feature) = &args.feature {
+        validate_session_feature(PRIMITIVE, "feature", feature)?;
+    }
+    if let Some(scenario) = &args.scenario {
+        validate_session_scenario(PRIMITIVE, "scenario", scenario)?;
+    }
+    Ok(shape)
+}
+
 /// A fold names a new target and does not clear; a consolidation clears and
 /// names none. Anything else describes neither removal.
-fn validate(args: &RetargetSessionsArgs) -> Result<(Option<SessionTarget>, RemovalCause)> {
+fn validate_shape(args: &RetargetSessionsArgs) -> Result<(Option<SessionTarget>, RemovalCause)> {
     let invalid = |argument: &str, reason: &str| PrimitiveError::InvalidArgument {
         primitive: PRIMITIVE.into(),
         argument: argument.into(),
@@ -229,6 +249,39 @@ mod tests {
             .filter(|name| !name.to_string_lossy().starts_with('.'))
             .collect();
         assert!(sessions.is_empty(), "no session written: {sessions:?}");
+    }
+
+    /// `BE-INPUT-002`: every name is checked before any session is touched,
+    /// so none can forge a line in another agent's notices or dashboard.
+    #[test]
+    fn names_outside_the_grammar_are_refused_before_any_session_is_touched() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        target_as(tmp.path(), "a", "058-gone");
+        let own = tmp.path().join(".ductus/sessions/a.toml");
+        let before = fs::read_to_string(&own).unwrap();
+
+        let mut bad_scenario = fold("058-gone", "055-a");
+        bad_scenario.scenario = Some("Not A Slug".into());
+        bad_scenario.scenario_path = Some("specs/055-a/scenarios/s.md".into());
+        let cases = [
+            ("from", consolidate("058-gone\nNotice: forged")),
+            ("from", consolidate("not-a-feature")),
+            ("feature", fold("058-gone", "055-a/x")),
+            ("feature", fold("058-gone", "")),
+            ("scenario", bad_scenario),
+        ];
+        for (argument, args) in cases {
+            match run_as(&args, tmp.path(), None, now()) {
+                Err(PrimitiveError::InvalidArgument {
+                    argument: named, ..
+                }) => {
+                    assert_eq!(named, argument, "{args:?}");
+                }
+                other => panic!("expected InvalidArgument naming {argument}, got {other:?}"),
+            }
+        }
+        assert_eq!(fs::read_to_string(&own).unwrap(), before, "nothing written");
     }
 
     #[test]

@@ -123,9 +123,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 15. Allowlist validation of the feature and scenario names written into sessions
 
-- [ ] `retarget-sessions` checks `from` and `feature` against the feature-directory grammar (`parse_feature_dir`) and `scenario` against the slug grammar (`validate_slug`) before touching any session (review: BE-INPUT-002)
-- [ ] `write-session` applies the same checks to its `feature` and `scenario`, since a target it writes reaches other sessions through the shared default
-- [ ] Tests: a newline, a path separator or an empty value in any of them is refused with an error naming the argument, and nothing is written
+- [x] `retarget-sessions` checks `from` and `feature` against the feature-directory grammar (`parse_feature_dir`) and `scenario` against the slug grammar (`validate_slug`) before touching any session (review: BE-INPUT-002)
+- [x] `write-session` applies the same checks to its `feature` and `scenario`, since a target it writes reaches other sessions through the shared default
+- [x] Tests: a newline, a path separator or an empty value in any of them is refused with an error naming the argument, and nothing is written
 
 - **Done when**: no name outside the feature-directory or slug grammar reaches a session file or a notice through either primitive; `cargo test` passes.
 
