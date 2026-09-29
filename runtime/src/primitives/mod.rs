@@ -1578,10 +1578,36 @@ pub(crate) fn count_inbox_bullets(content: &str) -> u32 {
     u32::try_from(iter_bullets(content).count()).unwrap_or(u32::MAX)
 }
 
+/// Derive a kebab-case slug from free text: every ASCII alphanumeric
+/// character is lowercased and kept; every run of other characters (spaces,
+/// punctuation, non-ASCII) collapses to a single hyphen; leading and trailing
+/// hyphens are trimmed. The result is empty, or matches [`is_slug_grammar`].
+///
+/// The one sanitizing rule for operator-supplied names: `create-feature`
+/// applies it to a title and to a branch identifier, and the session core
+/// to a session identity (spec 062). Sharing it is what keeps a name that
+/// becomes a path segment on one grammar.
+pub(crate) fn derive_slug(title: &str) -> String {
+    let mut out = String::with_capacity(title.len());
+    let mut pending_hyphen = false;
+    for ch in title.chars() {
+        if ch.is_ascii_alphanumeric() {
+            if pending_hyphen && !out.is_empty() {
+                out.push('-');
+            }
+            pending_hyphen = false;
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            pending_hyphen = true;
+        }
+    }
+    out
+}
+
 /// Validate a caller-supplied slug against the framework slug grammar
 /// `^[a-z0-9]+(?:-[a-z0-9]+)*$`: one or more lowercase-alphanumeric
 /// segments joined by single hyphens — exactly the alphabet
-/// `create_feature::derive_slug` emits. This is an allowlist
+/// [`derive_slug`] emits. This is an allowlist
 /// (BE-INPUT-002): every slug reaches a written filename
 /// (`scenarios/{slug}.md`) and a rendered heading, so anything outside the
 /// grammar — uppercase, `_`, `.`, path separators, whitespace, newlines,

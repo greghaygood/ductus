@@ -2,7 +2,7 @@
 name = "ductus"
 version = "0.55.0"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.89"
 description = "Deterministic runtime for the ductus pipeline (spec 022)."
 license = "MIT"
 repository = "https://github.com/stonean/ductus"

@@ -21,8 +21,8 @@ use std::path::Path;
 
 use crate::primitives::apply_manifest::mirror_source_mode;
 use crate::primitives::{
-    FeatureForm, PrimitiveError, Result, list_feature_dirs, parse_feature_dir, resolve_template,
-    write_atomic_bytes,
+    FeatureForm, PrimitiveError, Result, derive_slug, list_feature_dirs, parse_feature_dir,
+    resolve_template, write_atomic_bytes,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CreateFeatureArgs, CreateFeatureResult};
@@ -239,27 +239,6 @@ fn next_branch_number(specs_dir: &Path, identifier: &str) -> u32 {
         .max()
         .unwrap_or(0)
         + 1
-}
-
-/// Derive the kebab-case directory slug from a feature title: every ASCII
-/// alphanumeric character is lowercased and kept; every run of other
-/// characters (spaces, punctuation, non-ASCII) collapses to a single
-/// hyphen; leading and trailing hyphens are trimmed.
-fn derive_slug(title: &str) -> String {
-    let mut out = String::with_capacity(title.len());
-    let mut pending_hyphen = false;
-    for ch in title.chars() {
-        if ch.is_ascii_alphanumeric() {
-            if pending_hyphen && !out.is_empty() {
-                out.push('-');
-            }
-            pending_hyphen = false;
-            out.push(ch.to_ascii_lowercase());
-        } else {
-            pending_hyphen = true;
-        }
-    }
-    out
 }
 
 /// Compute the next feature number: the max existing three-digit `NNN-`

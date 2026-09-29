@@ -4,14 +4,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Session core: identity, storage, lock
 
-- [ ] Bump `rust-version` in `runtime/Cargo.toml` from 1.88 to 1.89 for `std::fs::File::lock`
-- [ ] Add `SESSIONS_DIR` and `SESSIONS_LOCK` to `runtime/src/schema/paths.rs` beside `SESSION_FILE`
-- [ ] Move `derive_slug` from `runtime/src/primitives/create_feature.rs` to a shared `pub(crate)` home in `runtime/src/primitives/mod.rs`; `create-feature` calls the shared one
-- [ ] Create `runtime/src/session.rs` and register it in `runtime/src/lib.rs`: `identity_from_env(lookup)` (`DUCTUS_SESSION` → platform table with `CLAUDE_CODE_SESSION_ID` → none; empty is unset; slug-sanitized; empty after sanitizing is an `InvalidArgument` naming the variable)
-- [ ] Per-process record type per the data model; parse errors name the file
-- [ ] Lock helper over `.ductus/sessions/.lock`; directory creation writes `.ductus/sessions/.gitignore` containing `*`
-- [ ] Legacy-layout guard: when the active session file is a legacy tier, the core treats the process as unidentified
-- [ ] Unit tests with injected lookups: precedence, same-name sharing, empty-is-unset, sanitizing, refusal, Claude Code variable, legacy guard
+- [x] Bump `rust-version` in `runtime/Cargo.toml` from 1.88 to 1.89 for `std::fs::File::lock`
+- [x] Add `SESSIONS_DIR` and `SESSIONS_LOCK` to `runtime/src/schema/paths.rs` beside `SESSION_FILE`
+- [x] Move `derive_slug` from `runtime/src/primitives/create_feature.rs` to a shared `pub(crate)` home in `runtime/src/primitives/mod.rs`; `create-feature` calls the shared one
+- [x] Create `runtime/src/session.rs` and register it in `runtime/src/lib.rs`: `identity_from_env(lookup)` (`DUCTUS_SESSION` → platform table with `CLAUDE_CODE_SESSION_ID` → none; empty is unset; slug-sanitized; empty after sanitizing is an `InvalidArgument` naming the variable)
+- [x] Per-process record type per the data model; parse errors name the file
+- [x] Lock helper over `.ductus/sessions/.lock`; directory creation writes `.ductus/sessions/.gitignore` containing `*`
+- [x] Legacy-layout guard: when the active session file is a legacy tier, the core treats the process as unidentified
+- [x] Unit tests with injected lookups: precedence, same-name sharing, empty-is-unset, sanitizing, refusal, Claude Code variable, legacy guard
 
 - **Done when**: `cargo test` covers identity resolution for AC12, AC13 and AC14, and the legacy guard, all passing; `cargo clippy` is clean at the new MSRV.
 

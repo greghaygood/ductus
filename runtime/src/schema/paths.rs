@@ -72,6 +72,15 @@ pub(crate) const LEGACY_DIR_SESSION_FILE: &str = ".govern/session.toml";
 /// directory-scoped file is present.
 pub(crate) const LEGACY_SESSION_FILE: &str = ".govern.session.toml";
 
+/// Directory holding one per-process session target per identity (spec 062).
+/// Gitignored, and self-ignoring: the session core writes a `.gitignore`
+/// containing `*` into it when it creates it.
+pub(crate) const SESSIONS_DIR: &str = ".ductus/sessions";
+
+/// The advisory lock every session-state read-modify-write holds (spec 062,
+/// `BE-RACE-001`). The file carries no content; the lock is on its handle.
+pub(crate) const SESSIONS_LOCK: &str = ".ductus/sessions/.lock";
+
 /// Session locations in resolution order, newest first. See [`CONFIG_CHAIN`].
 pub(crate) const SESSION_CHAIN: [&str; 3] =
     [SESSION_FILE, LEGACY_DIR_SESSION_FILE, LEGACY_SESSION_FILE];
