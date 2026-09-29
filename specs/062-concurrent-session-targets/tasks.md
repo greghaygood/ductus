@@ -98,8 +98,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 12. `dashboard` resolves read-only
 
-- [ ] `runtime/src/primitives/dashboard.rs` resolves through `session::peek`, not `session::resolve`: it pins no adoption, refreshes no `used-at`, and consumes no notice — restoring the module's read-only contract. Found in task 11's manual check: `scripts/audit/lib.sh` calls `ductus dashboard` to enumerate the corpus, so a delivering resolution silently pinned the auditing session and would consume its notices before any command showed them
-- [ ] `session::peek` computes the notices the next resolution would deliver — a pending removal notice, a changed co-target set, and a pending adoption (worded as pending) — without writing, so `/ductus:status` still shows them
-- [ ] Update the dashboard tests to assert read-only behavior (repeat calls identical, no own file created), and `framework/commands/status.md` to say the view shows the notices the next command delivers rather than consuming them
+- [x] `runtime/src/primitives/dashboard.rs` resolves through `session::peek`, not `session::resolve`: it pins no adoption, refreshes no `used-at`, and consumes no notice — restoring the module's read-only contract. Found in task 11's manual check: `scripts/audit/lib.sh` calls `ductus dashboard` to enumerate the corpus, so a delivering resolution silently pinned the auditing session and would consume its notices before any command showed them
+- [x] `session::peek` computes the notices the next resolution would deliver — a pending removal notice, a changed co-target set, and a pending adoption (worded as pending) — without writing, so `/ductus:status` still shows them
+- [x] Update the dashboard tests to assert read-only behavior (repeat calls identical, no own file created), and `framework/commands/status.md` to say the view shows the notices the next command delivers rather than consuming them
 
 - **Done when**: a `dashboard` call writes nothing under `.ductus/sessions/`, `/ductus:status` still renders the session label and pending notices, the next `resolve-session` delivers those notices, and `cargo test` and `scripts/audit/run-all.sh` pass.

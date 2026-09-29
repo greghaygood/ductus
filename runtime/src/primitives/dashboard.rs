@@ -9,13 +9,15 @@
 //! three-tier `CONFIG_CHAIN` / `SESSION_CHAIN` ladders (`.ductus/` →
 //! `.govern/` → legacy repo root, newest-wins) — host-agnostic,
 //! project-name-agnostic, no caller-supplied path.
+//! Read-only with respect to filesystem state; no atomic-write concerns.
 //!
-//! The session target resolves through [`crate::session`] (spec 062): an
-//! identified process sees its own target, with its session label and any
-//! notices rendered under the target line. `/{project}:status` *is* that
-//! process's resolution, so it is a real one — an adoption is pinned and
-//! notices are consumed here, where the operator reads them. Apart from that
-//! session bookkeeping the primitive is read-only.
+//! The session target is a peek through [`crate::session`] (spec 062): an
+//! identified process sees its own target, with its session label and the
+//! notices its next command will deliver rendered under the target line. The
+//! peek pins no adoption, refreshes no `used-at` and consumes no notice, so
+//! the read-only contract holds for the session too — `dashboard` is also
+//! called for data, and a delivering read there would take the notices from
+//! the command that owns them.
 //!
 //! Defined by `specs/022-deterministic-runtime/scenarios/dashboard-primitive.md`.
 
@@ -767,7 +769,7 @@ struct SessionView {
     notices: Vec<SessionNotice>,
 }
 
-/// Resolve the session target through the session core and populate the
+/// Peek the session target through the session core and populate the
 /// session-target field. When the targeted scenario file exists, also reads
 /// it to populate `scenario-detail`. The target is echoed as-recorded;
 /// `/{project}:target` is the corrective action for stale slugs, not the
@@ -777,7 +779,7 @@ fn load_session_target(
     identity: Option<&Identity>,
     now: SystemTime,
 ) -> Result<(Option<DashboardSessionTarget>, SessionView)> {
-    let resolution = session::resolve(repo, identity, now)?;
+    let resolution = session::peek(repo, identity, now)?;
     let view = SessionView {
         source: resolution.identity.as_ref().map(|_| resolution.source),
         identity: resolution.identity,
@@ -851,7 +853,7 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
-    use crate::schema::primitives::SessionNoticeKind;
+    use crate::schema::primitives::{SessionNoticeKind, SessionTarget};
     use std::time::{Duration, UNIX_EPOCH};
     use tempfile::TempDir;
 
@@ -895,8 +897,10 @@ mod tests {
         let rendered = &result.rendered_markdown;
         assert!(
             rendered.starts_with("Target: 055-a / planned / next: ")
-                && rendered
-                    .contains(" — session review\nNotice: Session review had no target of its own"),
+                && rendered.contains(
+                    " — session review\nNotice: Session review has no target of its own and \
+                     will adopt 055-a"
+                ),
             "{rendered}"
         );
 
@@ -907,9 +911,22 @@ mod tests {
             fixed_now(),
         )
         .unwrap();
-        assert_eq!(again.session_source, Some(SessionSource::Own));
-        assert!(again.session_notices.is_empty(), "the notice was consumed");
-        assert!(!again.rendered_markdown.contains("Notice:"));
+        assert_eq!(again, result, "a read pins and consumes nothing");
+        assert!(
+            !tmp.path().join(".ductus/sessions").exists(),
+            "no own file created"
+        );
+
+        let next = session::resolve(tmp.path(), Some(&review), fixed_now()).unwrap();
+        assert_eq!(next.source, SessionSource::Adopted);
+        assert_eq!(next.notices.len(), 1);
+        assert!(
+            next.notices[0]
+                .message
+                .starts_with("Session review had no target of its own and adopted 055-a"),
+            "{:?}",
+            next.notices
+        );
     }
 
     #[test]
@@ -920,19 +937,13 @@ mod tests {
             "feature = \"058-gone\"\npath = \"specs/058-gone\"\n",
         );
         let review = Identity::named("review").unwrap();
-        run_as(
-            &DashboardArgs::default(),
-            tmp.path(),
-            Some(&review),
-            fixed_now(),
-        )
-        .unwrap();
-        crate::session::retarget(
+        session::resolve(tmp.path(), Some(&review), fixed_now()).unwrap();
+        session::retarget(
             tmp.path(),
             None,
             "058-gone",
             None,
-            crate::session::RemovalCause::Consolidate,
+            session::RemovalCause::Consolidate,
             fixed_now(),
         )
         .unwrap();
@@ -953,6 +964,65 @@ mod tests {
             rest.starts_with("Notice: Target 058-gone was removed by a consolidation"),
             "{rendered}"
         );
+
+        let again = run_as(
+            &DashboardArgs::default(),
+            tmp.path(),
+            Some(&review),
+            fixed_now(),
+        )
+        .unwrap();
+        assert_eq!(again, result, "the notice stays pending across views");
+    }
+
+    #[test]
+    fn the_next_resolution_delivers_what_the_dashboard_showed() {
+        let tmp = TempDir::new().unwrap();
+        write_spec(tmp.path(), "055-a", "status: planned\n", "");
+        write_ductus_session(
+            tmp.path(),
+            "feature = \"1234.1-b\"\npath = \"specs/1234.1-b\"\n",
+        );
+        let (x, y) = (Identity::named("x").unwrap(), Identity::named("y").unwrap());
+        session::resolve(tmp.path(), Some(&x), fixed_now()).unwrap();
+        session::resolve(tmp.path(), Some(&y), fixed_now()).unwrap();
+        let upstream = SessionTarget {
+            feature: "055-a".into(),
+            path: "specs/055-a".into(),
+            scenario: None,
+            scenario_path: None,
+        };
+        session::retarget(
+            tmp.path(),
+            Some(&y),
+            "1234.1-b",
+            Some(&upstream),
+            session::RemovalCause::Fold,
+            fixed_now(),
+        )
+        .unwrap();
+        let own = session::own_path(tmp.path(), &x);
+        let before = std::fs::read_to_string(&own).unwrap();
+
+        let shown = run_as(&DashboardArgs::default(), tmp.path(), Some(&x), fixed_now())
+            .unwrap()
+            .session_notices;
+        let kinds: Vec<_> = shown.iter().map(|notice| notice.kind).collect();
+        assert_eq!(
+            kinds,
+            [SessionNoticeKind::Folded, SessionNoticeKind::CoTarget],
+            "{shown:?}"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&own).unwrap(),
+            before,
+            "no used-at refresh, no notice consumed"
+        );
+
+        let delivered = session::resolve(tmp.path(), Some(&x), fixed_now()).unwrap();
+        assert_eq!(delivered.notices, shown);
+        let after = run_as(&DashboardArgs::default(), tmp.path(), Some(&x), fixed_now()).unwrap();
+        assert!(after.session_notices.is_empty(), "{after:?}");
     }
 
     #[test]

@@ -662,6 +662,20 @@ fn adopted_notice(identity: &Identity, target: &SessionTarget) -> SessionNotice 
     }
 }
 
+/// [`adopted_notice`] as a [`peek`] reports it: the adoption has not happened
+/// yet, and the next resolution is what performs it.
+fn pending_adoption_notice(identity: &Identity, target: &SessionTarget) -> SessionNotice {
+    SessionNotice {
+        kind: SessionNoticeKind::Adopted,
+        message: format!(
+            "Session {} has no target of its own and will adopt {} from the shared default at \
+             its next command.",
+            identity.label(),
+            target.display()
+        ),
+    }
+}
+
 fn co_target_notice(feature: &str, peers: &[SessionPeer]) -> SessionNotice {
     let described: Vec<String> = peers
         .iter()
@@ -713,26 +727,52 @@ fn removal_notice(notice: &RemovalNotice) -> SessionNotice {
     }
 }
 
-/// Recompute `record`'s peers on `feature`, and notice them when the set
-/// differs from the one this session was last told about (AC19). A set that
-/// empties is recorded silently: nobody left to name.
-fn refresh_peers(
+/// What resolving `record` delivers — its pending removal notice, then a
+/// co-target notice when its peers differ from the set it was last told about
+/// (AC19) — and the peer labels that resolution records. A set that empties is
+/// recorded silently: nobody left to name.
+///
+/// Shared by [`resolve`], which delivers the notices and records the labels,
+/// and [`peek`], which only reports them, so a view cannot show a notice the
+/// next resolution would not deliver, or miss one it would.
+fn due_notices(
     repo: &Path,
     identity: &Identity,
-    record: &mut ProcessRecord,
-    feature: &str,
+    record: &ProcessRecord,
     now: SystemTime,
-    notices: &mut Vec<SessionNotice>,
-) -> Result<()> {
-    let (peers, _unreadable) = peers_of(repo, Some(identity), feature, now)?;
+) -> Result<(Vec<SessionNotice>, Vec<String>)> {
+    let mut notices: Vec<SessionNotice> = record.notice.iter().map(removal_notice).collect();
+    let Some(target) = record.target() else {
+        return Ok((notices, Vec::new()));
+    };
+    let (peers, _unreadable) = peers_of(repo, Some(identity), &target.feature, now)?;
     let labels: Vec<String> = peers.iter().map(|peer| peer.session.clone()).collect();
-    if labels != record.seen_peers {
-        if !peers.is_empty() {
-            notices.push(co_target_notice(feature, &peers));
-        }
-        record.seen_peers = labels;
+    if labels != record.seen_peers && !peers.is_empty() {
+        notices.push(co_target_notice(&target.feature, &peers));
     }
-    Ok(())
+    Ok((notices, labels))
+}
+
+/// The record a process with no file of its own pins on its first resolution:
+/// the shared default's target, as its own. `None` when the default holds no
+/// target to adopt.
+fn adoption(
+    repo: &Path,
+    identity: &Identity,
+    now: SystemTime,
+) -> Result<Option<(SessionTarget, ProcessRecord)>> {
+    let default = read_default_strict(repo)?;
+    let Some(target) = default.as_ref().and_then(DefaultRecord::target) else {
+        return Ok(None);
+    };
+    let mut record = ProcessRecord {
+        source: Some(identity.source.clone()),
+        set_at: default.and_then(|d| d.set_at),
+        used_at: Some(iso8601_utc(now)),
+        ..ProcessRecord::default()
+    };
+    record.set_target(Some(&target));
+    Ok(Some((target, record)))
 }
 
 // -- resolve --------------------------------------------------------------------
@@ -772,73 +812,60 @@ pub fn resolve(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Res
 
     let _lock = lock(repo)?;
     let own = own_path(repo, identity);
-    let mut notices = Vec::new();
 
     if own.exists() {
         let mut record = ProcessRecord::load(&own)?;
-        if let Some(notice) = record.notice.take() {
-            notices.push(removal_notice(&notice));
-        }
-        let target = record.target();
-        match &target {
-            Some(target) => {
-                refresh_peers(
-                    repo,
-                    identity,
-                    &mut record,
-                    &target.feature,
-                    now,
-                    &mut notices,
-                )?;
-            }
-            None => record.seen_peers.clear(),
-        }
+        let (notices, seen_peers) = due_notices(repo, identity, &record, now)?;
+        record.notice = None;
+        record.seen_peers = seen_peers;
         record.used_at = Some(iso8601_utc(now));
         record.store(&own)?;
-        return Ok(Resolution {
-            identity: Some(identity.label()),
-            source: if target.is_some() {
-                SessionSource::Own
-            } else {
-                SessionSource::Cleared
-            },
-            target,
-            notices,
-        });
+        return Ok(own_resolution(identity, record.target(), notices));
     }
 
-    let default = read_default_strict(repo)?;
-    let Some(target) = default.as_ref().and_then(DefaultRecord::target) else {
-        return Ok(Resolution {
-            identity: Some(identity.label()),
-            source: SessionSource::None,
-            target: None,
-            notices,
-        });
+    let Some((target, mut record)) = adoption(repo, identity, now)? else {
+        return Ok(no_target(identity));
     };
-    let mut record = ProcessRecord {
-        source: Some(identity.source.clone()),
-        set_at: default.and_then(|d| d.set_at),
-        used_at: Some(iso8601_utc(now)),
-        ..ProcessRecord::default()
-    };
-    record.set_target(Some(&target));
-    notices.push(adopted_notice(identity, &target));
-    refresh_peers(
-        repo,
-        identity,
-        &mut record,
-        &target.feature,
-        now,
-        &mut notices,
-    )?;
+    let (due, seen_peers) = due_notices(repo, identity, &record, now)?;
+    record.seen_peers = seen_peers;
     record.store(&own)?;
+    let mut notices = vec![adopted_notice(identity, &target)];
+    notices.extend(due);
     Ok(Resolution {
         identity: Some(identity.label()),
         source: SessionSource::Adopted,
         target: Some(target),
         notices,
     })
+}
+
+/// An identified process's resolution from a file of its own: `own`, or
+/// `cleared` when that file holds no target.
+fn own_resolution(
+    identity: &Identity,
+    target: Option<SessionTarget>,
+    notices: Vec<SessionNotice>,
+) -> Resolution {
+    Resolution {
+        identity: Some(identity.label()),
+        source: if target.is_some() {
+            SessionSource::Own
+        } else {
+            SessionSource::Cleared
+        },
+        target,
+        notices,
+    }
+}
+
+/// An identified process with no file of its own and no default to adopt.
+fn no_target(identity: &Identity) -> Resolution {
+    Resolution {
+        identity: Some(identity.label()),
+        source: SessionSource::None,
+        target: None,
+        notices: Vec::new(),
+    }
 }
 
 /// An unidentified process's resolution: the shared default, read-only.
@@ -856,50 +883,47 @@ fn resolve_unidentified(repo: &Path) -> Result<Resolution> {
     })
 }
 
-/// What [`resolve`] would answer for `identity`, with **nothing written and
-/// nothing consumed**: no adoption pinned, no `used-at` refreshed, no notice
-/// delivered, and no sessions directory created.
+/// What [`resolve`] would answer for `identity` at `now`, with **nothing
+/// written and nothing consumed**: no adoption pinned, no `used-at` refreshed,
+/// no notice delivered, and no sessions directory created.
 ///
-/// For a caller that needs the target before the command that owns the
-/// resolution has run — the `ductus exec` seed. Were the seed to resolve for
-/// real, it would consume the once-only notices and pin the adoption before
-/// the walked command's own `resolve-session` step could report them, and the
-/// operator would never see either. A process with no file of its own peeks
-/// the default with source `adopted`, since that is what its first real
-/// resolution will pin.
+/// For a caller that must not perform the resolution a command owns: the
+/// `ductus exec` seed, which runs before the walked command's own
+/// `resolve-session` step, and `dashboard`, which is also called for data —
+/// `scripts/audit/lib.sh` enumerates the corpus with it. A delivering read in
+/// either would consume the once-only notices and pin the adoption unseen.
+///
+/// The notices are the ones the next resolution will deliver, computed by the
+/// same builders, so a view shows exactly what the next command reports. A
+/// process with no file of its own peeks the default with source `adopted`,
+/// since that is what its first real resolution will pin, and its adoption
+/// notice is worded as pending.
 ///
 /// # Errors
 ///
 /// As [`resolve`], minus the write failures it cannot have.
-pub fn peek(repo: &Path, identity: Option<&Identity>) -> Result<Resolution> {
+pub fn peek(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Result<Resolution> {
     let Some(identity) = effective(repo, identity) else {
         return resolve_unidentified(repo);
     };
     let _lock = lock_if_shared(repo)?;
     let own = own_path(repo, identity);
     if own.exists() {
-        let target = ProcessRecord::load(&own)?.target();
-        return Ok(Resolution {
-            identity: Some(identity.label()),
-            source: if target.is_some() {
-                SessionSource::Own
-            } else {
-                SessionSource::Cleared
-            },
-            target,
-            notices: Vec::new(),
-        });
+        let record = ProcessRecord::load(&own)?;
+        let (notices, _seen_peers) = due_notices(repo, identity, &record, now)?;
+        return Ok(own_resolution(identity, record.target(), notices));
     }
-    let target = read_default_strict(repo)?.and_then(|record| record.target());
+    let Some((target, record)) = adoption(repo, identity, now)? else {
+        return Ok(no_target(identity));
+    };
+    let (due, _seen_peers) = due_notices(repo, identity, &record, now)?;
+    let mut notices = vec![pending_adoption_notice(identity, &target)];
+    notices.extend(due);
     Ok(Resolution {
         identity: Some(identity.label()),
-        source: if target.is_some() {
-            SessionSource::Adopted
-        } else {
-            SessionSource::None
-        },
-        target,
-        notices: Vec::new(),
+        source: SessionSource::Adopted,
+        target: Some(target),
+        notices,
     })
 }
 
@@ -1659,12 +1683,18 @@ mod tests {
         let (x, y) = (id("x"), id("y"));
         set(tmp.path(), None, "055-a", t0());
 
-        let peeked = peek(tmp.path(), Some(&x)).unwrap();
+        let peeked = peek(tmp.path(), Some(&x), t0()).unwrap();
         assert_eq!(
             (peeked.source, feature_of(&peeked)),
             (SessionSource::Adopted, Some("055-a"))
         );
-        assert!(peeked.notices.is_empty());
+        assert_eq!(peeked.notices.len(), 1);
+        assert_eq!(peeked.notices[0].kind, SessionNoticeKind::Adopted);
+        assert!(
+            peeked.notices[0].message.contains("will adopt 055-a"),
+            "worded as pending: {:?}",
+            peeked.notices
+        );
         assert!(
             !tmp.path().join(".ductus/sessions").exists(),
             "nothing created or pinned"
@@ -1673,9 +1703,15 @@ mod tests {
         set(tmp.path(), Some(&y), "055-a", at(1));
         let before = std::fs::read_to_string(own_path(tmp.path(), &y)).unwrap();
         set(tmp.path(), Some(&x), "055-a", at(2));
-        let own = peek(tmp.path(), Some(&y)).unwrap();
+        let own = peek(tmp.path(), Some(&y), at(3)).unwrap();
         assert_eq!(own.source, SessionSource::Own);
-        assert!(own.notices.is_empty());
+        assert_eq!(own.notices.len(), 1);
+        assert_eq!(own.notices[0].kind, SessionNoticeKind::CoTarget);
+        assert_eq!(
+            peek(tmp.path(), Some(&y), at(3)).unwrap(),
+            own,
+            "a peek is repeatable"
+        );
         assert_eq!(
             std::fs::read_to_string(own_path(tmp.path(), &y)).unwrap(),
             before,
@@ -1683,10 +1719,39 @@ mod tests {
         );
         let real = resolve(tmp.path(), Some(&y), at(3)).unwrap();
         assert_eq!(
-            real.notices.len(),
-            1,
-            "the co-target notice survived the peek"
+            real.notices, own.notices,
+            "the resolution delivers what the peek showed"
         );
+        assert!(
+            peek(tmp.path(), Some(&y), at(4))
+                .unwrap()
+                .notices
+                .is_empty(),
+            "delivered once"
+        );
+    }
+
+    #[test]
+    fn a_peek_shows_a_pending_removal_notice_without_taking_it() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), Some(&x), "1234.1-b", t0());
+        retarget(
+            tmp.path(),
+            Some(&y),
+            "1234.1-b",
+            None,
+            RemovalCause::Consolidate,
+            at(1),
+        )
+        .unwrap();
+
+        let peeked = peek(tmp.path(), Some(&x), at(2)).unwrap();
+        assert_eq!(peeked.source, SessionSource::Cleared);
+        assert_eq!(peeked.notices.len(), 1);
+        assert_eq!(peeked.notices[0].kind, SessionNoticeKind::Consolidated);
+        let real = resolve(tmp.path(), Some(&x), at(3)).unwrap();
+        assert_eq!(real.notices, peeked.notices);
     }
 
     // -- retarget (task 5) ----------------------------------------------------

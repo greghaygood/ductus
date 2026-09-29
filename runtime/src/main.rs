@@ -502,7 +502,7 @@ fn seed_context(
     {
         context.extend(map);
     }
-    let resolution = ductus::session::peek(repo, identity)?;
+    let resolution = ductus::session::peek(repo, identity, std::time::SystemTime::now())?;
     // Only a process with a target of its own overrides the default's keys.
     // Otherwise the default seeds exactly as it did before spec 062 — it is
     // also a general-purpose seed, whose `path` may be a primitive argument
