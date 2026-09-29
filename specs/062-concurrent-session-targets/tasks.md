@@ -67,8 +67,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 8. Gitignore
 
-- [ ] Add `/.ductus/sessions/` to the managed block in `framework/templates/project/gitignore`, with a comment, beside `/.ductus/session.toml`
-- [ ] Add `/.ductus/sessions/` to this repository's `.gitignore`
+- [x] Add `/.ductus/sessions/` to the managed block in `framework/templates/project/gitignore`, with a comment, beside `/.ductus/session.toml`
+- [x] Add `/.ductus/sessions/` to this repository's `.gitignore`
 
 - **Done when**: after running two identified sessions in this repository, `git status` shows nothing under `.ductus/` (AC7), and the manifest and template audit families pass.
 
