@@ -199,9 +199,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 25. The environment-variable inventory is accurate about the HTTP client
 
-- [ ] `docs/runtime.md`'s `REQUEST_METHOD` row says that when it is set the HTTP client ignores every proxy variable, not only `HTTP_PROXY` (review: CFG-ENV-002)
-- [ ] The inventory lists `SSL_CERT_FILE` and `SSL_CERT_DIR`, which the HTTP client's certificate verifier reads on each fetch on Linux and other non-Apple Unix, replacing the system store when set (review: CFG-ENV-002)
-- [ ] The carve-out names what it leaves out and why — variables the Rust standard library, the async runtime and git read the same way for every program (`HOME`, `TMPDIR`, `RUST_BACKTRACE`, `TOKIO_WORKER_THREADS`) — so it separates them from the HTTP client's configuration it lists
-- [ ] 048's `fetch-archive-reads-its-proxy-once` states the CGI guard correctly and names the certificate variables among the per-fetch reads (review observation)
+- [x] `docs/runtime.md`'s `REQUEST_METHOD` row says that when it is set the HTTP client ignores every proxy variable, not only `HTTP_PROXY` (review: CFG-ENV-002)
+- [x] The inventory lists `SSL_CERT_FILE` and `SSL_CERT_DIR`, which the HTTP client's certificate verifier reads on each fetch on Linux and other non-Apple Unix, replacing the system store when set (review: CFG-ENV-002)
+- [x] The carve-out names what it leaves out and why — variables the Rust standard library, the async runtime and git read the same way for every program (`HOME`, `TMPDIR`, `RUST_BACKTRACE`, `TOKIO_WORKER_THREADS`) — so it separates them from the HTTP client's configuration it lists
+- [x] 048's `fetch-archive-reads-its-proxy-once` states the CGI guard correctly and names the certificate variables among the per-fetch reads (review observation)
 
 - **Done when**: every row matches the locked dependencies' behavior, and the inventory's scope statement draws a line its own rows respect.

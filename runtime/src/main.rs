@@ -686,8 +686,8 @@ fn main() -> ExitCode {
     // The runtime's own environment variables — the session identity and the
     // fetch allowlist — are read here, once, for every subcommand
     // (`CFG-ENV-001`), and primitives answer from this reading. The inventory
-    // is docs/runtime.md's; it also lists the proxy variables `fetch-archive`'s
-    // HTTP client reads per fetch (spec 048's open scenario).
+    // is docs/runtime.md's; it also lists the proxy and certificate variables
+    // `fetch-archive`'s HTTP client reads per fetch (spec 048's open scenario).
     ductus::session::init_process_identity();
     ductus::primitives::fetch_archive::init_insecure_hosts();
     let repo = cwd();
