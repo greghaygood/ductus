@@ -1,3 +1,4 @@
+{"type":"progress","message":"dispatching primitive `resolve-session`","step":"1","primitive":"resolve-session"}
 {"type":"progress","message":"dispatching primitive `resolve-feature`","step":"3","primitive":"resolve-feature"}
 {"type":"progress","message":"dispatching primitive `resolve-constitutions`","step":"4","primitive":"resolve-constitutions"}
 {"type":"progress","message":"dispatching primitive `derive-dependencies`","step":"5","primitive":"derive-dependencies"}

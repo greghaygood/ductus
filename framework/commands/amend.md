@@ -21,11 +21,11 @@ The back-edges that keep the spec lifecycle honest are owned by `/amend`:
 
 ## Context
 
-Use the session target from `.ductus/session.toml`. If `$ARGUMENTS` is provided, use it as the initial input text. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
+Use the session target: invoke `resolve-session` and display any notices it returns (on the markdown-only path, read the shared default `.ductus/session.toml` instead — §concurrent-features). If `$ARGUMENTS` is provided, use it as the initial input text. If no session target is set and no arguments provided, stop and tell the user to run `/{project}:target` first.
 
 ## Target File Detection
 
-Read `.ductus/session.toml`. If the session includes a `scenario` and `scenario-path`, the target artifact is the scenario file and the input is always treated as a question (scenarios do not nest under scenarios; the classifier is bypassed). Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
+Resolve the session target as above. If it includes a `scenario` and `scenario-path`, the target artifact is the scenario file and the input is always treated as a question (scenarios do not nest under scenarios; the classifier is bypassed). Otherwise, the target artifact is the feature's `spec.md`. If that file does not exist, stop and report: "Spec does not exist. Run `/{project}:specify` first."
 
 ## Scope Boundaries
 
@@ -41,7 +41,7 @@ Read `.ductus/session.toml`. If the session includes a `scenario` and `scenario-
 
 ### Confirm target
 
-1. Read `.ductus/session.toml` to get the session target's feature and optional scenario.
+1. Invoke `resolve-session` to get the session target's feature and optional scenario, and display any notices it returns (markdown-only: read the shared default `.ductus/session.toml`).
 2. Read the target artifact (scenario file if targeted, otherwise `spec.md`).
 3. **Recompute dependencies (safety net).** If the target is a spec, invoke `derive-dependencies` (the report-only default — it never writes without `--write`; it walks every spec, there is no per-spec mode). When it reports drift, the `dependencies:` frontmatter is stale from uncommitted body edits; surface that and recommend committing (the pre-commit hook syncs it) or running `ductus derive-dependencies --write` manually. Do **not** pass `--write` here: this command's writes are limited to the target's questions/scenario/task/status and the session file (see Scope Boundaries), while a writing run rewrites `dependencies:` across every spec. The pre-commit hook normally keeps this in sync; this step catches uncommitted body edits. (Skip on scenario targets — scenarios have no `dependencies` field.)
 4. If the target is a spec, read its frontmatter `status` field now — the value is needed for the gate, the impact display, the classifier's status tiebreaker, and the post-record mutation.

@@ -18,7 +18,7 @@ Pipeline gate: clarified → planned. A spec cannot be implemented until it has 
 
 ## Context
 
-Use the session target from `.ductus/session.toml`. If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/ductus:target` first.
+Use the session target: invoke `resolve-session` and display any notices it returns (on the markdown-only path, read the shared default `.ductus/session.toml` instead — §concurrent-features). If `$ARGUMENTS` is provided, use it to override the session target. If no session target is set and no arguments provided, stop and tell the user to run `/ductus:target` first.
 
 ## Spec File Detection
 

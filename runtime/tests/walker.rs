@@ -894,16 +894,25 @@ fn prune_command_gate_blocks_on_the_exec_path() {
         .iter()
         .map(|v| v["type"].as_str().unwrap())
         .collect();
-    // progress(step-2 prune-tasks preview), gate-confirm(step-4),
-    // progress(denied), complete(confirmed: false).
+    // progress(step-1 resolve-session, spec 062), progress(step-2
+    // prune-tasks preview), gate-confirm(step-4), progress(denied),
+    // complete(confirmed: false).
     assert_eq!(
         types,
-        vec!["progress", "gate-confirm", "progress", "complete"]
+        vec![
+            "progress",
+            "progress",
+            "gate-confirm",
+            "progress",
+            "complete"
+        ]
     );
-    assert_eq!(envelopes[0]["primitive"], "prune-tasks");
-    assert_eq!(envelopes[0]["step"], "2");
-    assert_eq!(envelopes[1]["gate"], "step-4");
-    assert_eq!(envelopes[3]["result"]["confirmed"], false);
+    assert_eq!(envelopes[0]["primitive"], "resolve-session");
+    assert_eq!(envelopes[0]["step"], "1");
+    assert_eq!(envelopes[1]["primitive"], "prune-tasks");
+    assert_eq!(envelopes[1]["step"], "2");
+    assert_eq!(envelopes[2]["gate"], "step-4");
+    assert_eq!(envelopes[4]["result"]["confirmed"], false);
 
     // The denied gate wrote nothing.
     let after = std::fs::read_to_string(feature_dir.join("tasks.md")).unwrap();

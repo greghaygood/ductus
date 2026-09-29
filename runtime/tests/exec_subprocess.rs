@@ -23,6 +23,18 @@ fn runtime_binary() -> PathBuf {
         .join(format!("ductus{}", std::env::consts::EXE_SUFFIX))
 }
 
+/// A runtime command with the session-identity variables removed (spec 062),
+/// so a stream never depends on the shell running the suite — which may
+/// itself carry a platform session id and would otherwise make every walk an
+/// identified process's.
+fn ductus_command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(bin);
+    command
+        .env_remove("DUCTUS_SESSION")
+        .env_remove("CLAUDE_CODE_SESSION_ID");
+    command
+}
+
 fn write_procedure_repo(tmp: &Path, command_name: &str, body: &str) {
     let cmd_dir = tmp.join("framework/commands");
     fs::create_dir_all(&cmd_dir).unwrap();
@@ -78,7 +90,7 @@ fn exec_drives_a_deterministic_procedure_to_complete() {
     )
     .unwrap();
 
-    let mut child = Command::new(runtime_binary())
+    let mut child = ductus_command(runtime_binary())
         .arg("exec")
         .arg("smoke")
         .arg("feature=001-basic")
@@ -125,7 +137,7 @@ fn exec_reads_extension_response_from_stdin() {
         "# /ductus:ext\n\n## Instructions\n\n1. <!-- llm:writeCode --> Ask the LLM to write code.\n",
     );
 
-    let mut child = Command::new(runtime_binary())
+    let mut child = ductus_command(runtime_binary())
         .arg("exec")
         .arg("ext")
         .current_dir(tmp.path())
@@ -242,7 +254,7 @@ fn exec_chains_bootstrap_primitives_extract_apply_merge() {
     let mut sf = fs::File::create(&session_path).unwrap();
     sf.write_all(session_toml.as_bytes()).unwrap();
 
-    let child = Command::new(runtime_binary())
+    let child = ductus_command(runtime_binary())
         .arg("exec")
         .arg("install")
         .current_dir(tmp.path())
@@ -303,7 +315,7 @@ fn exec_resolves_bootstrap_procedure_under_framework_bootstrap() {
     )
     .unwrap();
 
-    let mut child = Command::new(runtime_binary())
+    let mut child = ductus_command(runtime_binary())
         .arg("exec")
         .arg("ductus")
         .arg("feature=001-basic")
@@ -350,7 +362,7 @@ fn exec_resolves_command_via_parameterized_host_block() {
     let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/exec-auggie");
     copy_dir_recursive(&fixture, tmp.path());
 
-    let mut child = Command::new(runtime_binary())
+    let mut child = ductus_command(runtime_binary())
         .arg("exec")
         .arg("smoke")
         .arg("feature=001-basic")
@@ -405,7 +417,7 @@ fn exec_resolves_command_via_opencode_singular_command_dir() {
     let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/exec-opencode");
     copy_dir_recursive(&fixture, tmp.path());
 
-    let mut child = Command::new(runtime_binary())
+    let mut child = ductus_command(runtime_binary())
         .arg("exec")
         .arg("smoke")
         .arg("feature=001-basic")
@@ -461,7 +473,7 @@ fn exec_emits_terminal_error_envelope_on_unparseable_command_file() {
         "# /ductus:broken\n\n## Instructions\n\n1. Invoke `read-spek` on the target.\n2. Invoke `read-tasks` to load tasks.\n",
     );
 
-    let output = Command::new(runtime_binary())
+    let output = ductus_command(runtime_binary())
         .arg("exec")
         .arg("broken")
         .current_dir(tmp.path())
@@ -507,7 +519,7 @@ fn exec_emits_terminal_error_envelope_on_unparseable_command_file() {
 fn exec_returns_nonzero_when_command_file_missing() {
     ensure_binary_built();
     let tmp = tempfile::tempdir().unwrap();
-    let status = Command::new(runtime_binary())
+    let status = ductus_command(runtime_binary())
         .arg("exec")
         .arg("nonexistent")
         .current_dir(tmp.path())

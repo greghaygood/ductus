@@ -20,7 +20,7 @@ First step in the pipeline. Creates a new numbered feature directory with a spec
 
 ## Context
 
-This command does not require a session target — it creates a new feature. If `.ductus/session.toml` exists, the session target will be overwritten with the new feature.
+This command does not require a session target — it creates a new feature, and sets it as this process's session target (and the shared default `.ductus/session.toml`, §concurrent-features) once created.
 
 If the constitution has not been loaded in this session (e.g., `/ductus:target` has not been run), read `.ductus/constitution.md` now to load `ductus` rules. If the constitution was already loaded by `/ductus:target`, do not re-read it.
 
@@ -69,7 +69,7 @@ If the constitution has not been loaded in this session (e.g., `/ductus:target` 
 
 9. Invoke `gate-confirm` with a `gate` name (e.g. `specify-create`) and a `prompt` asking the user to approve creating the new feature and setting it as the session target before any session-file write. `gate-confirm` is non-blocking — it returns the prompt payload (`gate`, `prompt`, `request-id`) and the host routes the decision out-of-band. On confirmation, continue to the session write below; on denial, the walker exits cleanly without writing the session.
 
-10. Invoke `write-session` with the new feature slug and its repo-relative spec directory — under the configured `[paths] specs-root` (default `specs`; spec 040) — as the feature and path arguments. This is a target write: the primitive stamps a fresh set-at while preserving any cli-config-dir already in the file (the per-contributor agent identity written by `/ductus`), at `.ductus/session.toml`, through tempfile + rename atomic-write semantics. On the markdown-only path, the host writes the file by hand per the markdown-only reference's Write the session target section — the cli-config-dir preservation rule there applies verbatim.
+10. Invoke `write-session` with the new feature slug and its repo-relative spec directory — under the configured `[paths] specs-root` (default `specs`; spec 040) — as the feature and path arguments. This is a target write: the primitive stamps a fresh set-at while preserving any cli-config-dir already in the file (the per-contributor agent identity written by `/ductus`), at this process's own target under `.ductus/sessions/` when it has a session identity and at the shared default `.ductus/session.toml`, through tempfile + rename atomic-write semantics. On the markdown-only path, the host writes the file by hand per the markdown-only reference's Write the session target section — the cli-config-dir preservation rule there applies verbatim.
 
 ## Markdown-only reference
 
@@ -195,7 +195,7 @@ Run `npx markdownlint-cli2` on the new file (primitive: `lint-markdown`).
 
 ### Write the session target
 
-Write `.ductus/session.toml` to set this feature as the session target (primitive: `write-session`, gated by `gate-confirm` above). First read any existing `.ductus/session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /ductus) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
+Write the shared default `.ductus/session.toml` to set this feature as the session target (primitive: `write-session`, gated by `gate-confirm` above). Without the runtime the host cannot read its session identity, so this path writes the shared default only (§concurrent-features). First read any existing `.ductus/session.toml` to capture its cli-config-dir (the per-contributor agent identity written by /ductus) and carry it forward, so creating a new feature never drops the agent identity. Use tempfile + rename atomic-write semantics analogous to the runtime's spec write primitives.
 
 ### Display the next step
 

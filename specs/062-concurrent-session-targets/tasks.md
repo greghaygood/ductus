@@ -74,10 +74,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 9. Command files
 
-- [ ] Replace hand reads of the session file with "Invoke `resolve-session`; display its notices; markdown-only: read the shared default (§concurrent-features)" in `amend`, `analyze`, `clarify`, `groom`, `implement`, `plan`, `prune`, `review`, `specify` and `target` under `framework/commands/`
-- [ ] `fold` step 13 and `consolidate` step 6 invoke `retarget-sessions`; consolidate's step drops its hand read of the session
-- [ ] `status` describes the target line's session label, the notices, and the markdown-only derivation; `help` updates the Session target glossary entry
-- [ ] Mirror every edit to `.claude/commands/ductus/`
+- [x] Replace hand reads of the session file with "Invoke `resolve-session`; display its notices; markdown-only: read the shared default (§concurrent-features)" in `amend`, `analyze`, `clarify`, `groom`, `implement`, `plan`, `prune`, `review`, `specify` and `target` under `framework/commands/`
+- [x] `fold` step 13 and `consolidate` step 6 invoke `retarget-sessions`; consolidate's step drops its hand read of the session
+- [x] `status` describes the target line's session label, the notices, and the markdown-only derivation; `help` updates the Session target glossary entry
+- [x] Mirror every edit to `.claude/commands/ductus/`
 
 - **Done when**: no file under `framework/commands/` instructs a hand read of the session file outside a markdown-only branch; the mirrors are byte-identical; `scripts/audit/run-all.sh` passes (AC24's command-side statement).
 

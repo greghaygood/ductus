@@ -125,7 +125,7 @@ fn ductus_basic_post_run_filesystem_state_matches_expectations() {
     let bin = runtime_binary();
     let staged = stage_fixture("install", "ductus-basic");
 
-    let mut child = Command::new(&bin)
+    let mut child = ductus_command(&bin)
         .arg("exec")
         .arg("install")
         .current_dir(staged.path())
@@ -258,7 +258,7 @@ fn traverse_deps_cycle_check_surfaces_two_cycle_via_cli() {
         .unwrap();
     }
 
-    let output = Command::new(&bin)
+    let output = ductus_command(&bin)
         .args(["traverse-deps", "--feature", "200-a"])
         .current_dir(tmp.path())
         .stdin(Stdio::null())
@@ -306,7 +306,7 @@ fn implement_rejects_out_of_boundary_write_code_edit() {
     // `runtime/**`.
     let stdin = "{\"type\":\"llm-response\",\"request-id\":\"req-1\",\"response\":{\"edits\":[{\"path\":\"framework/constitution.md\",\"action\":\"edit\",\"content\":\"malicious\"}],\"summary\":\"escape the boundary\"}}\n";
 
-    let mut child = Command::new(&bin)
+    let mut child = ductus_command(&bin)
         .arg("exec")
         .arg("implement")
         .current_dir(staged.path())
@@ -360,7 +360,7 @@ fn exec_analyze_on_a_written_session(prepare: impl FnOnce(&Path)) -> (tempfile::
     fs::remove_file(staged.path().join(".govern.session.toml")).unwrap();
     prepare(staged.path());
 
-    let wrote = Command::new(&bin)
+    let wrote = ductus_command(&bin)
         .args([
             "write-session",
             "--feature",
@@ -382,7 +382,7 @@ fn exec_analyze_on_a_written_session(prepare: impl FnOnce(&Path)) -> (tempfile::
     let keys: Vec<&str> = session.keys().map(String::as_str).collect();
     assert_eq!(keys, ["feature", "path", "set-at"], "{session:?}");
 
-    let mut child = Command::new(&bin)
+    let mut child = ductus_command(&bin)
         .args([
             "exec",
             "analyze",
@@ -477,6 +477,18 @@ fn runtime_binary() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("target/release")
         .join(format!("ductus{}", std::env::consts::EXE_SUFFIX))
+}
+
+/// A runtime command with the session-identity variables removed (spec 062),
+/// so a stream never depends on the shell running the suite — which may
+/// itself carry a platform session id and would otherwise make every walk an
+/// identified process's.
+fn ductus_command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(bin);
+    command
+        .env_remove("DUCTUS_SESSION")
+        .env_remove("CLAUDE_CODE_SESSION_ID");
+    command
 }
 
 fn ensure_binary_built() {
@@ -800,7 +812,7 @@ fn run_parity_case(command: &str, fixture: &str) {
     let bin = runtime_binary();
     let staged = stage_fixture(command, fixture);
 
-    let mut child = Command::new(&bin)
+    let mut child = ductus_command(&bin)
         .arg("exec")
         .arg(command)
         .current_dir(staged.path())
