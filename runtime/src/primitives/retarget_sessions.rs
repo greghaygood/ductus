@@ -219,7 +219,16 @@ mod tests {
         let tmp = tempdir().unwrap();
         let result = run_as(&consolidate("058-gone"), tmp.path(), None, now()).unwrap();
         assert_eq!(result, RetargetSessionsResult::default());
-        assert!(!tmp.path().join(".ductus").exists(), "nothing created");
+        assert!(
+            !tmp.path().join(".ductus/session.toml").exists(),
+            "no default created"
+        );
+        let sessions: Vec<_> = fs::read_dir(tmp.path().join(".ductus/sessions"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .filter(|name| !name.to_string_lossy().starts_with('.'))
+            .collect();
+        assert!(sessions.is_empty(), "no session written: {sessions:?}");
     }
 
     #[test]

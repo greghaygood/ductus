@@ -114,11 +114,26 @@ next `/ductus` run migrates it.
 
 Every resolution and write that touches `.ductus/sessions/` or the default
 holds an exclusive advisory lock on `.ductus/sessions/.lock`, taken with
-`std::fs::File::lock`. The critical sections are a few small reads and one or
-two atomic writes. Writes inside the lock still use the existing tempfile +
-rename helper (`write_atomic`, `runtime/src/primitives/mod.rs:988`),
-so a reader outside the lock, such as a markdown-only host reading the
-default, never sees a torn file.
+`std::fs::File::try_lock` in a retry loop bounded by the named constant
+`SESSION_LOCK_TIMEOUT` (ten seconds, `BE-TIMEOUT-001`). The critical sections
+are a few small reads and one or two atomic writes, so a wait that long means
+the holder is stalled, and the call fails naming the lock file rather than
+hanging every agent behind it. The MCP handlers of the three session tools run
+on the blocking pool, so a wait never holds an async worker. Writes inside the
+lock still use the existing tempfile + rename helper (`write_atomic`,
+`runtime/src/primitives/mod.rs:988`), so a reader outside the lock, such as a
+markdown-only host reading the default, never sees a torn file.
+
+On the `.ductus/` layout a write or retarget takes the lock on every call,
+the unidentified path included. An exception for a repo nobody had used
+per-process targets in was tried first and rejected (review, `BE-TXN-002`):
+the first identified write is what creates `.ductus/sessions/`, so an
+unidentified read-modify-write that skipped the lock because the directory
+did not exist yet could interleave with it and lose `cli-config-dir` or the
+default's target. The directory is self-ignoring, so taking the lock leaves
+`git status` clean (AC7). Only the read-only peek (`dashboard`, the exec seed)
+locks just when the directory already exists, so a view creates nothing. On a
+legacy layout nothing is per process and no lock is taken.
 
 The lock is what makes AC4 and AC18 hold. Two processes writing at once each
 land their own file, and the default takes the later write, which is its

@@ -691,8 +691,16 @@ mod tests {
             CANONICAL_DEFAULT
         );
         assert_eq!((result.identity, result.own_path), (None, None));
-        assert!(
-            !tmp.path().join(".ductus/sessions").exists(),
+        // The write holds the session lock (`BE-TXN-002`), so the directory
+        // holds the lock and its self-ignoring `.gitignore` — and no target.
+        let mut entries: Vec<String> = fs::read_dir(tmp.path().join(".ductus/sessions"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        entries.sort();
+        assert_eq!(
+            entries,
+            [".gitignore", ".lock"],
             "no per-process state for a single unidentified agent"
         );
     }

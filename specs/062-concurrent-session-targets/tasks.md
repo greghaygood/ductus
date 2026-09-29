@@ -106,10 +106,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 13. Session lock: a bounded wait, taken by every write
 
-- [ ] `session::lock` acquires with `File::try_lock` in a retry loop bounded by a named `SESSION_LOCK_TIMEOUT` constant, and on expiry returns an error naming `.ductus/sessions/.lock` (review: BE-TIMEOUT-001)
-- [ ] The `write-session`, `resolve-session` and `retarget-sessions` MCP handlers run through `dispatch_blocking`, as `dashboard` does, so a lock wait never holds an async worker
-- [ ] `write` and `retarget` hold the lock on every call, the unidentified path included, closing the window where `.ductus/sessions/` does not exist yet and an unidentified read-modify-write of the default races the first identified one (review: BE-TXN-002); `lock_if_shared` stays only for the read-only `peek`. Update the AC3 tests and the plan's lock paragraph to match
-- [ ] Test: with the lock held, a second acquirer fails within the timeout with the lock file named (review observation: no test exercised the lock)
+- [x] `session::lock` acquires with `File::try_lock` in a retry loop bounded by a named `SESSION_LOCK_TIMEOUT` constant, and on expiry returns an error naming `.ductus/sessions/.lock` (review: BE-TIMEOUT-001)
+- [x] The `write-session`, `resolve-session` and `retarget-sessions` MCP handlers run through `dispatch_blocking`, as `dashboard` does, so a lock wait never holds an async worker
+- [x] `write` and `retarget` hold the lock on every call, the unidentified path included, closing the window where `.ductus/sessions/` does not exist yet and an unidentified read-modify-write of the default races the first identified one (review: BE-TXN-002); `lock_if_shared` stays only for the read-only `peek`. Update the AC3 tests and the plan's lock paragraph to match
+- [x] Test: with the lock held, a second acquirer fails within the timeout with the lock file named (review observation: no test exercised the lock)
 
 - **Done when**: a held lock makes a second acquirer fail, naming the lock file, within the timeout; an unidentified write takes the lock; `git status` still shows nothing under `.ductus/`; `cargo test` passes.
 

@@ -17,9 +17,9 @@
 //! directly rather than mutating the environment, which is `unsafe` in edition
 //! 2024 and racy across parallel tests.
 
-use std::fs::{File, OpenOptions};
+use std::fs::{File, OpenOptions, TryLockError};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
@@ -289,14 +289,31 @@ pub struct SessionLock {
     _file: File,
 }
 
+/// How long a session operation waits for another process to release the
+/// session lock (`BE-TIMEOUT-001`). A hold lasts one small read-modify-write,
+/// milliseconds; a wait this long means the holder is stalled — stopped at a
+/// terminal, or on a hung filesystem — and failing with the lock file named
+/// beats hanging every agent behind it.
+pub const SESSION_LOCK_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// The pause between attempts while another process holds the lock.
+const LOCK_RETRY: Duration = Duration::from_millis(10);
+
 /// Take the exclusive advisory lock on `.ductus/sessions/.lock`, creating the
-/// directory first. Blocks until any other holder releases it; the OS releases
-/// it if the holder dies, so there is no stale-lock recovery to get wrong.
+/// directory first. Waits up to [`SESSION_LOCK_TIMEOUT`] for another holder;
+/// the OS releases the lock if its holder dies, so there is no stale-lock
+/// recovery to get wrong.
 ///
 /// # Errors
 ///
-/// [`PrimitiveError::Io`] when the lock file cannot be opened or locked.
+/// [`PrimitiveError::Io`] naming the lock file when it cannot be opened or
+/// locked, or when another process holds it past the timeout.
 pub fn lock(repo: &Path) -> Result<SessionLock> {
+    lock_within(repo, SESSION_LOCK_TIMEOUT)
+}
+
+/// [`lock`], waiting at most `timeout`.
+fn lock_within(repo: &Path, timeout: Duration) -> Result<SessionLock> {
     ensure_sessions_dir(repo)?;
     let path = repo.join(paths::SESSIONS_LOCK);
     let io = |source| PrimitiveError::Io {
@@ -309,15 +326,48 @@ pub fn lock(repo: &Path) -> Result<SessionLock> {
         .write(true)
         .open(&path)
         .map_err(io)?;
-    file.lock().map_err(io)?;
-    Ok(SessionLock { _file: file })
+    let deadline = Instant::now() + timeout;
+    loop {
+        match file.try_lock() {
+            Ok(()) => return Ok(SessionLock { _file: file }),
+            Err(TryLockError::WouldBlock) if Instant::now() < deadline => {
+                std::thread::sleep(LOCK_RETRY);
+            }
+            Err(TryLockError::WouldBlock) => {
+                return Err(io(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    format!(
+                        "another session held the lock for more than {}s",
+                        timeout.as_secs()
+                    ),
+                )));
+            }
+            Err(TryLockError::Error(source)) => return Err(io(source)),
+        }
+    }
 }
 
-/// Take the lock only when per-process state exists to race with.
+/// The lock for a writer: always on the `.ductus/` layout, where an identified
+/// process may be writing too — even before `.ductus/sessions/` exists, since
+/// the first identified write is what creates it (`BE-TXN-002`). On a legacy
+/// layout every process is unidentified and nothing is per process, so the
+/// default is written as before spec 062, and no `.ductus/` state is created
+/// beside the legacy file.
 ///
-/// An unidentified process in a repo nobody has used per-process targets in
-/// writes the default exactly as before spec 062 — atomically, last writer
-/// wins — and creates nothing (AC3).
+/// # Errors
+///
+/// As [`lock`].
+fn lock_for_write(repo: &Path) -> Result<Option<SessionLock>> {
+    if per_process_enabled(repo) {
+        lock(repo).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// Take the lock only when per-process state exists to race with: the
+/// read-only [`peek`]'s lock, so a view in a repo nobody has used per-process
+/// targets in creates nothing.
 ///
 /// # Errors
 ///
@@ -982,7 +1032,7 @@ pub fn retarget(
     now: SystemTime,
 ) -> Result<RetargetOutcome> {
     let identity = effective(repo, identity);
-    let _lock = lock_if_shared(repo)?;
+    let _lock = lock_for_write(repo)?;
     let mut outcome = RetargetOutcome::default();
     let mut record_outcome = |label: String| {
         if to.is_some() {
@@ -1083,10 +1133,7 @@ pub fn write(
     now: SystemTime,
 ) -> Result<WriteOutcome> {
     let identity = effective(repo, identity);
-    let lock = match identity {
-        Some(_) => Some(lock(repo)?),
-        None => lock_if_shared(repo)?,
-    };
+    let lock = lock_for_write(repo)?;
 
     let default_path = paths::session_path_for_write(repo);
     let created = !default_path.exists();
@@ -1296,6 +1343,65 @@ mod tests {
     }
 
     #[test]
+    fn a_held_lock_times_out_a_second_acquirer_naming_the_file() {
+        let tmp = tempdir().unwrap();
+        let _held = lock(tmp.path()).unwrap();
+        let err = lock_within(tmp.path(), Duration::from_millis(50)).unwrap_err();
+        assert!(err.to_string().contains(".lock"), "{err}");
+        assert!(err.to_string().contains("held the lock"), "{err}");
+    }
+
+    #[test]
+    fn a_released_lock_is_taken_by_the_waiting_acquirer() {
+        let tmp = tempdir().unwrap();
+        let held = lock(tmp.path()).unwrap();
+        let repo = tmp.path().to_path_buf();
+        let waiter = std::thread::spawn(move || lock(&repo).map(drop));
+        std::thread::sleep(Duration::from_millis(50));
+        drop(held);
+        waiter.join().unwrap().unwrap();
+    }
+
+    /// `BE-TXN-002`: an unidentified write takes the lock even in a repo no
+    /// identified process has used yet — where `.ductus/sessions/` does not
+    /// exist — so the first identified write cannot interleave with its
+    /// read-modify-write of the default.
+    #[test]
+    fn an_unidentified_write_in_a_fresh_repo_takes_the_lock() {
+        let tmp = tempdir().unwrap();
+        set(tmp.path(), None, "055-a", t0());
+        assert!(tmp.path().join(paths::SESSIONS_LOCK).is_file());
+        assert!(session_files(tmp.path()).unwrap().is_empty());
+    }
+
+    /// With the lock held elsewhere, an unidentified write waits for it
+    /// rather than writing the default underneath the holder.
+    #[test]
+    fn an_unidentified_write_waits_on_a_held_lock() {
+        let tmp = tempdir().unwrap();
+        let held = lock(tmp.path()).unwrap();
+        let repo = tmp.path().to_path_buf();
+        let writer = std::thread::spawn(move || {
+            write(
+                &repo,
+                None,
+                &WriteShape::Target(target("055-a")),
+                None,
+                t0(),
+            )
+            .map(drop)
+        });
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(
+            !tmp.path().join(".ductus/session.toml").exists(),
+            "the write proceeded while another process held the lock"
+        );
+        drop(held);
+        writer.join().unwrap().unwrap();
+        assert!(default_text(tmp.path()).contains("055-a"));
+    }
+
+    #[test]
     fn lock_if_shared_creates_nothing_in_an_unused_repo() {
         let tmp = tempdir().unwrap();
         assert!(lock_if_shared(tmp.path()).unwrap().is_none());
@@ -1499,10 +1605,8 @@ mod tests {
         let tmp = repo();
         let out = set(tmp.path(), None, "055-a", t0());
         assert_eq!((out.identity, out.own_path), (None, None));
-        assert!(
-            !tmp.path().join(".ductus/sessions").exists(),
-            "nothing created"
-        );
+        let files = session_files(tmp.path()).unwrap();
+        assert!(files.is_empty(), "no per-process target: {files:?}");
         let r = resolve(tmp.path(), None, at(1)).unwrap();
         assert_eq!(
             (r.source, feature_of(&r)),
@@ -1689,10 +1793,8 @@ mod tests {
             "worded as pending: {:?}",
             peeked.notices
         );
-        assert!(
-            !tmp.path().join(".ductus/sessions").exists(),
-            "nothing created or pinned"
-        );
+        let files = session_files(tmp.path()).unwrap();
+        assert!(files.is_empty(), "nothing pinned: {files:?}");
 
         set(tmp.path(), Some(&y), "055-a", at(1));
         let before = std::fs::read_to_string(own_path(tmp.path(), &y)).unwrap();

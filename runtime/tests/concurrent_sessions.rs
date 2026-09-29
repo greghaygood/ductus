@@ -245,9 +245,16 @@ fn two_unidentified_processes_share_the_default() {
     assert_eq!(resolved(tmp.path(), Who::Nobody).as_deref(), Some("055-a"));
     target(tmp.path(), Who::Nobody, "056-b");
     assert_eq!(resolved(tmp.path(), Who::Nobody).as_deref(), Some("056-b"));
+    // Their writes hold the session lock, so the directory holds the lock and
+    // its `.gitignore` — dotfiles, never a per-process target.
+    let targets: Vec<_> = std::fs::read_dir(tmp.path().join(".ductus/sessions"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name())
+        .filter(|name| !name.to_string_lossy().starts_with('.'))
+        .collect();
     assert!(
-        !tmp.path().join(".ductus/sessions").exists(),
-        "unidentified processes create no per-process state"
+        targets.is_empty(),
+        "unidentified processes create no per-process state: {targets:?}"
     );
 }
 

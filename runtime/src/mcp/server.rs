@@ -725,9 +725,9 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<WriteSessionArgs>,
     ) -> Result<Json<WriteSessionResult>, String> {
-        primitives::write_session::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        // The session lock can wait on another process — blocking pool.
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::write_session::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -738,9 +738,9 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<ResolveSessionArgs>,
     ) -> Result<Json<ResolveSessionResult>, String> {
-        primitives::resolve_session::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        // The session lock can wait on another process — blocking pool.
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::resolve_session::run(&params.0, repo.as_path())).await
     }
 
     #[tool(
@@ -751,9 +751,10 @@ impl GovRuntimeServer {
         &self,
         params: Parameters<RetargetSessionsArgs>,
     ) -> Result<Json<RetargetSessionsResult>, String> {
-        primitives::retarget_sessions::run(&params.0, self.repo())
-            .map(Json)
-            .map_err(|e| e.to_string())
+        // The session lock can wait on another process — blocking pool.
+        let repo = Arc::clone(&self.repo);
+        dispatch_blocking(move || primitives::retarget_sessions::run(&params.0, repo.as_path()))
+            .await
     }
 
     #[tool(
