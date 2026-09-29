@@ -113,9 +113,10 @@ unchanged. Added:
   unexpired sessions targeting the same feature. Empty on clear and host-config
   writes.
 - `expired`: labels of the per-process targets the sweep removed.
-- `unreadable`: repo-relative paths the write could not parse: other
-  sessions' files, which the sweep leaves in place, and the process's own
-  record when it did not parse, which this write replaces (AC22).
+- `unreadable`: repo-relative paths the write could not read — a file that
+  does not parse, or whose `used-at` the sweep cannot read: other sessions'
+  files, which the sweep leaves in place, and the process's own record when it
+  did not parse, which this write replaces (AC22).
 - `notices`: a pending removal notice this write replaced along with the
   process's own record, delivered here so that no write, whichever command
   makes it, discards one undelivered (AC21).
@@ -143,9 +144,10 @@ dashboard lines, so names are held to an allowlist (`BE-INPUT-002`): `from` and
 `feature` must be feature directory names (`parse_feature_dir`) of visible
 ASCII with no path separator, and `scenario` a scenario slug; anything else is
 an `InvalidArgument` naming the argument, checked before any session is
-touched. The one names this refuses that the corpus grammar admits are legacy
-sequential directories whose slug holds whitespace or a non-ASCII character:
-no session can target one until it is renamed. `write-session` holds its `feature` and `scenario` to the same
+touched. The only names this refuses that the corpus grammar admits are
+legacy sequential directories whose slug holds a character outside visible
+ASCII — whitespace, a control or non-ASCII character — or a backslash: no
+session can target one until it is renamed. `write-session` holds its `feature` and `scenario` to the same
 rule.
 
 Result:

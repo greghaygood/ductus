@@ -1,21 +1,21 @@
 ---
 spec: 062-concurrent-session-targets
-last-run: 2026-09-29T22:31:00Z
-reviewed-against: ce1cfc1e58f4e43cbd199c1e8a14d0d2c28210c5
+last-run: 2026-09-29T23:13:22Z
+reviewed-against: b7771f72d8eecdbd6ca201af658ae77e3f51df2c
 diff-base: 25c946eaf75727634cd849c8579baac00f4e4eb6
 must-violations: 2
-should-violations: 2
-low-confidence: 1
-examined: 55
-scope: 78
+should-violations: 1
+low-confidence: 0
+examined: 27
+scope: 81
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 0479b7baec8556d0c3799a6bd5c6257f6048398f604af0fa37451e74b0dc6532
+  data-model.md: a0de31e159f154b7544c6ccb13be4a430d6c328a4745750ffdb0b244081b5201
 blocking: true
 dispositions:
-  fixed: 12
+  fixed: 3
   routed: 3
-  discarded: 4
+  discarded: 0
   undispositioned: 0
 waivers:
   - rule: CFG-ENV-001
@@ -129,59 +129,60 @@ decisions:
     reason: each command stating its own procedure in full is the command files' self-contained convention
     decided-at: 2026-09-29T22:31:00Z
     decided-by: andy@stone.dev
+  - key: "regression: with a malformed shared default, /target X can no longer repair it and every exec walk halts at the seed — task 24 — `framework/commands/target.md:29`"
+    outcome: routed
+    target: specs/062-concurrent-session-targets/tasks.md
+    decided-at: 2026-09-29T23:13:22Z
+    decided-by: andy@stone.dev
+  - key: "exec-path: target's continue-past-a-malformed-own-file path has no exec equivalent, and the step does not say so — task 24 — `runtime/src/main.rs:505`"
+    outcome: routed
+    target: specs/062-concurrent-session-targets/tasks.md
+    decided-at: 2026-09-29T23:13:22Z
+    decided-by: andy@stone.dev
+  - key: "accuracy: 048's new scenario says REQUEST_METHOD makes the matcher ignore HTTP_PROXY; it ignores every proxy variable — task 25 — `specs/048-govern-acquired-runtime/scenarios/fetch-archive-reads-its-proxy-once.md:21`"
+    outcome: routed
+    target: specs/062-concurrent-session-targets/tasks.md
+    decided-at: 2026-09-29T23:13:22Z
+    decided-by: andy@stone.dev
 ---
 
 # Review — 062-concurrent-session-targets
 
 ## Summary
 
-Blocking. The first review's nine findings are resolved (tasks 13–19): the session lock is bounded and taken by every write, the identity variables are captured once at startup, names written into sessions are validated, resolutions name unreadable peer files, and commands and `ductus exec` deliver every notice and write result. This re-review read the in-scope files changed since the pre-review head `216b66b0`; the others are unchanged since the first review examined them, and its decisions on them are retained. Two MUST findings remain: the slug part of a sequential feature name is still checked only by a denylist, so bidi and zero-width characters pass, and the new environment-variable inventory omits the proxy variables reqwest reads. Both have fix tasks (21, 22), as do the two SHOULD findings (20, 23). The per-fetch proxy read in spec 048's `fetch-archive` is waived here and routed to 048, which is reopened with a scenario.
+Blocking. The second review's findings are resolved (tasks 20–23): writes name an unparseable own record and never lose a notice part-way, session names are held to visible ASCII, the inventory lists the proxy variables, and the identity-capture test holds in any environment. This pass read the in-scope files changed since the second review's head `ce1cfc1e`; the others are unchanged since earlier passes examined them, and their decisions are retained. Two MUST findings remain, both in the inventory: its `REQUEST_METHOD` row understates the CGI guard, and it omits the certificate variables the HTTP client reads on Linux (task 25). A write still treats a malformed shared default as absent (SHOULD, task 24), which together with step 1 running on every `/target` means a malformed default can no longer be repaired and halts every `ductus exec` walk — routed to task 24. The per-fetch proxy read stays waived and routed to spec 048.
 
 ## MUST violations (blocking)
 
-### MUST: BE-INPUT-002 — A sequential feature name's slug is checked only by a character denylist
+### MUST: CFG-ENV-002 — The REQUEST_METHOD row understates the CGI guard
 
-- **File**: `runtime/src/primitives/mod.rs:2300-2315`
-- **Rule**: Input validation MUST use allowlists (define what is acceptable) for constrained inputs. Denylists (block known-bad patterns) MUST NOT be used as the sole defense.
-- **Finding**: `parse_feature_dir` leaves a sequential directory's slug unconstrained on purpose, and `validate_session_feature` then applies only the denylist `!is_control && !is_whitespace && != '/' && != '\\'`. `char::is_control` covers category Cc alone, so U+202E (right-to-left override) and U+200B (zero-width space) pass and reach other sessions' notices and dashboard `Target:` lines, where they reorder or hide text.
+- **File**: `docs/runtime.md:48`
+- **Rule**: The inventory MUST describe each variable's purpose, declare whether it is required or optional, and provide a safe placeholder or default value.
+- **Finding**: The row says that with `REQUEST_METHOD` set the HTTP client ignores `HTTP_PROXY`. hyper-util 0.1.20's matcher returns no HTTP proxy, no HTTPS proxy and an empty NO_PROXY whenever it is set (`matcher.rs:304-311`), so every proxy variable is ignored and fetch-archive's https downloads go direct.
+- **Auto-fixable**: yes
+- **Suggested fix**: Say that with REQUEST_METHOD set the client ignores every proxy variable above. Task 25.
+
+### MUST: CFG-ENV-002 — The inventory omits the certificate variables the HTTP client reads on Linux
+
+- **File**: `docs/runtime.md:39`
+- **Rule**: A single canonical inventory of every environment variable the application reads MUST be maintained alongside the source code.
+- **Finding**: On Linux and other non-Apple Unix, reqwest's certificate verifier loads roots through `rustls_native_certs::load_native_certs`, which reads `SSL_CERT_FILE` and `SSL_CERT_DIR` and trusts only what they name when either is set — on each fetch, since fetch-archive builds a client per call. They decide which authorities fetch-archive trusts, the same kind of client configuration as the proxy variables the inventory lists, and its carve-out does not separate them.
 - **Auto-fixable**: no
-- **Suggested fix**: Allow only visible ASCII (`is_ascii_graphic`) with no path separator. Task 21.
-
-### MUST: CFG-ENV-002 — The environment-variable inventory omits the proxy variables
-
-- **File**: `docs/runtime.md:37-47`
-- **Rule**: A single canonical inventory of every environment variable the application reads MUST be maintained alongside the source code. The inventory MUST describe each variable's purpose, declare whether it is required or optional, and provide a safe placeholder or default value.
-- **Finding**: The inventory says it is the one inventory of the variables the runtime reads, and that all three are read once at startup, but `fetch-archive` builds a reqwest client per call with the system proxy on, which reads `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (and their lowercase forms). They change where the runtime connects and are listed nowhere; `main`'s comment claiming every variable is read there once is false for the same reason.
-- **Auto-fixable**: no
-- **Suggested fix**: List the proxy variables with purpose and default, and state which variables are captured at startup and which the HTTP client reads per fetch. Task 22.
+- **Suggested fix**: List SSL_CERT_FILE and SSL_CERT_DIR, and make the carve-out name what it excludes and why. Task 25.
 
 ## SHOULD violations (advisory)
 
-### SHOULD: QUAL-CLAIM-001 — A write treats a malformed own record as having no notice
+### SHOULD: QUAL-CLAIM-001 — A write treats a malformed shared default as absent
 
-- **File**: `runtime/src/session.rs:1228-1240`
+- **File**: `runtime/src/session.rs:1218-1220`
 - **Rule**: A result that reports a clean, empty, or in-sync state SHOULD distinguish "examined the subject and found nothing" from "could not examine the subject", rather than emitting the same value for both.
-- **Finding**: `write` reads the own record with `ProcessRecord::load(..).ok()`, so a missing file and one that does not parse both yield no notice, and the write then overwrites the malformed file without naming it anywhere in its result — while `resolve` reports the same file as an error (AC22).
+- **Finding**: `write` reads the default through `read_default_lenient`, so a default that does not parse becomes an empty record: the write replaces it, drops its `cli-config-dir`, and returns a result indistinguishable from a clean replace — while `retarget` reports the same file and `resolve` errors on it (AC22).
 - **Auto-fixable**: no
-- **Suggested fix**: Report an unparseable own record in `unreadable`, as replaced. Task 20.
-
-### SHOULD: QUAL-TEST-001 — The capture test cannot fail where no identity is set
-
-- **File**: `runtime/src/session.rs:1375-1381`
-- **Rule**: A test SHOULD fail when the behavior it names is removed or broken. A test that passes whether or not the code under test behaves as named SHOULD NOT be added or counted as coverage.
-- **Finding**: The test asserts `process_identity()` is none. A per-call environment read also returns none when neither identity variable is set — CI's state — so the test fails only in a shell that carries one.
-- **Auto-fixable**: no
-- **Suggested fix**: Re-run the test as a child test process with an identity set. Task 23.
+- **Suggested fix**: Report a malformed default in `unreadable`, as replaced. Task 24.
 
 ## Low-confidence findings
 
-### LOW-CONFIDENCE: BE-RETRY-001 — The lock poll retries at a fixed interval without jitter
-
-- **File**: `runtime/src/session.rs:362-380`
-- **Rule**: Automatic retries MUST be bounded by a maximum attempt count, spaced with exponential backoff plus jitter, and limited to idempotent operations.
-- **Finding**: `lock_within` retries `try_lock` every 10 ms until the deadline: bounded and idempotent, but fixed-interval. The rule's concern is retry storms against a downstream dependency; the contenders here are a few local processes polling a kernel lock held for milliseconds.
-- **Auto-fixable**: no
-- **Suggested fix**: Record at LOCK_RETRY why the rule's backoff does not apply. Task 23.
+*None.*
 
 ## Waived findings
 
@@ -189,32 +190,19 @@ Blocking. The first review's nine findings are resolved (tasks 13–19): the ses
 
 - **File**: `runtime/src/primitives/fetch_archive.rs:113-139`
 - **Rule**: All environment variables MUST be read once at startup and the value cached; per-call reads from `os.environ` (or equivalent) are forbidden.
-- **Finding**: Each call builds a new reqwest client without `.no_proxy()`, and each build reads the proxy variables through hyper-util's system matcher, so the long-lived MCP server re-reads them per fetch.
+- **Finding**: Each call builds a new reqwest client without `.no_proxy()`, and each build reads the proxy variables, so the long-lived MCP server re-reads them per fetch.
 - **Auto-fixable**: no
 - **Suggested fix**: Waived here and routed to spec 048's scenario `fetch-archive-reads-its-proxy-once`.
 - **Waived**: Pre-existing in spec 048's fetch-archive: reqwest reads the proxy variables on each client build. Turning proxies off would break adopters behind a proxy, so the design is routed to 048's scenario fetch-archive-reads-its-proxy-once.
 
 ## Observations
 
-- exec: the exec stream omitted write-session's expired sessions and each peer's scenario — `runtime/src/interpreter/mod.rs:857` — **fixed**
-- doc: the shared test helper said every spawning test builds its command there, but concurrent_sessions.rs builds its own — `runtime/tests/common/mod.rs:17` — **fixed**
-- doc: validate_args linked the test helper run_with_now — `runtime/src/primitives/write_session.rs:111` — **fixed**
-- accuracy: the lone-agent claim omitted the restart case, where the earlier session shows as a co-target until it expires — `framework/constitution.md:766` — **fixed**
-- contract: --clear displayed expired and unreadable sessions but not the notices a clear write delivers — `framework/commands/target.md:32` — **fixed**
-- clarity: a bare (AC22) in fold.md and consolidate.md read as the command's own spec's criterion — `framework/commands/fold.md:79` — **fixed**
-- clarity: groom's step 7 pointer did not mention what to display from the write — `framework/commands/groom.md:47` — **fixed**
-- accuracy: 'only its own writes change its target' omitted fold and consolidation retargets — `specs/062-concurrent-session-targets/data-model.md:31` — **fixed**
-- contract: data-model.md did not state the name allowlist task 15 added — `specs/062-concurrent-session-targets/data-model.md:137` — **fixed**
-- contract: data-model.md's cleared list omitted the default label — `specs/062-concurrent-session-targets/data-model.md:145` — **fixed**
-- drift: plan.md's Affected Files lacked fetch_archive.rs, and its edges paragraph omitted the primitives' run — `specs/062-concurrent-session-targets/plan.md:53` — **fixed**
-- drift: README.md's pointer to docs/runtime.md did not name the environment-variable inventory — `README.md:216` — **fixed**
-- quality: a write overwrites the own record before storing the default and sweeping, so an error part-way loses the notice it replaced — task 20 — `runtime/src/session.rs:1256` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
-- regression: /target X now fails at step 1 on a malformed own session file it used to repair by overwriting — task 20 — `framework/commands/target.md:29` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
-- security: with a proxy set, fetch-archive's connection is tunnelled and its SSRF address pin no longer holds (pre-existing) — `runtime/src/primitives/fetch_archive.rs:130` — **routed** to `specs/048-govern-acquired-runtime/scenarios/fetch-archive-reads-its-proxy-once.md`
-- test: two lock tests rely on sleeps to reach the contended state — `runtime/src/session.rs:1452` — **discarded**: neither can fail falsely, and the deterministic timeout and fresh-repo lock tests carry the behavior
-- concurrency: the legacy layout still read-modify-writes the default without the lock — `runtime/src/session.rs:393` — **discarded**: deliberate and recorded in the plan: creating .ductus/sessions/ beside a legacy file breaks 042's cutover rule, and it lasts only until /ductus migrates the repo
-- ux: /target X announces adopting the feature it is about to leave — `framework/commands/target.md:29` — **discarded**: truthful: the session did adopt that target before the write replaced it
-- reuse: the same 'Display what the write reports' sentence appears in four command files — `framework/commands/target.md:44` — **discarded**: each command stating its own procedure in full is the command files' self-contained convention
+- regression: with a malformed shared default, /target X can no longer repair it and every exec walk halts at the seed — task 24 — `framework/commands/target.md:29` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
+- exec-path: target's continue-past-a-malformed-own-file path has no exec equivalent, and the step does not say so — task 24 — `runtime/src/main.rs:505` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
+- accuracy: 048's new scenario says REQUEST_METHOD makes the matcher ignore HTTP_PROXY; it ignores every proxy variable — task 25 — `specs/048-govern-acquired-runtime/scenarios/fetch-archive-reads-its-proxy-once.md:21` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
+- accuracy: the unreadable docs said 'could not parse', but the sweep also reports a file whose used-at cannot be read — `runtime/src/schema/primitives.rs:3001` — **fixed**
+- accuracy: data-model's allowlist paragraph omitted control characters and backslash, and read 'The one names' — `specs/062-concurrent-session-targets/data-model.md:146` — **fixed**
+- drift: the exec expired line hardcoded 'seven days' instead of deriving it from IDLE_EXPIRY — `runtime/src/interpreter/mod.rs:887` — **fixed**
 
 ## Skipped passes
 

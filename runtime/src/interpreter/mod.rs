@@ -882,9 +882,10 @@ fn session_report_lines(name: &str, result: &Value) -> Vec<String> {
             None => format!("session peer: {session} also targets {target}"),
         })
     });
-    let expired = list("expired")
-        .filter_map(Value::as_str)
-        .map(|label| format!("expired session: {label} was idle past seven days and removed"));
+    let expired = list("expired").filter_map(Value::as_str).map(|label| {
+        let days = crate::session::IDLE_EXPIRY.as_secs() / 86_400;
+        format!("expired session: {label} was idle past {days} days and removed")
+    });
     let unreadable = list("unreadable")
         .filter_map(Value::as_str)
         .map(|path| format!("unreadable session file: {path}"));
@@ -1193,14 +1194,16 @@ mod tests {
             "expired": ["old"],
             "unreadable": [".ductus/sessions/broken.toml"],
         });
+        let days = crate::session::IDLE_EXPIRY.as_secs() / 86_400;
         assert_eq!(
             session_report_lines("write-session", &result),
             [
-                "session notice: Target 1.1-a was folded into 055-a.",
-                "session peer: review also targets 055-a (last used 2026-09-29T12:00:00Z)",
-                "session peer: x also targets 055-a/edge",
-                "expired session: old was idle past seven days and removed",
-                "unreadable session file: .ductus/sessions/broken.toml",
+                "session notice: Target 1.1-a was folded into 055-a.".to_owned(),
+                "session peer: review also targets 055-a (last used 2026-09-29T12:00:00Z)"
+                    .to_owned(),
+                "session peer: x also targets 055-a/edge".to_owned(),
+                format!("expired session: old was idle past {days} days and removed"),
+                "unreadable session file: .ductus/sessions/broken.toml".to_owned(),
             ]
         );
         let waivers = serde_json::json!({ "notices": ["waiver expired: x"] });

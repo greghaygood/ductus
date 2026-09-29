@@ -1185,8 +1185,9 @@ pub struct WriteOutcome {
     pub peers: Vec<SessionPeer>,
     /// Labels of per-process targets the expiry sweep removed.
     pub expired: Vec<String>,
-    /// Per-process files the write could not parse: another session's are left
-    /// in place, and the caller's own is the record this write replaces.
+    /// Per-process files the write could not read — a file that does not
+    /// parse, or whose `used-at` the sweep cannot read: another session's are
+    /// left in place, and the caller's own is the record this write replaces.
     pub unreadable: Vec<PathBuf>,
     /// A pending removal notice this write replaced with the process's new
     /// target — delivered here, since the replaced record was its only copy.
