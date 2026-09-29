@@ -1181,7 +1181,8 @@ pub struct WriteOutcome {
     pub peers: Vec<SessionPeer>,
     /// Labels of per-process targets the expiry sweep removed.
     pub expired: Vec<String>,
-    /// Per-process files the write could not examine, left in place.
+    /// Per-process files the write could not parse: another session's are left
+    /// in place, and the caller's own is the record this write replaces.
     pub unreadable: Vec<PathBuf>,
     /// A pending removal notice this write replaced with the process's new
     /// target — delivered here, since the replaced record was its only copy.
@@ -1227,18 +1228,28 @@ pub fn write(
     };
     // A target or clear write replaces this process's own record, and with it
     // any removal notice not yet delivered: deliver it through this write
-    // rather than lose it (AC21), whichever command made the write.
+    // rather than lose it (AC21), whichever command made the write. A record
+    // that does not parse cannot be checked for one, so it is named as replaced
+    // rather than read as holding none (AC22).
+    let mut replaced_unreadable = None;
     if let Some(identity) = identity
         && *shape != WriteShape::HostConfig
     {
-        outcome.notices = ProcessRecord::load(&own_path(repo, identity))
-            .ok()
-            .and_then(|record| record.notice)
-            .iter()
-            .map(removal_notice)
-            .collect();
+        let own = own_path(repo, identity);
+        if own.exists() {
+            match ProcessRecord::load(&own) {
+                Ok(record) => {
+                    outcome.notices = record.notice.iter().map(removal_notice).collect();
+                }
+                Err(_) => replaced_unreadable = Some(own),
+            }
+        }
     }
 
+    // The own record is built here and stored last, after the default and the
+    // sweep, so a failure part-way leaves the replaced record — and any notice
+    // it holds — in place for the next resolution rather than lost.
+    let mut own_record = None;
     match shape {
         WriteShape::Target(target) => {
             default.set_target(Some(target), Some(stamp.clone()));
@@ -1252,9 +1263,7 @@ pub fn write(
                     ..ProcessRecord::default()
                 };
                 record.set_target(Some(target));
-                let own = own_path(repo, identity);
-                record.store(&own)?;
-                outcome.own_path = Some(own);
+                own_record = Some((own_path(repo, identity), record));
                 outcome.peers = peers;
                 outcome.unreadable = unreadable;
             }
@@ -1268,13 +1277,12 @@ pub fn write(
                     ..ProcessRecord::default()
                 };
                 record.set_target(None);
-                let own = own_path(repo, identity);
-                record.store(&own)?;
-                outcome.own_path = Some(own);
+                own_record = Some((own_path(repo, identity), record));
             }
         }
         WriteShape::HostConfig => {}
     }
+    outcome.unreadable.extend(replaced_unreadable);
     if let Some(dir) = cli_config_dir {
         default.cli_config_dir = Some(dir);
     } else if *shape == WriteShape::HostConfig {
@@ -1291,6 +1299,10 @@ pub fn write(
                 outcome.unreadable.push(path);
             }
         }
+    }
+    if let Some((own, record)) = own_record {
+        record.store(&own)?;
+        outcome.own_path = Some(own);
     }
     Ok(outcome)
 }
@@ -1872,6 +1884,56 @@ mod tests {
             "delivered once"
         );
         assert!(set(tmp.path(), Some(&x), "056-b", at(4)).notices.is_empty());
+    }
+
+    /// AC22: a write over an own record that does not parse names it, as
+    /// replaced, rather than reading it as holding no notice.
+    #[test]
+    fn a_write_over_a_malformed_own_record_names_it() {
+        let tmp = repo();
+        let x = id("x");
+        set(tmp.path(), Some(&x), "055-a", t0());
+        let own = own_path(tmp.path(), &x);
+        std::fs::write(&own, "feature = [").unwrap();
+
+        let out = set(tmp.path(), Some(&x), "056-b", at(1));
+        assert_eq!(out.unreadable, vec![own]);
+        assert!(out.notices.is_empty());
+        let resolved = resolve(tmp.path(), Some(&x), at(2)).unwrap();
+        assert_eq!(
+            feature_of(&resolved),
+            Some("056-b"),
+            "the record was replaced"
+        );
+    }
+
+    /// A write that fails part-way — here, storing the shared default — leaves
+    /// the own record, and the notice it holds, for the next resolution.
+    #[test]
+    fn a_write_that_fails_part_way_keeps_the_pending_notice() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), Some(&x), "1234.1-b", t0());
+        retarget(
+            tmp.path(),
+            Some(&y),
+            "1234.1-b",
+            None,
+            RemovalCause::Consolidate,
+            at(1),
+        )
+        .unwrap();
+        let default = tmp.path().join(".ductus/session.toml");
+        std::fs::remove_file(&default).unwrap();
+        std::fs::create_dir(&default).unwrap();
+
+        let shape = WriteShape::Target(target("055-a"));
+        assert!(write(tmp.path(), Some(&x), &shape, None, at(2)).is_err());
+        let record = ProcessRecord::load(&own_path(tmp.path(), &x)).unwrap();
+        assert!(
+            record.notice.is_some(),
+            "the notice survived the failed write"
+        );
     }
 
     #[test]

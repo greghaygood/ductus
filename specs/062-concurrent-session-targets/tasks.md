@@ -160,10 +160,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 20. A write names the own record it replaces and never loses a notice; `/target` continues past a malformed own file
 
-- [ ] `write` tells a missing own record (no notice to deliver) from one that does not parse: the unparseable file is reported in `unreadable`, as replaced, rather than treated as absent (review: QUAL-CLAIM-001)
-- [ ] `write` stores the process's own record last — after the shared default and the sweep — so an error part-way leaves the pending notice in place for the next resolution instead of losing it undelivered (review observation)
-- [ ] `target.md` step 1: when `resolve-session` fails because this process's own session file does not parse and an argument was supplied, report the named file and continue — the target write replaces it (review observation)
-- [ ] Tests: a write over a malformed own file names it; a write whose default store fails leaves the own record, and its notice, untouched
+- [x] `write` tells a missing own record (no notice to deliver) from one that does not parse: the unparseable file is reported in `unreadable`, as replaced, rather than treated as absent (review: QUAL-CLAIM-001)
+- [x] `write` stores the process's own record last — after the shared default and the sweep — so an error part-way leaves the pending notice in place for the next resolution instead of losing it undelivered (review observation)
+- [x] `target.md` step 1: when `resolve-session` fails because this process's own session file does not parse and an argument was supplied, report the named file and continue — the target write replaces it (review observation)
+- [x] Tests: a write over a malformed own file names it; a write whose default store fails leaves the own record, and its notice, untouched
 
 - **Done when**: no write treats an unparseable own record as absent or loses a pending notice on a part-way failure; `/target X` repairs a malformed own file; `cargo test` passes.
 

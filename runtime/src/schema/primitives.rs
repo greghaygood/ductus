@@ -2998,8 +2998,9 @@ pub struct WriteSessionResult {
     /// Labels of per-process targets the expiry sweep removed.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub expired: Vec<String>,
-    /// Repo-relative per-process files the write could not examine; left in
-    /// place and reported.
+    /// Repo-relative per-process files the write could not parse: another
+    /// session's are left in place, and the writer's own is the record this
+    /// write replaced.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub unreadable: Vec<String>,
     /// A pending removal notice this write replaced — a fold or consolidation

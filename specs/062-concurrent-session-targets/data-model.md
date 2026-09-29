@@ -113,8 +113,9 @@ unchanged. Added:
   unexpired sessions targeting the same feature. Empty on clear and host-config
   writes.
 - `expired`: labels of the per-process targets the sweep removed.
-- `unreadable`: repo-relative paths the sweep could not parse and left in
-  place.
+- `unreadable`: repo-relative paths the write could not parse: other
+  sessions' files, which the sweep leaves in place, and the process's own
+  record when it did not parse, which this write replaces (AC22).
 - `notices`: a pending removal notice this write replaced along with the
   process's own record, delivered here so that no write, whichever command
   makes it, discards one undelivered (AC21).
