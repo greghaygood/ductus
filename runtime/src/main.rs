@@ -492,7 +492,6 @@ fn seed_context(
     repo: &std::path::Path,
     identity: Option<&ductus::session::Identity>,
 ) -> ductus::primitives::Result<serde_json::Map<String, serde_json::Value>> {
-    use ductus::schema::primitives::SessionSource;
     use serde_json::{Map, Value};
 
     let mut context = Map::new();
@@ -502,26 +501,17 @@ fn seed_context(
     {
         context.extend(map);
     }
-    let resolution = match ductus::session::peek(repo, identity, std::time::SystemTime::now()) {
-        Ok(resolution) => resolution,
-        // A process with no own record seeds from the default read leniently
-        // above, as before spec 062, so a malformed default halts no walk that
-        // does not ask for the session; only the process's own file is held
-        // strict here (AC22).
-        Err(_) if !has_own_record(repo, identity) => return Ok(context),
-        Err(err) => return Err(err),
-    };
-    // Only a process with a target of its own overrides the default's keys.
-    // Otherwise the default seeds exactly as it did before spec 062 — it is
-    // also a general-purpose seed, whose `path` may be a primitive argument
-    // with no `feature` beside it (a bootstrap walk's `merge-managed-block`).
-    let own = matches!(
-        resolution.source,
-        SessionSource::Own | SessionSource::Cleared
-    );
-    if !own {
+    // Only a process with a record of its own overrides the default's keys.
+    // Otherwise the default, read leniently above, seeds exactly as it did
+    // before spec 062 — so a malformed default halts no walk that does not ask
+    // for the session, and the seed is also a general-purpose one, whose `path`
+    // may be a primitive argument with no `feature` beside it (a bootstrap
+    // walk's `merge-managed-block`). Only the process's own file is read
+    // strictly (AC22).
+    if !has_own_record(repo, identity) {
         return Ok(context);
     }
+    let resolution = ductus::session::peek(repo, identity, std::time::SystemTime::now())?;
     // `set-at` goes with the target keys: the default's stamp belongs to
     // another session's write, not to this process's own target.
     for key in ["feature", "path", "scenario", "scenario-path", "set-at"] {

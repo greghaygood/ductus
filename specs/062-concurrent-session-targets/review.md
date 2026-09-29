@@ -1,26 +1,26 @@
 ---
 spec: 062-concurrent-session-targets
-last-run: 2026-09-29T23:13:22Z
-reviewed-against: b7771f72d8eecdbd6ca201af658ae77e3f51df2c
+last-run: 2026-09-29T23:54:41Z
+reviewed-against: 834b72a49c7c7ed42dce3fd5e1e32291f2c98fe3
 diff-base: 25c946eaf75727634cd849c8579baac00f4e4eb6
-must-violations: 2
-should-violations: 1
+must-violations: 0
+should-violations: 0
 low-confidence: 0
-examined: 27
+examined: 12
 scope: 81
 skipped-passes: []
 reviewed-digest:
-  data-model.md: a0de31e159f154b7544c6ccb13be4a430d6c328a4745750ffdb0b244081b5201
-blocking: true
+  data-model.md: 85a06c141afc3f7b14d73d0e406b94b389a207bc6c72443acd3e8794f3caae0f
+blocking: false
 dispositions:
-  fixed: 3
-  routed: 3
+  fixed: 2
+  routed: 0
   discarded: 0
   undispositioned: 0
 waivers:
   - rule: CFG-ENV-001
     file: runtime/src/primitives/fetch_archive.rs
-    reason: "Pre-existing in spec 048's fetch-archive: reqwest reads the proxy variables on each client build. Turning proxies off would break adopters behind a proxy, so the design is routed to 048's scenario fetch-archive-reads-its-proxy-once."
+    reason: "Pre-existing in spec 048's fetch-archive: reqwest reads the proxy variables, and on Linux the certificate variables SSL_CERT_FILE and SSL_CERT_DIR, on each client build. Turning proxies off would break adopters behind a proxy, so the design is routed to 048's scenario fetch-archive-reads-its-proxy-once."
     waived-at: 2026-09-29T22:27:22Z
     waived-by: andy@stone.dev
 decisions:
@@ -150,35 +150,15 @@ decisions:
 
 ## Summary
 
-Blocking. The second review's findings are resolved (tasks 20–23): writes name an unparseable own record and never lose a notice part-way, session names are held to visible ASCII, the inventory lists the proxy variables, and the identity-capture test holds in any environment. This pass read the in-scope files changed since the second review's head `ce1cfc1e`; the others are unchanged since earlier passes examined them, and their decisions are retained. Two MUST findings remain, both in the inventory: its `REQUEST_METHOD` row understates the CGI guard, and it omits the certificate variables the HTTP client reads on Linux (task 25). A write still treats a malformed shared default as absent (SHOULD, task 24), which together with step 1 running on every `/target` means a malformed default can no longer be repaired and halts every `ductus exec` walk — routed to task 24. The per-fetch proxy read stays waived and routed to spec 048.
+Not blocking. The third review's findings are resolved (tasks 24–25): a write names a malformed shared default as replaced, `/target` repairs one, the exec seed reads the default leniently again when the process has no own record, and the environment-variable inventory is accurate about the HTTP client's proxy, CGI and certificate behavior against the locked dependency sources. This pass read the in-scope files changed since the third review's head `ec96e802`; every other file is unchanged since an earlier pass examined it, and those passes' decisions are retained. No new finding; the one violation left is the per-fetch proxy and certificate read in spec 048's `fetch-archive`, waived here and routed to 048. Two observations were fixed in the run.
 
 ## MUST violations (blocking)
 
-### MUST: CFG-ENV-002 — The REQUEST_METHOD row understates the CGI guard
-
-- **File**: `docs/runtime.md:48`
-- **Rule**: The inventory MUST describe each variable's purpose, declare whether it is required or optional, and provide a safe placeholder or default value.
-- **Finding**: The row says that with `REQUEST_METHOD` set the HTTP client ignores `HTTP_PROXY`. hyper-util 0.1.20's matcher returns no HTTP proxy, no HTTPS proxy and an empty NO_PROXY whenever it is set (`matcher.rs:304-311`), so every proxy variable is ignored and fetch-archive's https downloads go direct.
-- **Auto-fixable**: yes
-- **Suggested fix**: Say that with REQUEST_METHOD set the client ignores every proxy variable above. Task 25.
-
-### MUST: CFG-ENV-002 — The inventory omits the certificate variables the HTTP client reads on Linux
-
-- **File**: `docs/runtime.md:39`
-- **Rule**: A single canonical inventory of every environment variable the application reads MUST be maintained alongside the source code.
-- **Finding**: On Linux and other non-Apple Unix, reqwest's certificate verifier loads roots through `rustls_native_certs::load_native_certs`, which reads `SSL_CERT_FILE` and `SSL_CERT_DIR` and trusts only what they name when either is set — on each fetch, since fetch-archive builds a client per call. They decide which authorities fetch-archive trusts, the same kind of client configuration as the proxy variables the inventory lists, and its carve-out does not separate them.
-- **Auto-fixable**: no
-- **Suggested fix**: List SSL_CERT_FILE and SSL_CERT_DIR, and make the carve-out name what it excludes and why. Task 25.
+*None.*
 
 ## SHOULD violations (advisory)
 
-### SHOULD: QUAL-CLAIM-001 — A write treats a malformed shared default as absent
-
-- **File**: `runtime/src/session.rs:1218-1220`
-- **Rule**: A result that reports a clean, empty, or in-sync state SHOULD distinguish "examined the subject and found nothing" from "could not examine the subject", rather than emitting the same value for both.
-- **Finding**: `write` reads the default through `read_default_lenient`, so a default that does not parse becomes an empty record: the write replaces it, drops its `cli-config-dir`, and returns a result indistinguishable from a clean replace — while `retarget` reports the same file and `resolve` errors on it (AC22).
-- **Auto-fixable**: no
-- **Suggested fix**: Report a malformed default in `unreadable`, as replaced. Task 24.
+*None.*
 
 ## Low-confidence findings
 
@@ -186,23 +166,19 @@ Blocking. The second review's findings are resolved (tasks 20–23): writes name
 
 ## Waived findings
 
-### WAIVED: CFG-ENV-001 — fetch-archive reads the proxy variables on every call
+### WAIVED: CFG-ENV-001 — fetch-archive reads the proxy and certificate variables on every call
 
 - **File**: `runtime/src/primitives/fetch_archive.rs:113-139`
 - **Rule**: All environment variables MUST be read once at startup and the value cached; per-call reads from `os.environ` (or equivalent) are forbidden.
-- **Finding**: Each call builds a new reqwest client without `.no_proxy()`, and each build reads the proxy variables, so the long-lived MCP server re-reads them per fetch.
+- **Finding**: Each call builds a new reqwest client without `.no_proxy()`; each build reads the proxy variables through hyper-util's system matcher and, on Linux, `SSL_CERT_FILE` and `SSL_CERT_DIR` through the certificate verifier, so the long-lived MCP server re-reads them per fetch.
 - **Auto-fixable**: no
 - **Suggested fix**: Waived here and routed to spec 048's scenario `fetch-archive-reads-its-proxy-once`.
-- **Waived**: Pre-existing in spec 048's fetch-archive: reqwest reads the proxy variables on each client build. Turning proxies off would break adopters behind a proxy, so the design is routed to 048's scenario fetch-archive-reads-its-proxy-once.
+- **Waived**: Pre-existing in spec 048's fetch-archive: reqwest reads the proxy variables, and on Linux the certificate variables SSL_CERT_FILE and SSL_CERT_DIR, on each client build. Turning proxies off would break adopters behind a proxy, so the design is routed to 048's scenario fetch-archive-reads-its-proxy-once.
 
 ## Observations
 
-- regression: with a malformed shared default, /target X can no longer repair it and every exec walk halts at the seed — task 24 — `framework/commands/target.md:29` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
-- exec-path: target's continue-past-a-malformed-own-file path has no exec equivalent, and the step does not say so — task 24 — `runtime/src/main.rs:505` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
-- accuracy: 048's new scenario says REQUEST_METHOD makes the matcher ignore HTTP_PROXY; it ignores every proxy variable — task 25 — `specs/048-govern-acquired-runtime/scenarios/fetch-archive-reads-its-proxy-once.md:21` — **routed** to `specs/062-concurrent-session-targets/tasks.md`
-- accuracy: the unreadable docs said 'could not parse', but the sweep also reports a file whose used-at cannot be read — `runtime/src/schema/primitives.rs:3001` — **fixed**
-- accuracy: data-model's allowlist paragraph omitted control characters and backslash, and read 'The one names' — `specs/062-concurrent-session-targets/data-model.md:146` — **fixed**
-- drift: the exec expired line hardcoded 'seven days' instead of deriving it from IDLE_EXPIRY — `runtime/src/interpreter/mod.rs:887` — **fixed**
+- simplicity: the exec seed peeked even with no own record, then discarded the result and any error — `runtime/src/main.rs:505` — **fixed**
+- record: the CFG-ENV-001 waiver's reason named only the proxy variables, while 048's scenario says the certificate variables were waived too — `specs/062-concurrent-session-targets/review.md:23` — **fixed**
 
 ## Skipped passes
 
