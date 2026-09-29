@@ -17,9 +17,10 @@ use std::process::Command;
 /// A runtime command with the session-identity variables removed (spec 062),
 /// so a spawned process never depends on the shell running the suite — which
 /// may itself carry a platform session id and would otherwise make every run
-/// an identified process's (AGENTS.md, Gotchas). Every test that spawns the
-/// binary builds its command here, so the rule holds by construction; a test
-/// that wants an identity sets it on the returned command.
+/// an identified process's (AGENTS.md, Gotchas). A test that spawns the binary
+/// builds its command here, so the rule holds by construction, and one that
+/// wants an identity sets it on the returned command; `concurrent_sessions.rs`
+/// alone builds its own, since it sets each child's identity explicitly.
 pub fn ductus_command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
     let mut command = Command::new(bin);
     command

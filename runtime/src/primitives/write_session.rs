@@ -108,7 +108,7 @@ pub(crate) fn run_as(
 }
 
 /// Argument-shape validation for the three write shapes (clear / target /
-/// host-config). Split from [`run_with_now`] so the write path stays
+/// host-config). Split from [`run_as`] so the write path stays
 /// readable; the checks run in precedence order.
 fn validate_args(args: &WriteSessionArgs) -> Result<()> {
     if let Some(path) = &args.path {

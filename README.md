@@ -213,7 +213,7 @@ The pointer is what lets a committed MCP config work for the whole team: `.mcp.j
 
 `/ductus` reads the pin from the release it updates from, compares it against the installed binary on every run, and re-acquires on mismatch, so upgrading is a routine `/ductus`. A machine running two ductus projects on different releases holds one binary — whichever ran most recently — and the two re-acquire it over each other, one `/ductus` run at a time. A project that needs its own binary sets `[runtime] path`.
 
-The runtime is **required**: acquisition failure halts the run rather than degrading, because a requirement that quietly is not one leaves both execution paths alive. For supplying your own binary, what to do when acquisition fails, and how the MCP server is registered per agent, see **[docs/runtime.md](docs/runtime.md)**.
+The runtime is **required**: acquisition failure halts the run rather than degrading, because a requirement that quietly is not one leaves both execution paths alive. For supplying your own binary, what to do when acquisition fails, how the MCP server is registered per agent, and the environment variables the runtime reads, see **[docs/runtime.md](docs/runtime.md)**.
 
 ## Configuration
 

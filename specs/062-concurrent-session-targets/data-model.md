@@ -28,7 +28,8 @@ and each resolves only its own (AC1, AC2):
 
 The shared default only records the most recent target change. A process
 reads it just once, to adopt it when it has no target of its own; after that,
-only its own writes change its target. `peers`, `seen-peers` and the co-target
+only its own writes, or a fold or consolidation that removes the spec it
+targets, change its target. `peers`, `seen-peers` and the co-target
 notice below exist for the other case, where two sessions land on the same
 feature.
 
@@ -136,11 +137,19 @@ Arguments:
 Supplying both `clear` and a new target is an `InvalidArgument`; supplying
 neither is a `MissingArgument` naming the argument the cause still needs.
 Paths are checked with the existing `validate_no_traversal`, an `InvalidPath`.
+Every name a session stores is rendered into other sessions' notices and
+dashboard lines, so names are held to an allowlist (`BE-INPUT-002`): `from` and
+`feature` must be feature directory names (`parse_feature_dir`) of visible
+characters with no path separator, and `scenario` a scenario slug; anything
+else is an `InvalidArgument` naming the argument, checked before any session
+is touched. `write-session` holds its `feature` and `scenario` to the same
+rule.
 
 Result:
 
 - `retargeted`: labels of the sessions re-pointed, with `default` for the
   shared default.
-- `cleared`: labels of the sessions cleared.
+- `cleared`: labels of the sessions cleared, with `default` for the shared
+  default.
 - `unreadable`: paths that could not be parsed. These are left in place and
   reported, because a removal cannot prove they do not name `from`.

@@ -50,8 +50,9 @@ nothing else. Today the read logic exists twice, in `dashboard`
 and once-only notices only hold if every reader follows the same rule, so
 duplicated read logic would reproduce the defect this spec removes.
 
-The module takes the identity as a **parameter**. Only the edges (the MCP
-handlers, the CLI entry and the exec seed) ask for the process's own, through
+The module takes the identity as a **parameter**. Only the edges (each session
+primitive's `run`, which the MCP handlers and the CLI call, and the exec seed)
+ask for the process's own, through
 `session::process_identity`, which answers from the identity variables the
 binary's `main` captured once at startup (`session::init_process_identity`;
 `CFG-ENV-001`). A per-call read of the environment was tried first and
@@ -333,6 +334,8 @@ discharges the declared impact.
 | `framework/constitution.md` | Modify | Rewrite §concurrent-features |
 | `specs/010-agent-autonomy/spec.md` | Modify | Signpost on the Parallel milestones verdict |
 | `docs/runtime.md` | Modify | The environment-variable inventory (`CFG-ENV-002`; review) |
+| `runtime/src/primitives/fetch_archive.rs` | Modify | Its allowlist variable captured once at startup (task 19) |
+| `README.md` | Modify | Its pointer to `docs/runtime.md` names the inventory (review) |
 | `AGENTS.md` | Modify | Gotcha: session identity in tests, captured once at startup |
 | `framework/bootstrap/ductus.md`, `framework/bootstrap/govern.md` | Modify | §Session state names the per-process targets (review) |
 | `runtime/tests/common/mod.rs` and the tests that spawn the binary | Modify | One shared `ductus_command` that clears the identity variables (review) |

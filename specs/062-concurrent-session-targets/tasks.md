@@ -157,3 +157,33 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] `runtime/src/primitives/fetch_archive.rs:296` — `host_is_insecure_allowed` calls `std::env::var("DUCTUS_FETCH_ALLOW_INSECURE_HOSTS")` per call, which CFG-ENV-001 forbids (read once at startup and cache); surfaced implementing task 14, which reads the session variables once at startup — fixed
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
+
+## 20. A write names the own record it replaces and never loses a notice; `/target` continues past a malformed own file
+
+- [ ] `write` tells a missing own record (no notice to deliver) from one that does not parse: the unparseable file is reported in `unreadable`, as replaced, rather than treated as absent (review: QUAL-CLAIM-001)
+- [ ] `write` stores the process's own record last — after the shared default and the sweep — so an error part-way leaves the pending notice in place for the next resolution instead of losing it undelivered (review observation)
+- [ ] `target.md` step 1: when `resolve-session` fails because this process's own session file does not parse and an argument was supplied, report the named file and continue — the target write replaces it (review observation)
+- [ ] Tests: a write over a malformed own file names it; a write whose default store fails leaves the own record, and its notice, untouched
+
+- **Done when**: no write treats an unparseable own record as absent or loses a pending notice on a part-way failure; `/target X` repairs a malformed own file; `cargo test` passes.
+
+## 21. Session names are held to a visible-ASCII allowlist
+
+- [ ] `validate_session_feature` admits only visible ASCII (`is_ascii_graphic`) with no path separator, so bidi and zero-width characters such as U+202E and U+200B are refused along with newlines (review: BE-INPUT-002); `data-model.md` states the rule and the legacy names it refuses
+- [ ] Test: U+202E and U+200B in a feature name are refused, naming the argument
+
+- **Done when**: no character outside visible ASCII reaches a session file or notice through a stored name; `cargo test` passes.
+
+## 22. The environment-variable inventory lists the proxy variables
+
+- [ ] `docs/runtime.md` lists `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (with their lowercase forms), which `fetch-archive`'s HTTP client reads on each fetch, with each one's purpose and default; its completeness and read-once statements say which variables are captured at startup and which the client reads per fetch until 048's `fetch-archive-reads-its-proxy-once` resolves it (review: CFG-ENV-002)
+- [ ] `main`'s comment names what it captures rather than claiming every variable the runtime reads
+
+- **Done when**: every environment variable the runtime or its HTTP client reads is in the inventory, and no text claims a read-once that does not hold.
+
+## 23. The identity-capture test holds in any environment; the lock poll's pacing is explained
+
+- [ ] `a_process_that_never_captured_its_environment_is_unidentified` re-runs itself as a child test process with `CLAUDE_CODE_SESSION_ID` set, so it fails in any environment — CI included — if `process_identity` reads the environment per call (review: QUAL-TEST-001)
+- [ ] `LOCK_RETRY` records why the lock poll uses a short fixed interval rather than a jittered backoff: it polls a local advisory lock held for milliseconds, bounded by `SESSION_LOCK_TIMEOUT` (review: BE-RETRY-001, low confidence)
+
+- **Done when**: the capture test fails under a per-call environment read even when the parent shell carries no identity; `cargo test` passes.

@@ -152,3 +152,9 @@ Phase 1 is independently safe and lands first so later work is written against a
 - [x] Implement the behavior described in `scenarios/state-a-version-checks-the-pin.md`
 
 - **Done when**: State A probes the resolved binary against `{pin}` and branches three ways — proceed silently on a match, warn and continue for a project-supplied `[runtime] path`, and otherwise acquire `{pin}` then run the remainder through `{pointer-path} <primitive>` with the acquisition carried to the Closing restart, since the running MCP server holds the old binary regardless of the store; `framework/bootstrap/govern.md` is byte-identical (Family 21); and the shipped `ductus-pre-commit` hook probes each primitive's availability before calling it, halting with the installed version and the missing subcommand rather than a bare clap error. Proven against a stale runtime that lacks the subcommands (guard halts with a diagnosis) and a current one (guard silent); Family 22 green.
+
+### 18. Implement scenario: [fetch-archive-reads-its-proxy-once](scenarios/fetch-archive-reads-its-proxy-once.md) — proxy configuration read once, SSRF screen stated for proxies
+
+- [ ] Implement the behavior described in `scenarios/fetch-archive-reads-its-proxy-once.md`
+
+- **Done when**: the scenario's open questions are resolved; `fetch-archive` reads no environment variable per call; `docs/runtime.md`'s inventory lists the proxy variables with their effect; the SSRF screen's behavior under a proxy is implemented and stated; an adopter behind a proxy can still fetch; `cargo test` passes. Routed from 062's review (CFG-ENV-001 waived there on `runtime/src/primitives/fetch_archive.rs`).

@@ -10,8 +10,10 @@ next-criterion: 26
 Two or more agent processes working in the same working tree each hold their
 own session target, so a target written by one never changes the feature
 another acts on. An operator running a single agent keeps the single-target
-behavior: the agent resumes the most recently set target as before, and at
-most sees its session labeled and its adoption of that target announced.
+behavior: the agent resumes the most recently set target as before. What it
+sees differently is its session labeled, its adoption of that target
+announced, and, after a restart and until the earlier session's target
+expires, that earlier session named as sharing the feature.
 
 ## Motivation
 

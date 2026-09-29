@@ -849,8 +849,9 @@ fn envelope_kind(message: &ProtocolMessage) -> &'static str {
 }
 
 /// What a session primitive's result has to tell the operator, one line
-/// each: its notices, the other sessions sharing the target it wrote, and the
-/// session files it could not check (spec 062). A host displays these; an exec
+/// each: its notices, the other sessions sharing the target it wrote, the
+/// sessions its sweep removed, and the session files it could not check
+/// (spec 062). A host displays these; an exec
 /// walk has no host, so the walker emits them as progress lines, or the
 /// notices its `resolve-session` step consumes would never be seen (AC19,
 /// AC21).
@@ -870,18 +871,28 @@ fn session_report_lines(name: &str, result: &Value) -> Vec<String> {
         .map(|message| format!("session notice: {message}"));
     let peers = list("peers").filter_map(|peer| {
         let session = peer.get("session")?.as_str()?;
-        let feature = peer.get("feature")?.as_str()?;
+        let mut target = peer.get("feature")?.as_str()?.to_owned();
+        if let Some(scenario) = peer.get("scenario").and_then(Value::as_str) {
+            target = format!("{target}/{scenario}");
+        }
         Some(match peer.get("last-used").and_then(Value::as_str) {
             Some(when) => {
-                format!("session peer: {session} also targets {feature} (last used {when})")
+                format!("session peer: {session} also targets {target} (last used {when})")
             }
-            None => format!("session peer: {session} also targets {feature}"),
+            None => format!("session peer: {session} also targets {target}"),
         })
     });
+    let expired = list("expired")
+        .filter_map(Value::as_str)
+        .map(|label| format!("expired session: {label} was idle past seven days and removed"));
     let unreadable = list("unreadable")
         .filter_map(Value::as_str)
         .map(|path| format!("unreadable session file: {path}"));
-    notices.chain(peers).chain(unreadable).collect()
+    notices
+        .chain(peers)
+        .chain(expired)
+        .chain(unreadable)
+        .collect()
 }
 
 fn format_step_number(number: &StepNumber) -> String {
@@ -1167,22 +1178,28 @@ mod tests {
     /// Spec 062, AC19/AC21: an exec walk has no host to display a session
     /// primitive's notices, so the walker turns each into a progress line.
     #[test]
-    fn a_session_result_reports_its_notices_peers_and_unreadable_files() {
+    fn a_session_result_reports_everything_a_host_would_display() {
         let result = serde_json::json!({
             "notices": [{"kind": "folded", "message": "Target 1.1-a was folded into 055-a."}],
-            "peers": [{
-                "session": "review",
-                "feature": "055-a",
-                "scenario": null,
-                "last-used": "2026-09-29T12:00:00Z"
-            }],
+            "peers": [
+                {
+                    "session": "review",
+                    "feature": "055-a",
+                    "scenario": null,
+                    "last-used": "2026-09-29T12:00:00Z"
+                },
+                { "session": "x", "feature": "055-a", "scenario": "edge" }
+            ],
+            "expired": ["old"],
             "unreadable": [".ductus/sessions/broken.toml"],
         });
         assert_eq!(
-            session_report_lines("resolve-session", &result),
+            session_report_lines("write-session", &result),
             [
                 "session notice: Target 1.1-a was folded into 055-a.",
                 "session peer: review also targets 055-a (last used 2026-09-29T12:00:00Z)",
+                "session peer: x also targets 055-a/edge",
+                "expired session: old was idle past seven days and removed",
                 "unreadable session file: .ductus/sessions/broken.toml",
             ]
         );
