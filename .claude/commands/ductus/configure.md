@@ -112,6 +112,7 @@ Configure `.claude/settings.local.json` with the permissions needed for slash co
    - `mcp__ductus__dashboard`
    - `mcp__ductus__write-session`
    - `mcp__ductus__resolve-session`
+   - `mcp__ductus__retarget-sessions`
    - `mcp__ductus__resolve-feature`
    - `mcp__ductus__create-feature`
    - `mcp__ductus__create-plan-artifacts`

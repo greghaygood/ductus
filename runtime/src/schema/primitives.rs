@@ -3096,6 +3096,73 @@ pub struct ResolveSessionResult {
     pub notices: Vec<SessionNotice>,
 }
 
+// -- retarget-sessions -------------------------------------------------------
+
+/// Why `retarget-sessions` is running: which removal took the directory.
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::ValueEnum,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum RetargetCause {
+    /// `/{project}:fold`: the content moved upstream, so every session naming
+    /// the folded spec follows it there. Requires a new target.
+    Fold,
+    /// `/{project}:consolidate`: the surviving spec is one nobody chose to
+    /// work on, so every session naming the removed spec is cleared. Requires
+    /// `clear`.
+    Consolidate,
+}
+
+/// Args for `retarget-sessions` (spec 062): after a fold or consolidation
+/// removes `from`'s directory, re-point or clear every session in the working
+/// tree that names it — the shared default and every per-process target.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct RetargetSessionsArgs {
+    /// The removed feature's directory name.
+    #[arg(long)]
+    pub from: String,
+    /// Which removal ran: `fold` re-targets, `consolidate` clears.
+    #[arg(long, value_enum)]
+    pub cause: RetargetCause,
+    /// The new target's feature, for a fold. Supplied with `path`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub feature: Option<String>,
+    /// The new target's repo-relative spec directory. Supplied with
+    /// `feature`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub path: Option<String>,
+    /// The new target's scenario slug, when the fold created one. Supplied
+    /// with `scenario-path`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario: Option<String>,
+    /// The new target's repo-relative scenario file. Supplied with
+    /// `scenario`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[arg(long)]
+    pub scenario_path: Option<String>,
+    /// Clear rather than re-target, for a consolidation.
+    #[serde(default)]
+    #[arg(long)]
+    pub clear: bool,
+}
+
+/// Result for `retarget-sessions`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct RetargetSessionsResult {
+    /// Labels of the sessions re-pointed; `default` for the shared default.
+    pub retargeted: Vec<String>,
+    /// Labels of the sessions cleared; `default` for the shared default.
+    pub cleared: Vec<String>,
+    /// Repo-relative session files that could not be parsed. Left in place
+    /// and reported: a removal cannot prove they do not name `from`.
+    pub unreadable: Vec<String>,
+}
+
 // -- resolve-references ------------------------------------------------------
 
 /// Args for `resolve-references`. Resolves the consumer feature's derived

@@ -64,6 +64,7 @@ pub const PRIMITIVE_REGISTRY: &[&str] = &[
     "dashboard",
     "write-session",
     "resolve-session",
+    "retarget-sessions",
     "resolve-references",
     "resolve-constitutions",
     "resolve-feature",

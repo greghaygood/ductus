@@ -42,9 +42,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. `retarget-sessions` primitive
 
-- [ ] Create `runtime/src/primitives/retarget_sessions.rs`: re-target or clear every per-process file and the default naming `from`, under the lock; pending notice on every file but the caller's own; argument validation per the data model
-- [ ] Register it everywhere `resolve-session` was registered in task 4, including `framework/runtime-tools.txt` and both permission lists
-- [ ] Tests: fold re-targets every session naming the spec and the default; consolidate clears them; sessions naming other features are not written; the caller gets no notice and the others do; unparseable files are reported
+- [x] Create `runtime/src/primitives/retarget_sessions.rs`: re-target or clear every per-process file and the default naming `from`, under the lock; pending notice on every file but the caller's own; argument validation per the data model
+- [x] Register it everywhere `resolve-session` was registered in task 4, including `framework/runtime-tools.txt` and both permission lists
+- [x] Tests: fold re-targets every session naming the spec and the default; consolidate clears them; sessions naming other features are not written; the caller gets no notice and the others do; unparseable files are reported
 
 - **Done when**: tests covering AC5 and AC21 pass, and the audit families from task 4 pass.
 

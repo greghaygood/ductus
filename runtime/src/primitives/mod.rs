@@ -66,6 +66,7 @@ pub mod resolve_constitutions;
 pub mod resolve_feature;
 pub mod resolve_references;
 pub mod resolve_session;
+pub mod retarget_sessions;
 pub mod retire_feature;
 pub mod rewrite_spec_links;
 pub(crate) mod rule_sections;

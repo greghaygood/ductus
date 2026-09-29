@@ -59,11 +59,12 @@ use crate::schema::primitives::{
     RelocateAuditRecordsArgs, RelocateAuditRecordsResult, RemoveInboxItemArgs,
     RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveConstitutionsArgs,
     ResolveConstitutionsResult, ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs,
-    ResolveReferencesResult, ResolveSessionArgs, ResolveSessionResult, RetireFeatureArgs,
-    RetireFeatureResult, RewriteSpecLinksArgs, RewriteSpecLinksResult, RunGeneratorArgs,
-    RunGeneratorResult, SetStatusArgs, SetStatusResult, TraverseDepsArgs, TraverseDepsResult,
-    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteAnalysisArgs, WriteAnalysisResult,
-    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
+    ResolveReferencesResult, ResolveSessionArgs, ResolveSessionResult, RetargetSessionsArgs,
+    RetargetSessionsResult, RetireFeatureArgs, RetireFeatureResult, RewriteSpecLinksArgs,
+    RewriteSpecLinksResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
+    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
+    WriteAnalysisArgs, WriteAnalysisResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
+    WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -738,6 +739,19 @@ impl GovRuntimeServer {
         params: Parameters<ResolveSessionArgs>,
     ) -> Result<Json<ResolveSessionResult>, String> {
         primitives::resolve_session::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "retarget-sessions",
+        description = "After /{project}:fold or /{project}:consolidate removes a feature directory, re-point or clear every session in the working tree that names it (spec 062): the shared default (.ductus/session.toml) and every per-process target (.ductus/sessions/*.toml). cause=fold with the upstream feature+path (optional scenario) re-targets; cause=consolidate with clear clears. Sessions naming other features are untouched; every affected session other than the caller's gets a notice its next resolve-session delivers. Returns retargeted and cleared session labels, and unreadable files left in place."
+    )]
+    async fn retarget_sessions(
+        &self,
+        params: Parameters<RetargetSessionsArgs>,
+    ) -> Result<Json<RetargetSessionsResult>, String> {
+        primitives::retarget_sessions::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

@@ -681,21 +681,33 @@ fn co_target_notice(feature: &str, peers: &[SessionPeer]) -> SessionNotice {
     }
 }
 
+/// The `by` recorded when the acting process is unidentified.
+const UNIDENTIFIED_ACTOR: &str = "unidentified";
+
+fn describe_actor(by: &str) -> String {
+    if by == UNIDENTIFIED_ACTOR {
+        "an unidentified session".to_owned()
+    } else {
+        format!("session {by}")
+    }
+}
+
 fn removal_notice(notice: &RemovalNotice) -> SessionNotice {
+    let by = describe_actor(&notice.by);
     match &notice.to {
         Some(to) => SessionNotice {
             kind: SessionNoticeKind::Folded,
             message: format!(
-                "Target {} was folded into {to} by session {}; this session now targets {to}.",
-                notice.from, notice.by
+                "Target {} was folded into {to} by {by}; this session now targets {to}.",
+                notice.from
             ),
         },
         None => SessionNotice {
             kind: SessionNoticeKind::Consolidated,
             message: format!(
-                "Target {} was removed by a consolidation in session {}; this session's \
-                 target is cleared — set a new one with the target command.",
-                notice.from, notice.by
+                "Target {} was removed by a consolidation in {by}; this session's target is \
+                 cleared — set a new one with the target command.",
+                notice.from
             ),
         },
     }
@@ -837,6 +849,116 @@ pub fn resolve(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Res
         target: Some(target),
         notices,
     })
+}
+
+// -- retarget -------------------------------------------------------------------
+
+/// Why a feature directory was removed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RemovalCause {
+    /// A fold moved the content upstream: sessions follow it.
+    Fold,
+    /// A consolidation removed a spec nobody chose to work on: sessions are
+    /// cleared.
+    Consolidate,
+}
+
+impl RemovalCause {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Fold => "fold",
+            Self::Consolidate => "consolidate",
+        }
+    }
+}
+
+/// What a removal did to the working tree's sessions.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RetargetOutcome {
+    /// Labels of the sessions re-pointed; `default` for the shared default.
+    pub retargeted: Vec<String>,
+    /// Labels of the sessions cleared; `default` for the shared default.
+    pub cleared: Vec<String>,
+    /// Files that could not be parsed, left in place — a removal cannot prove
+    /// they do not name the removed feature.
+    pub unreadable: Vec<PathBuf>,
+}
+
+/// Re-point (`to` supplied) or clear (`to` absent) every session in `repo`
+/// whose target names `from`, and the shared default when it does (AC5,
+/// AC21). §concurrent-features' removal rule, extended from the acting
+/// session to every session the working tree holds.
+///
+/// Every session but the acting one gets a pending notice naming the cause
+/// and the acting session, delivered by its next resolution. Sessions naming
+/// another feature are not written at all. `set-at` and `used-at` are left
+/// alone: this is not the other session's own write or use.
+///
+/// # Errors
+///
+/// [`PrimitiveError::Io`] on a failed lock, read or write.
+pub fn retarget(
+    repo: &Path,
+    identity: Option<&Identity>,
+    from: &str,
+    to: Option<&SessionTarget>,
+    cause: RemovalCause,
+    now: SystemTime,
+) -> Result<RetargetOutcome> {
+    let identity = effective(repo, identity);
+    let _lock = lock_if_shared(repo)?;
+    let mut outcome = RetargetOutcome::default();
+    let mut record_outcome = |label: String| {
+        if to.is_some() {
+            outcome.retargeted.push(label);
+        } else {
+            outcome.cleared.push(label);
+        }
+    };
+
+    let default_path = paths::session_path_for_write(repo);
+    if default_path.is_file() {
+        match read_default_strict(repo) {
+            Ok(Some(mut default)) if default.feature.as_deref() == Some(from) => {
+                default.set_target(to, to.map(|_| iso8601_utc(now)));
+                default.store(&default_path)?;
+                record_outcome("default".to_owned());
+            }
+            Ok(_) => {}
+            Err(_) => outcome.unreadable.push(default_path),
+        }
+    }
+
+    let actor = identity.map_or_else(|| UNIDENTIFIED_ACTOR.to_owned(), Identity::label);
+    for (file_identity, path) in session_files(repo)? {
+        let Ok(mut record) = ProcessRecord::load(&path) else {
+            outcome.unreadable.push(path);
+            continue;
+        };
+        if record.target().is_none_or(|target| target.feature != from) {
+            continue;
+        }
+        record.set_target(to);
+        let label = file_identity.with_source(record.source.as_deref()).label();
+        if identity.is_none_or(|acting| acting.key != file_identity_key(&path)) {
+            record.notice = Some(RemovalNotice {
+                cause: cause.as_str().to_owned(),
+                from: from.to_owned(),
+                to: to.map(|t| t.feature.clone()),
+                by: actor.clone(),
+            });
+        }
+        record.store(&path)?;
+        record_outcome(label);
+    }
+    Ok(outcome)
+}
+
+/// The identity key a per-process file belongs to: its stem.
+fn file_identity_key(path: &Path) -> &str {
+    path.file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or_default()
 }
 
 // -- write ----------------------------------------------------------------------
@@ -1477,6 +1599,132 @@ mod tests {
             !tmp.path().join(".ductus").exists(),
             "no .ductus state created"
         );
+    }
+
+    // -- retarget (task 5) ----------------------------------------------------
+
+    #[test]
+    fn a_fold_retargets_every_session_naming_the_spec_and_notifies_the_others() {
+        let tmp = repo();
+        let (actor, other, bystander) = (id("actor"), id("other"), id("bystander"));
+        set(tmp.path(), Some(&other), "1234.1-b", t0());
+        set(tmp.path(), Some(&bystander), "057-c", at(1));
+        set(tmp.path(), Some(&actor), "1234.1-b", at(2));
+        let bystander_before = std::fs::read_to_string(own_path(tmp.path(), &bystander)).unwrap();
+
+        let out = retarget(
+            tmp.path(),
+            Some(&actor),
+            "1234.1-b",
+            Some(&target("055-a")),
+            RemovalCause::Fold,
+            at(3),
+        )
+        .unwrap();
+        // The default first, then per-process files in key order.
+        assert_eq!(out.retargeted, ["default", "actor", "other"]);
+        assert!(out.cleared.is_empty());
+        assert!(default_text(tmp.path()).contains("feature = \"055-a\""));
+        assert_eq!(
+            std::fs::read_to_string(own_path(tmp.path(), &bystander)).unwrap(),
+            bystander_before,
+            "a session naming another feature is not written"
+        );
+
+        let acting = resolve(tmp.path(), Some(&actor), at(4)).unwrap();
+        assert_eq!(feature_of(&acting), Some("055-a"));
+        assert!(
+            acting
+                .notices
+                .iter()
+                .all(|n| n.kind != SessionNoticeKind::Folded),
+            "the acting session is not told what it just did: {:?}",
+            acting.notices
+        );
+        let told = resolve(tmp.path(), Some(&other), at(4)).unwrap();
+        assert_eq!(feature_of(&told), Some("055-a"));
+        let folded: Vec<_> = told
+            .notices
+            .iter()
+            .filter(|n| n.kind == SessionNoticeKind::Folded)
+            .collect();
+        assert_eq!(folded.len(), 1, "{:?}", told.notices);
+        assert!(folded[0].message.contains("1234.1-b"));
+        assert!(folded[0].message.contains("session actor"));
+    }
+
+    #[test]
+    fn a_consolidation_clears_every_session_naming_the_spec() {
+        let tmp = repo();
+        let (actor, other) = (id("actor"), id("other"));
+        set(tmp.path(), Some(&other), "058-gone", t0());
+        let out = retarget(
+            tmp.path(),
+            Some(&actor),
+            "058-gone",
+            None,
+            RemovalCause::Consolidate,
+            at(1),
+        )
+        .unwrap();
+        assert_eq!(out.cleared, ["default", "other"]);
+        assert!(!default_text(tmp.path()).contains("058-gone"));
+
+        let r = resolve(tmp.path(), Some(&other), at(2)).unwrap();
+        assert_eq!((r.source, r.target.clone()), (SessionSource::Cleared, None));
+        assert_eq!(r.notices.len(), 1);
+        assert_eq!(r.notices[0].kind, SessionNoticeKind::Consolidated);
+        assert!(r.notices[0].message.contains("session actor"));
+
+        set(tmp.path(), None, "059-new", at(3));
+        let later = resolve(tmp.path(), Some(&other), at(4)).unwrap();
+        assert_eq!(
+            later.source,
+            SessionSource::Cleared,
+            "a cleared session never adopts"
+        );
+    }
+
+    #[test]
+    fn an_unidentified_actor_is_named_as_such() {
+        let tmp = repo();
+        let other = id("other");
+        set(tmp.path(), Some(&other), "058-gone", t0());
+        retarget(
+            tmp.path(),
+            None,
+            "058-gone",
+            None,
+            RemovalCause::Consolidate,
+            at(1),
+        )
+        .unwrap();
+        let r = resolve(tmp.path(), Some(&other), at(2)).unwrap();
+        assert!(
+            r.notices[0].message.contains("an unidentified session"),
+            "{:?}",
+            r.notices
+        );
+    }
+
+    #[test]
+    fn a_removal_reports_files_it_cannot_read_and_leaves_them() {
+        let tmp = repo();
+        set(tmp.path(), Some(&id("x")), "057-c", t0());
+        let bad = tmp.path().join(".ductus/sessions/broken.toml");
+        std::fs::write(&bad, "feature = [").unwrap();
+        let out = retarget(
+            tmp.path(),
+            None,
+            "058-gone",
+            None,
+            RemovalCause::Consolidate,
+            at(1),
+        )
+        .unwrap();
+        assert_eq!(out.unreadable, vec![bad.clone()]);
+        assert!(out.cleared.is_empty() && out.retargeted.is_empty());
+        assert_eq!(std::fs::read_to_string(&bad).unwrap(), "feature = [");
     }
 
     #[test]

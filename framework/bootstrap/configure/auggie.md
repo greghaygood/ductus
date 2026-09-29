@@ -100,6 +100,7 @@ Configure `{cli-config-dir}/settings.local.json` with the tool permissions neede
    - `{ "toolName": "mcp:ductus:dashboard", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:write-session", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:resolve-session", "permission": { "type": "allow" } }`
+   - `{ "toolName": "mcp:ductus:retarget-sessions", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:resolve-feature", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:create-feature", "permission": { "type": "allow" } }`
    - `{ "toolName": "mcp:ductus:create-plan-artifacts", "permission": { "type": "allow" } }`

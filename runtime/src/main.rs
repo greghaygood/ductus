@@ -21,8 +21,8 @@ use ductus::schema::primitives::{
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
     ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
     RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetireFeatureArgs,
-    RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetargetSessionsArgs,
+    RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
     ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
@@ -179,6 +179,8 @@ enum Command {
     WriteSession(WriteSessionArgs),
     /// Resolve this process's session target: its own, an adopted default, or the shared default when unidentified.
     ResolveSession(ResolveSessionArgs),
+    /// Re-point (fold) or clear (consolidate) every session in the working tree that names a removed feature.
+    RetargetSessions(RetargetSessionsArgs),
 }
 
 fn emit_protocol_schema() -> ExitCode {
@@ -775,6 +777,9 @@ fn main() -> ExitCode {
         Command::WriteSession(args) => emit_result(primitives::write_session::run(&args, &repo)),
         Command::ResolveSession(args) => {
             emit_result(primitives::resolve_session::run(&args, &repo))
+        }
+        Command::RetargetSessions(args) => {
+            emit_result(primitives::retarget_sessions::run(&args, &repo))
         }
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
