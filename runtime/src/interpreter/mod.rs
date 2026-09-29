@@ -239,6 +239,9 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
                 if let Some(tally) = &mut self.analyze_tally {
                     tally.record_primitive(name, &result, &self.context);
                 }
+                for line in session_report_lines(name, &result) {
+                    self.emit_progress(line, Some(step_label.clone()), Some(name.into()))?;
+                }
                 self.merge_primitive_result(name, result);
                 Ok(None)
             }
@@ -845,6 +848,42 @@ fn envelope_kind(message: &ProtocolMessage) -> &'static str {
     }
 }
 
+/// What a session primitive's result has to tell the operator, one line
+/// each: its notices, the other sessions sharing the target it wrote, and the
+/// session files it could not check (spec 062). A host displays these; an exec
+/// walk has no host, so the walker emits them as progress lines, or the
+/// notices its `resolve-session` step consumes would never be seen (AC19,
+/// AC21).
+fn session_report_lines(name: &str, result: &Value) -> Vec<String> {
+    if !matches!(name, "resolve-session" | "write-session") {
+        return Vec::new();
+    }
+    let list = |key: &str| {
+        result
+            .get(key)
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    };
+    let notices = list("notices")
+        .filter_map(|notice| notice.get("message")?.as_str())
+        .map(|message| format!("session notice: {message}"));
+    let peers = list("peers").filter_map(|peer| {
+        let session = peer.get("session")?.as_str()?;
+        let feature = peer.get("feature")?.as_str()?;
+        Some(match peer.get("last-used").and_then(Value::as_str) {
+            Some(when) => {
+                format!("session peer: {session} also targets {feature} (last used {when})")
+            }
+            None => format!("session peer: {session} also targets {feature}"),
+        })
+    });
+    let unreadable = list("unreadable")
+        .filter_map(Value::as_str)
+        .map(|path| format!("unreadable session file: {path}"));
+    notices.chain(peers).chain(unreadable).collect()
+}
+
 fn format_step_number(number: &StepNumber) -> String {
     number
         .0
@@ -1124,6 +1163,32 @@ mod tests {
     use super::*;
     use crate::schema::procedure::SourceRange;
     use std::io::Cursor;
+
+    /// Spec 062, AC19/AC21: an exec walk has no host to display a session
+    /// primitive's notices, so the walker turns each into a progress line.
+    #[test]
+    fn a_session_result_reports_its_notices_peers_and_unreadable_files() {
+        let result = serde_json::json!({
+            "notices": [{"kind": "folded", "message": "Target 1.1-a was folded into 055-a."}],
+            "peers": [{
+                "session": "review",
+                "feature": "055-a",
+                "scenario": null,
+                "last-used": "2026-09-29T12:00:00Z"
+            }],
+            "unreadable": [".ductus/sessions/broken.toml"],
+        });
+        assert_eq!(
+            session_report_lines("resolve-session", &result),
+            [
+                "session notice: Target 1.1-a was folded into 055-a.",
+                "session peer: review also targets 055-a (last used 2026-09-29T12:00:00Z)",
+                "unreadable session file: .ductus/sessions/broken.toml",
+            ]
+        );
+        let waivers = serde_json::json!({ "notices": ["waiver expired: x"] });
+        assert!(session_report_lines("process-waivers", &waivers).is_empty());
+    }
 
     fn loc() -> SourceRange {
         SourceRange {

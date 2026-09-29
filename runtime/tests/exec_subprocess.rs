@@ -115,6 +115,73 @@ fn exec_drives_a_deterministic_procedure_to_complete() {
     assert!(envelopes[2]["runtime-version"].is_string());
 }
 
+/// Spec 062, AC23: `ductus exec` run from an agent's shell carries that
+/// agent's session identity, so the walk acts on the process's own target —
+/// not the shared default's — and shows the notice its `resolve-session`
+/// step consumes. Only the own target's spec exists, so `read-spec` succeeds
+/// only when the seed came from the identity; and only the own file holds the
+/// notice.
+#[test]
+fn exec_run_as_an_identified_process_acts_on_its_own_target() {
+    ensure_binary_built();
+    let tmp = tempfile::tempdir().unwrap();
+    write_procedure_repo(
+        tmp.path(),
+        "whoami",
+        "# /ductus:whoami\n\n## Instructions\n\n1. Invoke `resolve-session` to resolve this process's target.\n2. Invoke `read-spec` against the target.\n",
+    );
+    fs::create_dir_all(tmp.path().join("specs/056-b")).unwrap();
+    fs::write(
+        tmp.path().join("specs/056-b/spec.md"),
+        "---\nstatus: clarified\ndependencies: []\n---\n\n# 056\n\nbody.\n",
+    )
+    .unwrap();
+    fs::create_dir_all(tmp.path().join(".ductus/sessions")).unwrap();
+    fs::write(
+        tmp.path().join(".ductus/session.toml"),
+        "feature = \"055-a\"\npath = \"specs/055-a\"\n",
+    )
+    .unwrap();
+    let id = "aaaaaaaa-0000-4000-8000-000000000001";
+    fs::write(
+        tmp.path().join(format!(".ductus/sessions/{id}.toml")),
+        "source = \"claude-code\"\nfeature = \"056-b\"\npath = \"specs/056-b\"\n\n\
+         [notice]\ncause = \"fold\"\nfrom = \"1234.1-x\"\nto = \"056-b\"\nby = \"review\"\n",
+    )
+    .unwrap();
+
+    let output = ductus_command(runtime_binary())
+        .env("CLAUDE_CODE_SESSION_ID", id)
+        .arg("exec")
+        .arg("whoami")
+        .current_dir(tmp.path())
+        .stdin(Stdio::null())
+        .output()
+        .expect("run runtime");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(output.status.success(), "{stdout}");
+    let envelopes: Vec<Value> = stdout
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    let messages: Vec<&str> = envelopes
+        .iter()
+        .filter_map(|envelope| envelope["message"].as_str())
+        .collect();
+    assert_eq!(
+        messages,
+        [
+            "dispatching primitive `resolve-session`",
+            "session notice: Target 1234.1-x was folded into 056-b by session review; \
+             this session now targets 056-b.",
+            "dispatching primitive `read-spec`",
+        ],
+        "{stdout}"
+    );
+    assert_eq!(envelopes.last().unwrap()["type"], "complete", "{stdout}");
+}
+
 #[test]
 fn exec_reads_extension_response_from_stdin() {
     ensure_binary_built();

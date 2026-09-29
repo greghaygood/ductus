@@ -147,8 +147,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 18. `ductus exec` shows session notices and is tested with an identity
 
-- [ ] After dispatching `resolve-session`, the exec walker emits each returned notice into its stream, so an exec walk shows what its resolution consumes (review observation; AC19, AC21)
-- [ ] An `exec_subprocess` test runs `ductus exec` with `CLAUDE_CODE_SESSION_ID` set and asserts the walk acts on that process's own target, not the shared default's (review observation; AC23)
+- [x] After dispatching `resolve-session`, the exec walker emits each returned notice into its stream, so an exec walk shows what its resolution consumes (review observation; AC19, AC21)
+- [x] An `exec_subprocess` test runs `ductus exec` with `CLAUDE_CODE_SESSION_ID` set and asserts the walk acts on that process's own target, not the shared default's (review observation; AC23)
 
 - **Done when**: an identified exec walk with a pending notice emits it; the identified exec test passes and fails if `run_exec` stops passing the identity; `cargo test` passes.
 
