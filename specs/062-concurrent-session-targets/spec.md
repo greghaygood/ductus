@@ -31,10 +31,10 @@ sessions (§Parallel milestones, Resolved Question 5). The verdict rested on two
 premises: that working on two features at once was rare, and that
 `git worktree` and platform isolation already covered it. The first did not
 hold: for the operator who raised this, running two or more agent processes at
-once was the common case. The second carried a cost 010 did not weigh: git
-refuses to check out a branch in a second worktree while another worktree has
-it checked out, so under trunk-based work two worktrees could not both be on
-`main`.
+once was the common case. The second carried a cost 010 did not weigh: by default
+`git worktree add` refuses a branch already checked out by another worktree
+(git-worktree(1), under `--force`), so under trunk-based work two worktrees
+could not both be on `main` without overriding that safeguard.
 
 010's objection still has to be answered, and this spec answers it rather than
 dismissing it: with more than one target in play, which one does a command act
@@ -190,7 +190,7 @@ own session file, so the two compose.
 - [ ] AC23: `ductus exec` run from an agent's shell tool resolves that agent's target, and run from a terminal with no identity it resolves the shared default
 - [ ] AC24: The markdown-only path states that, having no sanctioned way to read its environment, it resolves and writes the shared default only
 - [ ] AC10: The concurrent-features section of `framework/constitution.md` is amended to describe per-process targets in place of a single target by design, in the same change that ships the behavior
-- [ ] AC25: The concurrent-features section of `framework/constitution.md` keeps `git worktree` and platform isolation as the answer for isolating working-tree edits, notes that git will not check out one branch in two worktrees at once, and states the two bounds this spec leaves open: processes with no identity share one target, and with two different agent CLIs in one working tree the runtime reads command files from the agent `/ductus` last recorded
+- [ ] AC25: The concurrent-features section of `framework/constitution.md` keeps `git worktree` and platform isolation as the answer for isolating working-tree edits, notes that by default git refuses to check out one branch in two worktrees at once, and states the two bounds this spec leaves open: processes with no identity share one target, and with two different agent CLIs in one working tree the runtime reads command files from the agent `/ductus` last recorded
 - [ ] AC11: `specs/010-agent-autonomy/spec.md` carries a signpost on its Parallel milestones verdict linking to this spec, discharging the declared cross-spec impact
 
 ## Applicable Rules
@@ -292,7 +292,7 @@ own session file, so the two compose.
   its own gitignored session file. §concurrent-features changes from "a single
   target by design, use worktrees for concurrency" to "each agent process holds
   its own target; isolate edits with worktrees or the platform when needed",
-  and notes that git will not check out one branch in two worktrees at once,
+  and notes that by default git refuses to check out one branch in two worktrees at once,
   so the trade-off is explicit.
 
 **Why split from agent-autonomy:** [010](../010-agent-autonomy/spec.md) was a
