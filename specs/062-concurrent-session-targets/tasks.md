@@ -154,6 +154,6 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 19. Disposition out-of-spec finding: fetch-archive reads its allowlist variable on every call
 
-- [ ] `runtime/src/primitives/fetch_archive.rs:296` — `host_is_insecure_allowed` calls `std::env::var("DUCTUS_FETCH_ALLOW_INSECURE_HOSTS")` per call, which CFG-ENV-001 forbids (read once at startup and cache); surfaced implementing task 14, which reads the session variables once at startup
+- [x] `runtime/src/primitives/fetch_archive.rs:296` — `host_is_insecure_allowed` calls `std::env::var("DUCTUS_FETCH_ALLOW_INSECURE_HOSTS")` per call, which CFG-ENV-001 forbids (read once at startup and cache); surfaced implementing task 14, which reads the session variables once at startup — fixed
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.

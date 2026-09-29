@@ -44,4 +44,4 @@ This is the one inventory of the environment variables the runtime reads. None i
 | `CLAUDE_CODE_SESSION_ID` | no | no identity: the shared default `.ductus/session.toml` | Set by Claude Code in every MCP server and shell it spawns — not by you. Read as that agent's session identity when `DUCTUS_SESSION` is unset. |
 | `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` | no | no host exempted | Comma-separated hosts that `fetch-archive` exempts from its `https`-only and internal-address screens, for a trusted internal mirror or local testing. It only ever loosens the guard, so leaving it unset is the secure posture. |
 
-The two session variables are read once, when the process starts, so an agent's MCP server keeps the identity it was launched with for its whole life.
+All three are read once, when the process starts, so an agent's MCP server keeps the identity and the allowlist it was launched with for its whole life.

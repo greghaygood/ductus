@@ -53,6 +53,7 @@
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use sha2::{Digest, Sha256};
 
@@ -288,13 +289,27 @@ fn validate_fetch_url(url: &str) -> Result<FetchScreen> {
 /// losing it fails closed.
 const FETCH_ALLOW_INSECURE_HOSTS_ENV: &str = "DUCTUS_FETCH_ALLOW_INSECURE_HOSTS";
 
+/// The allowlist as this process's environment held it at startup, captured
+/// once by [`init_insecure_hosts`] (`CFG-ENV-001`: read once at startup and
+/// cached; listed in `docs/runtime.md`'s environment-variable inventory).
+static INSECURE_HOSTS: OnceLock<Option<String>> = OnceLock::new();
+
+/// Capture [`FETCH_ALLOW_INSECURE_HOSTS_ENV`] from this process's
+/// environment — once, at startup. The binary's `main` calls this before it
+/// dispatches anything; a later call is a no-op.
+pub fn init_insecure_hosts() {
+    INSECURE_HOSTS.get_or_init(|| std::env::var(FETCH_ALLOW_INSECURE_HOSTS_ENV).ok());
+}
+
 /// Whether `host` is exempted from the SSRF/scheme screens via the
-/// `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` allowlist. Matching is exact against
-/// each comma-separated, whitespace-trimmed entry. An unset or empty
-/// variable exempts nothing (the secure default).
+/// `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` allowlist captured at startup.
+/// Matching is exact against each comma-separated, whitespace-trimmed entry.
+/// An unset or empty variable exempts nothing (the secure default), and so
+/// does a process that never captured it, such as an in-process test.
 fn host_is_insecure_allowed(host: &str) -> bool {
-    std::env::var(FETCH_ALLOW_INSECURE_HOSTS_ENV)
-        .ok()
+    INSECURE_HOSTS
+        .get()
+        .and_then(Option::as_deref)
         .is_some_and(|list| list.split(',').map(str::trim).any(|entry| entry == host))
 }
 
@@ -598,7 +613,7 @@ mod tests {
 
     #[test]
     fn insecure_host_allowlist_is_empty_by_default() {
-        // With the env var unset (the ambient state for the test process),
+        // The test process never captures the variable at startup, so
         // nothing is exempted — the secure default holds. The allow path is
         // exercised end-to-end by the ductus-basic parity subprocess, which
         // sets DUCTUS_FETCH_ALLOW_INSECURE_HOSTS on its own process env (no

@@ -668,9 +668,11 @@ fn run_mcp_server(repo: PathBuf) -> ExitCode {
 #[allow(clippy::too_many_lines)]
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    // The session identity variables are read here, once, for every
-    // subcommand (spec 062, `CFG-ENV-001`); primitives answer from this reading.
+    // Every environment variable the runtime reads is read here, once, for
+    // every subcommand (`CFG-ENV-001`; the inventory is docs/runtime.md's);
+    // primitives answer from this reading.
     ductus::session::init_process_identity();
+    ductus::primitives::fetch_archive::init_insecure_hosts();
     let repo = cwd();
     match cli.command {
         Command::Mcp => run_mcp_server(repo),
