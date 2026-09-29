@@ -176,8 +176,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 22. The environment-variable inventory lists the proxy variables
 
-- [ ] `docs/runtime.md` lists `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (with their lowercase forms), which `fetch-archive`'s HTTP client reads on each fetch, with each one's purpose and default; its completeness and read-once statements say which variables are captured at startup and which the client reads per fetch until 048's `fetch-archive-reads-its-proxy-once` resolves it (review: CFG-ENV-002)
-- [ ] `main`'s comment names what it captures rather than claiming every variable the runtime reads
+- [x] `docs/runtime.md` lists `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (with their lowercase forms), which `fetch-archive`'s HTTP client reads on each fetch, with each one's purpose and default; its completeness and read-once statements say which variables are captured at startup and which the client reads per fetch until 048's `fetch-archive-reads-its-proxy-once` resolves it (review: CFG-ENV-002)
+- [x] `main`'s comment names what it captures rather than claiming every variable the runtime reads
 
 - **Done when**: every environment variable the runtime or its HTTP client reads is in the inventory, and no text claims a read-once that does not hold.
 

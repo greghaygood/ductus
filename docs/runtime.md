@@ -36,12 +36,15 @@ From that session on, the pipeline takes the deterministic path. File writes are
 
 ## Environment variables
 
-This is the one inventory of the environment variables the runtime reads. None is required, and with none set the runtime behaves as a single session on the shared default.
+This is the one inventory of the environment variables that configure the runtime. None is required, and with none set the runtime behaves as a single session on the shared default and fetches over a direct connection.
 
 | Variable | Required | Default when unset | Purpose |
 | --- | --- | --- | --- |
 | `DUCTUS_SESSION` | no | the agent's own session id, below | Names this process's session, so it keeps a target of its own (spec 062). Processes launched with the same value share one target. The value is sanitized by the slug rule; empty counts as unset, and a value that sanitizes to nothing is refused with an error naming the variable. |
 | `CLAUDE_CODE_SESSION_ID` | no | no identity: the shared default `.ductus/session.toml` | Set by Claude Code in every MCP server and shell it spawns — not by you. Read as that agent's session identity when `DUCTUS_SESSION` is unset. |
 | `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` | no | no host exempted | Comma-separated hosts that `fetch-archive` exempts from its `https`-only and internal-address screens, for a trusted internal mirror or local testing. It only ever loosens the guard, so leaving it unset is the secure posture. |
+| `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY` (or lowercase) | no | a direct connection | The proxy `fetch-archive` sends its downloads through, by the standard convention its HTTP client follows. |
+| `NO_PROXY` (or `no_proxy`) | no | nothing bypasses a set proxy | Hosts `fetch-archive` reaches directly even when a proxy is set. |
+| `REQUEST_METHOD` | no | unset | Set only in a CGI environment, where the HTTP client ignores `HTTP_PROXY`, as the convention requires. |
 
-All three are read once, when the process starts, so an agent's MCP server keeps the identity and the allowlist it was launched with for its whole life.
+The first three are read once, when the process starts, so an agent's MCP server keeps the identity and the allowlist it was launched with for its whole life. The proxy variables are read by the HTTP client each time `fetch-archive` runs; how the runtime should handle proxies, including whether its address screen holds through one, is open in spec 048's `fetch-archive-reads-its-proxy-once`. Platform variables the runtime's libraries read as any command-line tool does — `HOME` for git's configuration, `TMPDIR` for temporary files — are not configuration of the runtime and are not listed.

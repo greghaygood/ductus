@@ -668,9 +668,11 @@ fn run_mcp_server(repo: PathBuf) -> ExitCode {
 #[allow(clippy::too_many_lines)]
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    // Every environment variable the runtime reads is read here, once, for
-    // every subcommand (`CFG-ENV-001`; the inventory is docs/runtime.md's);
-    // primitives answer from this reading.
+    // The runtime's own environment variables — the session identity and the
+    // fetch allowlist — are read here, once, for every subcommand
+    // (`CFG-ENV-001`), and primitives answer from this reading. The inventory
+    // is docs/runtime.md's; it also lists the proxy variables `fetch-archive`'s
+    // HTTP client reads per fetch (spec 048's open scenario).
     ductus::session::init_process_identity();
     ductus::primitives::fetch_archive::init_insecure_hosts();
     let repo = cwd();
