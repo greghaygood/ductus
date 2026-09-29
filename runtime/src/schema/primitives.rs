@@ -2964,6 +2964,25 @@ pub struct WriteSessionResult {
     /// `true` when the file did not exist before this call, `false` when
     /// an existing file was overwritten in place.
     pub created: bool,
+    /// Display label of the writing process's session identity (spec 062);
+    /// absent when the process is unidentified and wrote the default alone.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity: Option<String>,
+    /// Repo-relative per-process file written, when the process is
+    /// identified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub own_path: Option<String>,
+    /// Other unexpired sessions targeting the feature just written — the
+    /// writer's co-target notice. Empty on clear and host-config writes.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub peers: Vec<SessionPeer>,
+    /// Labels of per-process targets the expiry sweep removed.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub expired: Vec<String>,
+    /// Repo-relative per-process files the write could not examine; left in
+    /// place and reported.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unreadable: Vec<String>,
 }
 
 // -- session core (spec 062) --------------------------------------------------
@@ -5583,8 +5602,33 @@ mod tests {
         let result = WriteSessionResult {
             path: ".ductus/session.toml".into(),
             created: true,
+            identity: None,
+            own_path: None,
+            peers: Vec::new(),
+            expired: Vec::new(),
+            unreadable: Vec::new(),
         };
         assert_eq!(round_trip(&result), result);
+        // An unidentified write keeps the pre-062 wire shape exactly.
+        assert_eq!(
+            serde_json::to_value(&result).unwrap(),
+            serde_json::json!({ "path": ".ductus/session.toml", "created": true })
+        );
+
+        let identified = WriteSessionResult {
+            identity: Some("review".into()),
+            own_path: Some(".ductus/sessions/review.toml".into()),
+            peers: vec![super::SessionPeer {
+                session: "claude-code:3f2a9c1d".into(),
+                feature: "055-a".into(),
+                scenario: None,
+                last_used: Some("2026-09-29T12:00:00Z".into()),
+            }],
+            expired: vec!["old".into()],
+            unreadable: vec![".ductus/sessions/broken.toml".into()],
+            ..result
+        };
+        assert_eq!(round_trip(&identified), identified);
     }
 
     #[test]

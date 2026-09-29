@@ -26,9 +26,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. `write-session` through the core
 
-- [ ] Rewrite `runtime/src/primitives/write_session.rs` to delegate to the core, taking the identity from the environment at the edge; keep the three write shapes and their validation
-- [ ] Extend `WriteSessionResult` in `runtime/src/schema/primitives.rs` with `identity`, `own-path`, `peers`, `expired`, `unreadable`
-- [ ] Keep the default's bytes identical to today's for an unidentified write, so the existing `write_session` tests and the parity byte-equality check still pass unchanged
+- [x] Rewrite `runtime/src/primitives/write_session.rs` to delegate to the core, taking the identity from the environment at the edge; keep the three write shapes and their validation
+- [x] Extend `WriteSessionResult` in `runtime/src/schema/primitives.rs` with `identity`, `own-path`, `peers`, `expired`, `unreadable`
+- [x] Keep the default's bytes identical to today's for an unidentified write, so the existing `write_session` tests and the parity byte-equality check still pass unchanged
 
 - **Done when**: the existing `write_session` tests pass unmodified, new tests cover the identified target and clear writes, and AC3's single-agent shape is asserted byte-for-byte against the default.
 

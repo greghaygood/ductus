@@ -22,103 +22,83 @@
 //! `.ductus/session.toml` at the repo root makes the path host-agnostic,
 //! project-name-agnostic, and uniform across every adopter; the runtime
 //! no longer hardcodes any AI CLI's config directory.
-
-#![allow(clippy::expect_used)]
+//!
+//! Since spec 062 the file is the **shared default**, and an identified
+//! process — one launched with `DUCTUS_SESSION` or a platform session
+//! identity — also writes its own target under `.ductus/sessions/`. The
+//! logic lives in [`crate::session`]; this primitive validates the
+//! arguments, reads the identity from the environment at the edge, and
+//! delegates.
 
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
-use serde::{Deserialize, Serialize};
+use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal};
+use crate::schema::primitives::{SessionTarget, WriteSessionArgs, WriteSessionResult};
+use crate::session::{self, Identity, WriteShape};
 
-use crate::primitives::{PrimitiveError, Result, rel_path, validate_no_traversal, write_atomic};
-use crate::schema::paths;
-use crate::schema::primitives::{WriteSessionArgs, WriteSessionResult};
-
-/// Execute the `write-session` primitive against `repo`.
+/// Execute the `write-session` primitive against `repo`, as the process whose
+/// environment this runtime inherited (spec 062).
 ///
-/// Writes a fresh TOML document at `<repo>/.ductus/session.toml` via
-/// tempfile + rename — same atomic-write pattern every other
-/// state-modifying primitive (`mark-task`, `mark-criterion`,
-/// `set-status`) uses.
+/// Writes the shared default, `.ductus/session.toml`, via tempfile + rename —
+/// the same atomic-write pattern every other state-modifying primitive
+/// (`mark-task`, `mark-criterion`, `set-status`) uses — and, for an identified
+/// process, its own file under `.ductus/sessions/` too.
 ///
 /// # Errors
 ///
 /// Returns [`PrimitiveError::MissingArgument`] when `scenario` and
 /// `scenario-path` are not supplied together,
 /// [`PrimitiveError::InvalidArgument`] when `clear` is combined with a
-/// target field, [`PrimitiveError::InvalidPath`] when any caller-supplied
-/// path contains a parent-directory component or is absolute, or
-/// [`PrimitiveError::Io`] for filesystem failures during the write.
+/// target field or `DUCTUS_SESSION` sanitizes to nothing,
+/// [`PrimitiveError::InvalidPath`] when any caller-supplied path contains a
+/// parent-directory component or is absolute, or [`PrimitiveError::Io`] for
+/// filesystem failures during the write.
 pub fn run(args: &WriteSessionArgs, repo: &Path) -> Result<WriteSessionResult> {
-    run_with_now(args, repo, SystemTime::now())
+    let identity = session::identity_from_process_env()?;
+    run_as(args, repo, identity.as_ref(), SystemTime::now())
 }
 
-/// Implementation seam that lets unit tests inject a stable clock instead
-/// of `SystemTime::now()`. The MCP and CLI surfaces both call [`run`],
-/// which forwards the system clock.
-pub(crate) fn run_with_now(
+/// Write as `identity`: the one path [`run`] and the tests share.
+pub(crate) fn run_as(
     args: &WriteSessionArgs,
     repo: &Path,
+    identity: Option<&Identity>,
     now: SystemTime,
 ) -> Result<WriteSessionResult> {
     validate_args(args)?;
 
-    // Writes target the *active* session file — `.ductus/session.toml` when it
-    // exists, else the legacy root file when that exists, else the new path for
-    // a fresh project (spec 042). The `/ductus` migration owns the cutover, so a
-    // write never creates a `.ductus/` file while a legacy one still lingers.
-    let session_path = paths::session_path_for_write(repo);
-    let created = !session_path.exists();
-    let existing = read_existing_session(&session_path);
-
-    // Merge semantics, in precedence order. A *clear write* (`clear`)
-    // removes the whole target block (feature/path/scenario/set-at) while
-    // preserving the per-contributor `cli-config-dir` (a supplied value
-    // overrides the preserved one). A *target write* (feature supplied)
-    // sets the target fields from args — including clearing `scenario`
-    // when it's absent — and stamps a fresh `set-at`, preserving the
-    // per-contributor `cli-config-dir` unless overridden. A *host-config
-    // write* (no feature) sets `cli-config-dir` and preserves the
-    // existing target verbatim.
-    let record = if args.clear {
-        SessionRecord {
-            feature: None,
-            path: None,
-            scenario: None,
-            scenario_path: None,
-            set_at: None,
-            cli_config_dir: args.cli_config_dir.clone().or(existing.cli_config_dir),
-        }
-    } else if args.feature.is_some() {
-        SessionRecord {
-            feature: args.feature.clone(),
-            path: args.path.clone(),
+    // Three shapes, in precedence order. A *clear write* removes the target
+    // block while preserving the per-contributor `cli-config-dir` (a supplied
+    // value overrides the preserved one). A *target write* sets the target and
+    // a fresh `set-at`, preserving `cli-config-dir` unless overridden. A
+    // *host-config write* sets `cli-config-dir` and preserves the target.
+    let shape = if args.clear {
+        WriteShape::Clear
+    } else if let (Some(feature), Some(path)) = (&args.feature, &args.path) {
+        WriteShape::Target(SessionTarget {
+            feature: feature.clone(),
+            path: path.clone(),
             scenario: args.scenario.clone(),
             scenario_path: args.scenario_path.clone(),
-            set_at: Some(iso8601_utc(now)),
-            cli_config_dir: args.cli_config_dir.clone().or(existing.cli_config_dir),
-        }
+        })
     } else {
-        SessionRecord {
-            feature: existing.feature,
-            path: existing.path,
-            scenario: existing.scenario,
-            scenario_path: existing.scenario_path,
-            set_at: existing.set_at,
-            cli_config_dir: args.cli_config_dir.clone(),
-        }
+        WriteShape::HostConfig
     };
-    // `toml::to_string` over a struct of `Option<String>` is infallible — no
-    // non-string keys, no I/O, no exotic types — so the `expect` documents the
-    // invariant rather than handling a reachable failure mode. Same pattern as
-    // `merge_permissions::serialize_pretty`.
-    let body = toml::to_string(&record).expect("session TOML serializes infallibly");
-
-    write_atomic(&session_path, &body)?;
+    let outcome = session::write(repo, identity, &shape, args.cli_config_dir.clone(), now)?;
 
     Ok(WriteSessionResult {
-        path: rel_path(&session_path, repo),
-        created,
+        path: rel_path(&outcome.default_path, repo),
+        created: outcome.created,
+        identity: outcome.identity,
+        own_path: outcome.own_path.map(|path| rel_path(&path, repo)),
+        peers: outcome.peers,
+        expired: outcome.expired,
+        unreadable: outcome
+            .unreadable
+            .iter()
+            .map(|path| rel_path(path, repo))
+            .collect(),
     })
 }
 
@@ -209,123 +189,26 @@ fn validate_args(args: &WriteSessionArgs) -> Result<()> {
     Ok(())
 }
 
-/// On-disk shape of the session file. Field order is the wire contract —
-/// the parity byte-equality check on `.ductus/session.toml` depends on it.
-/// All keys are kebab-case to match the reader in
-/// [`crate::primitives::dashboard`]. Every field is optional: a host-config
-/// write (only `cli-config-dir`) against a fresh repo writes just that key,
-/// and a target write writes the target block plus the preserved
-/// `cli-config-dir`.
-#[derive(Serialize)]
-struct SessionRecord {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    feature: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    scenario: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "scenario-path")]
-    scenario_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "set-at")]
-    set_at: Option<String>,
-    // Serialized last so the target block (feature/path/scenario/set-at)
-    // keeps its byte-for-byte order; absent unless a write recorded it.
-    #[serde(skip_serializing_if = "Option::is_none", rename = "cli-config-dir")]
-    cli_config_dir: Option<String>,
-}
-
-/// The fields of an existing `.ductus/session.toml` a write may need to
-/// carry forward: a target write preserves `cli-config-dir`; a host-config
-/// write preserves the whole target block.
-#[derive(Deserialize, Default)]
-struct ExistingSession {
-    #[serde(default)]
-    feature: Option<String>,
-    #[serde(default)]
-    path: Option<String>,
-    #[serde(default)]
-    scenario: Option<String>,
-    #[serde(default, rename = "scenario-path")]
-    scenario_path: Option<String>,
-    #[serde(default, rename = "set-at")]
-    set_at: Option<String>,
-    #[serde(default, rename = "cli-config-dir")]
-    cli_config_dir: Option<String>,
-}
-
-/// Best-effort read of the current session file at `session_path`. A missing
-/// or malformed file yields an empty record so a write simply has nothing to
-/// preserve rather than failing.
-fn read_existing_session(session_path: &Path) -> ExistingSession {
-    let Ok(content) = std::fs::read_to_string(session_path) else {
-        return ExistingSession::default();
-    };
-    toml::from_str::<ExistingSession>(&content).unwrap_or_default()
-}
-
-/// Format `now` as an RFC 3339 / ISO 8601 UTC timestamp
-/// (`YYYY-MM-DDTHH:MM:SSZ`). Matches the field shape `setAt` used
-/// pre-consolidation; the TOML key is now `set-at`, but the value
-/// remains an ISO 8601 UTC string.
-///
-/// Uses Howard Hinnant's date algorithms — the standard branchless
-/// civil-from-days computation. Valid for any date the underlying
-/// `SystemTime` can represent, including the entire post-1970 range
-/// the session file actually sees. A `now` earlier than the epoch
-/// falls back to `1970-01-01T00:00:00Z`, which the session file
-/// never produces in practice.
-fn iso8601_utc(now: SystemTime) -> String {
-    let secs = now.duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
-    let days = secs / 86_400;
-    let tod = secs % 86_400;
-    let hour = tod / 3600;
-    let min = (tod / 60) % 60;
-    let sec = tod % 60;
-
-    // `days` from a post-1970 SystemTime fits in i64 with enormous headroom;
-    // dates past year ~9999 are far outside any session file's lifetime.
-    #[allow(clippy::cast_possible_wrap)]
-    let (year, month, day) = civil_from_days(days as i64);
-    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}Z")
-}
-
-/// Convert days-since-1970-01-01 (Gregorian) into `(year, month, day)`.
-///
-/// Howard Hinnant's standard civil-from-days algorithm. The intermediate
-/// casts (`i64` ↔ `u64`, `u64` → `u32`) are part of the algorithm and
-/// safe for any input in the post-1970, pre-year-9999 range the session
-/// file will ever produce.
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_possible_wrap
-)]
-fn civil_from_days(days: i64) -> (i64, u32, u32) {
-    let z = days + 719_468;
-    let era = if z >= 0 {
-        z / 146_097
-    } else {
-        (z - 146_096) / 146_097
-    };
-    let doe = (z - era * 146_097) as u64;
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe as i64 + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let day = doy - (153 * mp + 2) / 5 + 1;
-    let month = if mp < 10 { mp + 3 } else { mp - 9 };
-    let year = y + i64::from(month <= 2);
-    (year, month as u32, day as u32)
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+    use crate::session::{civil_from_days, iso8601_utc};
     use std::fs;
-    use std::time::Duration;
+    use std::time::{Duration, UNIX_EPOCH};
     use tempfile::tempdir;
+
+    /// Seam that injects a stable clock and writes as an **unidentified**
+    /// process, so a result never depends on the environment the tests
+    /// happen to run in (this shell may carry a platform session id).
+    fn run_with_now(
+        args: &WriteSessionArgs,
+        repo: &Path,
+        now: SystemTime,
+    ) -> Result<WriteSessionResult> {
+        run_as(args, repo, None, now)
+    }
 
     fn fixed_now() -> SystemTime {
         // 2026-05-23T12:34:56Z
@@ -790,6 +673,87 @@ mod tests {
         // 2000-02-29 — 2000 IS a leap year.
         let days = day_count(2000, 2, 29);
         assert_eq!(civil_from_days(days), (2000, 2, 29));
+    }
+
+    // -- spec 062: identified writes ---------------------------------------
+
+    const CANONICAL_DEFAULT: &str = "feature = \"022-deterministic-runtime\"\n\
+                                     path = \"specs/022-deterministic-runtime\"\n\
+                                     set-at = \"2026-05-23T12:34:56Z\"\n";
+
+    #[test]
+    fn a_single_unidentified_agent_writes_todays_bytes_and_nothing_else() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        let result = run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        assert_eq!(
+            fs::read_to_string(tmp.path().join(".ductus/session.toml")).unwrap(),
+            CANONICAL_DEFAULT
+        );
+        assert_eq!((result.identity, result.own_path), (None, None));
+        assert!(
+            !tmp.path().join(".ductus/sessions").exists(),
+            "no per-process state for a single unidentified agent"
+        );
+    }
+
+    #[test]
+    fn an_identified_target_write_writes_its_own_file_and_the_same_default() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        let review = Identity::named("review").unwrap();
+        let result = run_as(&base_args(), tmp.path(), Some(&review), fixed_now()).unwrap();
+
+        assert_eq!(result.path, ".ductus/session.toml");
+        assert_eq!(result.identity.as_deref(), Some("review"));
+        assert_eq!(
+            result.own_path.as_deref(),
+            Some(".ductus/sessions/review.toml")
+        );
+        assert_eq!(
+            fs::read_to_string(tmp.path().join(".ductus/session.toml")).unwrap(),
+            CANONICAL_DEFAULT,
+            "the default is byte-identical to an unidentified write"
+        );
+        let own = fs::read_to_string(tmp.path().join(".ductus/sessions/review.toml")).unwrap();
+        assert!(
+            own.contains("feature = \"022-deterministic-runtime\""),
+            "{own}"
+        );
+        assert!(own.contains("used-at = \"2026-05-23T12:34:56Z\""), "{own}");
+    }
+
+    #[test]
+    fn an_identified_clear_write_clears_its_own_file_and_keeps_cli_config_dir() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        fs::write(
+            tmp.path().join(".ductus/session.toml"),
+            "feature = \"old\"\npath = \"specs/old\"\ncli-config-dir = \".claude\"\n",
+        )
+        .unwrap();
+        let review = Identity::named("review").unwrap();
+        run_as(&base_args(), tmp.path(), Some(&review), fixed_now()).unwrap();
+        run_as(&clear_args(), tmp.path(), Some(&review), fixed_now()).unwrap();
+
+        assert_eq!(
+            fs::read_to_string(tmp.path().join(".ductus/session.toml")).unwrap(),
+            "cli-config-dir = \".claude\"\n"
+        );
+        let own = fs::read_to_string(tmp.path().join(".ductus/sessions/review.toml")).unwrap();
+        assert!(own.contains("cleared = true"), "{own}");
+        assert!(!own.contains("feature"), "{own}");
+    }
+
+    #[test]
+    fn an_identified_writer_is_told_who_else_targets_the_feature() {
+        let tmp = tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        let (a, b) = (Identity::named("a").unwrap(), Identity::named("b").unwrap());
+        run_as(&base_args(), tmp.path(), Some(&a), fixed_now()).unwrap();
+        let result = run_as(&base_args(), tmp.path(), Some(&b), fixed_now()).unwrap();
+        assert_eq!(result.peers.len(), 1);
+        assert_eq!(result.peers[0].session, "a");
     }
 
     /// Round-trip helper: count days since 1970-01-01 for a known date.

@@ -39,6 +39,13 @@
 //! out of scope: its callers copy bytes (template installs, archive
 //! extraction), and bytes are preserved by construction.
 //!
+//! The session writer is outside the subject: since spec 062 the session
+//! files (`.ductus/session.toml` and `.ductus/sessions/*.toml`) are written
+//! by the session core, `runtime/src/session.rs`, not by `write_session.rs`.
+//! It renders them wholesale from typed fields — generated state, not
+//! authored prose — which is the reason `write_session.rs` was exempt here
+//! before the logic moved. Recorded so the move is not mistaken for coverage.
+//!
 //! **Evidence** that a writer accounts for endings, any one of:
 //!
 //! - `line_ending_of` / `with_line_ending` — detect and restore.
@@ -74,10 +81,6 @@ const EXEMPT: &[(&str, &str)] = &[
         "write_analysis.rs",
         "renders analysis.md wholesale on every run, for the reason write_review.rs is exempt; \
          its spec.md rewrite retired with the same relocation",
-    ),
-    (
-        "write_session.rs",
-        "renders .ductus/session.toml wholesale from typed fields — generated state, not authored prose",
     ),
     (
         "migrate_session_file.rs",
