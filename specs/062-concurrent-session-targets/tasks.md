@@ -50,9 +50,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. `dashboard` and the exec seed through the core
 
-- [ ] `load_session_target` in `runtime/src/primitives/dashboard.rs` resolves through the core; the payload gains `identity`, `source` and `notices`; `rendered-markdown` shows the session label on the target line and each notice beneath it
-- [ ] The exec seed in `runtime/src/main.rs` resolves through the core instead of reading the session path
-- [ ] Regenerate any golden stream under `runtime/tests/golden/` that the seed change alters, and confirm each diff is only the seed
+- [x] `load_session_target` in `runtime/src/primitives/dashboard.rs` resolves through the core; the payload gains `identity`, `source` and `notices`; `rendered-markdown` shows the session label on the target line and each notice beneath it
+- [x] The exec seed in `runtime/src/main.rs` resolves through the core instead of reading the session path
+- [x] Regenerate any golden stream under `runtime/tests/golden/` that the seed change alters, and confirm each diff is only the seed
 
 - **Done when**: dashboard tests cover AC8, the exec seed test covers AC23's two cases, and `cargo test` passes including the walker goldens.
 

@@ -471,11 +471,68 @@ fn emit_exec_error(code: &str, message: &str) {
     }
 }
 
+/// The walker's seed context: the shared session file's keys, with the four
+/// target keys (`feature`, `path`, `scenario`, `scenario-path`) replaced by
+/// the resolution of the process acting as `identity` (spec 062).
+///
+/// The default file resolves through `paths::session_path` — the newest
+/// existing of `.ductus/session.toml` (spec 049), `.govern/session.toml`
+/// (spec 042), or the legacy repo-root `.govern.session.toml`. Its other keys
+/// (a seeded `write-boundary`, nested `entries` / `substitutions` tables) are
+/// still seeded whole: TOML values are bridged into `serde_json::Value` via
+/// serde so nested structures survive, since the walker's context map and
+/// every primitive's args struct are JSON-shaped.
+///
+/// The target is a **peek**, not a resolution: pinning an adoption or
+/// consuming a notice here would take them from the walked command's own
+/// `resolve-session` step, and the operator would never see them. So
+/// `ductus exec` run from an agent's shell tool carries that agent's target,
+/// and run with no identity carries the shared default's (AC23).
+fn seed_context(
+    repo: &std::path::Path,
+    identity: Option<&ductus::session::Identity>,
+) -> ductus::primitives::Result<serde_json::Map<String, serde_json::Value>> {
+    use ductus::schema::primitives::SessionSource;
+    use serde_json::{Map, Value};
+
+    let mut context = Map::new();
+    let session_path = ductus::schema::paths::session_path(repo);
+    if let Ok(text) = std::fs::read_to_string(&session_path)
+        && let Ok(Value::Object(map)) = toml::from_str::<Value>(&text)
+    {
+        context.extend(map);
+    }
+    let resolution = ductus::session::peek(repo, identity)?;
+    // Only a process with a target of its own overrides the default's keys.
+    // Otherwise the default seeds exactly as it did before spec 062 — it is
+    // also a general-purpose seed, whose `path` may be a primitive argument
+    // with no `feature` beside it (a bootstrap walk's `merge-managed-block`).
+    let own = matches!(
+        resolution.source,
+        SessionSource::Own | SessionSource::Cleared
+    );
+    if !own {
+        return Ok(context);
+    }
+    for key in ["feature", "path", "scenario", "scenario-path"] {
+        context.remove(key);
+    }
+    if let Some(target) = resolution.target {
+        context.insert("feature".into(), Value::String(target.feature));
+        context.insert("path".into(), Value::String(target.path));
+        if let (Some(scenario), Some(scenario_path)) = (target.scenario, target.scenario_path) {
+            context.insert("scenario".into(), Value::String(scenario));
+            context.insert("scenario-path".into(), Value::String(scenario_path));
+        }
+    }
+    Ok(context)
+}
+
 fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
     use ductus::host::Host;
     use ductus::interpreter::{WalkOutcome, Walker};
     use ductus::parser;
-    use serde_json::{Map, Value};
+    use serde_json::Value;
 
     let host = Host::load(repo);
     let mut candidates = vec![
@@ -524,23 +581,24 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
         Err(err) => return emit_exec_parse_error(path, &err),
     };
 
-    // Seed the walker context: session file (when present) overlaid with
-    // CLI `key=value` arg overrides. The session resolves through
-    // `paths::session_path` — the newest existing of `.ductus/session.toml`
-    // (spec 049), `.govern/session.toml` (spec 042), or the legacy repo-root
-    // `.govern.session.toml`, per `schema::paths`'s `SESSION_CHAIN`; the path is
-    // uniform across every adopter regardless of AI CLI or project name. TOML
-    // values are bridged into `serde_json::Value` via serde so nested
-    // structures (arrays-of-tables for `entries`, sub-tables for
-    // `substitutions`, etc.) survive intact — the walker's context map
-    // and every primitive's args struct are JSON-shaped.
-    let mut context = Map::new();
-    let session_path = ductus::schema::paths::session_path(repo);
-    if let Ok(text) = std::fs::read_to_string(&session_path)
-        && let Ok(Value::Object(map)) = toml::from_str::<Value>(&text)
-    {
-        context.extend(map);
-    }
+    // Seed the walker context from the session (see `seed_context`), then
+    // overlay CLI `key=value` arg overrides.
+    let identity = match ductus::session::identity_from_process_env() {
+        Ok(identity) => identity,
+        Err(err) => {
+            emit_exec_error("session-identity-invalid", &err.to_string());
+            eprintln!("{err}");
+            return ExitCode::from(1);
+        }
+    };
+    let mut context = match seed_context(repo, identity.as_ref()) {
+        Ok(context) => context,
+        Err(err) => {
+            emit_exec_error("session-unreadable", &err.to_string());
+            eprintln!("{err}");
+            return ExitCode::from(1);
+        }
+    };
     for arg in args {
         if let Some((key, value)) = arg.split_once('=') {
             context.insert(key.to_string(), Value::String(value.to_string()));
@@ -801,12 +859,85 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use std::collections::BTreeSet;
 
     use clap::CommandFactory;
     use ductus::schema::registry::PRIMITIVE_REGISTRY;
+    use ductus::session::Identity;
 
-    use super::Cli;
+    use super::{Cli, seed_context};
+
+    fn repo_with_default(body: &str) -> tempfile::TempDir {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        std::fs::write(tmp.path().join(".ductus/session.toml"), body).unwrap();
+        tmp
+    }
+
+    /// AC23, second case: run with no identity, the seed is the shared
+    /// default's target — and its other keys still ride along.
+    #[test]
+    fn an_unidentified_exec_seeds_the_shared_default() {
+        let tmp = repo_with_default(
+            "feature = \"055-a\"\npath = \"specs/055-a\"\nwrite-boundary = [\"src/**\"]\n",
+        );
+        let context = seed_context(tmp.path(), None).unwrap();
+        assert_eq!(context["feature"], "055-a");
+        assert_eq!(context["write-boundary"][0], "src/**");
+    }
+
+    /// AC23, first case: run as an agent whose own target differs from the
+    /// default, the seed is the agent's — and nothing is written by seeding.
+    #[test]
+    fn an_identified_exec_seeds_its_own_target_without_writing() {
+        let tmp = repo_with_default("feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        std::fs::create_dir_all(tmp.path().join(".ductus/sessions")).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/sessions/review.toml"),
+            "feature = \"056-b\"\npath = \"specs/056-b\"\nscenario = \"s\"\n\
+             scenario-path = \"specs/056-b/scenarios/s.md\"\n",
+        )
+        .unwrap();
+        let before =
+            std::fs::read_to_string(tmp.path().join(".ductus/sessions/review.toml")).unwrap();
+        let review = Identity::named("review").unwrap();
+        let context = seed_context(tmp.path(), Some(&review)).unwrap();
+        assert_eq!(context["feature"], "056-b");
+        assert_eq!(context["path"], "specs/056-b");
+        assert_eq!(context["scenario"], "s");
+        assert_eq!(
+            std::fs::read_to_string(tmp.path().join(".ductus/sessions/review.toml")).unwrap(),
+            before
+        );
+    }
+
+    /// The session file is also a general-purpose seed: a `path` with no
+    /// `feature` is a primitive argument, and a process with no target of its
+    /// own must seed it untouched.
+    #[test]
+    fn a_process_with_no_own_target_seeds_the_default_untouched() {
+        let tmp = repo_with_default("path = \"CLAUDE.md\"\nblock = \"x\"\n");
+        let review = Identity::named("review").unwrap();
+        let context = seed_context(tmp.path(), Some(&review)).unwrap();
+        assert_eq!(context["path"], "CLAUDE.md");
+        assert_eq!(context["block"], "x");
+    }
+
+    #[test]
+    fn a_cleared_exec_seeds_no_target() {
+        let tmp = repo_with_default("feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        std::fs::create_dir_all(tmp.path().join(".ductus/sessions")).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/sessions/review.toml"),
+            "cleared = true\n",
+        )
+        .unwrap();
+        let review = Identity::named("review").unwrap();
+        let context = seed_context(tmp.path(), Some(&review)).unwrap();
+        assert!(context.get("feature").is_none() && context.get("path").is_none());
+    }
 
     /// Subcommands that are deliberately not registry primitives, each
     /// excluded by name with its reason rather than by loosening the

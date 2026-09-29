@@ -767,17 +767,7 @@ pub struct Resolution {
 /// [`PrimitiveError::Io`] on a failed read, lock or write.
 pub fn resolve(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Result<Resolution> {
     let Some(identity) = effective(repo, identity) else {
-        let target = read_default_strict(repo)?.and_then(|record| record.target());
-        return Ok(Resolution {
-            identity: None,
-            source: if target.is_some() {
-                SessionSource::Default
-            } else {
-                SessionSource::None
-            },
-            target,
-            notices: Vec::new(),
-        });
+        return resolve_unidentified(repo);
     };
 
     let _lock = lock(repo)?;
@@ -848,6 +838,68 @@ pub fn resolve(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Res
         source: SessionSource::Adopted,
         target: Some(target),
         notices,
+    })
+}
+
+/// An unidentified process's resolution: the shared default, read-only.
+fn resolve_unidentified(repo: &Path) -> Result<Resolution> {
+    let target = read_default_strict(repo)?.and_then(|record| record.target());
+    Ok(Resolution {
+        identity: None,
+        source: if target.is_some() {
+            SessionSource::Default
+        } else {
+            SessionSource::None
+        },
+        target,
+        notices: Vec::new(),
+    })
+}
+
+/// What [`resolve`] would answer for `identity`, with **nothing written and
+/// nothing consumed**: no adoption pinned, no `used-at` refreshed, no notice
+/// delivered, and no sessions directory created.
+///
+/// For a caller that needs the target before the command that owns the
+/// resolution has run — the `ductus exec` seed. Were the seed to resolve for
+/// real, it would consume the once-only notices and pin the adoption before
+/// the walked command's own `resolve-session` step could report them, and the
+/// operator would never see either. A process with no file of its own peeks
+/// the default with source `adopted`, since that is what its first real
+/// resolution will pin.
+///
+/// # Errors
+///
+/// As [`resolve`], minus the write failures it cannot have.
+pub fn peek(repo: &Path, identity: Option<&Identity>) -> Result<Resolution> {
+    let Some(identity) = effective(repo, identity) else {
+        return resolve_unidentified(repo);
+    };
+    let _lock = lock_if_shared(repo)?;
+    let own = own_path(repo, identity);
+    if own.exists() {
+        let target = ProcessRecord::load(&own)?.target();
+        return Ok(Resolution {
+            identity: Some(identity.label()),
+            source: if target.is_some() {
+                SessionSource::Own
+            } else {
+                SessionSource::Cleared
+            },
+            target,
+            notices: Vec::new(),
+        });
+    }
+    let target = read_default_strict(repo)?.and_then(|record| record.target());
+    Ok(Resolution {
+        identity: Some(identity.label()),
+        source: if target.is_some() {
+            SessionSource::Adopted
+        } else {
+            SessionSource::None
+        },
+        target,
+        notices: Vec::new(),
     })
 }
 
@@ -1598,6 +1650,42 @@ mod tests {
         assert!(
             !tmp.path().join(".ductus").exists(),
             "no .ductus state created"
+        );
+    }
+
+    #[test]
+    fn a_peek_answers_like_resolve_and_writes_nothing() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), None, "055-a", t0());
+
+        let peeked = peek(tmp.path(), Some(&x)).unwrap();
+        assert_eq!(
+            (peeked.source, feature_of(&peeked)),
+            (SessionSource::Adopted, Some("055-a"))
+        );
+        assert!(peeked.notices.is_empty());
+        assert!(
+            !tmp.path().join(".ductus/sessions").exists(),
+            "nothing created or pinned"
+        );
+
+        set(tmp.path(), Some(&y), "055-a", at(1));
+        let before = std::fs::read_to_string(own_path(tmp.path(), &y)).unwrap();
+        set(tmp.path(), Some(&x), "055-a", at(2));
+        let own = peek(tmp.path(), Some(&y)).unwrap();
+        assert_eq!(own.source, SessionSource::Own);
+        assert!(own.notices.is_empty());
+        assert_eq!(
+            std::fs::read_to_string(own_path(tmp.path(), &y)).unwrap(),
+            before,
+            "no used-at refresh, no notice consumed"
+        );
+        let real = resolve(tmp.path(), Some(&y), at(3)).unwrap();
+        assert_eq!(
+            real.notices.len(),
+            1,
+            "the co-target notice survived the peek"
         );
     }
 

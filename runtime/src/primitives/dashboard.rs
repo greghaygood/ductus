@@ -9,13 +9,20 @@
 //! three-tier `CONFIG_CHAIN` / `SESSION_CHAIN` ladders (`.ductus/` →
 //! `.govern/` → legacy repo root, newest-wins) — host-agnostic,
 //! project-name-agnostic, no caller-supplied path.
-//! Read-only with respect to filesystem state; no atomic-write concerns.
+//!
+//! The session target resolves through [`crate::session`] (spec 062): an
+//! identified process sees its own target, with its session label and any
+//! notices rendered under the target line. `/{project}:status` *is* that
+//! process's resolution, so it is a real one — an adoption is pinned and
+//! notices are consumed here, where the operator reads them. Apart from that
+//! session bookkeeping the primitive is read-only.
 //!
 //! Defined by `specs/022-deterministic-runtime/scenarios/dashboard-primitive.md`.
 
 use std::collections::{BTreeSet, HashMap};
 use std::fmt::Write as _;
 use std::path::Path;
+use std::time::SystemTime;
 
 use serde::Deserialize;
 
@@ -29,10 +36,11 @@ use crate::schema::paths;
 use crate::schema::primitives::{
     DashboardArgs, DashboardConfig, DashboardResult, DashboardScenarioDetail,
     DashboardSessionTarget, DashboardSpec, Frontmatter, InboxStanding, InboxState,
-    ReferenceOutcome, ResolutionRecord, ResolveReferencesArgs,
+    ReferenceOutcome, ResolutionRecord, ResolveReferencesArgs, SessionNotice, SessionSource,
 };
 use crate::schema::services::Services;
 use crate::schema::status::{ALLOWED_STATUSES, UNBLOCKING_STATUSES};
+use crate::session::{self, Identity};
 
 /// Execute the `dashboard` primitive.
 ///
@@ -46,14 +54,26 @@ use crate::schema::status::{ALLOWED_STATUSES, UNBLOCKING_STATUSES};
 /// or session file is malformed. A *targeted scenario* with
 /// missing or malformed frontmatter is NOT an error — it degrades to a
 /// detail-less session target (see [`load_scenario_detail`]).
-pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
+pub fn run(args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
+    let identity = session::identity_from_process_env()?;
+    run_as(args, repo, identity.as_ref(), SystemTime::now())
+}
+
+/// Render the dashboard as `identity` at `now`: the one path [`run`] and the
+/// tests share.
+pub(crate) fn run_as(
+    _args: &DashboardArgs,
+    repo: &Path,
+    identity: Option<&Identity>,
+    now: SystemTime,
+) -> Result<DashboardResult> {
     let specs = load_specs(repo)?;
     let tags_union = compute_tags_union(&specs);
     // Resolved once: `config_name` is the name the read below actually
     // resolved, carried into the render so the provenance tag cannot name a
     // different file than the one parsed.
     let (config, config_name) = load_config(repo)?;
-    let session_target = load_session_target(repo)?;
+    let (session_target, session) = load_session_target(repo, identity, now)?;
     let inbox_standing = super::inbox_standing::standing(repo);
     let rendered_markdown = render_markdown(
         repo,
@@ -65,9 +85,13 @@ pub fn run(_args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
             inbox: &inbox_standing,
         },
         session_target.as_ref(),
+        &session,
     )?;
     Ok(DashboardResult {
         session_target,
+        session_identity: session.identity,
+        session_source: session.source,
+        session_notices: session.notices,
         specs,
         tags_union,
         config,
@@ -102,11 +126,12 @@ fn render_markdown(
     repo: &Path,
     view: &View<'_>,
     session_target: Option<&DashboardSessionTarget>,
+    session: &SessionView,
 ) -> Result<String> {
     let project = Host::load(repo).project;
     let specs = view.specs;
     let mut blocks = vec![
-        render_preamble(specs, session_target, &project),
+        render_preamble(specs, session_target, session, &project),
         render_table(specs, session_target, &project),
         render_callouts(view, &project),
     ];
@@ -122,9 +147,28 @@ fn render_markdown(
 /// `Scenario: …` line when a scenario is targeted (a scenario with
 /// unresolved questions overrides the next action). Without one, the
 /// pointer to `/{project}:target`.
+///
+/// An identified process's target line ends `— session {label}`, and each
+/// session notice follows as a `Notice: …` line — after the no-target pointer
+/// too, since a consolidation's notice is exactly what explains a target that
+/// has gone (spec 062). An unidentified process renders exactly as before.
 fn render_preamble(
     specs: &[DashboardSpec],
     session_target: Option<&DashboardSessionTarget>,
+    session: &SessionView,
+    project: &str,
+) -> String {
+    let mut out = render_target_lines(specs, session_target, session, project);
+    for notice in &session.notices {
+        let _ = write!(out, "\nNotice: {}", notice.message);
+    }
+    out
+}
+
+fn render_target_lines(
+    specs: &[DashboardSpec],
+    session_target: Option<&DashboardSessionTarget>,
+    session: &SessionView,
     project: &str,
 ) -> String {
     let Some(target) = session_target else {
@@ -146,6 +190,9 @@ fn render_preamble(
         next = format!("/{project}:clarify (scenario-targeted)");
     }
     let mut out = format!("Target: {} / {status} / next: {next}", target.feature);
+    if let Some(label) = &session.identity {
+        let _ = write!(out, " — session {label}");
+    }
     if let Some(scenario) = &target.scenario {
         let (section, open) = target
             .scenario_detail
@@ -710,54 +757,47 @@ fn load_config(repo: &Path) -> Result<(DashboardConfig, &'static str)> {
     ))
 }
 
-/// Minimal session-file shape. The runtime exec subcommand seeds walker
-/// context from the same file; the MCP surface reads it directly so MCP
-/// callers don't need a second tool call. TOML keys are kebab-case
-/// (`scenario-path`, `set-at`); the legacy JSON keys (`scenarioPath`,
-/// `setAt`) are not accepted — adopters with the legacy `.claude/*-session.json`
-/// file complete the migration via the `/ductus` bootstrap pass.
-#[derive(Deserialize)]
-struct SessionFile {
-    // Optional: a session file may exist carrying only the per-contributor
-    // `cli-config-dir` (written by `/ductus` before any target is selected).
-    // No `feature` means no target to surface.
-    #[serde(default)]
-    feature: Option<String>,
-    #[serde(default)]
-    scenario: Option<String>,
-    #[serde(default, rename = "scenario-path")]
-    scenario_path: Option<String>,
+/// The session facts beside the target: who is asking, where the target came
+/// from, and what to tell them. All empty for an unidentified process, so its
+/// payload and render are unchanged by spec 062.
+#[derive(Debug, Default)]
+struct SessionView {
+    identity: Option<String>,
+    source: Option<SessionSource>,
+    notices: Vec<SessionNotice>,
 }
 
-/// Read the resolved session file (when present) and populate the
-/// session-target field. When the targeted scenario file exists, also
-/// reads it to populate `scenario-detail`. The session field is echoed
-/// as-recorded; `/{project}:target` is the corrective action for stale
-/// slugs, not the dashboard.
-fn load_session_target(repo: &Path) -> Result<Option<DashboardSessionTarget>> {
-    let session_path = paths::session_path(repo);
-    if !session_path.is_file() {
-        return Ok(None);
-    }
-    let content = read_text(&session_path)?;
-    let session: SessionFile = toml::from_str(&content).map_err(|source| PrimitiveError::Toml {
-        path: session_path.clone(),
-        source,
-    })?;
-    // A session file with no `feature` (e.g. only `cli-config-dir` recorded by
-    // `/ductus` before a target is selected) carries no target to surface.
-    let Some(feature) = session.feature else {
-        return Ok(None);
+/// Resolve the session target through the session core and populate the
+/// session-target field. When the targeted scenario file exists, also reads
+/// it to populate `scenario-detail`. The target is echoed as-recorded;
+/// `/{project}:target` is the corrective action for stale slugs, not the
+/// dashboard.
+fn load_session_target(
+    repo: &Path,
+    identity: Option<&Identity>,
+    now: SystemTime,
+) -> Result<(Option<DashboardSessionTarget>, SessionView)> {
+    let resolution = session::resolve(repo, identity, now)?;
+    let view = SessionView {
+        source: resolution.identity.as_ref().map(|_| resolution.source),
+        identity: resolution.identity,
+        notices: resolution.notices,
     };
-    let scenario_detail = match (&session.scenario, &session.scenario_path) {
+    let Some(target) = resolution.target else {
+        return Ok((None, view));
+    };
+    let scenario_detail = match (&target.scenario, &target.scenario_path) {
         (Some(_), Some(rel_path)) => load_scenario_detail(repo, rel_path)?,
         _ => None,
     };
-    Ok(Some(DashboardSessionTarget {
-        feature,
-        scenario: session.scenario,
-        scenario_detail,
-    }))
+    Ok((
+        Some(DashboardSessionTarget {
+            feature: target.feature,
+            scenario: target.scenario,
+            scenario_detail,
+        }),
+        view,
+    ))
 }
 
 /// Read a scenario file and extract its dashboard header detail. Returns
@@ -811,7 +851,120 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use super::*;
+    use crate::schema::primitives::SessionNoticeKind;
+    use std::time::{Duration, UNIX_EPOCH};
     use tempfile::TempDir;
+
+    /// Shadows the environment-reading [`super::run`]: every existing test
+    /// renders as an **unidentified** process, so its result never depends on
+    /// the shell it runs in (this one may carry a platform session id).
+    fn run(args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
+        run_as(args, repo, None, SystemTime::now())
+    }
+
+    fn fixed_now() -> SystemTime {
+        UNIX_EPOCH + Duration::from_secs(1_790_683_200)
+    }
+
+    /// The `.ductus/` layout — the one per-process targets need. (The
+    /// suite's `write_session_toml` writes the legacy root tier, which the
+    /// session core rightly treats as unidentified.)
+    fn write_ductus_session(repo: &Path, body: &str) {
+        std::fs::create_dir_all(repo.join(".ductus")).unwrap();
+        std::fs::write(repo.join(".ductus/session.toml"), body).unwrap();
+    }
+
+    #[test]
+    fn an_identified_process_sees_its_label_and_its_notices() {
+        let tmp = TempDir::new().unwrap();
+        write_spec(tmp.path(), "055-a", "status: planned\n", "");
+        write_ductus_session(tmp.path(), "feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        let review = Identity::named("review").unwrap();
+        let result = run_as(
+            &DashboardArgs::default(),
+            tmp.path(),
+            Some(&review),
+            fixed_now(),
+        )
+        .unwrap();
+
+        assert_eq!(result.session_identity.as_deref(), Some("review"));
+        assert_eq!(result.session_source, Some(SessionSource::Adopted));
+        assert_eq!(result.session_notices.len(), 1);
+        assert_eq!(result.session_notices[0].kind, SessionNoticeKind::Adopted);
+        let rendered = &result.rendered_markdown;
+        assert!(
+            rendered.starts_with("Target: 055-a / planned / next: ")
+                && rendered
+                    .contains(" — session review\nNotice: Session review had no target of its own"),
+            "{rendered}"
+        );
+
+        let again = run_as(
+            &DashboardArgs::default(),
+            tmp.path(),
+            Some(&review),
+            fixed_now(),
+        )
+        .unwrap();
+        assert_eq!(again.session_source, Some(SessionSource::Own));
+        assert!(again.session_notices.is_empty(), "the notice was consumed");
+        assert!(!again.rendered_markdown.contains("Notice:"));
+    }
+
+    #[test]
+    fn a_cleared_process_sees_the_pointer_and_why() {
+        let tmp = TempDir::new().unwrap();
+        write_ductus_session(
+            tmp.path(),
+            "feature = \"058-gone\"\npath = \"specs/058-gone\"\n",
+        );
+        let review = Identity::named("review").unwrap();
+        run_as(
+            &DashboardArgs::default(),
+            tmp.path(),
+            Some(&review),
+            fixed_now(),
+        )
+        .unwrap();
+        crate::session::retarget(
+            tmp.path(),
+            None,
+            "058-gone",
+            None,
+            crate::session::RemovalCause::Consolidate,
+            fixed_now(),
+        )
+        .unwrap();
+
+        let result = run_as(
+            &DashboardArgs::default(),
+            tmp.path(),
+            Some(&review),
+            fixed_now(),
+        )
+        .unwrap();
+        assert!(result.session_target.is_none());
+        assert_eq!(result.session_source, Some(SessionSource::Cleared));
+        let rendered = &result.rendered_markdown;
+        let (first, rest) = rendered.split_once('\n').unwrap();
+        assert!(first.starts_with("No session target. Run /"), "{rendered}");
+        assert!(
+            rest.starts_with("Notice: Target 058-gone was removed by a consolidation"),
+            "{rendered}"
+        );
+    }
+
+    #[test]
+    fn an_unidentified_payload_carries_no_session_fields() {
+        let tmp = TempDir::new().unwrap();
+        write_session_toml(tmp.path(), "feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        let value =
+            serde_json::to_value(run(&DashboardArgs::default(), tmp.path()).unwrap()).unwrap();
+        for key in ["session-identity", "session-source", "session-notices"] {
+            assert!(value.get(key).is_none(), "{key} leaked into {value}");
+        }
+    }
 
     /// Write a minimal spec.md to `repo/specs/{slug}/spec.md` with the
     /// given frontmatter body plus a `## Open Questions` section that

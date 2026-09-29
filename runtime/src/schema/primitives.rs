@@ -1839,6 +1839,18 @@ pub struct DashboardResult {
     /// legacy root fallback) exists and names a target; `None` otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_target: Option<DashboardSessionTarget>,
+    /// Display label of the process's session identity (spec 062); absent
+    /// for an unidentified process, whose payload is unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_identity: Option<String>,
+    /// Where an identified process's target came from; absent when
+    /// unidentified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_source: Option<SessionSource>,
+    /// Session notices to display once — also rendered as `Notice:` lines in
+    /// `rendered-markdown`, since this resolution consumed them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub session_notices: Vec<SessionNotice>,
     /// Per-spec entries in directory-name order.
     pub specs: Vec<DashboardSpec>,
     /// Sorted, deduplicated union of every spec's `tags` array. Empty when

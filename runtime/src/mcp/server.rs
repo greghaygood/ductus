@@ -705,7 +705,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "dashboard",
-        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the config review-state summary (.ductus/config.toml), the standing inbox (outstanding count and oldest item's date, rendered as an Inbox: line on every run), and the optional session target read from the session file (.ductus/session.toml, falling back to .govern/session.toml then the legacy root pre-migration)."
+        description = "Single-call pipeline-state surface for /{project}:status. Returns the per-spec inventory (status, deps, tags, open-question count, artifact existence, scenarios count, blocked-by), the repo-wide tags-union, the config review-state summary (.ductus/config.toml), the standing inbox (outstanding count and oldest item's date, rendered as an Inbox: line on every run), and the optional session target resolved for this process (spec 062): its own target when it has a session identity (DUCTUS_SESSION or a platform session id), else the shared default (.ductus/session.toml, falling back to .govern/session.toml then the legacy root pre-migration). An identified process also gets session-identity, session-source and session-notices, rendered under the target line."
     )]
     async fn dashboard(
         &self,
