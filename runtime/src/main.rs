@@ -21,9 +21,9 @@ use ductus::schema::primitives::{
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
     ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
     RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
-    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
-    WriteReviewArgs, WriteSessionArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetireFeatureArgs,
+    RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -177,6 +177,8 @@ enum Command {
     Dashboard(DashboardArgs),
     /// Atomically rewrite the active session file (`.ductus/session.toml`, falling back to `.govern/session.toml` then the legacy root pre-migration) with the session-target record.
     WriteSession(WriteSessionArgs),
+    /// Resolve this process's session target: its own, an adopted default, or the shared default when unidentified.
+    ResolveSession(ResolveSessionArgs),
 }
 
 fn emit_protocol_schema() -> ExitCode {
@@ -771,6 +773,9 @@ fn main() -> ExitCode {
         Command::PruneTasks(args) => emit_result(primitives::prune_tasks::run(&args, &repo)),
         Command::Dashboard(args) => emit_result(primitives::dashboard::run(&args, &repo)),
         Command::WriteSession(args) => emit_result(primitives::write_session::run(&args, &repo)),
+        Command::ResolveSession(args) => {
+            emit_result(primitives::resolve_session::run(&args, &repo))
+        }
         Command::GateConfirm(args) => {
             // The CLI binding is the subprocess-interpreter surface: emit the
             // gate-confirm envelope on stdout, then read one gate-response

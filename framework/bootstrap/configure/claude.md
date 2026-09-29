@@ -111,6 +111,7 @@ Configure `{cli-config-dir}/settings.local.json` with the permissions needed for
    - `mcp__ductus__prune-tasks`
    - `mcp__ductus__dashboard`
    - `mcp__ductus__write-session`
+   - `mcp__ductus__resolve-session`
    - `mcp__ductus__resolve-feature`
    - `mcp__ductus__create-feature`
    - `mcp__ductus__create-plan-artifacts`

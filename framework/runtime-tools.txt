@@ -57,6 +57,7 @@ label-criteria
 prune-tasks
 dashboard
 write-session
+resolve-session
 resolve-feature
 create-feature
 create-plan-artifacts

@@ -59,11 +59,11 @@ use crate::schema::primitives::{
     RelocateAuditRecordsArgs, RelocateAuditRecordsResult, RemoveInboxItemArgs,
     RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveConstitutionsArgs,
     ResolveConstitutionsResult, ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs,
-    ResolveReferencesResult, RetireFeatureArgs, RetireFeatureResult, RewriteSpecLinksArgs,
-    RewriteSpecLinksResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
-    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
-    WriteAnalysisArgs, WriteAnalysisResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
-    WriteSessionResult,
+    ResolveReferencesResult, ResolveSessionArgs, ResolveSessionResult, RetireFeatureArgs,
+    RetireFeatureResult, RewriteSpecLinksArgs, RewriteSpecLinksResult, RunGeneratorArgs,
+    RunGeneratorResult, SetStatusArgs, SetStatusResult, TraverseDepsArgs, TraverseDepsResult,
+    ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteAnalysisArgs, WriteAnalysisResult,
+    WriteReviewArgs, WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -718,13 +718,26 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "write-session",
-        description = "Atomically merge-write the active session file (`.ductus/session.toml`, falling back to `.govern/session.toml` then the legacy root `.govern.session.toml` pre-migration; gitignored). A target write (supply `feature`+`path`, optional `scenario`) sets the target and preserves the per-contributor `cli-config-dir`; a host-config write (supply only `cli-config-dir`) sets the agent config-dir and preserves the existing target. Pairs with `dashboard`'s read of the same file; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
+        description = "Atomically merge-write the active session file (`.ductus/session.toml`, falling back to `.govern/session.toml` then the legacy root `.govern.session.toml` pre-migration; gitignored). A target write (supply `feature`+`path`, optional `scenario`) sets the target and preserves the per-contributor `cli-config-dir`; a host-config write (supply only `cli-config-dir`) sets the agent config-dir and preserves the existing target. Since spec 062 an identified process (DUCTUS_SESSION, or a platform session id such as CLAUDE_CODE_SESSION_ID) also writes its own target under .ductus/sessions/, and the result reports other sessions on the same feature (peers). Pairs with `resolve-session`'s read; allowing this MCP tool once suppresses the per-invocation Write permission prompt the host-write path triggers."
     )]
     async fn write_session(
         &self,
         params: Parameters<WriteSessionArgs>,
     ) -> Result<Json<WriteSessionResult>, String> {
         primitives::write_session::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "resolve-session",
+        description = "Resolve this process's session target (spec 062). The identity comes from the runtime's own environment: DUCTUS_SESSION, then the agent's platform session id (Claude Code: CLAUDE_CODE_SESSION_ID), else none. An unidentified process reads the shared default (.ductus/session.toml). An identified one gets its own target (.ductus/sessions/{key}.toml), or adopts and pins the shared default when it has none, or no target when it was cleared. Returns identity, source (own / adopted / default / cleared / none), target, and notices to display once (adoption, other sessions on the same feature, a fold or consolidation that moved the target). Commands call this instead of reading the session file by hand."
+    )]
+    async fn resolve_session(
+        &self,
+        params: Parameters<ResolveSessionArgs>,
+    ) -> Result<Json<ResolveSessionResult>, String> {
+        primitives::resolve_session::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

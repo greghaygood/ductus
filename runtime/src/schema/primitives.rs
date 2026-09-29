@@ -3071,6 +3071,31 @@ pub struct SessionPeer {
     pub last_used: Option<String>,
 }
 
+// -- resolve-session ---------------------------------------------------------
+
+/// Args for `resolve-session`. None: the identity is read from the runtime
+/// process's own environment (`DUCTUS_SESSION`, then a platform session id),
+/// which is the whole point — the host cannot pass what it may not read. The
+/// empty struct preserves clap-derive consistency with every other primitive.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolveSessionArgs {}
+
+/// Result for `resolve-session` (spec 062 data model).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ResolveSessionResult {
+    /// Display label of the process's session identity; `null` when the
+    /// process is unidentified and resolved the shared default.
+    pub identity: Option<String>,
+    /// Where the target came from.
+    pub source: SessionSource,
+    /// The resolved target; `null` for `cleared` and `none`.
+    pub target: Option<SessionTarget>,
+    /// Notices for the host to display, each once.
+    pub notices: Vec<SessionNotice>,
+}
+
 // -- resolve-references ------------------------------------------------------
 
 /// Args for `resolve-references`. Resolves the consumer feature's derived

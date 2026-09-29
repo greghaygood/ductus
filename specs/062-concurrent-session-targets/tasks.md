@@ -34,9 +34,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 4. `resolve-session` primitive
 
-- [ ] Create `runtime/src/primitives/resolve_session.rs`, with args and result in `runtime/src/schema/primitives.rs` per the data model
-- [ ] Register it in `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, the CLI in `runtime/src/main.rs`, and the interpreter dispatch in `runtime/src/interpreter/mod.rs`
-- [ ] Add `resolve-session` to `framework/runtime-tools.txt` and its permission entry to `framework/bootstrap/configure/claude.md` and `framework/bootstrap/configure/auggie.md`
+- [x] Create `runtime/src/primitives/resolve_session.rs`, with args and result in `runtime/src/schema/primitives.rs` per the data model
+- [x] Register it in `runtime/src/schema/registry.rs`, `runtime/src/mcp/server.rs`, the CLI in `runtime/src/main.rs`, and the interpreter dispatch in `runtime/src/interpreter/mod.rs`
+- [x] Add `resolve-session` to `framework/runtime-tools.txt` and its permission entry to `framework/bootstrap/configure/claude.md` and `framework/bootstrap/configure/auggie.md`
 
 - **Done when**: `ductus resolve-session` and the MCP tool return the data model's shape; `scripts/lint-tool-coverage.sh` and `scripts/audit/run-all.sh` pass.
 

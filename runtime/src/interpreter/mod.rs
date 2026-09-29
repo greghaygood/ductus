@@ -75,9 +75,9 @@ use crate::schema::primitives::{
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
     ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
     RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, RetireFeatureArgs, RewriteSpecLinksArgs,
-    RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs,
-    WriteReviewArgs, WriteSessionArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetireFeatureArgs,
+    RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -1025,6 +1025,7 @@ fn dispatch_primitive(
         "prune-tasks" => call!(PruneTasksArgs, prune_tasks),
         "dashboard" => call!(DashboardArgs, dashboard),
         "write-session" => call!(WriteSessionArgs, write_session),
+        "resolve-session" => call!(ResolveSessionArgs, resolve_session),
         "gate-confirm" => {
             // Unreachable from the walker: `handle_step` intercepts a
             // `gate-confirm` primitive step and blocks via `handle_gate`
