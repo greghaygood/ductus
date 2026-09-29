@@ -58,10 +58,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Cross-process integration tests
 
-- [ ] Create `runtime/tests/concurrent_sessions.rs`, spawning the built binary with per-child environments (`DUCTUS_SESSION`, `CLAUDE_CODE_SESSION_ID`, neither)
-- [ ] Two identities: a target write in one leaves the other's resolved target unchanged, for a plain target write and for each side-effect shape the commands use (AC1); each resolves its own feature (AC2)
-- [ ] Concurrent writers: many children with distinct identities write at once, and each own file holds its own target (AC4)
-- [ ] Two children with only `CLAUDE_CODE_SESSION_ID` set, to different values, hold separate targets (AC13); two with neither share the default (AC15)
+- [x] Create `runtime/tests/concurrent_sessions.rs`, spawning the built binary with per-child environments (`DUCTUS_SESSION`, `CLAUDE_CODE_SESSION_ID`, neither)
+- [x] Two identities: a target write in one leaves the other's resolved target unchanged, for a plain target write and for each side-effect shape the commands use (AC1); each resolves its own feature (AC2)
+- [x] Concurrent writers: many children with distinct identities write at once, and each own file holds its own target (AC4)
+- [x] Two children with only `CLAUDE_CODE_SESSION_ID` set, to different values, hold separate targets (AC13); two with neither share the default (AC15)
 
 - **Done when**: the integration tests for AC1, AC2, AC4, AC13 and AC15 pass under `cargo test`.
 
