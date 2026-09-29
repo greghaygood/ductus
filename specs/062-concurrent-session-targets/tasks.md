@@ -131,8 +131,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 16. Resolution reports unreadable peer files; the sweep's keep guard is tested
 
-- [ ] `Resolution` carries the peer files `due_notices` could not parse, and `resolve-session` and the `dashboard` payload report them as `unreadable`, as `write-session` and `retarget-sessions` already do, so "no co-target" and "could not check" differ (review: QUAL-CLAIM-001; AC22)
-- [ ] A test drives the sweep with a stale own file and asserts the caller's own file is kept — or, if no caller can reach that guard, the guard is removed and the test renamed to what it checks (review: QUAL-TEST-001)
+- [x] `Resolution` carries the peer files `due_notices` could not parse, and `resolve-session` and the `dashboard` payload report them as `unreadable`, as `write-session` and `retarget-sessions` already do, so "no co-target" and "could not check" differ (review: QUAL-CLAIM-001; AC22)
+- [x] A test drives the sweep with a stale own file and asserts the caller's own file is kept — or, if no caller can reach that guard, the guard is removed and the test renamed to what it checks (review: QUAL-TEST-001)
 
 - **Done when**: a corrupt peer file is named in `resolve-session`'s and `dashboard`'s results; the keep-guard test fails with the guard removed (or the guard is gone); `cargo test` passes.
 

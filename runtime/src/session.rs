@@ -810,10 +810,20 @@ fn removal_notice(notice: &RemovalNotice) -> SessionNotice {
     }
 }
 
-/// What resolving `record` delivers — its pending removal notice, then a
-/// co-target notice when its peers differ from the set it was last told about
-/// (AC19) — and the peer labels that resolution records. A set that empties is
-/// recorded silently: nobody left to name.
+/// What resolving a record delivers, and what that resolution records.
+struct Due {
+    /// The record's pending removal notice, then a co-target notice when its
+    /// peers differ from the set it was last told about (AC19).
+    notices: Vec<SessionNotice>,
+    /// The peer labels the resolution records as told. A set that empties is
+    /// recorded silently: nobody left to name.
+    seen_peers: Vec<String>,
+    /// Peer files that could not be parsed, and so could not be checked for
+    /// the same feature — named, never read as "no co-target" (AC22).
+    unreadable: Vec<PathBuf>,
+}
+
+/// What resolving `record` delivers and records.
 ///
 /// Shared by [`resolve`], which delivers the notices and records the labels,
 /// and [`peek`], which only reports them, so a view cannot show a notice the
@@ -823,17 +833,25 @@ fn due_notices(
     identity: &Identity,
     record: &ProcessRecord,
     now: SystemTime,
-) -> Result<(Vec<SessionNotice>, Vec<String>)> {
+) -> Result<Due> {
     let mut notices: Vec<SessionNotice> = record.notice.iter().map(removal_notice).collect();
     let Some(target) = record.target() else {
-        return Ok((notices, Vec::new()));
+        return Ok(Due {
+            notices,
+            seen_peers: Vec::new(),
+            unreadable: Vec::new(),
+        });
     };
-    let (peers, _unreadable) = peers_of(repo, Some(identity), &target.feature, now)?;
-    let labels: Vec<String> = peers.iter().map(|peer| peer.session.clone()).collect();
-    if labels != record.seen_peers && !peers.is_empty() {
+    let (peers, unreadable) = peers_of(repo, Some(identity), &target.feature, now)?;
+    let seen_peers: Vec<String> = peers.iter().map(|peer| peer.session.clone()).collect();
+    if seen_peers != record.seen_peers && !peers.is_empty() {
         notices.push(co_target_notice(&target.feature, &peers));
     }
-    Ok((notices, labels))
+    Ok(Due {
+        notices,
+        seen_peers,
+        unreadable,
+    })
 }
 
 /// The record a process with no file of its own pins on its first resolution:
@@ -872,6 +890,11 @@ pub struct Resolution {
     pub target: Option<SessionTarget>,
     /// Notices to display once.
     pub notices: Vec<SessionNotice>,
+    /// Per-process files that could not be parsed while checking for other
+    /// sessions on the same feature — named rather than read as "none"
+    /// (AC22). Empty when nothing was checked: unidentified, cleared, or no
+    /// target.
+    pub unreadable: Vec<PathBuf>,
 }
 
 /// Resolve the target of the process acting as `identity` in `repo`.
@@ -898,27 +921,33 @@ pub fn resolve(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Res
 
     if own.exists() {
         let mut record = ProcessRecord::load(&own)?;
-        let (notices, seen_peers) = due_notices(repo, identity, &record, now)?;
+        let due = due_notices(repo, identity, &record, now)?;
         record.notice = None;
-        record.seen_peers = seen_peers;
+        record.seen_peers = due.seen_peers;
         record.used_at = Some(iso8601_utc(now));
         record.store(&own)?;
-        return Ok(own_resolution(identity, record.target(), notices));
+        return Ok(own_resolution(
+            identity,
+            record.target(),
+            due.notices,
+            due.unreadable,
+        ));
     }
 
     let Some((target, mut record)) = adoption(repo, identity, now)? else {
         return Ok(no_target(identity));
     };
-    let (due, seen_peers) = due_notices(repo, identity, &record, now)?;
-    record.seen_peers = seen_peers;
+    let due = due_notices(repo, identity, &record, now)?;
+    record.seen_peers = due.seen_peers;
     record.store(&own)?;
     let mut notices = vec![adopted_notice(identity, &target)];
-    notices.extend(due);
+    notices.extend(due.notices);
     Ok(Resolution {
         identity: Some(identity.label()),
         source: SessionSource::Adopted,
         target: Some(target),
         notices,
+        unreadable: due.unreadable,
     })
 }
 
@@ -928,6 +957,7 @@ fn own_resolution(
     identity: &Identity,
     target: Option<SessionTarget>,
     notices: Vec<SessionNotice>,
+    unreadable: Vec<PathBuf>,
 ) -> Resolution {
     Resolution {
         identity: Some(identity.label()),
@@ -938,6 +968,7 @@ fn own_resolution(
         },
         target,
         notices,
+        unreadable,
     }
 }
 
@@ -948,6 +979,7 @@ fn no_target(identity: &Identity) -> Resolution {
         source: SessionSource::None,
         target: None,
         notices: Vec::new(),
+        unreadable: Vec::new(),
     }
 }
 
@@ -963,6 +995,7 @@ fn resolve_unidentified(repo: &Path) -> Result<Resolution> {
         },
         target,
         notices: Vec::new(),
+        unreadable: Vec::new(),
     })
 }
 
@@ -993,20 +1026,26 @@ pub fn peek(repo: &Path, identity: Option<&Identity>, now: SystemTime) -> Result
     let own = own_path(repo, identity);
     if own.exists() {
         let record = ProcessRecord::load(&own)?;
-        let (notices, _seen_peers) = due_notices(repo, identity, &record, now)?;
-        return Ok(own_resolution(identity, record.target(), notices));
+        let due = due_notices(repo, identity, &record, now)?;
+        return Ok(own_resolution(
+            identity,
+            record.target(),
+            due.notices,
+            due.unreadable,
+        ));
     }
     let Some((target, record)) = adoption(repo, identity, now)? else {
         return Ok(no_target(identity));
     };
-    let (due, _seen_peers) = due_notices(repo, identity, &record, now)?;
+    let due = due_notices(repo, identity, &record, now)?;
     let mut notices = vec![pending_adoption_notice(identity, &target)];
-    notices.extend(due);
+    notices.extend(due.notices);
     Ok(Resolution {
         identity: Some(identity.label()),
         source: SessionSource::Adopted,
         target: Some(target),
         notices,
+        unreadable: due.unreadable,
     })
 }
 
@@ -1745,6 +1784,47 @@ mod tests {
         );
         assert_eq!(out.unreadable, vec![bad.clone()]);
         assert!(bad.exists());
+    }
+
+    /// `QUAL-CLAIM-001`, AC22: a peer file that does not parse is named by
+    /// the resolution and the peek alike, so "no co-target" never hides
+    /// "could not check".
+    #[test]
+    fn a_resolution_names_the_peer_files_it_could_not_check() {
+        let tmp = repo();
+        let x = id("x");
+        set(tmp.path(), Some(&x), "055-a", t0());
+        let bad = tmp.path().join(".ductus/sessions/broken.toml");
+        std::fs::write(&bad, "feature = [").unwrap();
+
+        let peeked = peek(tmp.path(), Some(&x), at(1)).unwrap();
+        assert_eq!(peeked.unreadable, vec![bad.clone()]);
+        let resolved = resolve(tmp.path(), Some(&x), at(1)).unwrap();
+        assert_eq!(resolved.unreadable, vec![bad.clone()]);
+        assert!(resolved.notices.is_empty(), "{:?}", resolved.notices);
+
+        let unidentified = resolve(tmp.path(), None, at(2)).unwrap();
+        assert!(unidentified.unreadable.is_empty(), "nothing was checked");
+    }
+
+    /// `QUAL-TEST-001`: the sweep spares the caller's own file however long
+    /// it has been idle. Called from a write, the file was just stamped, so
+    /// only a direct call can show the guard at work.
+    #[test]
+    fn the_sweep_spares_the_callers_own_file_however_idle() {
+        let tmp = repo();
+        let x = id("x");
+        set(tmp.path(), Some(&x), "055-a", t0());
+        let _lock = lock(tmp.path()).unwrap();
+        let long_after = at(100 * IDLE_EXPIRY.as_secs());
+
+        let (expired, _) = sweep(tmp.path(), Some(&x), long_after).unwrap();
+        assert!(expired.is_empty(), "{expired:?}");
+        assert!(own_path(tmp.path(), &x).exists());
+
+        let (expired, _) = sweep(tmp.path(), None, long_after).unwrap();
+        assert_eq!(expired, ["x"]);
+        assert!(!own_path(tmp.path(), &x).exists());
     }
 
     #[test]

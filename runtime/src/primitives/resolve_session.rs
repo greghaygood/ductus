@@ -14,7 +14,7 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use crate::primitives::Result;
+use crate::primitives::{Result, rel_path};
 use crate::schema::primitives::{ResolveSessionArgs, ResolveSessionResult};
 use crate::session::{self, Identity};
 
@@ -45,6 +45,11 @@ pub(crate) fn run_as(
         source: resolution.source,
         target: resolution.target,
         notices: resolution.notices,
+        unreadable: resolution
+            .unreadable
+            .iter()
+            .map(|path| rel_path(path, repo))
+            .collect(),
     })
 }
 
@@ -95,6 +100,22 @@ mod tests {
         assert_eq!(result.identity.as_deref(), Some("review"));
         assert_eq!(result.source, SessionSource::Adopted);
         assert_eq!(result.notices[0].kind, SessionNoticeKind::Adopted);
+    }
+
+    #[test]
+    fn a_peer_file_that_does_not_parse_is_named_repo_relative() {
+        let tmp = repo_with_default("feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        let review = Identity::named("review").unwrap();
+        run_as(tmp.path(), Some(&review), now()).unwrap();
+        fs::write(
+            tmp.path().join(".ductus/sessions/broken.toml"),
+            "feature = [",
+        )
+        .unwrap();
+        let result = run_as(tmp.path(), Some(&review), now()).unwrap();
+        assert_eq!(result.unreadable, [".ductus/sessions/broken.toml"]);
+        let value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["unreadable"][0], ".ductus/sessions/broken.toml");
     }
 
     #[test]

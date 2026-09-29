@@ -76,6 +76,10 @@ Result:
 - `target`: `null` for `cleared` and `none`.
 - `notices[].kind`: `adopted`, `co-target`, `folded`, or `consolidated`.
   `message` is the rendered sentence the host displays.
+- `unreadable`: repo-relative session files that could not be parsed while
+  checking for other sessions on the same feature, named rather than read as
+  "none" (AC22); omitted when empty. The dashboard carries the same list as
+  `session-unreadable`.
 
 ## `write-session` result additions
 

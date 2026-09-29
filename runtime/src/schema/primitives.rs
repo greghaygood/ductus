@@ -1852,6 +1852,12 @@ pub struct DashboardResult {
     /// is a peek, so none is consumed here.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub session_notices: Vec<SessionNotice>,
+    /// Repo-relative session files the peek could not parse while checking
+    /// for other sessions on the target's feature — also rendered as
+    /// `Unreadable:` lines, so "no co-target" never hides "not checked"
+    /// (AC22). Absent when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub session_unreadable: Vec<String>,
     /// Per-spec entries in directory-name order.
     pub specs: Vec<DashboardSpec>,
     /// Sorted, deduplicated union of every spec's `tags` array. Empty when
@@ -3107,6 +3113,11 @@ pub struct ResolveSessionResult {
     pub target: Option<SessionTarget>,
     /// Notices for the host to display, each once.
     pub notices: Vec<SessionNotice>,
+    /// Repo-relative session files that could not be parsed while checking
+    /// for other sessions on the same feature — named rather than read as
+    /// "none" (AC22). Omitted when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unreadable: Vec<String>,
 }
 
 // -- retarget-sessions -------------------------------------------------------

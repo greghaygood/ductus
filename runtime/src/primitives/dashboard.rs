@@ -32,7 +32,7 @@ use crate::host::Host;
 use crate::primitives::resolve_references::{self, load_services};
 use crate::primitives::{
     PrimitiveError, Result, ScenarioFrontmatter, list_feature_dirs, list_scenario_files,
-    parse_feature_dir, read_spec, read_text, section_lines, split_frontmatter,
+    parse_feature_dir, read_spec, read_text, rel_path, section_lines, split_frontmatter,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
@@ -94,6 +94,7 @@ pub(crate) fn run_as(
         session_identity: session.identity,
         session_source: session.source,
         session_notices: session.notices,
+        session_unreadable: session.unreadable,
         specs,
         tags_union,
         config,
@@ -153,7 +154,8 @@ fn render_markdown(
 /// An identified process's target line ends `— session {label}`, and each
 /// session notice follows as a `Notice: …` line — after the no-target pointer
 /// too, since a consolidation's notice is exactly what explains a target that
-/// has gone (spec 062). An unidentified process renders exactly as before.
+/// has gone (spec 062) — then an `Unreadable: …` line per session file the
+/// peek could not parse. An unidentified process renders exactly as before.
 fn render_preamble(
     specs: &[DashboardSpec],
     session_target: Option<&DashboardSessionTarget>,
@@ -163,6 +165,13 @@ fn render_preamble(
     let mut out = render_target_lines(specs, session_target, session, project);
     for notice in &session.notices {
         let _ = write!(out, "\nNotice: {}", notice.message);
+    }
+    for path in &session.unreadable {
+        let _ = write!(
+            out,
+            "\nUnreadable: {path} — a session file that does not parse, so whether it \
+             shares this feature was not checked"
+        );
     }
     out
 }
@@ -767,6 +776,7 @@ struct SessionView {
     identity: Option<String>,
     source: Option<SessionSource>,
     notices: Vec<SessionNotice>,
+    unreadable: Vec<String>,
 }
 
 /// Peek the session target through the session core and populate the
@@ -784,6 +794,11 @@ fn load_session_target(
         source: resolution.identity.as_ref().map(|_| resolution.source),
         identity: resolution.identity,
         notices: resolution.notices,
+        unreadable: resolution
+            .unreadable
+            .iter()
+            .map(|path| rel_path(path, repo))
+            .collect(),
     };
     let Some(target) = resolution.target else {
         return Ok((None, view));
@@ -1026,12 +1041,47 @@ mod tests {
     }
 
     #[test]
+    fn a_session_file_that_does_not_parse_is_named_under_the_target() {
+        let tmp = TempDir::new().unwrap();
+        write_spec(tmp.path(), "055-a", "status: planned\n", "");
+        write_ductus_session(tmp.path(), "feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        let review = Identity::named("review").unwrap();
+        session::resolve(tmp.path(), Some(&review), fixed_now()).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/sessions/broken.toml"),
+            "feature = [",
+        )
+        .unwrap();
+
+        let result = run_as(
+            &DashboardArgs::default(),
+            tmp.path(),
+            Some(&review),
+            fixed_now(),
+        )
+        .unwrap();
+        assert_eq!(result.session_unreadable, [".ductus/sessions/broken.toml"]);
+        assert!(
+            result
+                .rendered_markdown
+                .contains("\nUnreadable: .ductus/sessions/broken.toml — "),
+            "{}",
+            result.rendered_markdown
+        );
+    }
+
+    #[test]
     fn an_unidentified_payload_carries_no_session_fields() {
         let tmp = TempDir::new().unwrap();
         write_session_toml(tmp.path(), "feature = \"055-a\"\npath = \"specs/055-a\"\n");
         let value =
             serde_json::to_value(run(&DashboardArgs::default(), tmp.path()).unwrap()).unwrap();
-        for key in ["session-identity", "session-source", "session-notices"] {
+        for key in [
+            "session-identity",
+            "session-source",
+            "session-notices",
+            "session-unreadable",
+        ] {
             assert!(value.get(key).is_none(), "{key} leaked into {value}");
         }
     }

@@ -732,7 +732,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "resolve-session",
-        description = "Resolve this process's session target (spec 062). The identity comes from the runtime's own environment: DUCTUS_SESSION, then the agent's platform session id (Claude Code: CLAUDE_CODE_SESSION_ID), else none. An unidentified process reads the shared default (.ductus/session.toml). An identified one gets its own target (.ductus/sessions/{key}.toml), or adopts and pins the shared default when it has none, or no target when it was cleared. Returns identity, source (own / adopted / default / cleared / none), target, and notices to display once (adoption, other sessions on the same feature, a fold or consolidation that moved the target). Commands call this instead of reading the session file by hand."
+        description = "Resolve this process's session target (spec 062). The identity comes from the runtime's own environment: DUCTUS_SESSION, then the agent's platform session id (Claude Code: CLAUDE_CODE_SESSION_ID), else none. An unidentified process reads the shared default (.ductus/session.toml). An identified one gets its own target (.ductus/sessions/{key}.toml), or adopts and pins the shared default when it has none, or no target when it was cleared. Returns identity, source (own / adopted / default / cleared / none), target, notices to display once (adoption, other sessions on the same feature, a fold or consolidation that moved the target), and unreadable: session files that did not parse, so were not checked for the same feature. Commands call this instead of reading the session file by hand."
     )]
     async fn resolve_session(
         &self,
