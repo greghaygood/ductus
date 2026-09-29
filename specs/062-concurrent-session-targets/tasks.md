@@ -90,8 +90,16 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 11. Verification sweep
 
-- [ ] `cargo build --release`, `cargo test`, `cargo clippy --all-targets` under `runtime/`
-- [ ] `scripts/audit/run-all.sh`
+- [x] `cargo build --release`, `cargo test`, `cargo clippy --all-targets` under `runtime/`
+- [x] `scripts/audit/run-all.sh`
 - [ ] Manual check in this repository: two Claude Code sessions targeting different specs each keep their own through `/ductus:target` and `/ductus:status`, and a `retarget-sessions` call against a scratch spec both targets re-points or clears both and notifies the other session
 
 - **Done when**: every command above passes, and each acceptance criterion maps to a passing test or a verified text change.
+
+## 12. `dashboard` resolves read-only
+
+- [ ] `runtime/src/primitives/dashboard.rs` resolves through `session::peek`, not `session::resolve`: it pins no adoption, refreshes no `used-at`, and consumes no notice — restoring the module's read-only contract. Found in task 11's manual check: `scripts/audit/lib.sh` calls `ductus dashboard` to enumerate the corpus, so a delivering resolution silently pinned the auditing session and would consume its notices before any command showed them
+- [ ] `session::peek` computes the notices the next resolution would deliver — a pending removal notice, a changed co-target set, and a pending adoption (worded as pending) — without writing, so `/ductus:status` still shows them
+- [ ] Update the dashboard tests to assert read-only behavior (repeat calls identical, no own file created), and `framework/commands/status.md` to say the view shows the notices the next command delivers rather than consuming them
+
+- **Done when**: a `dashboard` call writes nothing under `.ductus/sessions/`, `/ductus:status` still renders the session label and pending notices, the next `resolve-session` delivers those notices, and `cargo test` and `scripts/audit/run-all.sh` pass.
