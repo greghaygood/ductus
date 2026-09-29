@@ -212,12 +212,20 @@ auditable place.
 
 ### `dashboard` and the exec seed
 
-- **`dashboard`:** `load_session_target` calls the core's resolve, including
-  pinning and notices. The payload's session target gains `identity`,
-  `source` and `notices`. `rendered-markdown` renders the process label on
-  the target line and each notice beneath it (AC8). `framework/commands/status.md`
-  describes the new line and the markdown-only derivation, which is the
-  default only.
+- **`dashboard`:** `load_session_target` resolves through the core's
+  **peek**, not its resolve: it pins no adoption, refreshes no `used-at`, and
+  consumes no notice, so the primitive keeps its read-only contract. The peek
+  computes the notices the process's next resolution would deliver — a
+  pending removal notice, a changed co-target set, a pending adoption — and
+  the dashboard shows them without consuming them; the next command's
+  `resolve-session` delivers them. The payload gains `session-identity`,
+  `session-source` and `session-notices`, and `rendered-markdown` renders the
+  process label on the target line and each notice beneath it (AC8).
+  `framework/commands/status.md` describes the new line and the markdown-only
+  derivation, which is the default only. A delivering read was tried first
+  and rejected (task 12): `dashboard` is also called for data —
+  `scripts/audit/lib.sh` enumerates the corpus with it — and every such call
+  pinned the caller's session and would consume its notices unseen.
 - **Exec seed:** `runtime/src/main.rs:523-535` seeds from the core's resolve
   instead of parsing the session path, so `ductus exec` from an agent's shell
   tool carries that agent's identity (AC23). The retarget exceptions in
