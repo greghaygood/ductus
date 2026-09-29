@@ -92,7 +92,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] `cargo build --release`, `cargo test`, `cargo clippy --all-targets` under `runtime/`
 - [x] `scripts/audit/run-all.sh`
-- [ ] Manual check in this repository: two Claude Code sessions targeting different specs each keep their own through `/ductus:target` and `/ductus:status`, and a `retarget-sessions` call against a scratch spec both targets re-points or clears both and notifies the other session
+- [x] Manual check in this repository: two Claude Code sessions targeting different specs each keep their own through `/ductus:target` and `/ductus:status`, and a `retarget-sessions` call against a scratch spec both targets re-points or clears both and notifies the other session
 
 - **Done when**: every command above passes, and each acceptance criterion maps to a passing test or a verified text change.
 
