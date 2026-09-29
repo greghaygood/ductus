@@ -1,5 +1,5 @@
 ---
-status: clarified
+status: in-progress
 dependencies: [010-agent-autonomy]
 cross-spec-impact: [010-agent-autonomy]
 next-criterion: 26
