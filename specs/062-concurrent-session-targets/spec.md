@@ -294,3 +294,12 @@ own session file, so the two compose.
   its own target; isolate edits with worktrees or the platform when needed",
   and notes that git will not check out one branch in two worktrees at once,
   so the trade-off is explicit.
+
+**Why split from agent-autonomy:** [010](../010-agent-autonomy/spec.md) was a
+capability evaluation — it weighed GSD-2's features and declined multi-target
+sessions — and owns none of the session machinery. This spec reverses that
+decline and builds the runtime behavior it declined, so folding it into 010
+would reopen an evaluation to carry an implementation. The routing was chosen
+at `/ductus:specify` over a scenario on 010. The overlap in Affected Files is
+incidental: both amend shared framework documents, the constitution and the
+agents' permission lists.

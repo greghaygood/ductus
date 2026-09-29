@@ -83,8 +83,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 10. Constitution and the 010 signpost
 
-- [ ] Rewrite §concurrent-features in `framework/constitution.md`: per-process targets and identity; the shared default and pin on first resolution; `git worktree` kept for isolating edits, with the one-branch-per-worktree limit; the two open bounds; the markdown-only reduction; removal extended to every session in the working tree, keeping the teammate bound
-- [ ] Add a post-completion note to `specs/010-agent-autonomy/spec.md` §Parallel milestones and Resolved Question 5 linking to this spec
+- [x] Rewrite §concurrent-features in `framework/constitution.md`: per-process targets and identity; the shared default and pin on first resolution; `git worktree` kept for isolating edits, with the one-branch-per-worktree limit; the two open bounds; the markdown-only reduction; removal extended to every session in the working tree, keeping the teammate bound
+- [x] Add a post-completion note to `specs/010-agent-autonomy/spec.md` §Parallel milestones and Resolved Question 5 linking to this spec
 
 - **Done when**: AC10, AC24 and AC25 hold in the constitution text; 010 carries the back-link that discharges 062's declared impact; anchors resolve (`resolve-anchor`); markdownlint is clean.
 
