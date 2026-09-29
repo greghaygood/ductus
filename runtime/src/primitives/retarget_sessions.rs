@@ -267,6 +267,8 @@ mod tests {
         let cases = [
             ("from", consolidate("058-gone\nNotice: forged")),
             ("from", consolidate("not-a-feature")),
+            ("from", consolidate("058-gone\u{202e}")),
+            ("feature", fold("058-gone", "055-a\u{200b}")),
             ("feature", fold("058-gone", "055-a/x")),
             ("feature", fold("058-gone", "")),
             ("scenario", bad_scenario),

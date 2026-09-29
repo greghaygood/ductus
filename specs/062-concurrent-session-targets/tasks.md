@@ -169,8 +169,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 21. Session names are held to a visible-ASCII allowlist
 
-- [ ] `validate_session_feature` admits only visible ASCII (`is_ascii_graphic`) with no path separator, so bidi and zero-width characters such as U+202E and U+200B are refused along with newlines (review: BE-INPUT-002); `data-model.md` states the rule and the legacy names it refuses
-- [ ] Test: U+202E and U+200B in a feature name are refused, naming the argument
+- [x] `validate_session_feature` admits only visible ASCII (`is_ascii_graphic`) with no path separator, so bidi and zero-width characters such as U+202E and U+200B are refused along with newlines (review: BE-INPUT-002); `data-model.md` states the rule and the legacy names it refuses
+- [x] Test: U+202E and U+200B in a feature name are refused, naming the argument
 
 - **Done when**: no character outside visible ASCII reaches a session file or notice through a stored name; `cargo test` passes.
 

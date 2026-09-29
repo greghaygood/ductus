@@ -259,6 +259,8 @@ mod tests {
                 with_feature("022-deterministic-runtime\nNotice: forged"),
             ),
             ("feature", with_feature("022-a/b")),
+            ("feature", with_feature("022-a\u{202e}b")),
+            ("feature", with_feature("022-a\u{200b}")),
             ("feature", with_feature("")),
             ("feature", with_feature("not-a-feature")),
             ("scenario", bad_scenario),

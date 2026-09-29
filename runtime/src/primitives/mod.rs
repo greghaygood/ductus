@@ -2293,14 +2293,15 @@ pub(crate) fn is_feature_slug(name: &str) -> bool {
 
 /// Refuse a feature name a session may not store (spec 062, `BE-INPUT-002`),
 /// naming `argument`. The allowlist is a feature directory
-/// [`parse_feature_dir`] recognizes, made only of visible characters with no
-/// path separator: the grammar leaves a sequential directory's legacy slug
+/// [`parse_feature_dir`] recognizes, made only of visible ASCII with no path
+/// separator: the grammar leaves a sequential directory's legacy slug
 /// unchecked on purpose, and a session renders the name into the one-line
-/// notices and dashboard lines another agent reads.
+/// notices and dashboard lines another agent reads, where a control, bidi or
+/// zero-width character would forge, reorder or hide text.
 pub(crate) fn validate_session_feature(primitive: &str, argument: &str, name: &str) -> Result<()> {
     let visible = name
         .chars()
-        .all(|c| !c.is_control() && !c.is_whitespace() && c != '/' && c != '\\');
+        .all(|c| c.is_ascii_graphic() && c != '/' && c != '\\');
     if is_feature_slug(name) && visible {
         return Ok(());
     }
@@ -2309,7 +2310,7 @@ pub(crate) fn validate_session_feature(primitive: &str, argument: &str, name: &s
         argument: argument.into(),
         reason: format!(
             "{name:?} is not a feature directory name (`NNN-slug` or \
-             `{{branch}}.{{n}}-slug`, visible characters, no path separator)"
+             `{{branch}}.{{n}}-slug`, visible ASCII, no path separator)"
         ),
     })
 }

@@ -141,9 +141,11 @@ Paths are checked with the existing `validate_no_traversal`, an `InvalidPath`.
 Every name a session stores is rendered into other sessions' notices and
 dashboard lines, so names are held to an allowlist (`BE-INPUT-002`): `from` and
 `feature` must be feature directory names (`parse_feature_dir`) of visible
-characters with no path separator, and `scenario` a scenario slug; anything
-else is an `InvalidArgument` naming the argument, checked before any session
-is touched. `write-session` holds its `feature` and `scenario` to the same
+ASCII with no path separator, and `scenario` a scenario slug; anything else is
+an `InvalidArgument` naming the argument, checked before any session is
+touched. The one names this refuses that the corpus grammar admits are legacy
+sequential directories whose slug holds whitespace or a non-ASCII character:
+no session can target one until it is renamed. `write-session` holds its `feature` and `scenario` to the same
 rule.
 
 Result:
