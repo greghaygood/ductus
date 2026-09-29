@@ -1183,6 +1183,9 @@ pub struct WriteOutcome {
     pub expired: Vec<String>,
     /// Per-process files the write could not examine, left in place.
     pub unreadable: Vec<PathBuf>,
+    /// A pending removal notice this write replaced with the process's new
+    /// target — delivered here, since the replaced record was its only copy.
+    pub notices: Vec<SessionNotice>,
 }
 
 /// Write the target of the process acting as `identity` in `repo`.
@@ -1220,7 +1223,21 @@ pub fn write(
         peers: Vec::new(),
         expired: Vec::new(),
         unreadable: Vec::new(),
+        notices: Vec::new(),
     };
+    // A target or clear write replaces this process's own record, and with it
+    // any removal notice not yet delivered: deliver it through this write
+    // rather than lose it (AC21), whichever command made the write.
+    if let Some(identity) = identity
+        && *shape != WriteShape::HostConfig
+    {
+        outcome.notices = ProcessRecord::load(&own_path(repo, identity))
+            .ok()
+            .and_then(|record| record.notice)
+            .iter()
+            .map(removal_notice)
+            .collect();
+    }
 
     match shape {
         WriteShape::Target(target) => {
@@ -1825,6 +1842,36 @@ mod tests {
         let (expired, _) = sweep(tmp.path(), None, long_after).unwrap();
         assert_eq!(expired, ["x"]);
         assert!(!own_path(tmp.path(), &x).exists());
+    }
+
+    /// AC21: a target write replaces the process's own record, so it delivers
+    /// the removal notice that record held — once — rather than discarding it.
+    #[test]
+    fn a_write_delivers_the_removal_notice_it_replaces() {
+        let tmp = repo();
+        let (x, y) = (id("x"), id("y"));
+        set(tmp.path(), Some(&x), "1234.1-b", t0());
+        retarget(
+            tmp.path(),
+            Some(&y),
+            "1234.1-b",
+            None,
+            RemovalCause::Consolidate,
+            at(1),
+        )
+        .unwrap();
+
+        let out = set(tmp.path(), Some(&x), "055-a", at(2));
+        assert_eq!(out.notices.len(), 1, "{:?}", out.notices);
+        assert_eq!(out.notices[0].kind, SessionNoticeKind::Consolidated);
+        assert!(
+            resolve(tmp.path(), Some(&x), at(3))
+                .unwrap()
+                .notices
+                .is_empty(),
+            "delivered once"
+        );
+        assert!(set(tmp.path(), Some(&x), "056-b", at(4)).notices.is_empty());
     }
 
     #[test]

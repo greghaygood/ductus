@@ -20,7 +20,7 @@ Pipeline gate: planned → in-progress → done. Walks through `tasks.md` step b
 
 ## Context
 
-Use the session target: invoke `resolve-session` and display any notices it returns (on the markdown-only path, read the shared default `.ductus/session.toml` instead — §concurrent-features). If `$ARGUMENTS` is provided, use it to override the session target — resolve that override through `resolve-feature` (exact directory name, feature number, or unique partial slug; `ambiguous` and `not-found` are domain outcomes to surface). If no session target is set and no arguments provided, stop and tell the user to run `/ductus:target` first.
+Use the session target: invoke `resolve-session` and display any notices and unreadable session files it returns (on the markdown-only path, read the shared default `.ductus/session.toml` instead — §concurrent-features). If `$ARGUMENTS` is provided, use it to override the session target — resolve that override through `resolve-feature` (exact directory name, feature number, or unique partial slug; `ambiguous` and `not-found` are domain outcomes to surface). If no session target is set and no arguments provided, stop and tell the user to run `/ductus:target` first.
 
 ### Flags
 

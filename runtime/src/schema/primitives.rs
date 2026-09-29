@@ -3002,6 +3002,11 @@ pub struct WriteSessionResult {
     /// place and reported.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub unreadable: Vec<String>,
+    /// A pending removal notice this write replaced — a fold or consolidation
+    /// that moved this session's target — delivered here so a write never
+    /// discards it undelivered.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notices: Vec<SessionNotice>,
 }
 
 // -- session core (spec 062) --------------------------------------------------
@@ -5723,6 +5728,7 @@ mod tests {
             peers: Vec::new(),
             expired: Vec::new(),
             unreadable: Vec::new(),
+            notices: Vec::new(),
         };
         assert_eq!(round_trip(&result), result);
         // An unidentified write keeps the pre-062 wire shape exactly.

@@ -13,6 +13,25 @@ The shared default's keys and field order are unchanged
 (`runtime/src/primitives/write_session.rs:219-235`): `feature`, `path`,
 `scenario`, `scenario-path`, `set-at`, `cli-config-dir`, all optional.
 
+## Sessions on different specs
+
+The ordinary case. Each identified process's target lives in its own file,
+so two sessions working on different specs at the same time hold two
+independent targets. A target write in one never changes the other's file,
+and each resolves only its own (AC1, AC2):
+
+```text
+.ductus/sessions/review.toml               feature = "055-example"
+.ductus/sessions/9b1c07e2-….toml           feature = "061-release-tags"
+.ductus/session.toml                       feature = "061-release-tags"  # the later write
+```
+
+The shared default only records the most recent target change. A process
+reads it just once, to adopt it when it has no target of its own; after that,
+only its own writes change its target. `peers`, `seen-peers` and the co-target
+notice below exist for the other case, where two sessions land on the same
+feature.
+
 ## Per-process record: `.ductus/sessions/{key}.toml`
 
 `{key}` is the sanitized identity: the `DUCTUS_SESSION` value or the platform
@@ -95,8 +114,11 @@ unchanged. Added:
 - `expired`: labels of the per-process targets the sweep removed.
 - `unreadable`: repo-relative paths the sweep could not parse and left in
   place.
+- `notices`: a pending removal notice this write replaced along with the
+  process's own record, delivered here so that no write, whichever command
+  makes it, discards one undelivered (AC21).
 
-The three lists are omitted when empty, like the two fields above when
+The four lists are omitted when empty, like the two fields above when
 absent.
 
 ## `retarget-sessions`

@@ -103,6 +103,7 @@ pub(crate) fn run_as(
             .iter()
             .map(|path| rel_path(path, repo))
             .collect(),
+        notices: outcome.notices,
     })
 }
 

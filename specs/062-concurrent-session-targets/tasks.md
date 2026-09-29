@@ -138,10 +138,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 17. Commands deliver every session notice and write result
 
-- [ ] `target.md` step 1 invokes `resolve-session` whatever the argument and displays its notices before any write, so `/{project}:target X` and `--clear` no longer discard a pending fold or consolidation notice (review observation; AC21), and `ductus exec` dispatching it unconditionally becomes the intended behavior (review: AGENTS.md backtick-dispatch gotcha)
-- [ ] Every `write-session` step — target, specify, groom, amend — displays the result's `peers` (label, feature, scenario, last used) and any `expired` or `unreadable` sessions, so the writing session is told who shares its feature (review observation; AC19, AC22)
-- [ ] fold's and consolidate's report steps name the sessions `retarget-sessions` re-pointed or cleared and any `unreadable` file (review observation; AC21, AC22)
-- [ ] Regenerate `.claude/commands/ductus/`, and re-bless any walker golden the step change alters, confirming the diff is only that step
+- [x] `target.md` step 1 invokes `resolve-session` whatever the argument and displays its notices before any write, so `/{project}:target X` and `--clear` no longer discard a pending fold or consolidation notice (review observation; AC21), and `ductus exec` dispatching it unconditionally becomes the intended behavior (review: AGENTS.md backtick-dispatch gotcha)
+- [x] Every `write-session` step — target, specify, groom, amend — displays the result's `peers` (label, feature, scenario, last used) and any `expired` or `unreadable` sessions, so the writing session is told who shares its feature (review observation; AC19, AC22)
+- [x] fold's and consolidate's report steps name the sessions `retarget-sessions` re-pointed or cleared and any `unreadable` file (review observation; AC21, AC22)
+- [x] Regenerate `.claude/commands/ductus/`, and re-bless any walker golden the step change alters, confirming the diff is only that step
 
 - **Done when**: no command drops a notice or a write result the spec promises; the mirrors are in sync; `cargo test` and `scripts/audit/run-all.sh` pass.
 

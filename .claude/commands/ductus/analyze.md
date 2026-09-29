@@ -26,7 +26,7 @@ Parse `$ARGUMENTS` for flags and an optional feature identifier:
 - **Feature identifier** — a feature number, partial name, or full directory name. Overrides the session target.
 - **`--all`** — scan all feature directories under `specs/` instead of a single target. Report results grouped by feature.
 
-If `--all` is not present, use the feature identifier if provided, otherwise fall back to the session target — invoke `resolve-session` and display any notices it returns (on the markdown-only path, read the shared default `.ductus/session.toml` — §concurrent-features). If no target can be resolved, stop and tell the user to run `/ductus:target` first or use `--all`.
+If `--all` is not present, use the feature identifier if provided, otherwise fall back to the session target — invoke `resolve-session` and display any notices and unreadable session files it returns (on the markdown-only path, read the shared default `.ductus/session.toml` — §concurrent-features). If no target can be resolved, stop and tell the user to run `/ductus:target` first or use `--all`.
 
 ## Scope Boundaries
 
