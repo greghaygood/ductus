@@ -36,7 +36,7 @@ use std::process::{Command, Stdio};
 use serde::Deserialize;
 
 mod common;
-use common::copy_dir_recursive;
+use common::{copy_dir_recursive, ductus_command};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -477,18 +477,6 @@ fn runtime_binary() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("target/release")
         .join(format!("ductus{}", std::env::consts::EXE_SUFFIX))
-}
-
-/// A runtime command with the session-identity variables removed (spec 062),
-/// so a stream never depends on the shell running the suite — which may
-/// itself carry a platform session id and would otherwise make every walk an
-/// identified process's.
-fn ductus_command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
-    let mut command = Command::new(bin);
-    command
-        .env_remove("DUCTUS_SESSION")
-        .env_remove("CLAUDE_CODE_SESSION_ID");
-    command
 }
 
 fn ensure_binary_built() {

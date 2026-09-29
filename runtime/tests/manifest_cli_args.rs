@@ -20,6 +20,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod common;
+use common::ductus_command;
+
 fn runtime_binary() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("target/release")
@@ -39,7 +42,7 @@ fn ensure_binary_built() {
 }
 
 fn run(repo: &Path, args: &[&str]) -> std::process::Output {
-    Command::new(runtime_binary())
+    ductus_command(runtime_binary())
         .args(args)
         .current_dir(repo)
         .output()

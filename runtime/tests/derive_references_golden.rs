@@ -16,11 +16,11 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use git2::{IndexAddOption, Repository, Signature};
 
 mod common;
+use common::ductus_command;
 
 struct SpecFile {
     slug: &'static str,
@@ -84,7 +84,7 @@ fn run_primitive(dir: &Path, flags: &[&str]) -> serde_json::Value {
 /// Returns `(exit code, payload)`. The exit code carries the CLI's blocking
 /// contract — non-zero on drift under `--dry-run`, which is the CI check.
 fn run_primitive_checked(dir: &Path, flags: &[&str]) -> (i32, serde_json::Value) {
-    let output = Command::new(env!("CARGO_BIN_EXE_ductus"))
+    let output = ductus_command(env!("CARGO_BIN_EXE_ductus"))
         .arg("derive-references")
         .args(flags)
         .current_dir(dir)

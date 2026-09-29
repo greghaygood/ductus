@@ -514,7 +514,9 @@ fn seed_context(
     if !own {
         return Ok(context);
     }
-    for key in ["feature", "path", "scenario", "scenario-path"] {
+    // `set-at` goes with the target keys: the default's stamp belongs to
+    // another session's write, not to this process's own target.
+    for key in ["feature", "path", "scenario", "scenario-path", "set-at"] {
         context.remove(key);
     }
     if let Some(target) = resolution.target {
@@ -892,7 +894,9 @@ mod tests {
     /// default, the seed is the agent's — and nothing is written by seeding.
     #[test]
     fn an_identified_exec_seeds_its_own_target_without_writing() {
-        let tmp = repo_with_default("feature = \"055-a\"\npath = \"specs/055-a\"\n");
+        let tmp = repo_with_default(
+            "feature = \"055-a\"\npath = \"specs/055-a\"\nset-at = \"2026-09-29T12:00:00Z\"\n",
+        );
         std::fs::create_dir_all(tmp.path().join(".ductus/sessions")).unwrap();
         std::fs::write(
             tmp.path().join(".ductus/sessions/review.toml"),
@@ -907,6 +911,10 @@ mod tests {
         assert_eq!(context["feature"], "056-b");
         assert_eq!(context["path"], "specs/056-b");
         assert_eq!(context["scenario"], "s");
+        assert!(
+            context.get("set-at").is_none(),
+            "the default's stamp is another session's"
+        );
         assert_eq!(
             std::fs::read_to_string(tmp.path().join(".ductus/sessions/review.toml")).unwrap(),
             before

@@ -1847,8 +1847,9 @@ pub struct DashboardResult {
     /// unidentified.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_source: Option<SessionSource>,
-    /// Session notices to display once — also rendered as `Notice:` lines in
-    /// `rendered-markdown`, since this resolution consumed them.
+    /// Session notices the process's next command will deliver — also
+    /// rendered as `Notice:` lines in `rendered-markdown`. The dashboard's read
+    /// is a peek, so none is consumed here.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub session_notices: Vec<SessionNotice>,
     /// Per-spec entries in directory-name order.

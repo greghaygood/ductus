@@ -9,7 +9,9 @@ next-criterion: 26
 
 Two or more agent processes working in the same working tree each hold their
 own session target, so a target written by one never changes the feature
-another acts on. An operator running a single agent sees no change.
+another acts on. An operator running a single agent keeps the single-target
+behavior: the agent resumes the most recently set target as before, and at
+most sees its session labeled and its adoption of that target announced.
 
 ## Motivation
 
@@ -76,7 +78,7 @@ agent's shell tool, it carries that agent's identity and acts on that agent's
 target; run from a terminal with no identity, it uses the shared default.
 
 On the markdown-only path the host may use only its file tools
-([§runtime-host-integration](../../framework/constitution.md#runtime-host-integration)),
+([§runtime-host-integration](../../framework/constitution.md#host-integration-for-agent-runtimes)),
 so it has no sanctioned way to read its environment. That path resolves and
 writes the shared default only, as before this spec, and says so. The
 reduction is documented rather than silent, as the two-paths guarantee

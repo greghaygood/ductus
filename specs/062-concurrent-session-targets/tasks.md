@@ -103,3 +103,51 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Update the dashboard tests to assert read-only behavior (repeat calls identical, no own file created), and `framework/commands/status.md` to say the view shows the notices the next command delivers rather than consuming them
 
 - **Done when**: a `dashboard` call writes nothing under `.ductus/sessions/`, `/ductus:status` still renders the session label and pending notices, the next `resolve-session` delivers those notices, and `cargo test` and `scripts/audit/run-all.sh` pass.
+
+## 13. Session lock: a bounded wait, taken by every write
+
+- [ ] `session::lock` acquires with `File::try_lock` in a retry loop bounded by a named `SESSION_LOCK_TIMEOUT` constant, and on expiry returns an error naming `.ductus/sessions/.lock` (review: BE-TIMEOUT-001)
+- [ ] The `write-session`, `resolve-session` and `retarget-sessions` MCP handlers run through `dispatch_blocking`, as `dashboard` does, so a lock wait never holds an async worker
+- [ ] `write` and `retarget` hold the lock on every call, the unidentified path included, closing the window where `.ductus/sessions/` does not exist yet and an unidentified read-modify-write of the default races the first identified one (review: BE-TXN-002); `lock_if_shared` stays only for the read-only `peek`. Update the AC3 tests and the plan's lock paragraph to match
+- [ ] Test: with the lock held, a second acquirer fails within the timeout with the lock file named (review observation: no test exercised the lock)
+
+- **Done when**: a held lock makes a second acquirer fail, naming the lock file, within the timeout; an unidentified write takes the lock; `git status` still shows nothing under `.ductus/`; `cargo test` passes.
+
+## 14. Session identity read once at startup; an environment-variable inventory
+
+- [ ] The binary reads the session identity variables once at startup — in `main`, for the CLI, `exec` and `mcp` — and caches the result; primitives read the cached value, and an in-process caller that never initialized it is unidentified, so in-process tests and walks are unidentified by construction (review: CFG-ENV-001; AGENTS.md session-identity gotcha on `runtime/tests/walker.rs`)
+- [ ] An invalid `DUCTUS_SESSION` still fails each session primitive with the message naming the variable, rather than stopping the MCP server and every tool with it
+- [ ] Add one canonical inventory of every environment variable the runtime reads — `DUCTUS_SESSION`, `CLAUDE_CODE_SESSION_ID`, `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` — with each one's purpose, whether it is required, and its default; name it in the plan's Affected Files (review: CFG-ENV-002)
+
+- **Done when**: no primitive reads the environment per call; the in-process walker test runs unidentified in a shell that carries a platform session id; the inventory lists every variable `runtime/src` reads; `cargo test` passes.
+
+## 15. Allowlist validation of the feature and scenario names written into sessions
+
+- [ ] `retarget-sessions` checks `from` and `feature` against the feature-directory grammar (`parse_feature_dir`) and `scenario` against the slug grammar (`validate_slug`) before touching any session (review: BE-INPUT-002)
+- [ ] `write-session` applies the same checks to its `feature` and `scenario`, since a target it writes reaches other sessions through the shared default
+- [ ] Tests: a newline, a path separator or an empty value in any of them is refused with an error naming the argument, and nothing is written
+
+- **Done when**: no name outside the feature-directory or slug grammar reaches a session file or a notice through either primitive; `cargo test` passes.
+
+## 16. Resolution reports unreadable peer files; the sweep's keep guard is tested
+
+- [ ] `Resolution` carries the peer files `due_notices` could not parse, and `resolve-session` and the `dashboard` payload report them as `unreadable`, as `write-session` and `retarget-sessions` already do, so "no co-target" and "could not check" differ (review: QUAL-CLAIM-001; AC22)
+- [ ] A test drives the sweep with a stale own file and asserts the caller's own file is kept — or, if no caller can reach that guard, the guard is removed and the test renamed to what it checks (review: QUAL-TEST-001)
+
+- **Done when**: a corrupt peer file is named in `resolve-session`'s and `dashboard`'s results; the keep-guard test fails with the guard removed (or the guard is gone); `cargo test` passes.
+
+## 17. Commands deliver every session notice and write result
+
+- [ ] `target.md` step 1 invokes `resolve-session` whatever the argument and displays its notices before any write, so `/{project}:target X` and `--clear` no longer discard a pending fold or consolidation notice (review observation; AC21), and `ductus exec` dispatching it unconditionally becomes the intended behavior (review: AGENTS.md backtick-dispatch gotcha)
+- [ ] Every `write-session` step — target, specify, groom, amend — displays the result's `peers` (label, feature, scenario, last used) and any `expired` or `unreadable` sessions, so the writing session is told who shares its feature (review observation; AC19, AC22)
+- [ ] fold's and consolidate's report steps name the sessions `retarget-sessions` re-pointed or cleared and any `unreadable` file (review observation; AC21, AC22)
+- [ ] Regenerate `.claude/commands/ductus/`, and re-bless any walker golden the step change alters, confirming the diff is only that step
+
+- **Done when**: no command drops a notice or a write result the spec promises; the mirrors are in sync; `cargo test` and `scripts/audit/run-all.sh` pass.
+
+## 18. `ductus exec` shows session notices and is tested with an identity
+
+- [ ] After dispatching `resolve-session`, the exec walker emits each returned notice into its stream, so an exec walk shows what its resolution consumes (review observation; AC19, AC21)
+- [ ] An `exec_subprocess` test runs `ductus exec` with `CLAUDE_CODE_SESSION_ID` set and asserts the walk acts on that process's own target, not the shared default's (review observation; AC23)
+
+- **Done when**: an identified exec walk with a pending notice emits it; the identified exec test passes and fails if `run_exec` stops passing the identity; `cargo test` passes.

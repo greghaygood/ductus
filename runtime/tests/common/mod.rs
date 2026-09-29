@@ -12,6 +12,21 @@
 
 use std::fs;
 use std::path::Path;
+use std::process::Command;
+
+/// A runtime command with the session-identity variables removed (spec 062),
+/// so a spawned process never depends on the shell running the suite — which
+/// may itself carry a platform session id and would otherwise make every run
+/// an identified process's (AGENTS.md, Gotchas). Every test that spawns the
+/// binary builds its command here, so the rule holds by construction; a test
+/// that wants an identity sets it on the returned command.
+pub fn ductus_command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(bin);
+    command
+        .env_remove("DUCTUS_SESSION")
+        .env_remove("CLAUDE_CODE_SESSION_ID");
+    command
+}
 
 /// Recursively copy `src` into `dst`. Creates `dst` (and any missing
 /// parents for nested files) as needed. Used to stage fixtures from

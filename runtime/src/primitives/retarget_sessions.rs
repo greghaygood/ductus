@@ -72,19 +72,17 @@ fn validate(args: &RetargetSessionsArgs) -> Result<(Option<SessionTarget>, Remov
     if args.from.trim().is_empty() {
         return Err(missing("from", "name the removed feature directory"));
     }
-    for (name, value) in [("path", &args.path), ("scenario-path", &args.scenario_path)] {
-        if let Some(value) = value {
-            validate_no_traversal(value).map_err(|_| {
-                invalid(
-                    name,
-                    "must be repo-relative with no parent-directory component",
-                )
-            })?;
-        }
+    for value in [&args.path, &args.scenario_path].into_iter().flatten() {
+        validate_no_traversal(value)?;
     }
     if args.scenario.is_some() != args.scenario_path.is_some() {
+        let absent = if args.scenario.is_some() {
+            "scenario-path"
+        } else {
+            "scenario"
+        };
         return Err(missing(
-            "scenario-path",
+            absent,
             "`scenario` and `scenario-path` are supplied together",
         ));
     }
@@ -98,8 +96,13 @@ fn validate(args: &RetargetSessionsArgs) -> Result<(Option<SessionTarget>, Remov
                 ));
             }
             let (Some(feature), Some(path)) = (&args.feature, &args.path) else {
+                let absent = if args.feature.is_none() {
+                    "feature"
+                } else {
+                    "path"
+                };
                 return Err(missing(
-                    "feature",
+                    absent,
                     "a fold needs the upstream target: supply `feature` and `path`",
                 ));
             };
@@ -258,14 +261,24 @@ mod tests {
     fn traversing_paths_and_a_half_scenario_are_refused() {
         let mut traversal = fold("x", "y");
         traversal.path = Some("../elsewhere".into());
-        assert!(validate(&traversal).is_err());
+        assert!(matches!(
+            validate(&traversal),
+            Err(PrimitiveError::InvalidPath { .. })
+        ));
 
+        let missing_argument = |args: &RetargetSessionsArgs| match validate(args) {
+            Err(PrimitiveError::MissingArgument { argument, .. }) => argument,
+            other => panic!("expected MissingArgument, got {other:?}"),
+        };
         let mut half = fold("x", "y");
         half.scenario = Some("s".into());
-        assert!(matches!(
-            validate(&half),
-            Err(PrimitiveError::MissingArgument { .. })
-        ));
+        assert_eq!(missing_argument(&half), "scenario-path");
+        let mut other_half = fold("x", "y");
+        other_half.scenario_path = Some("specs/y/scenarios/s.md".into());
+        assert_eq!(missing_argument(&other_half), "scenario");
+        let mut no_path = fold("x", "y");
+        no_path.path = None;
+        assert_eq!(missing_argument(&no_path), "path");
 
         let mut empty = consolidate(" ");
         empty.clear = true;

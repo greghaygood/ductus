@@ -1015,8 +1015,9 @@ pub fn retarget(
             continue;
         }
         record.set_target(to);
+        let is_caller = identity.is_some_and(|caller| caller.key == file_identity.key);
         let label = file_identity.with_source(record.source.as_deref()).label();
-        if identity.is_none_or(|acting| acting.key != file_identity_key(&path)) {
+        if !is_caller {
             record.notice = Some(RemovalNotice {
                 cause: cause.as_str().to_owned(),
                 from: from.to_owned(),
@@ -1028,13 +1029,6 @@ pub fn retarget(
         record_outcome(label);
     }
     Ok(outcome)
-}
-
-/// The identity key a per-process file belongs to: its stem.
-fn file_identity_key(path: &Path) -> &str {
-    path.file_stem()
-        .and_then(|stem| stem.to_str())
-        .unwrap_or_default()
 }
 
 // -- write ----------------------------------------------------------------------

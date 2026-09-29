@@ -82,14 +82,18 @@ Result:
 The existing `path` (the default's repo-relative path) and `created` fields are
 unchanged. Added:
 
-- `identity`: the display label, or `null`.
-- `own-path`: the per-process file written, or `null`.
+- `identity`: the display label; absent when unidentified, so an unidentified
+  write's result keeps its pre-062 shape (AC3).
+- `own-path`: the per-process file written; absent when unidentified.
 - `peers`: `[{ "session", "feature", "scenario", "last-used" }]`, the other
   unexpired sessions targeting the same feature. Empty on clear and host-config
   writes.
 - `expired`: labels of the per-process targets the sweep removed.
 - `unreadable`: repo-relative paths the sweep could not parse and left in
   place.
+
+The three lists are omitted when empty, like the two fields above when
+absent.
 
 ## `retarget-sessions`
 
@@ -103,8 +107,9 @@ Arguments:
 | `clear` | instead of a new target | Clear rather than re-target |
 | `cause` | yes | `fold` or `consolidate` |
 
-Supplying both `clear` and a new target, or neither, is an `InvalidArgument`.
-Paths are checked with the existing `validate_no_traversal`.
+Supplying both `clear` and a new target is an `InvalidArgument`; supplying
+neither is a `MissingArgument` naming the argument the cause still needs.
+Paths are checked with the existing `validate_no_traversal`, an `InvalidPath`.
 
 Result:
 
