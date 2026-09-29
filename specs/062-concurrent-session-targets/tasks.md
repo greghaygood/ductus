@@ -190,10 +190,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 24. A malformed shared default is reported, repairable, and never blocks an exec walk
 
-- [ ] `write` reports a shared default that exists but does not parse in `unreadable`, as replaced — its `cli-config-dir` is not carried forward — rather than treating it as absent (review: QUAL-CLAIM-001; AC22)
-- [ ] `target.md` step 1 continues past a malformed shared default as well as a malformed own file when an argument was supplied, since the write replaces it (review observation: a regression from step 1 running whatever the argument)
-- [ ] The exec seed reads the shared default leniently, as before 062, whenever the process has no own record, so a malformed default no longer halts every walk; it stays strict on the process's own file (AC22), and `target.md` says an exec walk halts on a malformed own file (review observations)
-- [ ] Tests: a write over a malformed default names it; an exec walk with a malformed default and no own record completes
+- [x] `write` reports a shared default that exists but does not parse in `unreadable`, as replaced — its `cli-config-dir` is not carried forward — rather than treating it as absent (review: QUAL-CLAIM-001; AC22)
+- [x] `target.md` step 1 continues past a malformed shared default as well as a malformed own file when an argument was supplied, since the write replaces it (review observation: a regression from step 1 running whatever the argument)
+- [x] The exec seed reads the shared default leniently, as before 062, whenever the process has no own record, so a malformed default no longer halts every walk; it stays strict on the process's own file (AC22), and `target.md` says an exec walk halts on a malformed own file (review observations)
+- [x] Tests: a write over a malformed default names it; an exec walk with a malformed default and no own record completes
 
 - **Done when**: no session file is replaced unreported; `/target X` repairs a malformed default; `ductus exec` runs with a malformed default; `cargo test` passes.
 

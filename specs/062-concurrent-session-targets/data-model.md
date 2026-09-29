@@ -115,8 +115,9 @@ unchanged. Added:
 - `expired`: labels of the per-process targets the sweep removed.
 - `unreadable`: repo-relative paths the write could not read — a file that
   does not parse, or whose `used-at` the sweep cannot read: other sessions'
-  files, which the sweep leaves in place, and the process's own record when it
-  did not parse, which this write replaces (AC22).
+  files, which the sweep leaves in place, and the process's own record or the
+  shared default when either did not parse, which this write replaces (AC22).
+  A replaced default's `cli-config-dir` is not carried forward.
 - `notices`: a pending removal notice this write replaced along with the
   process's own record, delivered here so that no write, whichever command
   makes it, discards one undelivered (AC21).

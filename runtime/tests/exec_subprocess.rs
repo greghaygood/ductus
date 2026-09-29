@@ -182,6 +182,39 @@ fn exec_run_as_an_identified_process_acts_on_its_own_target() {
     assert_eq!(envelopes.last().unwrap()["type"], "complete", "{stdout}");
 }
 
+/// Spec 062: a malformed shared default halts no walk that does not ask for
+/// the session — the seed reads it leniently, as before 062.
+#[test]
+fn exec_runs_with_a_malformed_default() {
+    ensure_binary_built();
+    let tmp = tempfile::tempdir().unwrap();
+    write_procedure_repo(
+        tmp.path(),
+        "smoke",
+        "# /ductus:smoke\n\n## Instructions\n\n1. Invoke `read-spec` against the target.\n",
+    );
+    fs::create_dir_all(tmp.path().join("specs/001-basic")).unwrap();
+    fs::write(
+        tmp.path().join("specs/001-basic/spec.md"),
+        "---\nstatus: clarified\ndependencies: []\n---\n\n# 001\n\nbody.\n",
+    )
+    .unwrap();
+    fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+    fs::write(tmp.path().join(".ductus/session.toml"), "feature = [\n").unwrap();
+
+    let output = ductus_command(runtime_binary())
+        .arg("exec")
+        .arg("smoke")
+        .arg("feature=001-basic")
+        .current_dir(tmp.path())
+        .stdin(Stdio::null())
+        .output()
+        .expect("run runtime");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(output.status.success(), "{stdout}");
+    assert!(stdout.contains("\"type\":\"complete\""), "{stdout}");
+}
+
 #[test]
 fn exec_reads_extension_response_from_stdin() {
     ensure_binary_built();

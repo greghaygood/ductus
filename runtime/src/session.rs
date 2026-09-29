@@ -572,12 +572,15 @@ impl DefaultRecord {
 
 /// Best-effort read for a *write*: a missing or malformed default yields an
 /// empty record, so a write simply has nothing to preserve rather than failing
-/// — the write replaces the broken file, as it always has.
-fn read_default_lenient(path: &Path) -> DefaultRecord {
-    std::fs::read_to_string(path)
-        .ok()
-        .and_then(|content| toml::from_str(&content).ok())
-        .unwrap_or_default()
+/// — the write replaces the broken file, as it always has. The flag is `true`
+/// when a file was there that could not be read, so the write names it as
+/// replaced rather than reading it as absent (AC22).
+fn read_default_lenient(path: &Path) -> (DefaultRecord, bool) {
+    match std::fs::read_to_string(path) {
+        Ok(content) => toml::from_str(&content)
+            .map_or((DefaultRecord::default(), true), |record| (record, false)),
+        Err(_) => (DefaultRecord::default(), path.exists()),
+    }
 }
 
 /// Strict read for a *resolution*: `None` when no default exists, an error
@@ -1185,9 +1188,11 @@ pub struct WriteOutcome {
     pub peers: Vec<SessionPeer>,
     /// Labels of per-process targets the expiry sweep removed.
     pub expired: Vec<String>,
-    /// Per-process files the write could not read — a file that does not
-    /// parse, or whose `used-at` the sweep cannot read: another session's are
-    /// left in place, and the caller's own is the record this write replaces.
+    /// Session files the write could not read — a file that does not parse,
+    /// or whose `used-at` the sweep cannot read: another session's are left in
+    /// place, and the caller's own record and the shared default are replaced
+    /// by this write (the default's `cli-config-dir` is then not carried
+    /// forward).
     pub unreadable: Vec<PathBuf>,
     /// A pending removal notice this write replaced with the process's new
     /// target — delivered here, since the replaced record was its only copy.
@@ -1218,7 +1223,7 @@ pub fn write(
 
     let default_path = paths::session_path_for_write(repo);
     let created = !default_path.exists();
-    let mut default = read_default_lenient(&default_path);
+    let (mut default, default_unreadable) = read_default_lenient(&default_path);
     let stamp = iso8601_utc(now);
 
     let mut outcome = WriteOutcome {
@@ -1288,6 +1293,9 @@ pub fn write(
         WriteShape::HostConfig => {}
     }
     outcome.unreadable.extend(replaced_unreadable);
+    if default_unreadable {
+        outcome.unreadable.push(default_path.clone());
+    }
     if let Some(dir) = cli_config_dir {
         default.cli_config_dir = Some(dir);
     } else if *shape == WriteShape::HostConfig {
@@ -1931,6 +1939,22 @@ mod tests {
             feature_of(&resolved),
             Some("056-b"),
             "the record was replaced"
+        );
+    }
+
+    /// AC22: a write over a shared default that does not parse names it, as
+    /// replaced, rather than reading it as absent.
+    #[test]
+    fn a_write_over_a_malformed_default_names_it() {
+        let tmp = repo();
+        let default = tmp.path().join(".ductus/session.toml");
+        std::fs::write(&default, "cli-config-dir = \".claude\"\nfeature = [").unwrap();
+
+        let out = set(tmp.path(), None, "055-a", t0());
+        assert_eq!(out.unreadable, vec![default]);
+        assert!(
+            default_text(tmp.path()).contains("055-a"),
+            "the default was replaced"
         );
     }
 

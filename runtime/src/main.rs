@@ -502,7 +502,15 @@ fn seed_context(
     {
         context.extend(map);
     }
-    let resolution = ductus::session::peek(repo, identity, std::time::SystemTime::now())?;
+    let resolution = match ductus::session::peek(repo, identity, std::time::SystemTime::now()) {
+        Ok(resolution) => resolution,
+        // A process with no own record seeds from the default read leniently
+        // above, as before spec 062, so a malformed default halts no walk that
+        // does not ask for the session; only the process's own file is held
+        // strict here (AC22).
+        Err(_) if !has_own_record(repo, identity) => return Ok(context),
+        Err(err) => return Err(err),
+    };
     // Only a process with a target of its own overrides the default's keys.
     // Otherwise the default seeds exactly as it did before spec 062 — it is
     // also a general-purpose seed, whose `path` may be a primitive argument
@@ -528,6 +536,13 @@ fn seed_context(
         }
     }
     Ok(context)
+}
+
+/// Whether the process acting as `identity` has a per-process record of its own
+/// in `repo` — the one session file the exec seed holds strict.
+fn has_own_record(repo: &std::path::Path, identity: Option<&ductus::session::Identity>) -> bool {
+    ductus::session::effective(repo, identity)
+        .is_some_and(|identity| ductus::session::own_path(repo, identity).exists())
 }
 
 fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode {
@@ -938,6 +953,31 @@ mod tests {
         let context = seed_context(tmp.path(), Some(&review)).unwrap();
         assert_eq!(context["path"], "CLAUDE.md");
         assert_eq!(context["block"], "x");
+    }
+
+    /// A malformed default halts no walk for a process with no record of its
+    /// own — it seeds leniently, as before spec 062 — while a malformed own
+    /// record is still reported (AC22).
+    #[test]
+    fn a_malformed_default_seeds_leniently_but_a_malformed_own_record_does_not() {
+        let tmp = repo_with_default("feature = [\n");
+        assert!(
+            seed_context(tmp.path(), None)
+                .unwrap()
+                .get("feature")
+                .is_none()
+        );
+        let review = Identity::named("review").unwrap();
+        let context = seed_context(tmp.path(), Some(&review)).unwrap();
+        assert!(context.get("feature").is_none());
+
+        std::fs::create_dir_all(tmp.path().join(".ductus/sessions")).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/sessions/review.toml"),
+            "feature = [",
+        )
+        .unwrap();
+        assert!(seed_context(tmp.path(), Some(&review)).is_err());
     }
 
     #[test]
