@@ -585,7 +585,7 @@ fn run_exec(command: &str, args: &[String], repo: &std::path::Path) -> ExitCode 
 
     // Seed the walker context from the session (see `seed_context`), then
     // overlay CLI `key=value` arg overrides.
-    let identity = match ductus::session::identity_from_process_env() {
+    let identity = match ductus::session::process_identity() {
         Ok(identity) => identity,
         Err(err) => {
             emit_exec_error("session-identity-invalid", &err.to_string());
@@ -668,6 +668,9 @@ fn run_mcp_server(repo: PathBuf) -> ExitCode {
 #[allow(clippy::too_many_lines)]
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    // The session identity variables are read here, once, for every
+    // subcommand (spec 062, `CFG-ENV-001`); primitives answer from this reading.
+    ductus::session::init_process_identity();
     let repo = cwd();
     match cli.command {
         Command::Mcp => run_mcp_server(repo),

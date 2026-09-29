@@ -1,6 +1,6 @@
 # The runtime
 
-The deep reference for the deterministic execution layer. The README's [The runtime](../README.md#the-runtime) section covers what it is, that you do not install it, and how the store and pointer relate; this is where the remaining operational detail lives — supplying your own binary, what happens when acquisition fails, and how the MCP server is registered for each agent.
+The deep reference for the deterministic execution layer. The README's [The runtime](../README.md#the-runtime) section covers what it is, that you do not install it, and how the store and pointer relate; this is where the remaining operational detail lives — supplying your own binary, what happens when acquisition fails, how the MCP server is registered for each agent, and the environment variables the runtime reads.
 
 ## Supplying your own binary
 
@@ -33,3 +33,15 @@ If a runtime process crashes mid-procedure, just re-run the command — state li
 The two home-level agents name the **absolute store path** rather than the pointer, for the mirror-image reason: their config is per-machine and serves every project, so no project-relative path could be correct in it.
 
 From that session on, the pipeline takes the deterministic path. File writes are additive — an existing MCP config keeps its other servers, and a `ductus` entry that's already present is left untouched.
+
+## Environment variables
+
+This is the one inventory of the environment variables the runtime reads. None is required, and with none set the runtime behaves as a single session on the shared default.
+
+| Variable | Required | Default when unset | Purpose |
+| --- | --- | --- | --- |
+| `DUCTUS_SESSION` | no | the agent's own session id, below | Names this process's session, so it keeps a target of its own (spec 062). Processes launched with the same value share one target. The value is sanitized by the slug rule; empty counts as unset, and a value that sanitizes to nothing is refused with an error naming the variable. |
+| `CLAUDE_CODE_SESSION_ID` | no | no identity: the shared default `.ductus/session.toml` | Set by Claude Code in every MCP server and shell it spawns — not by you. Read as that agent's session identity when `DUCTUS_SESSION` is unset. |
+| `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` | no | no host exempted | Comma-separated hosts that `fetch-archive` exempts from its `https`-only and internal-address screens, for a trusted internal mirror or local testing. It only ever loosens the guard, so leaving it unset is the secure posture. |
+
+The two session variables are read once, when the process starts, so an agent's MCP server keeps the identity it was launched with for its whole life.

@@ -51,7 +51,12 @@ and once-only notices only hold if every reader follows the same rule, so
 duplicated read logic would reproduce the defect this spec removes.
 
 The module takes the identity as a **parameter**. Only the edges (the MCP
-handlers, the CLI entry and the exec seed) call `session::identity_from_env`.
+handlers, the CLI entry and the exec seed) ask for the process's own, through
+`session::process_identity`, which answers from the identity variables the
+binary's `main` captured once at startup (`session::init_process_identity`;
+`CFG-ENV-001`). A per-call read of the environment was tried first and
+rejected (review): a test binary never captures the variables, so in-process
+tests and walks are unidentified by construction, whatever shell runs them.
 Tests then pass identities directly instead of mutating process environment,
 which is `unsafe` in edition 2024 (`runtime/Cargo.toml:4`) and racy across
 parallel tests. `identity_from_env` itself takes a lookup closure, so the
@@ -327,6 +332,10 @@ discharges the declared impact.
 | `.claude/commands/ductus/*.md` | Modify | Mirror the command edits |
 | `framework/constitution.md` | Modify | Rewrite §concurrent-features |
 | `specs/010-agent-autonomy/spec.md` | Modify | Signpost on the Parallel milestones verdict |
+| `docs/runtime.md` | Modify | The environment-variable inventory (`CFG-ENV-002`; review) |
+| `AGENTS.md` | Modify | Gotcha: session identity in tests, captured once at startup |
+| `framework/bootstrap/ductus.md`, `framework/bootstrap/govern.md` | Modify | §Session state names the per-process targets (review) |
+| `runtime/tests/common/mod.rs` and the tests that spawn the binary | Modify | One shared `ductus_command` that clears the identity variables (review) |
 
 ## Trade-offs
 

@@ -27,8 +27,8 @@
 //! process — one launched with `DUCTUS_SESSION` or a platform session
 //! identity — also writes its own target under `.ductus/sessions/`. The
 //! logic lives in [`crate::session`]; this primitive validates the
-//! arguments, reads the identity from the environment at the edge, and
-//! delegates.
+//! arguments, takes this process's identity (read once at startup) at the
+//! edge, and delegates.
 
 use std::path::Path;
 use std::time::SystemTime;
@@ -55,7 +55,7 @@ use crate::session::{self, Identity, WriteShape};
 /// parent-directory component or is absolute, or [`PrimitiveError::Io`] for
 /// filesystem failures during the write.
 pub fn run(args: &WriteSessionArgs, repo: &Path) -> Result<WriteSessionResult> {
-    let identity = session::identity_from_process_env()?;
+    let identity = session::process_identity()?;
     run_as(args, repo, identity.as_ref(), SystemTime::now())
 }
 

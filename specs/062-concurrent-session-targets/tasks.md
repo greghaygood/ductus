@@ -115,9 +115,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 14. Session identity read once at startup; an environment-variable inventory
 
-- [ ] The binary reads the session identity variables once at startup — in `main`, for the CLI, `exec` and `mcp` — and caches the result; primitives read the cached value, and an in-process caller that never initialized it is unidentified, so in-process tests and walks are unidentified by construction (review: CFG-ENV-001; AGENTS.md session-identity gotcha on `runtime/tests/walker.rs`)
-- [ ] An invalid `DUCTUS_SESSION` still fails each session primitive with the message naming the variable, rather than stopping the MCP server and every tool with it
-- [ ] Add one canonical inventory of every environment variable the runtime reads — `DUCTUS_SESSION`, `CLAUDE_CODE_SESSION_ID`, `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` — with each one's purpose, whether it is required, and its default; name it in the plan's Affected Files (review: CFG-ENV-002)
+- [x] The binary reads the session identity variables once at startup — in `main`, for the CLI, `exec` and `mcp` — and caches the result; primitives read the cached value, and an in-process caller that never initialized it is unidentified, so in-process tests and walks are unidentified by construction (review: CFG-ENV-001; AGENTS.md session-identity gotcha on `runtime/tests/walker.rs`)
+- [x] An invalid `DUCTUS_SESSION` still fails each session primitive with the message naming the variable, rather than stopping the MCP server and every tool with it
+- [x] Add one canonical inventory of every environment variable the runtime reads — `DUCTUS_SESSION`, `CLAUDE_CODE_SESSION_ID`, `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS` — with each one's purpose, whether it is required, and its default; name it in the plan's Affected Files (review: CFG-ENV-002)
 
 - **Done when**: no primitive reads the environment per call; the in-process walker test runs unidentified in a shell that carries a platform session id; the inventory lists every variable `runtime/src` reads; `cargo test` passes.
 
@@ -151,3 +151,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [ ] An `exec_subprocess` test runs `ductus exec` with `CLAUDE_CODE_SESSION_ID` set and asserts the walk acts on that process's own target, not the shared default's (review observation; AC23)
 
 - **Done when**: an identified exec walk with a pending notice emits it; the identified exec test passes and fails if `run_exec` stops passing the identity; `cargo test` passes.
+
+## 19. Disposition out-of-spec finding: fetch-archive reads its allowlist variable on every call
+
+- [ ] `runtime/src/primitives/fetch_archive.rs:296` — `host_is_insecure_allowed` calls `std::env::var("DUCTUS_FETCH_ALLOW_INSECURE_HOSTS")` per call, which CFG-ENV-001 forbids (read once at startup and cache); surfaced implementing task 14, which reads the session variables once at startup
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.

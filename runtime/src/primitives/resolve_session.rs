@@ -29,7 +29,7 @@ use crate::session::{self, Identity};
 /// process's own target, or the default it would adopt, does not parse;
 /// [`crate::primitives::PrimitiveError::Io`] on a failed read, lock or write.
 pub fn run(_args: &ResolveSessionArgs, repo: &Path) -> Result<ResolveSessionResult> {
-    let identity = session::identity_from_process_env()?;
+    let identity = session::process_identity()?;
     run_as(repo, identity.as_ref(), SystemTime::now())
 }
 

@@ -31,7 +31,7 @@ const PRIMITIVE: &str = "retarget-sessions";
 /// or a consolidation with `clear`; [`PrimitiveError::InvalidPath`] on a
 /// traversing path; [`PrimitiveError::Io`] on a failed lock, read or write.
 pub fn run(args: &RetargetSessionsArgs, repo: &Path) -> Result<RetargetSessionsResult> {
-    let identity = session::identity_from_process_env()?;
+    let identity = session::process_identity()?;
     run_as(args, repo, identity.as_ref(), SystemTime::now())
 }
 

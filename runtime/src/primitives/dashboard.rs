@@ -57,7 +57,7 @@ use crate::session::{self, Identity};
 /// missing or malformed frontmatter is NOT an error — it degrades to a
 /// detail-less session target (see [`load_scenario_detail`]).
 pub fn run(args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
-    let identity = session::identity_from_process_env()?;
+    let identity = session::process_identity()?;
     run_as(args, repo, identity.as_ref(), SystemTime::now())
 }
 
@@ -857,9 +857,9 @@ mod tests {
     use std::time::{Duration, UNIX_EPOCH};
     use tempfile::TempDir;
 
-    /// Shadows the environment-reading [`super::run`]: every existing test
-    /// renders as an **unidentified** process, so its result never depends on
-    /// the shell it runs in (this one may carry a platform session id).
+    /// Shadows [`super::run`] so every existing test names its process as
+    /// **unidentified** explicitly, rather than relying on the test binary
+    /// never capturing the identity at startup.
     fn run(args: &DashboardArgs, repo: &Path) -> Result<DashboardResult> {
         run_as(args, repo, None, SystemTime::now())
     }

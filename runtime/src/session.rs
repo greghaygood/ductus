@@ -12,13 +12,16 @@
 //! hold only if every reader follows the same rule.
 //!
 //! The identity is a **parameter** to every operation. Only the edges (the MCP
-//! handlers, the CLI entry, the exec seed) read it from the process
-//! environment, through [`identity_from_process_env`]; tests pass identities
-//! directly rather than mutating the environment, which is `unsafe` in edition
-//! 2024 and racy across parallel tests.
+//! handlers, the CLI entry, the exec seed) ask for this process's own, through
+//! [`process_identity`], which answers from the variables the binary captured
+//! once at startup ([`init_process_identity`]); tests pass identities directly
+//! rather than mutating the environment, which is `unsafe` in edition 2024 and
+//! racy across parallel tests, and an in-process caller that never captured
+//! them is unidentified.
 
 use std::fs::{File, OpenOptions, TryLockError};
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -125,14 +128,44 @@ pub fn identity_from_env(lookup: impl Fn(&str) -> Option<String>) -> Result<Opti
         .find_map(|(var, source)| lookup(var).and_then(|raw| Identity::from_raw(&raw, source))))
 }
 
-/// [`identity_from_env`] against this process's own environment — the one call
-/// the edges make.
+/// The identity variables as this process's environment held them at startup,
+/// captured once by [`init_process_identity`] (`CFG-ENV-001`: read once at
+/// startup and cached). Only the variables that were set are held.
+static STARTUP_ENV: OnceLock<Vec<(&'static str, String)>> = OnceLock::new();
+
+/// Capture the identity variables from this process's environment — once, at
+/// startup. The binary's entry point calls this before it dispatches anything,
+/// so the CLI, `ductus exec` and the MCP server all answer from one reading;
+/// a later call is a no-op.
+pub fn init_process_identity() {
+    STARTUP_ENV.get_or_init(|| {
+        std::iter::once(DUCTUS_SESSION_VAR)
+            .chain(PLATFORM_IDENTITIES.iter().map(|(var, _)| *var))
+            .filter_map(|var| std::env::var(var).ok().map(|value| (var, value)))
+            .collect()
+    });
+}
+
+/// This process's identity: [`identity_from_env`] over the variables
+/// [`init_process_identity`] captured at startup — the one call the edges
+/// make. A process that never captured them, such as an in-process test or
+/// walk, is **unidentified**, so its result never depends on the shell that
+/// runs it.
 ///
 /// # Errors
 ///
-/// As [`identity_from_env`].
-pub fn identity_from_process_env() -> Result<Option<Identity>> {
-    identity_from_env(|var| std::env::var(var).ok())
+/// As [`identity_from_env`]: an invalid `DUCTUS_SESSION` fails each call that
+/// asks, naming the variable, rather than stopping the process at startup — a
+/// session setting must not take down the MCP server's other tools.
+pub fn process_identity() -> Result<Option<Identity>> {
+    let Some(env) = STARTUP_ENV.get() else {
+        return Ok(None);
+    };
+    identity_from_env(|var| {
+        env.iter()
+            .find(|(name, _)| *name == var)
+            .map(|(_, value)| value.clone())
+    })
 }
 
 /// Whether this repo can hold per-process targets: only on the `.ductus/`
@@ -1281,6 +1314,14 @@ mod tests {
             identity_from_env(env(&[("DUCTUS_SESSION", "")])).unwrap(),
             None
         );
+    }
+
+    /// No test calls [`init_process_identity`], so the test process is
+    /// unidentified even in a shell that carries a platform session id —
+    /// which a per-call read of the environment would pick up.
+    #[test]
+    fn a_process_that_never_captured_its_environment_is_unidentified() {
+        assert_eq!(process_identity().unwrap(), None);
     }
 
     #[test]
