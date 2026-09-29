@@ -183,7 +183,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 23. The identity-capture test holds in any environment; the lock poll's pacing is explained
 
-- [ ] `a_process_that_never_captured_its_environment_is_unidentified` re-runs itself as a child test process with `CLAUDE_CODE_SESSION_ID` set, so it fails in any environment — CI included — if `process_identity` reads the environment per call (review: QUAL-TEST-001)
-- [ ] `LOCK_RETRY` records why the lock poll uses a short fixed interval rather than a jittered backoff: it polls a local advisory lock held for milliseconds, bounded by `SESSION_LOCK_TIMEOUT` (review: BE-RETRY-001, low confidence)
+- [x] `a_process_that_never_captured_its_environment_is_unidentified` re-runs itself as a child test process with `CLAUDE_CODE_SESSION_ID` set, so it fails in any environment — CI included — if `process_identity` reads the environment per call (review: QUAL-TEST-001)
+- [x] `LOCK_RETRY` records why the lock poll uses a short fixed interval rather than a jittered backoff: it polls a local advisory lock held for milliseconds, bounded by `SESSION_LOCK_TIMEOUT` (review: BE-RETRY-001, low confidence)
 
 - **Done when**: the capture test fails under a per-call environment read even when the parent shell carries no identity; `cargo test` passes.

@@ -329,7 +329,11 @@ pub struct SessionLock {
 /// beats hanging every agent behind it.
 pub const SESSION_LOCK_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// The pause between attempts while another process holds the lock.
+/// The pause between attempts while another process holds the lock. A short
+/// fixed interval rather than the jittered exponential backoff `BE-RETRY-001`
+/// asks of retries: this polls a local advisory lock held for milliseconds,
+/// not a downstream service that synchronized retries could overload, and
+/// [`SESSION_LOCK_TIMEOUT`] bounds the attempts.
 const LOCK_RETRY: Duration = Duration::from_millis(10);
 
 /// Take the exclusive advisory lock on `.ductus/sessions/.lock`, creating the
@@ -1385,10 +1389,32 @@ mod tests {
     }
 
     /// No test calls [`init_process_identity`], so the test process is
-    /// unidentified even in a shell that carries a platform session id —
-    /// which a per-call read of the environment would pick up.
+    /// unidentified — and stays so with an identity in its environment. The
+    /// test re-runs itself as a child test process with `CLAUDE_CODE_SESSION_ID`
+    /// set, so it fails wherever `process_identity` reads the environment per
+    /// call, not only in a shell that happens to carry a session id.
     #[test]
     fn a_process_that_never_captured_its_environment_is_unidentified() {
+        const NAME: &str =
+            "session::tests::a_process_that_never_captured_its_environment_is_unidentified";
+        const CHILD: &str = "DUCTUS_TEST_IDENTITY_CHILD";
+        if std::env::var_os(CHILD).is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", NAME, "--test-threads=1"])
+                .env(CHILD, "1")
+                .env(
+                    "CLAUDE_CODE_SESSION_ID",
+                    "aaaaaaaa-0000-4000-8000-000000000001",
+                )
+                .env_remove(DUCTUS_SESSION_VAR)
+                .output()
+                .unwrap();
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            assert!(
+                output.status.success() && stdout.contains("1 passed"),
+                "the child run, with an identity set, did not pass: {stdout}"
+            );
+        }
         assert_eq!(process_identity().unwrap(), None);
     }
 
