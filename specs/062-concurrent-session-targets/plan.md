@@ -82,6 +82,11 @@ error:
    the same way; a UUID passes through unchanged.
 3. Otherwise `None`.
 
+Both sources are environment variables, so the standard precedence of flag,
+then environment, then file, then default holds by construction
+(`CFG-ENV-007`): the identity has no flag or file source, `DUCTUS_SESSION`
+outranks the platform variable, and no identity is the default.
+
 `Identity` carries the sanitized `key` (the file stem) and a `source` (`named`
 or the platform source). Notices use its display label: the name for a named
 session, and `claude-code:` plus the first eight characters of the key for a
@@ -124,7 +129,13 @@ holds an exclusive advisory lock on `.ductus/sessions/.lock`, taken with
 `SESSION_LOCK_TIMEOUT` (ten seconds, `BE-TIMEOUT-001`). The critical sections
 are a few small reads and one or two atomic writes, so a wait that long means
 the holder is stalled, and the call fails naming the lock file rather than
-hanging every agent behind it. The MCP handlers of the three session tools run
+hanging every agent behind it. The poll (`BE-RETRY-001`) is bounded by that
+timeout, at most about a thousand attempts at `LOCK_RETRY`'s ten milliseconds,
+and retries only `try_lock`, which changes nothing when it fails. The interval
+is fixed rather than a jittered backoff on purpose: the contenders are a few
+local processes polling a kernel lock held for milliseconds, with no
+downstream for synchronized retries to overload, which is what that rule's
+backoff and jitter exist to prevent. The MCP handlers of the three session tools run
 on the blocking pool, so a wait never holds an async worker. Writes inside the
 lock still use the existing tempfile + rename helper (`write_atomic`,
 `runtime/src/primitives/mod.rs:988`), so a reader outside the lock, such as a
@@ -207,7 +218,9 @@ The existing three write shapes stay (`runtime/src/primitives/write_session.rs:7
 
 After a target or clear write, the core runs the expiry sweep. It deletes
 per-process files whose `used-at` is more than seven days old, never the
-caller's own. It reports files it could not parse in `unreadable` and leaves
+caller's own. The window is `session::IDLE_EXPIRY`, its one definition
+(`CFG-CONST-001`): the exec walker's expired-session line reads it rather than
+restating the number. It reports files it could not parse in `unreadable` and leaves
 them in place: a file that cannot be read cannot be proven idle.
 
 ### `retarget-sessions`: removal without stranding

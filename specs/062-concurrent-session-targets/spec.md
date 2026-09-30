@@ -31,7 +31,7 @@ target was valid, just not theirs. That alone made running two agents at once
 unreliable.
 
 [010-agent-autonomy](../010-agent-autonomy/spec.md) had declined multi-target
-sessions (§Parallel milestones, Resolved Question 5). The verdict rested on two
+sessions (its Parallel milestones section and Resolved Question 5). The verdict rested on two
 premises: that working on two features at once was rare, and that
 `git worktree` and platform isolation already covered it. The first did not
 hold: for the operator who raised this, running two or more agent processes at
