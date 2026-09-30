@@ -135,7 +135,9 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 
 ### 17. Release
 
-Blocked on task 18: a tag needs every workflow green on `main`, and task 18's Windows failure is what keeps `runtime` red. Work 18 before this task, even though it is numbered after it.
+Blocked on `062-concurrent-session-targets` reaching `done`. Task 18 routed the Windows failure to 062 as task 26, whose fix is committed but whose first item stays open until `runtime` is green on windows-latest. 062 and 052 must both be `done` before the tag, and 052 already is.
+
+Order: (1) the Windows verdict on 062 task 26; (2) close 062 — a review over its reopen window (the new scenario is a durable contract, so its review is stale), an analyze, the completion gate, and `set-status` to `done` in its own commit; (3) the version bump commit, covering 062's and this spec's runtime work since `ductus-v0.55.0`; (4) `/{project}:review` and `/{project}:analyze` on this spec, then its completion gate — AC1, AC9, AC10 and AC15–AC20 are unticked and are verified there; (5) read `git log --oneline origin/main..HEAD`, push, tag and push the tag in the same sitting, and read every workflow run for the release sha. The review and analyze run in a session started after `runtime/target/release/ductus` was built with `prune-plan`, because the MCP server runs the binary it started with and analyze's step 16 calls `prune-plan`.
 
 - [ ] The full local gate, as `AGENTS.md` §Workflow lists it
 - [ ] `runtime/CHANGELOG.md` `### Added` and a minor bump across `version`, `runtime/Cargo.toml` and the changelog heading, in one commit

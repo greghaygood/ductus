@@ -208,6 +208,8 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 26. First writers create the sessions ignore file once
 
+The fix and its test landed in `9a256750`. The first item is checked once a `runtime` run for a sha containing that commit shows `concurrent_writers_each_keep_their_own_target` passing on windows-latest, ubuntu-latest and macos-latest. If Windows still fails, read the failing assertion before changing anything: the test had never passed there, so a second Windows-only failure may be waiting behind the first.
+
 - [ ] Implement the behavior described in `scenarios/first-writers-create-the-ignore-file-once.md`
 - [x] `lock_within` in `runtime/src/session.rs` creates the sessions directory, takes the lock, and only then writes `.gitignore` when absent
 - [x] A test that fails when the ignore file is written before the lock: a contender that times out on a held lock has not written it
