@@ -172,30 +172,30 @@ own session file, so the two compose.
 
 ## Acceptance Criteria
 
-- [ ] AC1: With two agent processes in one working tree, a target write in the first, whether by `/ductus:target` or as a side effect of `/ductus:specify`, `/ductus:groom`, `/ductus:amend`, `/ductus:fold` or `/ductus:consolidate`, leaves the target the second process resolves unchanged
-- [ ] AC2: With two processes targeting different features, every targeted command run in either process operates on that process's own feature
-- [ ] AC3: An operator running a single agent process with no new configuration reads and writes `.ductus/session.toml` with the keys it holds today, and no migration runs for them
-- [ ] AC4: Two processes writing their targets concurrently each retain the target they wrote; neither write is lost to the other
-- [ ] AC5: After `/ductus:fold` or `/ductus:consolidate` removes a feature directory, no session target in the working tree names that directory, and every target naming another feature still names the same feature and scenario afterward
-- [ ] AC6: The per-contributor `cli-config-dir` survives every target write in every process, as it does for the single session today
-- [ ] AC7: Every file holding session state is gitignored, both in the gitignore template the framework ships and in this repository's own gitignore
-- [ ] AC8: The pipeline view (`/ductus:status`) identifies the target of the process that ran it
-- [ ] AC12: An operator-set `DUCTUS_SESSION` takes precedence over the platform's session identity: two processes with different values hold separate targets, and two with the same value share one
-- [ ] AC13: On Claude Code, two agent processes launched with no `DUCTUS_SESSION` hold separate targets, each keyed by the `CLAUDE_CODE_SESSION_ID` its agent passes to its MCP server
-- [ ] AC14: An empty `DUCTUS_SESSION` is treated as unset; a value holding characters other than lowercase letters, digits and hyphens is sanitized by the slug rule before use; a value that sanitizes to nothing is refused with a message naming the variable
-- [ ] AC15: A process with no identity resolves and writes only the shared default, and two such processes share one target exactly as before this spec
-- [ ] AC16: Every target write in any process also sets the shared default, so an agent restarted with a new identity resolves the target most recently set in the working tree
-- [ ] AC17: An identified process with no target of its own adopts the shared default on its first resolution and announces the adoption, and a later target write by another process leaves the adopted target unchanged
-- [ ] AC18: A per-process target neither resolved nor written for seven days is removed by the next target write in any process, and a target used within that window is never removed
-- [ ] AC19: When a target write names a feature another unexpired session also targets, the writing session is told which sessions and when each last used its target, and each of those sessions is told once at its next ductus command; neither command is blocked
-- [ ] AC20: A cleared target, whether cleared by its own process or by a consolidation, leaves the process with no target: its targeted commands stop and ask for `/ductus:target`, and it does not adopt the shared default
-- [ ] AC21: After `/ductus:fold` removes a staging spec, every session that targeted it targets the upstream spec; after `/ductus:consolidate` removes a spec, every session that targeted it is cleared; each affected session is told at its next command what happened to its target and which session's command did it
-- [ ] AC22: A file holding session state that cannot be parsed is reported by name, and the process does not treat it as absent or adopt the default in its place
-- [ ] AC23: `ductus exec` run from an agent's shell tool resolves that agent's target, and run from a terminal with no identity it resolves the shared default
-- [ ] AC24: The markdown-only path states that, having no sanctioned way to read its environment, it resolves and writes the shared default only
-- [ ] AC10: The concurrent-features section of `framework/constitution.md` is amended to describe per-process targets in place of a single target by design, in the same change that ships the behavior
-- [ ] AC25: The concurrent-features section of `framework/constitution.md` keeps `git worktree` and platform isolation as the answer for isolating working-tree edits, notes that by default git refuses to check out one branch in two worktrees at once, and states the two bounds this spec leaves open: processes with no identity share one target, and with two different agent CLIs in one working tree the runtime reads command files from the agent `/ductus` last recorded
-- [ ] AC11: `specs/010-agent-autonomy/spec.md` carries a signpost on its Parallel milestones verdict linking to this spec, discharging the declared cross-spec impact
+- [x] AC1: With two agent processes in one working tree, a target write in the first, whether by `/ductus:target` or as a side effect of `/ductus:specify`, `/ductus:groom`, `/ductus:amend`, `/ductus:fold` or `/ductus:consolidate`, leaves the target the second process resolves unchanged
+- [x] AC2: With two processes targeting different features, every targeted command run in either process operates on that process's own feature
+- [x] AC3: An operator running a single agent process with no new configuration reads and writes `.ductus/session.toml` with the keys it holds today, and no migration runs for them
+- [x] AC4: Two processes writing their targets concurrently each retain the target they wrote; neither write is lost to the other
+- [x] AC5: After `/ductus:fold` or `/ductus:consolidate` removes a feature directory, no session target in the working tree names that directory, and every target naming another feature still names the same feature and scenario afterward
+- [x] AC6: The per-contributor `cli-config-dir` survives every target write in every process, as it does for the single session today
+- [x] AC7: Every file holding session state is gitignored, both in the gitignore template the framework ships and in this repository's own gitignore
+- [x] AC8: The pipeline view (`/ductus:status`) identifies the target of the process that ran it
+- [x] AC12: An operator-set `DUCTUS_SESSION` takes precedence over the platform's session identity: two processes with different values hold separate targets, and two with the same value share one
+- [x] AC13: On Claude Code, two agent processes launched with no `DUCTUS_SESSION` hold separate targets, each keyed by the `CLAUDE_CODE_SESSION_ID` its agent passes to its MCP server
+- [x] AC14: An empty `DUCTUS_SESSION` is treated as unset; a value holding characters other than lowercase letters, digits and hyphens is sanitized by the slug rule before use; a value that sanitizes to nothing is refused with a message naming the variable
+- [x] AC15: A process with no identity resolves and writes only the shared default, and two such processes share one target exactly as before this spec
+- [x] AC16: Every target write in any process also sets the shared default, so an agent restarted with a new identity resolves the target most recently set in the working tree
+- [x] AC17: An identified process with no target of its own adopts the shared default on its first resolution and announces the adoption, and a later target write by another process leaves the adopted target unchanged
+- [x] AC18: A per-process target neither resolved nor written for seven days is removed by the next target write in any process, and a target used within that window is never removed
+- [x] AC19: When a target write names a feature another unexpired session also targets, the writing session is told which sessions and when each last used its target, and each of those sessions is told once at its next ductus command; neither command is blocked
+- [x] AC20: A cleared target, whether cleared by its own process or by a consolidation, leaves the process with no target: its targeted commands stop and ask for `/ductus:target`, and it does not adopt the shared default
+- [x] AC21: After `/ductus:fold` removes a staging spec, every session that targeted it targets the upstream spec; after `/ductus:consolidate` removes a spec, every session that targeted it is cleared; each affected session is told at its next command what happened to its target and which session's command did it
+- [x] AC22: A file holding session state that cannot be parsed is reported by name, and the process does not treat it as absent or adopt the default in its place
+- [x] AC23: `ductus exec` run from an agent's shell tool resolves that agent's target, and run from a terminal with no identity it resolves the shared default
+- [x] AC24: The markdown-only path states that, having no sanctioned way to read its environment, it resolves and writes the shared default only
+- [x] AC10: The concurrent-features section of `framework/constitution.md` is amended to describe per-process targets in place of a single target by design, in the same change that ships the behavior
+- [x] AC25: The concurrent-features section of `framework/constitution.md` keeps `git worktree` and platform isolation as the answer for isolating working-tree edits, notes that by default git refuses to check out one branch in two worktrees at once, and states the two bounds this spec leaves open: processes with no identity share one target, and with two different agent CLIs in one working tree the runtime reads command files from the agent `/ductus` last recorded
+- [x] AC11: `specs/010-agent-autonomy/spec.md` carries a signpost on its Parallel milestones verdict linking to this spec, discharging the declared cross-spec impact
 
 ## Applicable Rules
 

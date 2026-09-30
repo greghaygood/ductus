@@ -1,7 +1,7 @@
 ---
 spec: 062-concurrent-session-targets
-last-run: 2026-09-30T00:02:11Z
-analyzed-against: b12d5f4a9f53893f0dd130cae32a43933818a52d
+last-run: 2026-09-30T00:05:09Z
+analyzed-against: 74c4bca3134cc78d22ef09d25642ccf52347dad5
 hard-fail: 0
 blocking-findings: 0
 advisory: 1
@@ -10,11 +10,11 @@ analyzed-digest:
   data-model.md: 85a06c141afc3f7b14d73d0e406b94b389a207bc6c72443acd3e8794f3caae0f
   plan.md: e2b90b2118d08de58969e7b012b30e9ad9aa415ce4b11cae8386b9a39bcd7704
   review.md: 905dd773cc05cd47431612a2a7bd5dd7411985cdd322bc50adc26940e4b79041
-  spec.md: c28e2b8f5f17a45084d66f6cc913d0f01c6c001138ffbb7aa1675b378d48b686
+  spec.md: 22d1291dfd81f7f66d20ca7b14b29cb6d7cfad44e2b9d3f23cf561c74941adac
   tasks.md: 2554d34f627fac60eb74d67bb1b5bd7978ca4b8bc645847c4a1b006b780d4d91
 blocking: false
 dispositions:
-  fixed: 4
+  fixed: 0
   routed: 0
   discarded: 1
   undispositioned: 0
@@ -30,7 +30,7 @@ decisions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 1 advisory; not blocking. 0 unexamined target(s). Dispositions: 4 fixed, 0 routed, 1 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 1 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 1 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -50,7 +50,4 @@ decisions:
 
 ## Fixed in this run
 
-- rule-assessment — BE-RETRY-001: the plan's lock poll is a retry loop, but the plan states no backoff policy or idempotency basis — `specs/062-concurrent-session-targets/plan.md` — **fixed**
-- rule-assessment — CFG-CONST-001: IDLE_EXPIRY is read by session.rs and interpreter/mod.rs, and the plan does not name where it lives — `specs/062-concurrent-session-targets/plan.md` — **fixed**
-- rule-assessment — CFG-ENV-007: the identity has two environment sources, and neither spec nor plan confirms the order follows the standard precedence — `specs/062-concurrent-session-targets/plan.md` — **fixed**
-- unresolved-anchor — §Parallel at spec.md:34 resolves to no constitution marker — `specs/062-concurrent-session-targets/spec.md` — **fixed**
+*None.*
