@@ -1,17 +1,18 @@
 ---
 spec: 062-concurrent-session-targets
-last-run: 2026-09-30T00:05:09Z
-analyzed-against: 74c4bca3134cc78d22ef09d25642ccf52347dad5
+last-run: 2026-09-30T13:59:23Z
+analyzed-against: 239b1fa51fffc3500bc3750d46f2831501d9b70c
 hard-fail: 0
 blocking-findings: 0
 advisory: 1
 unexamined: 0
 analyzed-digest:
-  data-model.md: 85a06c141afc3f7b14d73d0e406b94b389a207bc6c72443acd3e8794f3caae0f
-  plan.md: e2b90b2118d08de58969e7b012b30e9ad9aa415ce4b11cae8386b9a39bcd7704
-  review.md: 905dd773cc05cd47431612a2a7bd5dd7411985cdd322bc50adc26940e4b79041
+  data-model.md: 9ce5458a99a6ba857f8778df877a8b2b0a2708037b23b05319588b4c06aaa10f
+  plan.md: 385e2262d3d3dfd5cd8bfc2a905769c6d8d95d560275d9ae9440bd655d9f1cfb
+  review.md: 07e87c7b0154ca8fb0a3e4c9dc10df28ff0f18e562e47ab9e8894d448090adaa
+  scenarios/first-writers-create-the-ignore-file-once.md: 02149b44fd9c6d76d8e9d97af6235df746bf028cad34e693bb57302dea1b1f15
   spec.md: 22d1291dfd81f7f66d20ca7b14b29cb6d7cfad44e2b9d3f23cf561c74941adac
-  tasks.md: 2554d34f627fac60eb74d67bb1b5bd7978ca4b8bc645847c4a1b006b780d4d91
+  tasks.md: 11f3eee926e34c47cf88c173dae0f24a2377fd0b59e70962d92431795701649c
 blocking: false
 dispositions:
   fixed: 0
