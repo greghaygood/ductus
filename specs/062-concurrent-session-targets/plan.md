@@ -279,9 +279,8 @@ The core also writes `.ductus/sessions/.gitignore` containing `*` whenever it
 holds the session lock and finds the file absent — under the lock, so racing
 first writers create it once
 (`scenarios/first-writers-create-the-ignore-file-once.md`). That covers an
-adopter whose runtime was updated before
-the managed block: per-process files never show up as untracked, whatever
-state the root `.gitignore` is in.
+adopter whose runtime was updated before the managed block: per-process files
+never show up as untracked, whatever state the root `.gitignore` is in.
 
 ### Command files
 
