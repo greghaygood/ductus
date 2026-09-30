@@ -296,24 +296,25 @@ impl ProcessRecord {
     }
 }
 
-/// Create `.ductus/sessions/` when absent, with a `.gitignore` of `*` so the
-/// per-process files never show as untracked — whatever the state of the
+/// Write `.ductus/sessions/.gitignore` containing `*` when it is absent, so
+/// the per-process files never show as untracked — whatever the state of the
 /// repository's own `.gitignore` (spec 062 plan, §Gitignore).
+///
+/// Called only with the session lock held. Every first writer in a fresh
+/// working tree finds the file absent, and each writing it replaces the same
+/// path by rename; Windows refuses a rename onto a file another process is
+/// replacing, with *Access is denied* (os error 5), so unserialized first
+/// writers failed there while Unix let the last rename win.
 ///
 /// # Errors
 ///
-/// [`PrimitiveError::Io`] on a failed create or write.
-pub fn ensure_sessions_dir(repo: &Path) -> Result<PathBuf> {
-    let dir = sessions_dir(repo);
-    std::fs::create_dir_all(&dir).map_err(|source| PrimitiveError::Io {
-        path: dir.clone(),
-        source,
-    })?;
+/// [`PrimitiveError::Io`] on a failed write.
+fn ignore_everything(dir: &Path) -> Result<()> {
     let ignore = dir.join(".gitignore");
     if !ignore.exists() {
         write_atomic(&ignore, "*\n")?;
     }
-    Ok(dir)
+    Ok(())
 }
 
 /// An exclusive hold on the session lock, released when dropped.
@@ -337,9 +338,9 @@ pub const SESSION_LOCK_TIMEOUT: Duration = Duration::from_secs(10);
 const LOCK_RETRY: Duration = Duration::from_millis(10);
 
 /// Take the exclusive advisory lock on `.ductus/sessions/.lock`, creating the
-/// directory first. Waits up to [`SESSION_LOCK_TIMEOUT`] for another holder;
-/// the OS releases the lock if its holder dies, so there is no stale-lock
-/// recovery to get wrong.
+/// directory first and, once the lock is held, its `.gitignore`. Waits up to
+/// [`SESSION_LOCK_TIMEOUT`] for another holder; the OS releases the lock if
+/// its holder dies, so there is no stale-lock recovery to get wrong.
 ///
 /// # Errors
 ///
@@ -351,7 +352,11 @@ pub fn lock(repo: &Path) -> Result<SessionLock> {
 
 /// [`lock`], waiting at most `timeout`.
 fn lock_within(repo: &Path, timeout: Duration) -> Result<SessionLock> {
-    ensure_sessions_dir(repo)?;
+    let dir = sessions_dir(repo);
+    std::fs::create_dir_all(&dir).map_err(|source| PrimitiveError::Io {
+        path: dir.clone(),
+        source,
+    })?;
     let path = repo.join(paths::SESSIONS_LOCK);
     let io = |source| PrimitiveError::Io {
         path: path.clone(),
@@ -366,7 +371,11 @@ fn lock_within(repo: &Path, timeout: Duration) -> Result<SessionLock> {
     let deadline = Instant::now() + timeout;
     loop {
         match file.try_lock() {
-            Ok(()) => return Ok(SessionLock { _file: file }),
+            Ok(()) => {
+                let held = SessionLock { _file: file };
+                ignore_everything(&dir)?;
+                return Ok(held);
+            }
             Err(TryLockError::WouldBlock) if Instant::now() < deadline => {
                 std::thread::sleep(LOCK_RETRY);
             }
@@ -1545,6 +1554,38 @@ mod tests {
         assert!(default_text(tmp.path()).contains("055-a"));
     }
 
+    /// Spec 062, scenario `first-writers-create-the-ignore-file-once`: the
+    /// sessions directory's `.gitignore` is written only by the lock holder.
+    /// Written before the lock, every first writer racing a fresh tree
+    /// replaced it by rename, which Windows refuses while another process is
+    /// replacing it. Held from outside here, the lock times out a contender
+    /// that must not have touched the file.
+    #[test]
+    fn only_the_lock_holder_writes_the_ignore_file() {
+        let tmp = repo();
+        let dir = sessions_dir(tmp.path());
+        std::fs::create_dir_all(&dir).unwrap();
+        let held = OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .write(true)
+            .open(tmp.path().join(paths::SESSIONS_LOCK))
+            .unwrap();
+        held.lock().unwrap();
+        let err = lock_within(tmp.path(), Duration::from_millis(50)).unwrap_err();
+        assert!(err.to_string().contains(".lock"), "{err}");
+        assert!(
+            !dir.join(".gitignore").exists(),
+            "a writer that never held the lock wrote the ignore file"
+        );
+        drop(held);
+        drop(lock(tmp.path()).unwrap());
+        assert_eq!(
+            std::fs::read_to_string(dir.join(".gitignore")).unwrap(),
+            "*\n"
+        );
+    }
+
     #[test]
     fn lock_if_shared_creates_nothing_in_an_unused_repo() {
         let tmp = tempdir().unwrap();
@@ -1993,7 +2034,7 @@ mod tests {
         let x = id("x");
         set(tmp.path(), None, "055-a", t0());
         let own = own_path(tmp.path(), &x);
-        ensure_sessions_dir(tmp.path()).unwrap();
+        drop(lock(tmp.path()).unwrap());
         std::fs::write(&own, "feature = [").unwrap();
         let err = resolve(tmp.path(), Some(&x), at(1)).unwrap_err();
         assert!(err.to_string().contains("x.toml"), "{err}");
