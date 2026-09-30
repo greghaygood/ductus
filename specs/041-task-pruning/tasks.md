@@ -97,15 +97,15 @@ Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disp
 
 ### 14. A plan records the design as it stands
 
-- [ ] Implement the behavior described in `scenarios/plan-records-the-design-as-it-stands.md`
-- [ ] Constitution: §plan-phase states the rule — the design record is the template's `##` sections and the only place a plan's claims live, and where every other kind of content goes; §tasks-phase's closing sentence drops "none of which `/{project}:prune` touches" for `plan.md` and names handoff notes on the pending task; §implement-phase's review-body rule gains the triage clause
-- [ ] `framework/templates/spec/plan.md`: Trade-offs always; Data Model, Open Questions Resolved and Cross-spec impact optional, each marked to be omitted when it does not apply; a guidance comment on what stays out of a plan and where it goes
-- [ ] `framework/templates/spec/tasks.md`: the working-notes guidance and both placement rules; update `prune-tasks`' `CANONICAL_EMPTY_TASKS_BODY` in the same change so its drift test passes
-- [ ] Prose-claim sweep for "prune touches only `tasks.md`" and "single-artifact" across `framework/`, `docs/`, `README.md` and the spec corpus, by meaning, not by token
+- [x] Implement the rule half of the behavior described in `scenarios/plan-records-the-design-as-it-stands.md` — the constitution and both templates; its advisory half is task 15's analyze subtask
+- [x] Constitution: §plan-phase states the rule — the design record is the template's `##` sections and the only place a plan's claims live, and where every other kind of content goes; §tasks-phase's closing sentence drops "none of which `/{project}:prune` touches" for `plan.md` and names handoff notes on the pending task; §implement-phase's review-body rule gains the triage clause
+- [x] `framework/templates/spec/plan.md`: Trade-offs always; Data Model, Open Questions Resolved and Cross-spec impact optional, each marked to be omitted when it does not apply; a guidance comment on what stays out of a plan and where it goes
+- [x] `framework/templates/spec/tasks.md`: the working-notes guidance and both placement rules; update `prune-tasks`' `CANONICAL_EMPTY_TASKS_BODY` in the same change so its drift test passes
+- [x] Prose-claim sweep for "prune touches only `tasks.md`" and "single-artifact" across `framework/`, `docs/`, `README.md` and the spec corpus, by meaning, not by token
 
 The advisory half of this scenario — `/{project}:analyze` firing every section outside the record — needs `prune-plan`, so it is task 15's last subtask, not this task's.
 
-- **Done when**: the constitution and both templates state the rule, the reset-constant drift test passes against the new tasks template, and the sweep finds no live claim that prune touches only `tasks.md`.
+- **Done when**: the constitution and both templates state the rule, the reset-constant drift test passes against the new tasks template, and every live claim that prune touches only `tasks.md` is either corrected or owned by the task that changes the behavior it describes — a claim about prune's current command stays true until task 15 changes it, so rewriting it here would make it false in the interim.
 
 ### 15. Prune reduces every prunable artifact in the spec directory
 
@@ -129,6 +129,7 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 - [ ] Tests proven red by mutation: the walk order, a skipped feature named with its reason, the refusals, and a per-spec reset gate
 - [ ] `framework/commands/prune.md`: the `--all` flow — one corpus preview, one confirmation for every `tasks.md` reduction, plans one spec at a time
 - [ ] `docs/slash-commands.md`: sharpen the flag-versus-command rule so a batch flag repeating a one-spec operation (`/{project}:analyze --all`, `/{project}:prune --all`) is distinct from a two-spec operation
+- [ ] Discharge the declared `cross-spec-impact` on `052-spec-supersession-and-consolidation`: its body states the same rule ("`amend`, `prune`, `clarify`, `plan`, and `implement` each write one"), which `--all` falsifies for `prune` as written. Reopen 052 with `set-status` in its own commit, sharpen the sentence to the batch-versus-two-spec distinction with a `> **Signpost:**` blockquote linking back to 041, re-run `/{project}:analyze` on 052 (a `spec.md` edit, so no re-review), and return it to `done`
 
 - **Done when**: `/{project}:prune --all` previews the corpus, applies every `tasks.md` reduction under one confirmation, walks plans spec by spec, and the refusals hold.
 
@@ -140,3 +141,9 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 - [ ] Tag `ductus-v<version>` in the same sitting and read every workflow run for that sha
 
 - **Done when**: 041 is `done`, the tag is pushed, and every workflow run for the release commit has concluded successfully.
+
+### 18. Disposition out-of-spec finding: 062's concurrent-session test fails on Windows, racing on .ductus/sessions/.gitignore
+
+- [ ] `runtime/tests/concurrent_sessions.rs:201` — `concurrent_writers_each_keep_their_own_target` fails on windows-latest (runtime run 36653211031, at `52cf2f15`) with `I/O error on …\.ductus/sessions\.gitignore: Access is denied. (os error 5)`; it passes on ubuntu-latest and macos-latest. 062's runtime commits were first pushed with `52cf2f15`, so this is the test's first Windows run and it has never passed there
+
+- **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.
