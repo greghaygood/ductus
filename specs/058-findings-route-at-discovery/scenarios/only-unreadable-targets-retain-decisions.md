@@ -6,7 +6,7 @@ section: "Decisions persist across runs"
 
 ## Context
 
-`/{project}:analyze` step 16 sets `restricted` whenever the run left any target unexamined. A restricted run retains every stored decision whose finding did not fire, because that finding's source might not have been looked at.
+`/{project}:analyze` step 17 sets `restricted` whenever the run left any target unexamined. A restricted run retains every stored decision whose finding did not fire, because that finding's source might not have been looked at.
 
 Most unexamined targets are excluded by construction rather than missed. `not-a-live-claim`, `ships-to-adopter`, and `root-absent` are decisions the checks made about what to examine, and they recur on every run. Measured 2026-09-25 by grepping `^unexamined:` over `specs/*/analysis.md`: 20 of 55 records carry a nonzero count, mostly with those reasons. On those specs a stored decision whose finding stopped firing is never pruned, which contradicts §Decisions persist across runs and AC32 ("a re-run in which the finding no longer fires prunes the stored decision").
 
@@ -18,7 +18,7 @@ Found by the 058 review (2026-09-25).
 
 `restricted` is set only when a skipped target's reason is in the *could not be read* class: `target-missing`, `target-unparseable`, `no-readable-state`, `artifact-unreadable`, and each reason `analyze.md`'s Unexamined targets section classifies with them. Targets excluded by construction never restrict, because the run decided not to examine them. It did not fail to.
 
-`/{project}:analyze` step 16 states the rule, and `docs/analyze.md` follows it. The class list lives in one place and is named where the step uses it, so a reason added later is classified once.
+`/{project}:analyze` step 17 states the rule, and `docs/analyze.md` follows it. The class list lives in one place and is named where the step uses it, so a reason added later is classified once.
 
 ## Edge Cases
 

@@ -30,7 +30,7 @@ Line references in this Motivation and in the Resolved Questions are to the tree
 - **A rule with no Verification, or whose Statement carries no RFC 2119 keyword.** It is not asked about and is recorded unexamined. None of this repository's 192 rules is either; an adopter-authored rule file can be.
 - **A deprecated rule.** It is asked about like any other: a deprecated rule binds until it is removed (§rules, Lifecycle), and steps 11 and 12 make no exception for one. This repository's rule files carry no deprecated rule.
 - **Request order.** Requests go out in a fixed order: rule files in the sorted order `list_rule_files` returns (`runtime/src/primitives/discover_rule_files.rs:151`), rules in heading order within a file, MUST-tier rules at step 11 and SHOULD-tier rules at step 12. Request ids, and so the goldens, are reproducible.
-- **A malformed response or an interrupted walk partway through the rules.** A response that fails validation halts the walk with `error: schema-mismatch`, as any extension response does (`Walker::validate_llm_response`, `runtime/src/interpreter/mod.rs:770`). Because `write-analysis` runs at step 19, a halted or interrupted walk writes no record, never a partial one counting only the rules answered so far.
+- **A malformed response or an interrupted walk partway through the rules.** A response that fails validation halts the walk with `error: schema-mismatch`, as any extension response does (`Walker::validate_llm_response`, `runtime/src/interpreter/mod.rs:770`). Because `write-analysis` runs at step 20, a halted or interrupted walk writes no record, never a partial one counting only the rules answered so far.
 
 ## Acceptance Criteria
 
