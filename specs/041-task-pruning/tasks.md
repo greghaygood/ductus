@@ -146,6 +146,6 @@ Blocked on task 18: a tag needs every workflow green on `main`, and task 18's Wi
 
 ### 18. Disposition out-of-spec finding: 062's concurrent-session test fails on Windows, racing on .ductus/sessions/.gitignore
 
-- [ ] `runtime/tests/concurrent_sessions.rs:201` — `concurrent_writers_each_keep_their_own_target` fails on windows-latest (runtime run 36653211031, at `52cf2f15`) with `I/O error on …\.ductus/sessions\.gitignore: Access is denied. (os error 5)`; it passes on ubuntu-latest and macos-latest. 062's runtime commits were first pushed with `52cf2f15`, so this is the test's first Windows run and it has never passed there
+- [x] `runtime/tests/concurrent_sessions.rs:201` — `concurrent_writers_each_keep_their_own_target` fails on windows-latest (runtime run 36653211031, at `52cf2f15`) with `I/O error on …\.ductus/sessions\.gitignore: Access is denied. (os error 5)`; it passes on ubuntu-latest and macos-latest. 062's runtime commits were first pushed with `52cf2f15`, so this is the test's first Windows run and it has never passed there — routed to `062-concurrent-session-targets` scenario `first-writers-create-the-ignore-file-once` (062 task 26): the ignore file was written before the session lock, so every first writer replaced it by rename, which Windows refuses
 
 - **Done when**: the finding is fixed, routed, or discarded, with a discard's reason written on the task.

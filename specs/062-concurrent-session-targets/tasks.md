@@ -205,3 +205,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] 048's `fetch-archive-reads-its-proxy-once` states the CGI guard correctly and names the certificate variables among the per-fetch reads (review observation)
 
 - **Done when**: every row matches the locked dependencies' behavior, and the inventory's scope statement draws a line its own rows respect.
+
+## 26. First writers create the sessions ignore file once
+
+- [ ] Implement the behavior described in `scenarios/first-writers-create-the-ignore-file-once.md`
+- [ ] `lock_within` in `runtime/src/session.rs` creates the sessions directory, takes the lock, and only then writes `.gitignore` when absent
+- [ ] A test that fails when the ignore file is written before the lock: a contender that times out on a held lock has not written it
+
+- **Done when**: the ignore file is written only under the session lock, the test is proven red against the old order, and `runtime` is green on windows-latest, ubuntu-latest and macos-latest
