@@ -347,7 +347,7 @@ clause rather than as a principle in its own right.
 | Run `/ductus` per its spec — no ad-hoc prompts (survey W17) | Canonical statement already ships inside the installer itself; this is its mirror |
 | Use repo-relative paths in tool calls (survey W19) | Agent tool hygiene rather than pipeline governance; genericised it stops biting |
 | Never call specs "frozen archaeology" or use frozen-archaeology phrasing (survey W20) | The substance (specs are living documents) is already §spec-lifecycle; what remains is a phrasing ban local to this repo |
-| Route runtime work to spec 022 via the back-edge — 022 is the durable home for runtime rules (survey W23) | Names this repository's own spec |
+| Route shared runtime work to spec 022 via the back-edge — 022 is the durable home for the runtime's shared surfaces; a feature-specific primitive lives with its feature (survey W23) | Names this repository's own spec |
 | Backtick a primitive in an `## Instructions` step only when the walker can actually supply its arguments (survey W25) | Concerns authoring framework command sources |
 | Do not invoke `cargo build` twice in one shell command and read only the second output (survey W26) | A cargo-specific shell trap in this repo's toolchain |
 | A real adopter run is the only test of composition this project has (survey W33) | About testing this framework against adopters |
