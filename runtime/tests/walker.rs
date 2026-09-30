@@ -824,9 +824,11 @@ fn primitive_step_with_gate_phrase_keeps_its_dispatch() {
 }
 
 /// End-to-end coverage for prune.md's confirmation gate on the exec path:
-/// the shipped command file parses with document step numbers 1..6, step 4
+/// the shipped command file parses with document step numbers 1..10, step 6
 /// is a `gate-confirm` primitive (no phrase), and walking the procedure
-/// blocks there — a denied gate leaves tasks.md untouched.
+/// blocks there — a denied gate leaves tasks.md untouched. The plan preview
+/// at step 3 dispatches with the walker's feature binding and reports a
+/// missing plan rather than halting the walk.
 #[test]
 fn prune_command_gate_blocks_on_the_exec_path() {
     let source = std::fs::read_to_string(
@@ -838,7 +840,7 @@ fn prune_command_gate_blocks_on_the_exec_path() {
     .unwrap();
     let procedure = ductus::parser::parse(&source, "prune").expect("prune.md parses");
 
-    // Step numbers follow the document (1..6) and step 4 is the gate.
+    // Step numbers follow the document (1..10) and step 6 is the gate.
     let numbers: Vec<Vec<u32>> = procedure
         .steps
         .iter()
@@ -848,17 +850,15 @@ fn prune_command_gate_blocks_on_the_exec_path() {
             | Step::Prose { number, .. } => number.0.clone(),
         })
         .collect();
-    assert_eq!(
-        numbers,
-        vec![vec![1], vec![2], vec![3], vec![4], vec![5], vec![6]]
-    );
-    match &procedure.steps[3] {
+    assert_eq!(numbers, (1..=10).map(|n| vec![n]).collect::<Vec<_>>());
+    match &procedure.steps[5] {
         Step::Primitive { name, .. } => assert_eq!(name, "gate-confirm"),
-        other => panic!("prune.md step 4 must be the gate-confirm primitive, got {other:?}"),
+        other => panic!("prune.md step 6 must be the gate-confirm primitive, got {other:?}"),
     }
 
     // Walk against a throwaway repo: preview (step 2) reads tasks.md, the
-    // gate (step 4) blocks, and denial stops before the apply (step 5).
+    // plan preview (step 3) finds no plan, the gate (step 6) blocks, and
+    // denial stops before the apply (step 7).
     let tmp = tempfile::tempdir().unwrap();
     let feature_dir = tmp.path().join("specs/001-basic");
     std::fs::create_dir_all(&feature_dir).unwrap();
@@ -895,11 +895,12 @@ fn prune_command_gate_blocks_on_the_exec_path() {
         .map(|v| v["type"].as_str().unwrap())
         .collect();
     // progress(step-1 resolve-session, spec 062), progress(step-2
-    // prune-tasks preview), gate-confirm(step-4), progress(denied),
-    // complete(confirmed: false).
+    // prune-tasks preview), progress(step-3 prune-plan preview),
+    // gate-confirm(step-6), progress(denied), complete(confirmed: false).
     assert_eq!(
         types,
         vec![
+            "progress",
             "progress",
             "progress",
             "gate-confirm",
@@ -911,8 +912,10 @@ fn prune_command_gate_blocks_on_the_exec_path() {
     assert_eq!(envelopes[0]["step"], "1");
     assert_eq!(envelopes[1]["primitive"], "prune-tasks");
     assert_eq!(envelopes[1]["step"], "2");
-    assert_eq!(envelopes[2]["gate"], "step-4");
-    assert_eq!(envelopes[4]["result"]["confirmed"], false);
+    assert_eq!(envelopes[2]["primitive"], "prune-plan");
+    assert_eq!(envelopes[2]["step"], "3");
+    assert_eq!(envelopes[3]["gate"], "step-6");
+    assert_eq!(envelopes[5]["result"]["confirmed"], false);
 
     // The denied gate wrote nothing.
     let after = std::fs::read_to_string(feature_dir.join("tasks.md")).unwrap();

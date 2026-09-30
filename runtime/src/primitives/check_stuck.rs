@@ -18,7 +18,7 @@ use std::path::Path;
 use git2::{Repository, Sort};
 
 use crate::primitives::{
-    PrimitiveError, ProjectRepository, Result, SkipScanner, frontmatter_status,
+    PrimitiveError, ProjectRepository, Result, SkipScanner, blob_text, frontmatter_status,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
@@ -46,7 +46,8 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
     let project = ProjectRepository::discover(repo)?;
     let repository = &project.repository;
     let spec_rel = project.to_git(&format!("{}/{}/spec.md", layout.specs_root, args.feature));
-    let tasks_rel = project.to_git(&format!("{}/{}/tasks.md", layout.specs_root, args.feature));
+    let tasks = format!("{}/{}/tasks.md", layout.specs_root, args.feature);
+    let tasks_rel = project.to_git(&tasks);
 
     let since = find_in_progress_commit(repository, &spec_rel)?;
     let count = count_commits_touching(repository, &tasks_rel, since.as_deref())?;
@@ -59,7 +60,7 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
     // index is unavailable (no tasks.md at since-sha, or no incomplete
     // subtasks remain at HEAD).
     let first_incomplete_unchanged = match since.as_deref() {
-        Some(s) => first_incomplete_index_unchanged(repository, &tasks_rel, s)?,
+        Some(s) => first_incomplete_index_unchanged(&project, &tasks, s)?,
         None => false,
     };
     let stuck = count >= args.threshold && first_incomplete_unchanged;
@@ -72,20 +73,22 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
     })
 }
 
-/// Compare the linear line-index of the first `- [ ]` group in `tasks_rel`
-/// at the commit `since_sha` vs. at HEAD. Returns `true` when both indices
-/// exist and match (the first incomplete subtask hasn't advanced). Returns
+/// Compare the linear line-index of the first `- [ ]` group in `tasks`, a
+/// path from the project root, at the commit `since_sha` vs. at HEAD. Returns
+/// `true` when both indices exist and match (the first incomplete subtask
+/// hasn't advanced). Returns
 /// `false` when either index is unavailable (no tasks.md at since, or all
 /// subtasks complete at HEAD) — vacuous-false matches the scenario's edge
 /// cases (no first-incomplete subtask at baseline / completion is the
 /// opposite of stuck).
 fn first_incomplete_index_unchanged(
-    repo: &Repository,
-    tasks_rel: &str,
+    project: &ProjectRepository,
+    tasks: &str,
     since_sha: &str,
 ) -> Result<bool> {
-    let head_content = read_blob_at_head(repo, tasks_rel)?;
-    let since_content = read_blob_at_commit(repo, since_sha, tasks_rel)?;
+    let head_content = project.read_at_head(tasks)?;
+    let since_content =
+        read_blob_at_commit(&project.repository, since_sha, &project.to_git(tasks))?;
     let head_idx = first_incomplete_subtask_index(head_content.as_deref().unwrap_or(""));
     let since_idx = first_incomplete_subtask_index(since_content.as_deref().unwrap_or(""));
     Ok(match (head_idx, since_idx) {
@@ -94,29 +97,11 @@ fn first_incomplete_index_unchanged(
     })
 }
 
-/// Read the blob at `path_rel` from HEAD's tree, returning its UTF-8 content.
-fn read_blob_at_head(repo: &Repository, path_rel: &str) -> Result<Option<String>> {
-    let head = repo.head()?.peel_to_commit()?;
-    read_blob_from_tree(repo, &head.tree()?, path_rel)
-}
-
 /// Read the blob at `path_rel` from the tree of the commit named `sha`.
 fn read_blob_at_commit(repo: &Repository, sha: &str, path_rel: &str) -> Result<Option<String>> {
     let oid = git2::Oid::from_str(sha)?;
     let commit = repo.find_commit(oid)?;
-    read_blob_from_tree(repo, &commit.tree()?, path_rel)
-}
-
-fn read_blob_from_tree(
-    repo: &Repository,
-    tree: &git2::Tree<'_>,
-    path_rel: &str,
-) -> Result<Option<String>> {
-    let Some(entry) = tree.get_path(Path::new(path_rel)).ok() else {
-        return Ok(None);
-    };
-    let blob = repo.find_blob(entry.id())?;
-    Ok(std::str::from_utf8(blob.content()).ok().map(str::to_string))
+    blob_text(repo, &commit.tree()?, path_rel)
 }
 
 /// Return the 0-based line index of the first `- [ ]` group in `content`,

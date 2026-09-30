@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use serde_json::{Map, Value};
 
 use crate::schema::severity::{AnalyzeSeverity, RuleSeverity};
-use crate::schema::status::UNBLOCKING_STATUSES;
+use crate::schema::status::{COMPATIBLE_STATUSES, UNBLOCKING_STATUSES};
 
 /// Steps 13–15 — cross-service references, `## Applicable Rules` citations,
 /// and grounding — by the reason each is recorded under. They are detection
@@ -144,6 +144,15 @@ impl AnalyzeTally {
                 self.record_unexamined("referrer-unreadable", count("skipped"));
             }
             "check-unfolded-specs" => self.advisory += count("unfolded"),
+            // Step 16: on a spec at `planned` or later, every plan section
+            // outside the design record is advisory, decided or not — a
+            // decided one is matched to its stored discard, never skipped.
+            "prune-plan" => {
+                let status = result.get("status").and_then(Value::as_str);
+                if status.is_some_and(|status| COMPATIBLE_STATUSES.contains(&status)) {
+                    self.advisory += count("sections");
+                }
+            }
             _ => {}
         }
     }
@@ -350,6 +359,28 @@ mod tests {
                 ["root-absent", 2]
             ])
         );
+    }
+
+    /// Step 16 counts a plan's sections outside the design record on a
+    /// `planned`-or-later spec, decided ones included, and none below it,
+    /// where the plan is not yet the spec's design.
+    #[test]
+    fn plan_sections_outside_the_record_are_advisory_from_planned_on() {
+        let sections = json!([{ "decided": true }, { "decided": false }]);
+        let mut planned = AnalyzeTally::new();
+        planned.record_primitive(
+            "prune-plan",
+            &json!({ "status": "planned", "sections": sections }),
+            &Map::new(),
+        );
+        assert_eq!(bound(&planned)["advisory"], 2);
+        let mut clarified = AnalyzeTally::new();
+        clarified.record_primitive(
+            "prune-plan",
+            &json!({ "status": "clarified", "sections": sections }),
+            &Map::new(),
+        );
+        assert_eq!(bound(&clarified)["advisory"], 0);
     }
 
     /// Steps 13–15 are host prose the walker never runs, so a walk that

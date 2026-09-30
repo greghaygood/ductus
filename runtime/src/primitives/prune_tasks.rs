@@ -23,7 +23,7 @@ use std::path::Path;
 
 use crate::primitives::{
     PrimitiveError, Result, SkipScanner, TasksStructure, checkbox, detect_tasks_structure,
-    parse_atx_heading, read_text, rel_path, split_frontmatter, split_numbered_heading,
+    join_blocks, parse_atx_heading, read_text, rel_path, split_frontmatter, split_numbered_heading,
     write_atomic,
 };
 use crate::schema::paths;
@@ -172,8 +172,9 @@ pub fn run(args: &PruneTasksArgs, repo: &Path) -> Result<PruneTasksResult> {
     })
 }
 
-/// Read the spec's frontmatter `status` for the `--reset` gate.
-fn read_status(feature_dir: &Path, root: &str, feature: &str) -> Result<String> {
+/// Read the spec's frontmatter `status` — for the `--reset` gate here, and
+/// for `prune-plan`'s preview and reopen trigger.
+pub(crate) fn read_status(feature_dir: &Path, root: &str, feature: &str) -> Result<String> {
     let spec_path = feature_dir.join("spec.md");
     if !spec_path.is_file() {
         return Err(PrimitiveError::MissingSpecFile {
@@ -332,7 +333,8 @@ fn reduce_keep_pending(content: &str, blocks: &[Block]) -> (String, Vec<PruneSec
     // No spent section and no dropped phase: leave the file byte-for-byte
     // unchanged rather than reformat seams.
     let new_content = if dropped_any {
-        render(&kept_lines, super::line_ending_of(content))
+        let kept: Vec<&[String]> = kept_lines.iter().map(|b| b.lines.as_slice()).collect();
+        join_blocks(&kept, super::line_ending_of(content))
     } else {
         content.to_string()
     };
@@ -387,36 +389,7 @@ fn section_record(block: &Block, action: PruneAction) -> PruneSection {
     }
 }
 
-/// Render kept blocks: one blank line between blocks, single trailing
-/// newline, no leading blanks — `markdownlint`-clean seams.
-///
-/// `ending` is the source file's own, so pruning a task never converts a
-/// CRLF checkout's `tasks.md` to LF as a side effect.
-fn render(blocks: &[&Block], ending: &str) -> String {
-    let rendered: Vec<String> = blocks
-        .iter()
-        .map(|b| render_block(&b.lines, ending))
-        .filter(|s| !s.is_empty())
-        .collect();
-    let mut out = rendered.join(&format!("{ending}{ending}"));
-    out.push_str(ending);
-    out
-}
-
-/// Join a block's lines, trimming leading and trailing blank lines.
-fn render_block(lines: &[String], ending: &str) -> String {
-    let mut start = 0;
-    let mut end = lines.len();
-    while start < end && lines[start].trim().is_empty() {
-        start += 1;
-    }
-    while end > start && lines[end - 1].trim().is_empty() {
-        end -= 1;
-    }
-    lines[start..end].join(ending)
-}
-
-fn size_of(content: &str) -> SizeSummary {
+pub(crate) fn size_of(content: &str) -> SizeSummary {
     SizeSummary {
         lines: content.lines().count(),
         bytes: content.len(),

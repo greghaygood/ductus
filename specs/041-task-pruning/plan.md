@@ -1,6 +1,6 @@
-# 041 — Task Pruning Plan
+# 041 — Spec Directory Pruning Plan
 
-Implements [041 — Task Pruning](spec.md).
+Implements [041 — Spec Directory Pruning](spec.md).
 
 ## Overview
 
@@ -116,22 +116,36 @@ Segmentation feeds every line through `SkipScanner`
 fenced block or an HTML comment is not structure. Both occur: this
 repository's 60 plans hold 6 `##` lines inside fenced blocks and 3 inside
 HTML comments, across 4 plans (010, 026, 027, 058), and a scan that counted
-them as sections would propose removing text that is not a section at all. A section is a level-2 heading from `parse_atx_heading` and
-every line up to the next level-2 heading outside a skipped region; `###` and
-deeper stay inside their parent. Lines before the first `##` are the preamble
-and are always kept.
+them as sections would propose removing text that is not a section at all.
+A section is a level-2 heading from `parse_atx_heading` and every line up to
+the next heading at level 2 or above outside a skipped region; `###` and
+deeper stay inside their parent, and a `#` heading opens a structural block
+that is always kept. Lines before the first heading are the preamble and are
+always kept.
 
 Each section outside the record is reported with its `heading`, its `ordinal`
 (position among all `##` sections), `lines`, `bytes`, a sha256 `digest` of the
-section's text, its `finding` (below), and `decided`. Preview returns only
-this summary. Apply takes `remove: [{heading, digest}]` and removes exactly
-those sections; if any listed section's current digest differs, or no section
-carries that heading, the whole apply is refused as the domain outcome
-`stale-sections` and nothing is written, because the host's moves were judged
-against the text it read. Seams normalize as keep-pending's do, and the write
-is `write_atomic`. `apply` defaults to `false`, as `prune-tasks`' does
-(`PruneTasksArgs.apply`, `#[serde(default)]`), so a dispatch with no `apply`
-argument is always a preview.
+section's text, its `finding` (below), and `decided`; the result adds the
+spec's `status` and `examined`, the count of `##` sections read, so an empty
+list over no sections reads differently from one over sections all in the
+record. Preview returns only this summary. Apply takes
+`remove: [{heading, digest}]` and removes exactly those sections; if any
+listed section's current digest differs, or no section carries that heading,
+the whole apply is refused as the domain outcome `stale-sections` and nothing
+is written, because the host's moves were judged against the text it read.
+An apply with nothing listed, a list without an apply, and a listed
+design-record heading are refused before anything is read, the last because
+prune never removes a design-record section. Seams normalize as
+keep-pending's do, through a renderer the two primitives share in `mod.rs`,
+and the write is `write_atomic`. `apply` and `remove` default, as
+`prune-tasks`' `apply` does (`PruneTasksArgs.apply`, `#[serde(default)]`), so
+a dispatch with neither argument is always a preview.
+
+A feature with no `plan.md` is the domain outcome `missing`, not an error:
+`/{project}:analyze` dispatches the preview on every spec, a spec below
+`planned` has no plan, and the exec walker halts on a primitive error — so an
+error would stop every exec analyze of a `draft` or `clarified` spec, the
+`analyze-basic` fixture among them.
 
 ### One finding key serves the advisory and prune
 
@@ -149,11 +163,13 @@ before it proposes the section.
 
 ### The reopen trigger is computed from the diff
 
-`prune-plan`'s apply result carries `status` and `reopen-required`.
-`reopen-required` is true when any design-record section's text differs from
-the same section in `plan.md` at HEAD, or when `tasks.md` holds more unchecked
+`prune-plan`'s apply result carries `reopen-required` on an apply against a
+`done` spec, and omits it otherwise — absent is not computed, never `false`.
+It is true when any design-record section's text differs from the same
+section in `plan.md` at HEAD, or when `tasks.md` holds more unchecked
 checkboxes than it does at HEAD — the two diff-visible triggers the scenario
-fixes. Both read HEAD through one shared reader, promoted from the private
+fixes. It is computed after the write, and whether or not the removal was
+refused, because the host's moves are already on disk. Both read HEAD through one shared reader, promoted from the private
 `read_blob_at_head` in `runtime/src/primitives/check_stuck.rs` into `mod.rs`
 and built on `ProjectRepository`, so a project in a repository subdirectory
 resolves correctly (the 059 convention). An artifact absent at HEAD is not a
@@ -207,9 +223,11 @@ reported.
 
 ### `/{project}:analyze` reports every section outside the record
 
-A new analyze step invokes `prune-plan` against the feature, with no `apply`,
-on a spec at `planned` or later, and records **every** section it reports as
-an advisory finding with the result's family and message — decided sections
+A new analyze step — step 16, after the grounding scan and before the stored
+decisions, the one position that leaves steps 1–15 and every citation of them
+unchanged — invokes `prune-plan` against the feature, with no `apply`, on a
+spec at `planned` or later, and records **every** section it reports as an
+advisory finding with the result's family and message — decided sections
 included. Reporting only undecided sections would expire their stored
 discards: `process-decisions` drops a decision whose key does not fire on an
 unrestricted run (`runtime/src/primitives/process_decisions.rs`, the
@@ -218,9 +236,19 @@ every section lets the stored-decision step match the decided ones, so they
 count as discarded and nothing is asked. The exec walker binds a step's
 arguments from its context (`runtime/src/interpreter/mod.rs`, the `call!`
 macro), so the step dispatches with the feature and no `apply` — a preview.
-Inserting the step renumbers analyze's later steps, which moves the
-`analyze-basic` parity golden; it is re-blessed filtered to that golden and
-its diff read line by line.
+The exec walker's analyze tally counts each section on a `planned`-or-later
+spec as advisory (`runtime/src/interpreter/analyze_tally.rs`), as it counts
+every detection step's findings, so an exec record states them. Inserting the
+step renumbers analyze's steps 16–20 to 17–21, which moves the `analyze-basic`
+parity golden; it is re-blessed filtered to that golden and its diff read
+line by line. The renumbering is swept through every present-tense citation
+of those steps — four `058-findings-route-at-discovery` scenarios, one
+`022-deterministic-runtime` scenario, and prose in 058's plan and 060's spec
+and plan — as a mechanical edit, reopening nothing. The review-staleness rule
+exempts four of the five scenarios as a repo-wide substitution; the fifth,
+058's `analyze-state-drift-judges-the-record-it-writes`, rewrites `18` to `19`
+in no other file, so it stales 058's review, whose digest is refreshed before
+the release.
 
 ### Constitution, templates and docs
 
@@ -252,13 +280,15 @@ its diff read line by line.
 ### Error taxonomy
 
 `TasksFileMissing { root, feature }` and `MalformedTasks { path, reason }`
-serve `prune-tasks`; a new `PlanFileMissing { root, feature }` is its sibling
-for `prune-plan`. `FeatureNotFound` is reused for a missing feature dir;
-`MissingSpecFile` / `StatusFieldMissing` when a status read fails; and
-`MissingArgument` / `InvalidArgument` for the `feature`/`all` exclusivity,
-`force` with `all`, and `apply` with `all` on `prune-plan`. A digest mismatch
-is the `stale-sections` domain outcome, not an error. Each error writes
-nothing.
+serve `prune-tasks`; `prune-plan` adds no variant, since a missing plan is its
+`missing` outcome. `FeatureNotFound` is reused for a missing feature dir;
+`MissingSpecFile` / `StatusFieldMissing` when a status read fails;
+`MissingArgument` / `InvalidArgument` for `prune-plan`'s `remove`/`apply`
+pairing and a listed design-record section, and for the `feature`/`all`
+exclusivity, `force` with `all`, and `apply` with `all` on `prune-plan`;
+`Yaml` for an `analysis.md` decisions list that does not parse; and `Git` for
+a HEAD the reopen trigger cannot read. A digest mismatch is the
+`stale-sections` domain outcome, not an error. Each error writes nothing.
 
 ### Runtime wiring (fully-wired primitives)
 
@@ -271,14 +301,15 @@ same seven:
    test per primitive.
 2. `primitives/prune_tasks.rs`, `primitives/prune_plan.rs` — the `run`
    functions + inline `#[cfg(test)]`.
-3. `primitives/mod.rs` — `pub mod` lines, the error variants, and the
-   promoted HEAD-blob reader.
+3. `primitives/mod.rs` — `pub mod` lines, the error variants, the promoted
+   HEAD-blob reader, and the block renderer both primitives share.
 4. `main.rs` — args import, `Command` arm, dispatch.
 5. `mcp/server.rs` — the name in `TOOL_NAMES` + a `#[tool]` async method.
 6. `interpreter/mod.rs` — the `dispatch_primitive` arm.
 7. `schema/registry.rs` — the `PRIMITIVE_REGISTRY` entry, which
    `parser/mod.rs`'s `PRIMITIVE_NAMES` aliases.
 
+An eighth site is `prune-plan`'s alone: its arm in the exec analyze tally.
 Then add `prune-plan` to `framework/runtime-tools.txt` and run
 `scripts/gen-configure-mcp.sh` followed by `scripts/gen-claude-commands.sh`.
 `runtime/tests/mcp.rs` holds the manifest set-equal to the registry, and
@@ -304,14 +335,19 @@ broadens from *Task Pruning*; the directory slug stays.
 | `specs/041-task-pruning/spec.md` | Edit | Body corrections and new criteria |
 | `runtime/src/schema/primitives.rs` | Edit | `PrunePlanArgs`/`PrunePlanResult` types; `all` on `PruneTasksArgs`; round-trip tests |
 | `runtime/src/schema/registry.rs` | Edit | `prune-plan` in `PRIMITIVE_REGISTRY` |
-| `runtime/src/primitives/prune_tasks.rs` | Edit | `all` walk; reset constant follows the tasks template |
+| `runtime/src/primitives/prune_tasks.rs` | Edit | `all` walk; reset constant follows the tasks template; status reader and size shared with `prune-plan` |
 | `runtime/src/primitives/prune_plan.rs` | Create | Segmentation, classification, finding key, digest-guarded removal, reopen trigger |
-| `runtime/src/primitives/mod.rs` | Edit | `pub mod prune_plan;`, `PlanFileMissing`, the promoted HEAD-blob reader |
+| `runtime/src/primitives/mod.rs` | Edit | `pub mod prune_plan;`, the promoted HEAD-blob reader, the shared block renderer |
 | `runtime/src/primitives/check_stuck.rs` | Edit | Calls the promoted HEAD-blob reader |
+| `runtime/src/primitives/analyze_subjects.rs` | Edit | Its hex encoder shared for the section digest |
+| `runtime/src/interpreter/analyze_tally.rs` | Edit | The `plan-record` advisory in an exec analyze record |
+| `runtime/src/schema/status.rs` | Edit | Names the tally as a consumer of the `planned`-onward set |
 | `runtime/src/main.rs` | Edit | CLI subcommand for `prune-plan` |
 | `runtime/src/mcp/server.rs` | Edit | `TOOL_NAMES` entry + `#[tool]` method |
 | `runtime/src/interpreter/mod.rs` | Edit | `dispatch_primitive` arm |
 | `runtime/tests/golden/analyze-basic.jsonl` | Re-bless | Analyze's new step renumbers the walk |
+| `specs/058-findings-route-at-discovery/scenarios/*.md`, `specs/058-findings-route-at-discovery/plan.md`, `specs/060-exec-analyze-assesses-each-loaded-rule/spec.md`, `specs/060-exec-analyze-assesses-each-loaded-rule/plan.md`, `specs/022-deterministic-runtime/scenarios/exec-analyze-derives-its-list-seeds.md` | Edit | Analyze's steps 16–20 are 17–21 |
+| `specs/058-findings-route-at-discovery/review.md` | Refresh | The digest the renumbering stales |
 | `framework/runtime-tools.txt` | Edit | Manifest entry `prune-plan` |
 | `framework/bootstrap/configure/*.md` | Regenerate | MCP allow-blocks (via `gen-configure-mcp.sh`) |
 | `framework/constitution.md` | Edit | §plan-phase rule; §tasks-phase sentence; §implement-phase triage clause |

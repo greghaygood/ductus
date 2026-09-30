@@ -27,6 +27,7 @@ Flags: `--all` scans every feature under the spec root (project-level checks sti
 | Spec integrity | Blocking | Acceptance criteria present and non-placeholder; open questions consistent with status; no implementation code |
 | Artifact completeness | Blocking | `plan.md` / `tasks.md` present at `planned` and later |
 | Plan and task consistency | Blocking | Plan cites the spec and lists decisions and files; tasks are numbered and carry done-when conditions |
+| Plan record | Advisory | Each `plan.md` section outside the design record — the plan template's own `##` sections — on a spec at `planned` or later, reported even when a stored discard decides it, so the discard is matched rather than expired; `/prune` moves such a section's durable pieces home and removes it |
 | Rule integrity and citations | Blocking / advisory | Cited rule IDs resolve; deprecated citations and non-firing `## Applicable Rules` entries are advisory |
 | Review state drift | Blocking | A `done` spec whose `review.md` record is missing a run or reports `blocking: true` |
 | Analyze state drift | Blocking | A `done` spec whose `analysis.md`, as this run writes it, reports `blocking: true` |
@@ -41,7 +42,7 @@ Flags: `--all` scans every feature under the spec root (project-level checks sti
 | Project-level consistency | Advisory | Generator drift, anchor resolution, command frontmatter, orphaned references, un-folded branch specs |
 | Unexamined targets | Informational | Every target a family could not examine — see [Unexamined](#unexamined) |
 
-Advisory families introduced with a **published promotion criterion** (grounding, Applicable-Rules citations, both decision-drift checks) stay advisory until that criterion is met; the criteria live with each check in `framework/commands/analyze.md`.
+Advisory families introduced with a **published promotion criterion** (grounding, Applicable-Rules citations, both decision-drift checks) stay advisory until that criterion is met; the criteria live with each check in `framework/commands/analyze.md`. The plan record carries none and stays advisory: its heading set is a detector, not a verdict, so a design section under another heading fires too, and one stored discard with its reason settles it.
 
 ## Severity tiers
 

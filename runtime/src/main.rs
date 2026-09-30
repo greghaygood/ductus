@@ -19,11 +19,12 @@ use ductus::schema::primitives::{
     DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
     GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetargetSessionsArgs,
-    RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
+    ProcessDecisionsArgs, ProcessWaiversArgs, PrunePlanArgs, PruneTasksArgs, ReadSpecArgs,
+    ReadTasksArgs, RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs,
+    ResolveConstitutionsArgs, ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs,
+    RetargetSessionsArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 
 #[derive(Parser, Debug)]
@@ -171,6 +172,8 @@ enum Command {
     CheckArtifacts(CheckArtifactsArgs),
     /// Reduce a feature's tasks.md — drop spent task sections or reset to template state.
     PruneTasks(PruneTasksArgs),
+    /// Report a feature's plan.md sections outside the design record; remove the listed ones.
+    PrunePlan(PrunePlanArgs),
     /// Emit a `gate-confirm` envelope on stdout and block for a response.
     GateConfirm(GateConfirmArgs),
     /// Single-call pipeline-state surface for `/{project}:status`.
@@ -845,6 +848,7 @@ fn main() -> ExitCode {
             emit_result(primitives::check_artifacts::run(&args, &repo))
         }
         Command::PruneTasks(args) => emit_result(primitives::prune_tasks::run(&args, &repo)),
+        Command::PrunePlan(args) => emit_result(primitives::prune_plan::run(&args, &repo)),
         Command::Dashboard(args) => emit_result(primitives::dashboard::run(&args, &repo)),
         Command::WriteSession(args) => emit_result(primitives::write_session::run(&args, &repo)),
         Command::ResolveSession(args) => {

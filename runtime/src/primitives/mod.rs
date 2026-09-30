@@ -56,6 +56,7 @@ pub mod merge_permissions;
 pub mod migrate_session_file;
 pub mod process_decisions;
 pub mod process_waivers;
+pub mod prune_plan;
 pub mod prune_tasks;
 pub mod read_spec;
 pub mod read_tasks;
@@ -916,6 +917,34 @@ pub(crate) fn join_lines_terminated<S: AsRef<str>>(lines: &[S], ending: &str) ->
     out
 }
 
+/// Join blocks of lines into a file: each block trimmed of its leading and
+/// trailing blank lines, an all-blank block dropped, one blank line between
+/// blocks, and one trailing `ending`. The `markdownlint`-clean seams
+/// `prune-tasks` and `prune-plan` leave where they removed a section.
+///
+/// `ending` is the source file's own, so a reduction never converts a CRLF
+/// checkout to LF as a side effect.
+pub(crate) fn join_blocks(blocks: &[&[String]], ending: &str) -> String {
+    let rendered: Vec<String> = blocks
+        .iter()
+        .map(|lines| {
+            let mut start = 0;
+            let mut end = lines.len();
+            while start < end && lines[start].trim().is_empty() {
+                start += 1;
+            }
+            while end > start && lines[end - 1].trim().is_empty() {
+                end -= 1;
+            }
+            lines[start..end].join(ending)
+        })
+        .filter(|block| !block.is_empty())
+        .collect();
+    let mut out = rendered.join(&format!("{ending}{ending}"));
+    out.push_str(ending);
+    out
+}
+
 /// Re-terminate every line of `text` with `ending`.
 ///
 /// The companion to [`line_ending_of`] for writers that assemble their
@@ -1429,6 +1458,38 @@ impl ProjectRepository {
     pub(crate) fn to_project<'a>(&self, git_path: &'a str) -> Option<&'a str> {
         git_path.strip_prefix(self.prefix.as_str())
     }
+
+    /// The text of `rel`, a `/`-separated path from the project root, as
+    /// HEAD's tree holds it: `None` when that tree has no such file or its
+    /// blob is not UTF-8.
+    ///
+    /// # Errors
+    ///
+    /// [`PrimitiveError::Git`] when HEAD, its tree, or the blob cannot be
+    /// read — an unborn HEAD among them.
+    pub(crate) fn read_at_head(&self, rel: &str) -> Result<Option<String>> {
+        let head = self.repository.head()?.peel_to_commit()?;
+        blob_text(&self.repository, &head.tree()?, &self.to_git(rel))
+    }
+}
+
+/// The UTF-8 text of the blob at `git_path` in `tree`, or `None` when the tree
+/// has no entry there or the blob is not UTF-8. `git_path` is named from the
+/// work tree, as git names every path in a tree.
+///
+/// # Errors
+///
+/// [`PrimitiveError::Git`] when the entry's blob cannot be read.
+pub(crate) fn blob_text(
+    repository: &git2::Repository,
+    tree: &git2::Tree<'_>,
+    git_path: &str,
+) -> Result<Option<String>> {
+    let Ok(entry) = tree.get_path(Path::new(git_path)) else {
+        return Ok(None);
+    };
+    let blob = repository.find_blob(entry.id())?;
+    Ok(std::str::from_utf8(blob.content()).ok().map(str::to_string))
 }
 
 /// A repository whose project sits in a subdirectory, for the tests of every

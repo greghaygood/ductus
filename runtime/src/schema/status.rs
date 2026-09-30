@@ -5,7 +5,8 @@
 //! `set-status` (from/to argument validation), `resolve-references`
 //! (linked-spec status read), `traverse-deps` (compatibility subset), and the
 //! exec analyze tally (the consumer-status condition on an incompatible
-//! dependency) all consume these constants instead of hand-maintaining copies.
+//! dependency, and the `planned`-or-later condition on the plan-record
+//! advisory) all consume these constants instead of hand-maintaining copies.
 
 /// The constitution's lifecycle set, in pipeline order.
 pub(crate) const ALLOWED_STATUSES: &[&str] =

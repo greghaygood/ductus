@@ -2853,6 +2853,128 @@ pub struct PruneTasksResult {
     pub path: String,
 }
 
+// -- prune-plan --------------------------------------------------------------
+
+/// Args for `prune-plan`. Reports the `##` sections of a feature's `plan.md`
+/// that lie outside the design record, and on `apply` removes the ones the
+/// host lists. See `specs/041-task-pruning/data-model.md`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct PrunePlanArgs {
+    /// Feature directory name under `specs/`.
+    #[arg(long)]
+    pub feature: String,
+    /// Remove the sections listed in `remove`. When false (the default) the
+    /// primitive is a pure preview and writes nothing.
+    #[serde(default)]
+    #[arg(long)]
+    pub apply: bool,
+    /// The sections an apply removes, each named by its heading and the
+    /// digest the preview reported for it. On the CLI, one
+    /// `--remove <digest>:<heading>` per section.
+    #[serde(default)]
+    #[arg(long = "remove", value_parser = parse_plan_removal)]
+    pub remove: Vec<PlanRemoval>,
+}
+
+/// One section an apply removes: the heading and digest a preview reported.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PlanRemoval {
+    /// The section's heading, as the preview reported it.
+    pub heading: String,
+    /// The section's digest, as the preview reported it.
+    pub digest: String,
+}
+
+/// Parse a CLI `--remove <digest>:<heading>`. The digest is hex, so the first
+/// `:` ends it and a heading may itself carry colons.
+fn parse_plan_removal(raw: &str) -> Result<PlanRemoval, String> {
+    let (digest, heading) = raw
+        .split_once(':')
+        .ok_or_else(|| format!("expected <digest>:<heading>, got '{raw}'"))?;
+    let (digest, heading) = (digest.trim(), heading.trim());
+    if digest.is_empty() || heading.is_empty() {
+        return Err(format!("expected <digest>:<heading>, got '{raw}'"));
+    }
+    Ok(PlanRemoval {
+        heading: heading.to_string(),
+        digest: digest.to_string(),
+    })
+}
+
+/// The analyze finding a plan section outside the design record raises, and
+/// the key its stored decision carries: `{family} — {message}`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PlanFinding {
+    /// Always `plan-record`.
+    pub family: String,
+    /// `plan.md §{heading} is outside the design record`.
+    pub message: String,
+}
+
+/// One `##` section of `plan.md` outside the design record. Carries the
+/// section's identity, size, and digest — never its text.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PlanSection {
+    /// The section's heading text.
+    pub heading: String,
+    /// 1-based position among every `##` section in the plan.
+    pub ordinal: u32,
+    /// Lines in the section, from its heading to its last non-blank line.
+    pub lines: usize,
+    /// Bytes in those lines, joined by `\n`.
+    pub bytes: usize,
+    /// Lowercase-hex sha256 of those lines, joined by `\n`. An apply names
+    /// the section by this, and refuses when it no longer matches.
+    pub digest: String,
+    /// The advisory `/{project}:analyze` records for the section.
+    pub finding: PlanFinding,
+    /// `analysis.md` stores a discard for this section's finding, under its
+    /// exact key: prune does not propose it.
+    pub decided: bool,
+}
+
+/// Result for `prune-plan`. A compact summary; no section's text is ever
+/// included.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PrunePlanResult {
+    /// Repo-relative path to the plan file.
+    pub path: String,
+    /// The feature has no `plan.md`: nothing was examined, no section is
+    /// reported, and nothing is written.
+    pub missing: bool,
+    /// The spec's frontmatter status.
+    pub status: String,
+    /// `##` sections read, inside the design record and out.
+    pub examined: u32,
+    /// Every section outside the design record, as read before any removal.
+    pub sections: Vec<PlanSection>,
+    /// Whether the listed sections were removed. `false` on a preview and on
+    /// a refused apply.
+    pub applied: bool,
+    /// Headings in `remove` with no section of that heading and digest left:
+    /// the section changed or went since the preview. Non-empty means the
+    /// whole apply was refused and nothing was written.
+    pub stale_sections: Vec<String>,
+    /// Size of the plan as read.
+    pub size_before: SizeSummary,
+    /// Size after the call: on a preview, the size were every undecided
+    /// section removed; on an apply, the size written, or `size-before` when
+    /// it was refused.
+    pub size_after: SizeSummary,
+    /// On an apply against a `done` spec — the one case prune reopens —
+    /// whether the change since HEAD takes the `done → in-progress`
+    /// back-edge: a design-record section differs from HEAD's, or `tasks.md`
+    /// holds more unchecked checkboxes than HEAD's. Absent otherwise, which
+    /// means not computed, never `false`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reopen_required: Option<bool>,
+}
+
 // -- migrate-session-file ----------------------------------------------------
 
 /// Args for `migrate-session-file`. Translates a pre-0.10.0 legacy
@@ -4888,9 +5010,10 @@ mod tests {
         DeriveBoundaryResult, Frontmatter, FrontmatterFinding, GateConfirmArgs, GateConfirmResult,
         InboxStanding, InboxState, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
         MarkTaskArgs, MarkdownViolation, MigrateSessionFileArgs, MigrateSessionFileResult,
-        OpenQuestion, PruneAction, PruneGate, PruneMode, PruneSection, PruneTasksArgs,
-        PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-        ResolveAnchorArgs, ResolveAnchorResult, RuleCitation, RunGeneratorArgs, RunGeneratorResult,
+        OpenQuestion, PlanFinding, PlanRemoval, PlanSection, PruneAction, PruneGate, PruneMode,
+        PrunePlanArgs, PrunePlanResult, PruneSection, PruneTasksArgs, PruneTasksResult,
+        ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs,
+        ResolveAnchorResult, RuleCitation, RunGeneratorArgs, RunGeneratorResult,
         ScenarioOpenQuestion, SetStatusArgs, SetStatusResult, SizeSummary, SpecSection, Subtask,
         Task, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
         ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
@@ -5094,6 +5217,76 @@ mod tests {
         // `status: None` must serialize as absent, not null.
         assert!(!value.as_object().unwrap().contains_key("status"));
         assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn prune_plan_round_trip() {
+        let args = PrunePlanArgs {
+            feature: "041-task-pruning".into(),
+            apply: true,
+            remove: vec![PlanRemoval {
+                heading: "Implementation notes".into(),
+                digest: "ab12".into(),
+            }],
+        };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["remove"][0]["heading"], "Implementation notes");
+        assert_eq!(round_trip(&args), args);
+        // `apply` and `remove` default, so a walker dispatch naming only the
+        // feature is a preview.
+        let bare: PrunePlanArgs =
+            serde_json::from_value(serde_json::json!({"feature": "041-task-pruning"})).unwrap();
+        assert!(!bare.apply && bare.remove.is_empty());
+
+        let result = PrunePlanResult {
+            path: "specs/041-task-pruning/plan.md".into(),
+            missing: false,
+            status: "done".into(),
+            examined: 5,
+            sections: vec![PlanSection {
+                heading: "Implementation notes".into(),
+                ordinal: 3,
+                lines: 3,
+                bytes: 42,
+                digest: "ab12".into(),
+                finding: PlanFinding {
+                    family: "plan-record".into(),
+                    message: "plan.md §Implementation notes is outside the design record".into(),
+                },
+                decided: false,
+            }],
+            applied: false,
+            stale_sections: Vec::new(),
+            size_before: SizeSummary {
+                lines: 20,
+                bytes: 400,
+            },
+            size_after: SizeSummary {
+                lines: 17,
+                bytes: 350,
+            },
+            reopen_required: None,
+        };
+        let value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["sections"][0]["finding"]["family"], "plan-record");
+        assert_eq!(value["stale-sections"], serde_json::json!([]));
+        // Not computed is absent, never `false`.
+        assert!(!value.as_object().unwrap().contains_key("reopen-required"));
+        assert_eq!(round_trip(&result), result);
+    }
+
+    #[test]
+    fn a_cli_removal_splits_at_the_first_colon() {
+        assert_eq!(
+            super::parse_plan_removal("ab12:Notes: the second half").unwrap(),
+            PlanRemoval {
+                heading: "Notes: the second half".into(),
+                digest: "ab12".into(),
+            }
+        );
+        assert!(super::parse_plan_removal("no-colon").is_err());
+        assert!(super::parse_plan_removal(":heading").is_err());
+        assert!(super::parse_plan_removal("ab12:").is_err());
     }
 
     #[test]

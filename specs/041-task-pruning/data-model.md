@@ -1,10 +1,14 @@
-# 041 — Task Pruning Data Model
+# 041 — Spec Directory Pruning Data Model
 
-Defines the structures the `prune-tasks` primitive owns: the in-memory
-**segmentation** it builds from a `tasks.md`, the per-section
-**classification**, the two reduction **modes**, and the primitive's
-request/response **schema**. The **serialized** types — `PruneTasksArgs`, `PruneMode`, `Classification`,
-`PruneGate`, `PruneAction`, `SizeSummary` and `PruneSection` — live in
+Defines the structures the two prune primitives own. `prune-tasks` reduces
+`tasks.md`: the in-memory **segmentation** it builds, the per-section
+**classification**, the two reduction **modes**, and its request/response
+**schema**. `prune-plan` reduces `plan.md`: its section segmentation, the
+**design record** a section is classified against, the **finding** it shares
+with `/{project}:analyze`, and its schema (see *`prune-plan`* below). The
+**serialized** types — `PruneTasksArgs`, `PruneMode`, `Classification`,
+`PruneGate`, `PruneAction`, `SizeSummary`, `PruneSection`, `PrunePlanArgs`,
+`PlanRemoval`, `PlanFinding`, `PlanSection` and `PrunePlanResult` — live in
 `runtime/src/schema/primitives.rs` with `serde::{Serialize, Deserialize}`
 derives; their serialized JSON is the stable host contract, consistent with
 the primitive-schema convention in
@@ -114,7 +118,7 @@ Output is the feature's identity plus a canonical empty task body:
 ```
 
 `<existing first H1 line>` is the file's first `# …` heading (preserves
-feature identity, e.g. `# 041 — Task Pruning Tasks`).
+feature identity, e.g. `# 041 — Spec Directory Pruning Tasks`).
 `<CANONICAL_EMPTY_TASKS_BODY>` is a constant embedded in the primitive equal
 to `framework/templates/spec/tasks.md` with its own H1 line removed (the
 intro line + the guidance comment). A unit test asserts the constant equals
@@ -198,6 +202,143 @@ nothing when any fires:
 | `tasks-file-missing` | feature directory exists but has no `tasks.md` (command directs the user to `/{project}:plan`) |
 | `malformed-tasks` | file has no `# …` heading (reset cannot preserve identity) |
 | `missing-spec-file` / `status-field-missing` | `reset` requested but `spec.md` is absent or its frontmatter has no `status` |
+
+## `prune-plan`
+
+### Segmentation
+
+A `plan.md` is segmented into an ordered list of blocks. Every line is fed
+through `SkipScanner` first, so a heading inside a fenced block or an HTML
+comment is not structure. A block opens at each heading of level 2 or
+above: a `##` heading opens a **section**, and a `#` heading opens a
+structural block. The lines before the first heading are the **preamble**.
+Preamble and structural blocks are always kept; a `###` or deeper heading
+stays inside the section that holds it.
+
+A section's **text** is its lines from the heading to its last non-blank
+line, joined by `\n`. The digest, the size, and the reopen comparison all
+read the text, so a blank line at a seam changes none of them.
+
+### Classification
+
+A section is **design record** when its heading, trimmed, equals one of the
+plan template's own `##` headings under ASCII case folding:
+
+| Heading | Presence in a plan |
+| --- | --- |
+| Overview | Always |
+| Technical Decisions | Always |
+| Affected Files | Always |
+| Data Model | Optional |
+| Trade-offs | Always |
+| Open Questions Resolved | Optional |
+| Cross-spec impact | Optional |
+
+Every other section is **outside the record**. Nothing but case is forgiven:
+*Tradeoffs* is outside it. The set is a constant in the primitive, held to
+`framework/templates/spec/plan.md` by a unit test that parses the template's
+`##` headings and asserts equality, in template order — the same pinning, and
+the same bounded divergence for a customized template, as the `--reset` body.
+
+### Finding
+
+Each section outside the record carries the advisory `/{project}:analyze`
+records for it, built by one function, `plan_section_finding(heading)`:
+
+- `family` — `plan-record`.
+- `message` — `plan.md §{heading} is outside the design record`.
+
+`write-analysis` keys a stored decision `{family} — {message}`, so the key is
+fully determined by the heading. A section is **decided** when `analysis.md`'s
+`decisions:` list holds a well-formed `discarded` entry under that key,
+compared with the stored-decision key normalization every writer uses. A
+routed entry does not decide a section, and a key analyze re-matched by
+judgment — kept from an earlier wording — is left for the host to match.
+
+### Request/response schema
+
+Args:
+
+```json
+{ "feature": "041-task-pruning", "apply": true,
+  "remove": [{ "heading": "Implementation notes", "digest": "9f2c…" }] }
+```
+
+- `feature` — feature directory under the configured spec-root.
+- `apply` — `false` (the default) is a preview and writes nothing; `true`
+  removes the sections `remove` lists.
+- `remove` — each section to remove, named by the heading and digest a
+  preview reported. On the CLI, one `--remove <digest>:<heading>` per
+  section; the digest is hex, so the first `:` ends it.
+
+Result (a **compact summary — never a section's text**):
+
+```json
+{
+  "path": "specs/041-task-pruning/plan.md",
+  "missing": false,
+  "status": "done",
+  "examined": 5,
+  "sections": [
+    { "heading": "Implementation notes", "ordinal": 3, "lines": 3, "bytes": 42,
+      "digest": "9f2c…",
+      "finding": { "family": "plan-record",
+                   "message": "plan.md §Implementation notes is outside the design record" },
+      "decided": false }
+  ],
+  "applied": true,
+  "stale-sections": [],
+  "size-before": { "lines": 30, "bytes": 800 },
+  "size-after":  { "lines": 26, "bytes": 740 },
+  "reopen-required": false
+}
+```
+
+- `missing` — the feature has no `plan.md`. Nothing is examined and nothing
+  is written. A domain outcome, not an error: `/{project}:analyze` dispatches
+  the preview on every spec, and a spec below `planned` has no plan.
+- `status` — the spec's frontmatter status, read on every call.
+- `examined` — `##` sections read, inside the record and out, so an empty
+  `sections` over `examined: 0` (no sections) reads differently from one over
+  `examined: 5` (all in the record).
+- `sections` — every section outside the record, as read before any removal,
+  decided or not: `ordinal` is its 1-based position among all `##` sections,
+  `lines` and `bytes` measure its text, and `digest` is the lowercase-hex
+  sha256 of its text.
+- `applied` — whether the listed sections were removed.
+- `stale-sections` — each heading in `remove` with no section of that heading
+  and digest left to claim, because the section changed or went since the
+  preview. Non-empty is the **`stale-sections` domain outcome**: the whole
+  apply is refused and nothing is written, since the host's moves were
+  judged against the text it read. Duplicate headings each claim a distinct
+  section.
+- `size-after` — on a preview, the size were every undecided section removed;
+  on an apply, the size written, or `size-before` when it was refused.
+- `reopen-required` — present only on an apply against a `done` spec, the one
+  case prune reopens; absent means not computed, never `false`. It is `true`
+  when any design-record section's text differs from the same section in
+  `plan.md` at HEAD — the sections compared in order by lowercased heading
+  and text — or when `tasks.md` holds more unchecked checkboxes, outside
+  fenced blocks and HTML comments, than it does at HEAD. An artifact absent at
+  HEAD triggers nothing. It is computed after the write, and whether or not
+  the removal was refused, because the host's moves are already on disk. HEAD
+  is read through `ProjectRepository::read_at_head`, so a project in a
+  subdirectory of its repository resolves. The command, not the primitive,
+  performs the reopen with `set-status`.
+
+A removal whose sections are removed has its seams normalized as keep-pending's
+are, and is written with `write_atomic`, preserving the file's line endings.
+
+### Operational errors
+
+| Code | Condition |
+| --- | --- |
+| `feature-not-found` | feature directory absent under the spec-root |
+| `missing-spec-file` / `status-field-missing` | `spec.md` is absent or its frontmatter has no `status` |
+| `missing-argument` | `apply` with an empty `remove` |
+| `invalid-argument` | `remove` without `apply`, or naming a design-record section, which prune never removes |
+| `yaml` | `analysis.md`'s `decisions:` list does not parse — read as empty, it would propose every section already decided |
+| `git` | an apply against a `done` spec cannot read HEAD for the reopen trigger |
 
 ## Notes
 

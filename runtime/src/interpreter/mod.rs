@@ -73,11 +73,12 @@ use crate::schema::primitives::{
     DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
     GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
     MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessDecisionsArgs, ProcessWaiversArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
-    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
-    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetargetSessionsArgs,
-    RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
-    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
+    ProcessDecisionsArgs, ProcessWaiversArgs, PrunePlanArgs, PruneTasksArgs, ReadSpecArgs,
+    ReadTasksArgs, RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs,
+    ResolveConstitutionsArgs, ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs,
+    RetargetSessionsArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs,
+    TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
+    WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -1074,6 +1075,7 @@ fn dispatch_primitive(
         }
         "check-artifacts" => call!(CheckArtifactsArgs, check_artifacts),
         "prune-tasks" => call!(PruneTasksArgs, prune_tasks),
+        "prune-plan" => call!(PrunePlanArgs, prune_plan),
         "dashboard" => call!(DashboardArgs, dashboard),
         "write-session" => call!(WriteSessionArgs, write_session),
         "resolve-session" => call!(ResolveSessionArgs, resolve_session),

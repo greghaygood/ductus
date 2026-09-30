@@ -199,7 +199,8 @@ pub(crate) fn subject_digest(feature_dir: &Path, is_subject: fn(&str) -> bool) -
     out
 }
 
-fn hex(bytes: &[u8]) -> String {
+/// Lowercase hex of `bytes` — the form every recorded sha256 digest takes.
+pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().fold(String::new(), |mut acc, byte| {
         use std::fmt::Write as _;
         let _ = write!(acc, "{byte:02x}");

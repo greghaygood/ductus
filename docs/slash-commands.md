@@ -56,11 +56,11 @@ It takes the back-edge for you: a new question reopens the spec to `draft`, a ne
 
 Three commands delete rather than rewrite. All three confirm before they act, and none writes a backup.
 
-### `/prune` — spent task sections in one `tasks.md`
+### `/prune` — spent tasks, and plan sections outside the design record
 
-**Reach for it when `tasks.md` has turned into a changelog of finished work and you cannot see what is left.** It drops fully-checked task sections, or `--reset` takes the file back to template state.
+**Reach for it when `tasks.md` has turned into a changelog of finished work, or `plan.md` has grown journal, evidence or handoff sections beside its design.** It drops fully-checked task sections, or `--reset` takes `tasks.md` back to template state. For each `plan.md` section outside the design record — the plan template's own sections — it proposes where each durable piece goes (a changed decision into the entry it amends, contributor knowledge into `AGENTS.md`, owed work onto a pending task), and removes the section once you confirm the moves and the removal together.
 
-Scoped to a single artifact the framework classes as ephemeral work-tracking: the durable record of what was done lives in the spec, the code, and git history — which is also the only recovery. One spec.
+What it drops is recoverable only from git history, which already holds it: `tasks.md` is ephemeral work-tracking, and a plan's sections outside its record carry no claims once their durable pieces have moved. A section whose `/analyze` advisory you have discarded as part of the design is kept and never proposed. On a `done` spec, prune reopens it only when the diff changes the design record or adds owed work, and says so before it writes. The spec body, scenarios and data model are never touched. One spec.
 
 ### `/fold` — the branch-scoped staging directory, after migrating its content
 

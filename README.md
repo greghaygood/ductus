@@ -75,7 +75,7 @@ Each entry below says what the command **does**; the section it links to says wh
 - **Refine — adjust a spec's artifacts**
   - [`/amend`](docs/slash-commands.md#amend--a-question-or-scenario-recorded-with-the-lifecycle-back-edge-taken) — add a question or scenario to a spec, reopening it if its status requires
 - **Destructive — these remove content**
-  - [`/prune`](docs/slash-commands.md#prune--spent-task-sections-in-one-tasksmd) — drop completed task sections from `tasks.md`, which is not for durable content
+  - [`/prune`](docs/slash-commands.md#prune--spent-tasks-and-plan-sections-outside-the-design-record) — drop completed task sections from `tasks.md`, and move a plan's sections outside its design record home before removing them
   - [`/fold`](docs/slash-commands.md#fold--the-branch-scoped-staging-directory-after-migrating-its-content) — merge a branch-scoped spec into its durable home and remove the staging directory
   - [`/consolidate`](docs/slash-commands.md#consolidate--an-entire-spec-directory) — re-point every reference to a replaced spec, then remove it
 - **Brownfield — absorb existing reality**

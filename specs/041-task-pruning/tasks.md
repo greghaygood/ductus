@@ -1,4 +1,4 @@
-# 041 — Task Pruning Tasks
+# 041 — Spec Directory Pruning Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order. Phase A ships the
 `prune-tasks` runtime primitive; Phase B adds the `/{project}:prune` command on
@@ -109,16 +109,16 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 
 ### 15. Prune reduces every prunable artifact in the spec directory
 
-- [ ] Implement the behavior described in `scenarios/prune-reduces-the-spec-directory.md`
-- [ ] `data-model.md`: `prune-plan`'s segmentation, classification, finding key, schema, the `stale-sections` outcome and `reopen-required`
-- [ ] Promote `read_blob_at_head` from `check_stuck.rs` into `mod.rs` on `ProjectRepository`; `check_stuck.rs` calls it
-- [ ] `primitives/prune_plan.rs`: fence- and comment-aware `##` segmentation; the design-record constant pinned to the plan template by a drift test; `plan_section_finding`; `decided` from `read_decisions` + `same_key`; digest-guarded removal with seam normalization; `reopen-required` from the HEAD diff; `PlanFileMissing`
-- [ ] Wire `prune-plan` through the seven registration sites, `framework/runtime-tools.txt`, then `scripts/gen-configure-mcp.sh` and `scripts/gen-claude-commands.sh`; `cargo test --test mcp` first
-- [ ] Tests that fail when their behavior is removed (`QUAL-TEST-001`), each proven red by mutation: a `##` in a fence or comment is not a section; headings compare case-insensitively; a digest mismatch refuses the whole apply; a stored discard sets `decided`; each reopen trigger fires and a removal-only diff does not
-- [ ] `framework/commands/prune.md`: spec-directory scope, stored discards, the reopen named at confirmation and asked about when unannounced, declines run-only, a markdown-only reference for plan segmentation
-- [ ] `framework/commands/analyze.md`: a step invoking `prune-plan` on `planned`+ specs that records every section outside the record, decided or not, as a `plan-record` advisory (`scenarios/plan-records-the-design-as-it-stands.md`); re-bless `analyze-basic` filtered to that golden and read the diff line by line
-- [ ] Body corrections: *Scope confirmation* resolution, Behavior's "scope is `tasks.md` only", AC1, *Framework consistency* gains `plan.md`'s classification, title broadened; new criteria added unlabelled and labelled by `label-criteria`
-- [ ] Docs: `docs/slash-commands.md`'s `/prune` entry, `docs/analyze.md`'s advisory, `README.md`'s `/prune` line, prune's description in `scripts/gen-help-tables.sh`
+- [x] Implement the behavior described in `scenarios/prune-reduces-the-spec-directory.md`
+- [x] `data-model.md`: `prune-plan`'s segmentation, classification, finding key, schema, the `stale-sections` outcome and `reopen-required`
+- [x] Promote `read_blob_at_head` from `check_stuck.rs` into `mod.rs` on `ProjectRepository`; `check_stuck.rs` calls it
+- [x] `primitives/prune_plan.rs`: fence- and comment-aware `##` segmentation; the design-record constant pinned to the plan template by a drift test; `plan_section_finding`; `decided` from `read_decisions` + `same_key`; digest-guarded removal with seam normalization; `reopen-required` from the HEAD diff; a missing plan reported as `missing`, not an error
+- [x] Wire `prune-plan` through the seven registration sites, `framework/runtime-tools.txt`, then `scripts/gen-configure-mcp.sh` and `scripts/gen-claude-commands.sh`; `cargo test --test mcp` first
+- [x] Tests that fail when their behavior is removed (`QUAL-TEST-001`), each proven red by mutation: a `##` in a fence or comment is not a section; headings compare case-insensitively; a digest mismatch refuses the whole apply; a stored discard sets `decided`; each reopen trigger fires and a removal-only diff does not
+- [x] `framework/commands/prune.md`: spec-directory scope, stored discards, the reopen named at confirmation and asked about when unannounced, declines run-only, a markdown-only reference for plan segmentation
+- [x] `framework/commands/analyze.md`: a step invoking `prune-plan` on `planned`+ specs that records every section outside the record, decided or not, as a `plan-record` advisory (`scenarios/plan-records-the-design-as-it-stands.md`); re-bless `analyze-basic` filtered to that golden and read the diff line by line
+- [x] Body corrections: *Scope confirmation* resolution, Behavior's "scope is `tasks.md` only", AC1, *Framework consistency* gains `plan.md`'s classification, title broadened; new criteria added unlabelled and labelled by `label-criteria`
+- [x] Docs: `docs/slash-commands.md`'s `/prune` entry, `docs/analyze.md`'s advisory, `README.md`'s `/prune` line, prune's description in `scripts/gen-help-tables.sh`
 
 - **Done when**: `/{project}:prune` on a spec with a journal section moves its durable pieces home and removes it, a stored discard keeps a section from being proposed, analyze reports every section outside the record, and the full local gate is green.
 

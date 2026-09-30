@@ -1,49 +1,77 @@
 ---
-description: Prune a feature's tasks.md — drop spent task sections, or reset to template state.
+description: Prune a feature's spec directory — drop spent task sections or reset tasks.md, and move plan sections outside the design record home before removing them.
 argument-hint: "[--reset] [--force]"
 ---
 
 # Prune
 
-Reduce the session target's `tasks.md` so the working list stays a view of *what is left to do* — dropping spent, completed task sections, or resetting the file to its template initial state.
+Reduce the session target's spec directory so each working artifact says only what it should — dropping spent task sections from `tasks.md` (or resetting it to template state), and removing the `plan.md` sections outside the design record once their durable pieces have moved home.
 
 ## Purpose
 
-A feature's `tasks.md` accumulates completed work across the whole life of the feature; a task's value is spent the moment it is complete (the durable record lives in the spec, the code, and git history). `/ductus:prune` reclaims that space — a deliberate, confirmed reduction of `tasks.md` back toward a lean working set, or all the way back to the template's initial state. It is a maintenance command over one artifact, not a pipeline state transition.
+A feature's `tasks.md` accumulates completed work across the whole life of the feature, and a task's value is spent the moment it is complete. A plan accumulates something worse: journal, evidence, and handoff sections outside its design record, where a decision corrected during implementation can sit thousands of lines below the entry it contradicts (§plan-phase). `/ductus:prune` reclaims both — each artifact by the rule its durability class allows. `tasks.md` is reduced mechanically; a plan section is removed only once it has been emptied of what lasts, which is a judgment the operator confirms section by section.
+
+| Artifact | Class | What prune does |
+| --- | --- | --- |
+| `tasks.md` | Ephemeral | Drops spent sections (keep-pending) or resets (`--reset`) |
+| `plan.md` | Design record | Removes each section outside the design record, after its durable content has been moved home |
+| `spec.md`, `scenarios/*.md`, `data-model.md` | Durable | Never touched |
+| `research.md` | Reference | Never touched |
+| `review.md`, `analysis.md` | Regenerated | Never written; prune reads only `analysis.md`'s stored decisions |
+
+Any other file in the directory is the project's, not the pipeline's: prune neither reads nor reports it.
 
 ## Scope Boundaries
 
-- The only file written is the session target's `tasks.md`. Do NOT edit the plan, the spec, scenarios, `data-model.md`, or the frontmatter `status` — single-artifact scope is a hard boundary.
+- Prune writes `tasks.md` (its reduction, and owed work a plan section moves onto a pending task), `plan.md` (a moved decision edited into its design-record entry, and the removal of sections outside the record), and the project's `AGENTS.md` (contributor knowledge moved out of a plan section). Knowledge that holds for every project is named for the operator to route to the constitution; prune writes no shipped artifact.
+- Prune changes status only to reopen a `done` spec, and names the reopen before anything is written. A spec below `done` is never moved.
 - Recovery is git history: prune writes no backup file and no gitignored sidecar.
-- Prune never changes pipeline status and never advances or reverts the lifecycle.
-- Reference: §tasks-phase (`tasks.md` is an ephemeral work-tracking artifact, safe to prune — not a durable source of truth), §pipeline-boundaries ("don't backtrack silently"), §text-first-artifacts, §runtime-boundary, plus [041 — Task Pruning](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/spec.md) for the reduction semantics and [data-model](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/data-model.md) for the segmentation and classification.
+- Reference: §plan-phase (a plan records the design as it stands), §tasks-phase (`tasks.md` is an ephemeral work-tracking artifact — not a durable source of truth), §spec-lifecycle (the diff-determinable reopen), §pipeline-boundaries ("don't backtrack silently"), §text-first-artifacts, §runtime-boundary, plus [041 — Spec Directory Pruning](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/spec.md) for the reduction semantics and [data-model](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/data-model.md) for both segmentations and classifications.
 
 ## Instructions
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the ductus runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. Before the server is registered — the window between acquisition and the restart that loads it — walk the same prose using the host file-reading tools (Read, Edit, Write) per the markdown-only reference below.
 
 <!-- audit:ignore-promotion -->
-1. Invoke `resolve-session` to resolve the session target, and display any notices and unreadable session files it returns (markdown-only: read the shared default `.ductus/session.toml`). If no target is set, stop and tell the user to run `/ductus:target` first. Parse the invocation flags: `--reset` selects a full reset (default is a keep-pending prune); `--force` overrides the reset status gate on a non-`done` spec. `--force` without `--reset` is ignored (it only gates reset).
+1. Invoke `resolve-session` to resolve the session target, and display any notices and unreadable session files it returns (markdown-only: read the shared default `.ductus/session.toml`). If no target is set, stop and tell the user to run `/ductus:target` first. Parse the invocation flags: `--reset` selects a full reset of `tasks.md` (default is a keep-pending prune); `--force` overrides the reset status gate on a non-`done` spec. `--force` without `--reset` is ignored (it only gates reset).
 
-2. Invoke `prune-tasks` against the target feature in preview mode (`apply: false`), passing the `reset` and `force` flags. The result is a compact summary — mode, the `--reset` gate outcome, the per-section classification (`spent` / `pending` / `no-checkbox`), the removed/kept counts, and the size before/after — and never carries the file body. When the target has no `tasks.md`, stop and direct the user to run `/ductus:plan` (there is no task list to prune yet — the MCP surface returns this as a `tasks.md not found: …` error); when the feature directory does not exist, direct the user to `/ductus:target` (a `feature directory not found: …` error). These are operational errors carrying a Display message — the `tasks-file-missing` / `feature-not-found` names label the error variants, they are not literal tokens in the payload.
+2. Invoke `prune-tasks` against the target feature in preview mode (`apply: false`), passing the `reset` and `force` flags. The result is a compact summary — mode, the `--reset` gate outcome, the per-section classification (`spent` / `pending` / `no-checkbox`), the removed/kept counts, and the size before/after — and never carries the file body. When the feature directory does not exist, stop and direct the user to `/ductus:target` (a `feature directory not found: …` error). When the target has no `tasks.md` (a `tasks.md not found: …` error), note it and continue: the plan decides whether there is anything to prune. These are operational errors carrying a Display message — the `tasks-file-missing` / `feature-not-found` names label the error variants, they are not literal tokens in the payload.
 
-<!-- audit:ignore-promotion -->
-3. Render the preview for the user from the summary: the mode, the size before → after, the removed/kept counts, and one line per task section with its classification and action. Two early exits, neither of which writes: when `nothing-to-prune` is true, report that there is nothing to prune and stop; when the gate is `blocked-needs-force` (a `--reset` on a non-`done` spec), name the current status, point at the default keep-pending `/ductus:prune` as the likely intent, note `--reset --force` as the explicit escape hatch, and stop.
-
-4. Invoke `gate-confirm` with a prompt that names the destructive write (the mode and how much the file shrinks). Prune rewrites a working artifact, so it confirms before writing; on a declined gate, leave `tasks.md` unchanged and stop.
-
-5. On confirmation, invoke `prune-tasks` again with `apply: true` (same `reset` / `force` flags) to perform the atomic write. Report the outcome — the file's new size and the sections removed — from the returned summary.
+3. Invoke `prune-plan` against the target feature as a preview — no `apply`. The result names the spec's `status` and lists every `plan.md` section outside the design record with its heading, size, digest, and `decided` — whether `analysis.md` stores a discard for that section's `plan-record` advisory. It never carries a section's text. A result with `missing` set means the feature has no `plan.md`; with no `tasks.md` either (the `draft` and `clarified` case, since `/ductus:plan` writes both), stop and direct the user to run `/ductus:plan`. Under `--reset` the plan half does not run: a reset resets `tasks.md` and never touches the plan.
 
 <!-- audit:ignore-promotion -->
-6. Confirm the single-artifact result: only `tasks.md` changed. A plan that still enumerates now-removed tasks is not reconciled here; genuine plan↔tasks drift is surfaced by `/ductus:analyze` as an advisory finding, not by prune.
+4. Settle which plan sections to propose (host responsibility). A `decided` section is kept, and listed as *kept — decided in `analysis.md`*. For each undecided one, read `analysis.md`'s `decisions:` list and match it to a stored `plan-record` discard the way `/ductus:analyze`'s stored-decision step matches a finding — by judgment, because a finding that step re-matched after its wording drifted keeps its original key — and treat a match as decided too. Every other section is proposed.
+
+<!-- audit:ignore-promotion -->
+5. Render the preview from both summaries, so the whole reduction is visible before any of it happens: the spec's status; for `tasks.md`, the mode, the size before → after, and one line per task section with its classification and action, or that there is no task list; for `plan.md`, one line per section outside the record with its size and whether it is proposed or kept, and the size before → after. Two early exits, neither of which writes: when neither artifact has anything to reduce — `nothing-to-prune` on `tasks.md` or no task list, and no proposed plan section — report that there is nothing to prune and stop; when the gate is `blocked-needs-force` (a `--reset` on a non-`done` spec), name the current status, point at the default keep-pending `/ductus:prune` as the likely intent, note `--reset --force` as the explicit escape hatch, and stop.
+
+6. When `tasks.md` has something to reduce, invoke `gate-confirm` with a prompt that names the destructive write (the mode and how much the file shrinks). A `tasks.md` reduction never reopens a spec — dropping a spent section adds no owed work. On a declined gate, leave `tasks.md` unchanged and go on to the plan sections.
+
+7. On confirmation, invoke `prune-tasks` again with `apply: true` (same `reset` / `force` flags) to perform the atomic write, and note the file's new size and the sections removed from the returned summary.
+
+<!-- audit:ignore-promotion -->
+8. Work each proposed plan section in turn (host responsibility). Read it with the host's file tools and propose, piece by piece, where each durable piece goes: a changed decision into the Technical Decisions entry it amends, edited in place to say what is now true; contributor knowledge into `AGENTS.md`; owed work, including an in-flight task's handoff notes, onto its pending task in `tasks.md`. Name what is dropped because git already holds it — evidence, pass counts, scratch paths — and name any knowledge that holds for every project for the operator to route to the constitution. On a `done` spec, name the reopen before anything is written whenever a move edits a design-record section or adds an unchecked task, since that is what the diff will show. Confirm the section's moves and its removal together through the gate-confirm primitive. On a declined section, leave it byte-for-byte and say so in the prompt: declining keeps it for this run only, and the lasting keep is discarding its `/ductus:analyze` advisory with a reason. On confirmation, write the moves first, then call the prune-plan primitive with `apply: true` and `remove` naming that section's heading and digest. A result with `stale-sections` means the section changed since the preview: nothing was removed, so preview again and propose it afresh against the entry that already holds its piece.
+
+<!-- audit:ignore-promotion -->
+9. Reopen a `done` spec only as the diff requires (host responsibility). The first apply against a `done` spec whose result reports `reopen-required` flips it with the set-status primitive, `from: done`, `to: in-progress`. When that reopen was named at the section's confirmation, perform it; when it was not — the design record or the task list already differed from HEAD before the run, from uncommitted edits — ask before flipping, and never reopen silently. When the guarded write refuses because the status is no longer `done`, stop and name the status found rather than overwriting it.
+
+<!-- audit:ignore-promotion -->
+10. Report what changed: the `tasks.md` reduction written, each plan section removed and where each of its pieces went, each section kept and why, and any reopen. The reopen costs a fresh `/ductus:analyze` and the completion gate back to `done`; `plan.md` and `tasks.md` are not durable contracts, so the review record stays valid.
 
 ## Markdown-only reference
 
-With no ductus runtime registered, the host reaches the same result with its own file tools — no shell-pipeline substitution — producing byte-for-byte the output the `prune-tasks` primitive would write (the two-paths guarantee, §runtime-host-integration) — with one bound, stated under **reset** below: the reset body is compiled into the primitive, so a project that has customized its own tasks template diverges there, and only there.
+With no ductus runtime registered, the host reaches the same result with its own file tools — no shell-pipeline substitution — producing byte-for-byte the output the primitives would write (the two-paths guarantee, §runtime-host-integration) — with one bound, stated under **reset** and **the design record** below: the reset body and the design-record heading set are compiled into the primitives from the framework templates, so a project that has customized its own tasks or plan template diverges there, and only there.
 
-Segment `tasks.md` with the same grammar every tasks command uses (see [data-model](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/data-model.md)): detect flat (`## N.`) versus phased (`### N.` under `## …` containers), then split the file into its preamble, phase containers, and task sections. Classify each task section by its checkboxes — **spent** (≥ 1 checkbox, all checked), **pending** (any unchecked), or **no-checkbox** (zero checkboxes) — counting only real task-list checkboxes (a `- **Done when**:` line is not one).
+**`tasks.md`.** Segment it with the same grammar every tasks command uses (see [data-model](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/data-model.md)): detect flat (`## N.`) versus phased (`### N.` under `## …` containers), then split the file into its preamble, phase containers, and task sections. Classify each task section by its checkboxes — **spent** (≥ 1 checkbox, all checked), **pending** (any unchecked), or **no-checkbox** (zero checkboxes) — counting only real task-list checkboxes (a `- **Done when**:` line is not one).
 
 - **keep-pending** (default): preserve the preamble and every pending / no-checkbox section verbatim; drop every spent section; in a phased file drop a phase container left with no surviving task section. When nothing is spent, leave the file byte-for-byte unchanged. Normalize seams to a single blank line with one trailing newline.
 - **reset** (`--reset`): preserve the file's existing `# …` heading and replace everything below it with the template's initial tasks body (the intro line plus the guidance comment). On the runtime path this body is **compiled into** `prune-tasks`, pinned to `framework/templates/spec/tasks.md`, so an adopter who customizes `specs/templates/tasks.md` gets the framework body on the runtime path and their own template only on this markdown-only path. Refuse unless the spec status is `done` or `--force` is supplied; a file with no `# …` heading is malformed and is left untouched.
 
-Confirm with the user before writing, write atomically (a temp file then rename), and leave no backup — recovery is git history.
+**`plan.md`.** A section is a `##` heading and every line up to the next heading at level 2 or above; a `###` stays inside its section, and a heading inside a fenced block or an HTML comment is not a heading. The lines before the first `##` are the preamble and are always kept.
+
+- **The design record** is the plan template's own `##` sections — Overview, Technical Decisions, Affected Files, Data Model, Trade-offs, Open Questions Resolved and Cross-spec impact — with headings compared case-insensitively and nothing else forgiven, so *Tradeoffs* is outside it. On the runtime path the set is compiled into `prune-plan`, pinned to `framework/templates/spec/plan.md`; an adopter who customizes `specs/templates/plan.md` sees their own set only on this markdown-only path. A design-record section is never removed.
+- **Decided** — a section is kept without being proposed when `analysis.md`'s `decisions:` list stores a `discarded` decision under `plan-record — plan.md §{heading} is outside the design record`, or one the host matches to it by judgment.
+- **Removal** — delete the confirmed section, then normalize the seam it leaves to a single blank line with one trailing newline, as keep-pending does. Re-read the section immediately before removing it; if it changed since it was judged, judge it again.
+- **Reopen** — on a `done` spec, compare against HEAD (`git diff HEAD -- specs/{feature}/`): the spec reopens when any design-record section's text differs from HEAD's, or `tasks.md` holds more unchecked checkboxes than HEAD's. An artifact absent at HEAD triggers nothing. Anything else is mechanical and the spec stays `done`.
+
+Confirm with the user before every write, write atomically (a temp file then rename), and leave no backup — recovery is git history.

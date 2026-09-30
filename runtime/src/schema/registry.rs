@@ -61,6 +61,7 @@ pub const PRIMITIVE_REGISTRY: &[&str] = &[
     "append-task",
     "label-criteria",
     "prune-tasks",
+    "prune-plan",
     "dashboard",
     "write-session",
     "resolve-session",

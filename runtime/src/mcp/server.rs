@@ -55,16 +55,16 @@ use crate::schema::primitives::{
     MarkCriterionArgs, MarkTaskArgs, MergeManagedBlockArgs, MergeManagedBlockResult,
     MergePermissionsArgs, MergePermissionsResult, MigrateSessionFileArgs, MigrateSessionFileResult,
     ProcessDecisionsArgs, ProcessDecisionsResult, ProcessWaiversArgs, ProcessWaiversResult,
-    PruneTasksArgs, PruneTasksResult, ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult,
-    RelocateAuditRecordsArgs, RelocateAuditRecordsResult, RemoveInboxItemArgs,
-    RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult, ResolveConstitutionsArgs,
-    ResolveConstitutionsResult, ResolveFeatureArgs, ResolveFeatureResult, ResolveReferencesArgs,
-    ResolveReferencesResult, ResolveSessionArgs, ResolveSessionResult, RetargetSessionsArgs,
-    RetargetSessionsResult, RetireFeatureArgs, RetireFeatureResult, RewriteSpecLinksArgs,
-    RewriteSpecLinksResult, RunGeneratorArgs, RunGeneratorResult, SetStatusArgs, SetStatusResult,
-    TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs, ValidateFrontmatterResult,
-    WriteAnalysisArgs, WriteAnalysisResult, WriteReviewArgs, WriteReviewResult, WriteSessionArgs,
-    WriteSessionResult,
+    PrunePlanArgs, PrunePlanResult, PruneTasksArgs, PruneTasksResult, ReadSpecArgs, ReadSpecResult,
+    ReadTasksArgs, ReadTasksResult, RelocateAuditRecordsArgs, RelocateAuditRecordsResult,
+    RemoveInboxItemArgs, RemoveInboxItemResult, ResolveAnchorArgs, ResolveAnchorResult,
+    ResolveConstitutionsArgs, ResolveConstitutionsResult, ResolveFeatureArgs, ResolveFeatureResult,
+    ResolveReferencesArgs, ResolveReferencesResult, ResolveSessionArgs, ResolveSessionResult,
+    RetargetSessionsArgs, RetargetSessionsResult, RetireFeatureArgs, RetireFeatureResult,
+    RewriteSpecLinksArgs, RewriteSpecLinksResult, RunGeneratorArgs, RunGeneratorResult,
+    SetStatusArgs, SetStatusResult, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
+    ValidateFrontmatterResult, WriteAnalysisArgs, WriteAnalysisResult, WriteReviewArgs,
+    WriteReviewResult, WriteSessionArgs, WriteSessionResult,
 };
 
 /// Canonical MCP tool names exposed by the server, in manifest order —
@@ -699,6 +699,19 @@ impl GovRuntimeServer {
         params: Parameters<PruneTasksArgs>,
     ) -> Result<Json<PruneTasksResult>, String> {
         primitives::prune_tasks::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "prune-plan",
+        description = "Report a feature's plan.md sections outside the design record (the plan template's own ## headings, compared case-insensitively), each with its size, a digest, the plan-record advisory /{project}:analyze records for it, and whether analysis.md stores a discard for that advisory. With apply, remove the listed sections by heading and digest, refusing the whole write when any changed since the preview (stale-sections); on a done spec, report whether the change since HEAD reopens it. Never returns a section's text."
+    )]
+    async fn prune_plan(
+        &self,
+        params: Parameters<PrunePlanArgs>,
+    ) -> Result<Json<PrunePlanResult>, String> {
+        primitives::prune_plan::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }
