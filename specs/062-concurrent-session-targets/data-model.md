@@ -7,7 +7,7 @@
 | `.ductus/session.toml` | The shared default: the most recent target change in the working tree, plus the per-contributor `cli-config-dir` | Every target or clear write; `/ductus` host-config writes; `retarget-sessions` |
 | `.ductus/sessions/{key}.toml` | One identified process's own target and bookkeeping | That process's resolutions and writes; `retarget-sessions`; removed by the expiry sweep |
 | `.ductus/sessions/.lock` | Nothing; the advisory lock's handle | Created on first use, never deleted |
-| `.ductus/sessions/.gitignore` | `*` | Created with the directory |
+| `.ductus/sessions/.gitignore` | `*` | The first process to hold the session lock, when absent (`scenarios/first-writers-create-the-ignore-file-once.md`) |
 
 The shared default's keys and field order are unchanged
 (`runtime/src/primitives/write_session.rs:219-235`): `feature`, `path`,

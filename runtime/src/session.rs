@@ -1495,6 +1495,22 @@ mod tests {
         assert_eq!(ignore, "*\n");
     }
 
+    /// Scenario `first-writers-create-the-ignore-file-once`, first edge case:
+    /// a sessions directory that already holds its `.gitignore` has nothing
+    /// rewritten, whatever that file says.
+    #[test]
+    fn an_existing_ignore_file_is_left_as_it_is() {
+        let tmp = tempdir().unwrap();
+        let dir = sessions_dir(tmp.path());
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(".gitignore"), "*\n!keep.toml\n").unwrap();
+        drop(lock(tmp.path()).unwrap());
+        assert_eq!(
+            std::fs::read_to_string(dir.join(".gitignore")).unwrap(),
+            "*\n!keep.toml\n"
+        );
+    }
+
     #[test]
     fn a_held_lock_times_out_a_second_acquirer_naming_the_file() {
         let tmp = tempdir().unwrap();
