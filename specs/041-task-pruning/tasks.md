@@ -92,3 +92,23 @@ Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disp
 
 - [x] Update `framework/commands/analyze.md` so the scenario-consistency check does not require a scenario's implementing task to persist in `tasks.md` after the scenario is implemented (a `done` spec with pruned scenario tasks is not a drift finding); regenerate the materialized command.
 - **Done when**: analyze reports no false scenario-consistency finding for a `done` spec whose scenario tasks were pruned; the framework audit is clean.
+
+## Phase D — Follow-on scenarios
+
+### 14. A plan records the design as it stands
+
+- [ ] Implement the behavior described in `scenarios/plan-records-the-design-as-it-stands.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+### 15. Prune reduces every prunable artifact in the spec directory
+
+- [ ] Implement the behavior described in `scenarios/prune-reduces-the-spec-directory.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+### 16. Prune --all walks every spec
+
+- [ ] Implement the behavior described in `scenarios/prune-all-walks-every-spec.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
