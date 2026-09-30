@@ -65,6 +65,10 @@ Per §cross-spec-impact, [021](../021-runtime-boundary/spec.md) (which owns the 
 
 The `version` file, the publish gate, and the Windows `.tar.gz` asset touch only `runtime-release.yml` and the repo root. They can ship before anything else and are safe on their own — a `version` file nothing reads yet, and a gate that only fires on a partial matrix. Sequencing them first means the acquisition work is written against a release surface that already behaves the way it assumes.
 
+### `fetch-archive`'s HTTP configuration is read once
+
+`fetch-archive` still builds a client per call, because the SSRF pin is per URL (`resolve_to_addrs`, 022's `fetch-archive-dns-rebinding`). What that client reads is fixed at startup instead. `main` captures `ALL_PROXY`, `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` and whether `REQUEST_METHOD` is set, beside the insecure-host allowlist, and each build applies them as explicit reqwest proxies or turns proxies off, which stops reqwest's per-build environment read. On Linux and other non-Apple Unix the system certificate roots are loaded once per process, at the first fetch, and passed through `tls_certs_only`, so `SSL_CERT_FILE` and `SSL_CERT_DIR` are read once; there the platform verifier was WebPKI over those same roots, so what is trusted does not change. Through a proxy, the operator's proxy is the documented trust boundary. The decisions and their grounding in the locked sources are the scenario's (`scenarios/fetch-archive-reads-its-proxy-once.md`).
+
 ## Affected Files
 
 | File | Action | Purpose |
@@ -87,6 +91,10 @@ The `version` file, the publish gate, and the Windows `.tar.gz` asset touch only
 | `specs/021-runtime-boundary/spec.md` | Modify | Record the amendment; reopen to `in-progress` |
 | `specs/029-bootstrap-runtime-autowire/spec.md` | Modify | Record the collapsed detection states; reopen to `in-progress` |
 | `AGENTS.md` | Modify | Replace the stale-binary gotcha with the `[runtime]` key workflow |
+| `runtime/src/primitives/fetch_archive.rs` | Modify | Proxy variables applied from the startup capture; Linux roots loaded once; the proxy trust boundary stated (task 18) |
+| `runtime/src/main.rs` | Modify | Capture the proxy variables at startup (task 18) |
+| `runtime/Cargo.toml`, `runtime/Cargo.lock` | Modify | `rustls` and `rustls-native-certs` as direct dependencies, `webpki-root-certs` for tests (task 18) |
+| `docs/runtime.md` | Modify | The environment-variable inventory: when each variable is read, and the proxy trust boundary (task 18) |
 
 ## Trade-offs
 

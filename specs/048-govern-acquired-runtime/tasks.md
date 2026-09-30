@@ -155,6 +155,6 @@ Phase 1 is independently safe and lands first so later work is written against a
 
 ### 18. Implement scenario: [fetch-archive-reads-its-proxy-once](scenarios/fetch-archive-reads-its-proxy-once.md) — proxy configuration read once, SSRF screen stated for proxies
 
-- [ ] Implement the behavior described in `scenarios/fetch-archive-reads-its-proxy-once.md`
+- [x] Implement the behavior described in `scenarios/fetch-archive-reads-its-proxy-once.md`
 
 - **Done when**: the scenario's open questions are resolved; `fetch-archive` reads no environment variable per call; `docs/runtime.md`'s inventory lists the proxy variables with their effect; the SSRF screen's behavior under a proxy is implemented and stated; an adopter behind a proxy can still fetch; `cargo test` passes. Routed from 062's review (CFG-ENV-001 waived there on `runtime/src/primitives/fetch_archive.rs`).

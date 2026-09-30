@@ -29,6 +29,11 @@ git2 = { version = "0.21", default-features = false, features = ["vendored-libgi
 pulldown-cmark = "0.13"
 regex = "1"
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
+# The system certificate roots `fetch-archive` loads once per process on Linux
+# (spec 048, `fetch-archive-reads-its-proxy-once`); both are already in the
+# graph through reqwest's rustls backend, at these versions.
+rustls = { version = "0.23", default-features = false }
+rustls-native-certs = "0.8"
 rmcp = { version = "2", features = ["server", "client", "macros", "transport-io"] }
 schemars = "1"
 serde = { version = "1", features = ["derive"] }
@@ -42,6 +47,11 @@ toml = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "io-util", "io-std", "signal", "macros"] }
 walkdir = "2"
 zip = { version = "8", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+# Real root certificates, offline, for `fetch-archive`'s root-filtering tests;
+# already in the graph through rustls-platform-verifier.
+webpki-root-certs = "1"
 
 [profile.release]
 lto = "thin"

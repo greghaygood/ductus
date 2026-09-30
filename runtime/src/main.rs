@@ -676,13 +676,15 @@ fn run_mcp_server(repo: PathBuf) -> ExitCode {
 #[allow(clippy::too_many_lines)]
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    // The runtime's own environment variables — the session identity and the
-    // fetch allowlist — are read here, once, for every subcommand
-    // (`CFG-ENV-001`), and primitives answer from this reading. The inventory
-    // is docs/runtime.md's; it also lists the proxy and certificate variables
-    // `fetch-archive`'s HTTP client reads per fetch (spec 048's open scenario).
+    // The runtime's environment variables — the session identity, the fetch
+    // allowlist and the proxy variables — are read here, once, for every
+    // subcommand (`CFG-ENV-001`), and primitives answer from this reading.
+    // The inventory is docs/runtime.md's. The certificate variables are the
+    // one exception it names: on Linux, `fetch-archive` reads them once per
+    // process, at its first fetch (spec 048, `fetch-archive-reads-its-proxy-once`).
     ductus::session::init_process_identity();
     ductus::primitives::fetch_archive::init_insecure_hosts();
+    ductus::primitives::fetch_archive::init_proxy_env();
     let repo = cwd();
     match cli.command {
         Command::Mcp => run_mcp_server(repo),

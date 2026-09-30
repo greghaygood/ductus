@@ -6,9 +6,9 @@ section: "Acquisition"
 
 ## Context
 
-`fetch-archive` builds a new `reqwest` client on every call and never turns off reqwest's system proxy. Each build therefore reads `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (and their lowercase forms), plus `REQUEST_METHOD`, from the environment, through `hyper-util`'s proxy matcher. On Linux and other non-Apple Unix it also reads `SSL_CERT_FILE` and `SSL_CERT_DIR`, through the certificate verifier each client builds. 062's review found two consequences on 2026-09-29:
+`fetch-archive` builds a new `reqwest` client on every call, and until this scenario it never turned off reqwest's system proxy. Each build therefore read `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (and their lowercase forms), plus `REQUEST_METHOD`, from the environment, through `hyper-util`'s proxy matcher. On Linux and other non-Apple Unix it also read `SSL_CERT_FILE` and `SSL_CERT_DIR`, through the certificate verifier each client builds. 062's review found two consequences on 2026-09-29:
 
-- The long-lived MCP server re-reads those variables on every fetch, which `CFG-ENV-001` forbids (read once at startup and cache). 062 moved every variable the runtime itself reads to a one-time capture in `main`, including this primitive's `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS`. The proxy and certificate variables are read by the dependency, so 062's review waived them there and routed them here.
+- The long-lived MCP server re-read those variables on every fetch, which `CFG-ENV-001` forbids (read once at startup and cache). 062 moved every variable the runtime itself reads to a one-time capture in `main`, including this primitive's `DUCTUS_FETCH_ALLOW_INSECURE_HOSTS`. The proxy and certificate variables were read by the dependency, so 062's review waived them there and routed them here.
 - With a proxy set, the connection is tunnelled through the proxy, which resolves the target itself. The `resolve_to_addrs` pin that `validate_fetch_url` sets — the guard against DNS rebinding between screening an address and connecting to it — then no longer holds.
 
 ## Behavior

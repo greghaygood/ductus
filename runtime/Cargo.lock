@@ -383,6 +383,8 @@ dependencies = [
  "regex",
  "reqwest",
  "rmcp",
+ "rustls",
+ "rustls-native-certs",
  "schemars",
  "serde",
  "serde_json",
@@ -394,6 +396,7 @@ dependencies = [
  "tokio",
  "toml",
  "walkdir",
+ "webpki-root-certs",
  "zip",
 ]
 
