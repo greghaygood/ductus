@@ -45,7 +45,7 @@ An already-applied step reports that outcome as a domain result rather than a fa
 
 - [x] AC7: `/{project}:consolidate <spec> --into <spec>` re-points every inbound pointer to the source directory at the target, then removes the source directory
 - [x] AC8: `/{project}:consolidate` refuses when the target directory holds no `spec.md`, and no pointer is rewritten by the refused run
-- [x] AC9: `/{project}:consolidate` writes nothing to the target spec's body, scenarios, `tasks.md`, `status`, or `review:` block
+- [x] AC9: `/{project}:consolidate` writes nothing to the target spec's body, scenarios, `tasks.md`, `status`, or review record (`review.md`; the `review:` block before spec 057)
 - [x] AC10: The confirmation prompt shown before a consolidation names the loss of the source spec's content, not only the removal of its directory
 - [x] AC11: `retire-feature` accepts a sequential feature directory only through an explicitly targeted consolidation, and `/{project}:fold` remains unable to reach one
 - [x] AC12: `/{project}:fold` gains no flag or argument for naming a fold target, and its `folds-into:` single-source rule is unchanged

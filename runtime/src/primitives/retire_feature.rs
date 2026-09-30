@@ -244,7 +244,8 @@ mod tests {
         assert!(tmp.path().join("specs/1234.1-staged/spec.md").is_file());
     }
 
-    /// The sequential form is permanent; this primitive can never remove one.
+    /// The sequential form is permanent: without the opt-in only
+    /// consolidation passes, this primitive refuses to remove one.
     #[test]
     fn a_sequential_feature_is_refused_outright() {
         let tmp = tempfile::tempdir().unwrap();
