@@ -135,6 +135,8 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 
 ### 17. Release
 
+Blocked on task 18: a tag needs every workflow green on `main`, and task 18's Windows failure is what keeps `runtime` red. Work 18 before this task, even though it is numbered after it.
+
 - [ ] The full local gate, as `AGENTS.md` §Workflow lists it
 - [ ] `runtime/CHANGELOG.md` `### Added` and a minor bump across `version`, `runtime/Cargo.toml` and the changelog heading, in one commit
 - [ ] `/{project}:review` and `/{project}:analyze` on this spec, then the completion gate to `done`
