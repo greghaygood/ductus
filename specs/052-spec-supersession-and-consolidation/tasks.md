@@ -32,7 +32,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Re-review after 048's review found the partial's record misstated what it left unread
 
-- [ ] `review.md` (a21e707a) says its 7 unread files are each unchanged since the 2026-09-13 full review, but all 7 changed since (`git log 8c01d6f5..6940509c`), and 446fbf2d rewrote `framework/commands/consolidate.md`'s Purpose, the surface AC25 names: re-review, reading `consolidate.md` and the other changed files, and describe anything left unread truthfully
+- [x] `review.md` (a21e707a) says its 7 unread files are each unchanged since the 2026-09-13 full review, but all 7 changed since (`git log 8c01d6f5..6940509c`), and 446fbf2d rewrote `framework/commands/consolidate.md`'s Purpose, the surface AC25 names: re-review, reading `consolidate.md` and the other changed files, and describe anything left unread truthfully
 - [x] `spec.md:65` says prune destroys `tasks.md`, which the project classes as ephemeral; since 041 prune also removes `plan.md` sections outside the design record once their durable pieces move home — correct the sentence as 446fbf2d corrected `consolidate.md`'s copy
 
 - **Done when**: 052's review is recorded over the changed files with a Summary that states truthfully what was and was not read, its analysis is current, and 052 is back at `done`.
