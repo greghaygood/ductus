@@ -42,7 +42,7 @@ Anything else in the directory is the project's, not the pipeline's: prune neith
 - **A section whose content is all spent** — evidence, pass counts, scratch paths. Nothing moves, and the section is removed after confirmation.
 - **A declined section.** It stays byte-for-byte, and the rest of the reduction proceeds. It is proposed again on the next run unless an analyze discard records it as part of the design.
 - **A spec whose analysis predates the plan advisory, or that has none.** There is no stored decision to honor, so every section outside the record is proposed; declining stays run-only until an analyze records a discard.
-- **A design section under another heading: keep it, or fold it.** Keeping it by an analyze discard writes nothing. Folding it into a record section — a *Known limitations* into Trade-offs, where `/{project}:plan` already puts known limitations — changes a record section, so on a `done` spec it reopens. Both are legitimate, and the preview's reopen marker prices the choice before it is made.
+- **A design section under another heading: keep it, or fold it.** Keeping it by an analyze discard writes nothing. Folding it into a record section — a *Known limitations* into Trade-offs, where `/{project}:plan` already puts known limitations — changes a record section, so on a `done` spec it reopens. Both are legitimate, and the section's confirmation names the reopen a fold would take before the choice is made.
 - **A moved decision that contradicts the entry it lands in.** This is the case the rule exists for: the entry is rewritten to state what is true now, and on a `done` spec the rewrite reopens it.
 - **A reduction that only removes sections outside the design record from a `done` spec's plan.** The diff touches no record section and adds no task, so the spec stays `done` — including when pieces of those sections moved to `AGENTS.md`.
 - **The status changed between preview and write** — a concurrent edit reopened or closed the spec. The guarded status write refuses on the stale value and the run stops, naming what it found, rather than overwriting it.
@@ -54,7 +54,7 @@ Anything else in the directory is the project's, not the pipeline's: prune neith
 
 ## What this does not do
 
-It does not walk other specs — that is `prune-all-walks-every-spec`. It does not decide which sections form the design record; `plan-records-the-design-as-it-stands` does. The runtime half — `plan.md` segmentation and the widened request and response of `prune-tasks`, or a sibling primitive — is recorded as a scenario under `022-deterministic-runtime` at plan time, and this spec's `data-model.md` gains the plan segmentation beside the `tasks.md` one.
+It does not walk other specs — that is `prune-all-walks-every-spec`. It does not decide which sections form the design record; `plan-records-the-design-as-it-stands` does. The runtime half is a sibling primitive, `prune-plan`, owned here as `prune-tasks` is: its segmentation and schema go in this spec's `data-model.md` beside the `tasks.md` ones, and nothing is registered in `022-deterministic-runtime`.
 
 ## Open Questions
 

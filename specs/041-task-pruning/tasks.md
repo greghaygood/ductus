@@ -98,17 +98,45 @@ Surfaced by the pre-`done` durability review: `tasks.md` must be treated as disp
 ### 14. A plan records the design as it stands
 
 - [ ] Implement the behavior described in `scenarios/plan-records-the-design-as-it-stands.md`
+- [ ] Constitution: §plan-phase states the rule — the design record is the template's `##` sections and the only place a plan's claims live, and where every other kind of content goes; §tasks-phase's closing sentence drops "none of which `/{project}:prune` touches" for `plan.md` and names handoff notes on the pending task; §implement-phase's review-body rule gains the triage clause
+- [ ] `framework/templates/spec/plan.md`: Trade-offs always; Data Model, Open Questions Resolved and Cross-spec impact optional, each marked to be omitted when it does not apply; a guidance comment on what stays out of a plan and where it goes
+- [ ] `framework/templates/spec/tasks.md`: the working-notes guidance and both placement rules; update `prune-tasks`' `CANONICAL_EMPTY_TASKS_BODY` in the same change so its drift test passes
+- [ ] Prose-claim sweep for "prune touches only `tasks.md`" and "single-artifact" across `framework/`, `docs/`, `README.md` and the spec corpus, by meaning, not by token
 
-- **Done when**: the scenario's described behavior is correctly implemented and tested.
+The advisory half of this scenario — `/{project}:analyze` firing every section outside the record — needs `prune-plan`, so it is task 15's last subtask, not this task's.
+
+- **Done when**: the constitution and both templates state the rule, the reset-constant drift test passes against the new tasks template, and the sweep finds no live claim that prune touches only `tasks.md`.
 
 ### 15. Prune reduces every prunable artifact in the spec directory
 
 - [ ] Implement the behavior described in `scenarios/prune-reduces-the-spec-directory.md`
+- [ ] `data-model.md`: `prune-plan`'s segmentation, classification, finding key, schema, the `stale-sections` outcome and `reopen-required`
+- [ ] Promote `read_blob_at_head` from `check_stuck.rs` into `mod.rs` on `ProjectRepository`; `check_stuck.rs` calls it
+- [ ] `primitives/prune_plan.rs`: fence- and comment-aware `##` segmentation; the design-record constant pinned to the plan template by a drift test; `plan_section_finding`; `decided` from `read_decisions` + `same_key`; digest-guarded removal with seam normalization; `reopen-required` from the HEAD diff; `PlanFileMissing`
+- [ ] Wire `prune-plan` through the seven registration sites, `framework/runtime-tools.txt`, then `scripts/gen-configure-mcp.sh` and `scripts/gen-claude-commands.sh`; `cargo test --test mcp` first
+- [ ] Tests that fail when their behavior is removed (`QUAL-TEST-001`), each proven red by mutation: a `##` in a fence or comment is not a section; headings compare case-insensitively; a digest mismatch refuses the whole apply; a stored discard sets `decided`; each reopen trigger fires and a removal-only diff does not
+- [ ] `framework/commands/prune.md`: spec-directory scope, stored discards, the reopen named at confirmation and asked about when unannounced, declines run-only, a markdown-only reference for plan segmentation
+- [ ] `framework/commands/analyze.md`: a step invoking `prune-plan` on `planned`+ specs that records every section outside the record, decided or not, as a `plan-record` advisory (`scenarios/plan-records-the-design-as-it-stands.md`); re-bless `analyze-basic` filtered to that golden and read the diff line by line
+- [ ] Body corrections: *Scope confirmation* resolution, Behavior's "scope is `tasks.md` only", AC1, *Framework consistency* gains `plan.md`'s classification, title broadened; new criteria added unlabelled and labelled by `label-criteria`
+- [ ] Docs: `docs/slash-commands.md`'s `/prune` entry, `docs/analyze.md`'s advisory, `README.md`'s `/prune` line, prune's description in `scripts/gen-help-tables.sh`
 
-- **Done when**: the scenario's described behavior is correctly implemented and tested.
+- **Done when**: `/{project}:prune` on a spec with a journal section moves its durable pieces home and removes it, a stored discard keeps a section from being proposed, analyze reports every section outside the record, and the full local gate is green.
 
 ### 16. Prune --all walks every spec
 
 - [ ] Implement the behavior described in `scenarios/prune-all-walks-every-spec.md`
+- [ ] `all` on `prune-tasks` and `prune-plan`: exactly one of `feature` and `all`; `force` with `all` and `apply` with `all` on `prune-plan` refused through `InvalidArgument`; walk in `feature_dir_cmp` order; `features`, `skipped` and `examined` in the result; `data-model.md` updated
+- [ ] Tests proven red by mutation: the walk order, a skipped feature named with its reason, the refusals, and a per-spec reset gate
+- [ ] `framework/commands/prune.md`: the `--all` flow — one corpus preview, one confirmation for every `tasks.md` reduction, plans one spec at a time
+- [ ] `docs/slash-commands.md`: sharpen the flag-versus-command rule so a batch flag repeating a one-spec operation (`/{project}:analyze --all`, `/{project}:prune --all`) is distinct from a two-spec operation
 
-- **Done when**: the scenario's described behavior is correctly implemented and tested.
+- **Done when**: `/{project}:prune --all` previews the corpus, applies every `tasks.md` reduction under one confirmation, walks plans spec by spec, and the refusals hold.
+
+### 17. Release
+
+- [ ] The full local gate, as `AGENTS.md` §Workflow lists it
+- [ ] `runtime/CHANGELOG.md` `### Added` and a minor bump across `version`, `runtime/Cargo.toml` and the changelog heading, in one commit
+- [ ] `/{project}:review` and `/{project}:analyze` on this spec, then the completion gate to `done`
+- [ ] Tag `ductus-v<version>` in the same sitting and read every workflow run for that sha
+
+- **Done when**: 041 is `done`, the tag is pushed, and every workflow run for the release commit has concluded successfully.

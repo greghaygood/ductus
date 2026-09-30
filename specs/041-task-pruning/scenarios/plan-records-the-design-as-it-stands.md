@@ -62,7 +62,7 @@ Nothing pushes back. `plan.md` sits outside the review digest, so appending to i
 
 ## What this does not do
 
-It does not clean up an existing plan — that is `prune-reduces-the-spec-directory`. It does not change what goes in `data-model.md`, `research.md`, or the review and analysis records. The runtime half of the advisory, a check family over `plan.md`'s sections, is recorded as a scenario under `022-deterministic-runtime` at plan time, the same ownership split this spec already uses for `prune-tasks`.
+It does not clean up an existing plan — that is `prune-reduces-the-spec-directory`. It does not change what goes in `data-model.md`, `research.md`, or the review and analysis records. The runtime half of the advisory is `prune-plan`'s preview, which `/{project}:analyze` calls as a step of its own — not a `check-artifacts` family, whose registry lives in `022-deterministic-runtime`'s data model — so this spec owns it, as it owns `prune-tasks`.
 
 ## Open Questions
 
