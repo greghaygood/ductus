@@ -18,7 +18,7 @@ The mechanism to do it properly already existed and was exercised by fold-back. 
 
 Consolidation removes a spec directory whose content belongs with another.
 
-- `/{project}:consolidate <spec> --into <spec>` is a **cleanup command**, in the family of [041 — Task pruning](../041-task-pruning/spec.md): operator-initiated, confirmed, not a pipeline state transition, with git history as the only recovery.
+- `/{project}:consolidate <spec> --into <spec>` is a **cleanup command**, in the family of [041 — Spec directory pruning](../041-task-pruning/spec.md): operator-initiated, confirmed, not a pipeline state transition, with git history as the only recovery.
 - It performs **none** of fold's content migration — no body edit, no scenario creation, no task append, no status change, no review invalidation. Fold moves content because a staging spec was never meant to stand alone; consolidation assumes the merge already happened or that nothing needed merging.
 - `retire-feature`'s refusal of the sequential directory form is **relaxed** here for an explicitly targeted consolidation — not removed. The anti-stranding guard is unchanged, and `/{project}:fold` still cannot reach a sequential directory.
 - Because it does not migrate content, the confirmation must name **content loss**, not merely directory removal: the guard proves the target exists, never that anything landed there.
@@ -29,7 +29,9 @@ Adding `--into` to `/{project}:fold` was considered and rejected. Fold's purpose
 
 ## One-spec and two-spec commands
 
-Consolidation is its own command rather than a flag, and the reason is scope rather than taste. The commands split on how many specs they write: `amend`, `prune`, `clarify`, `plan`, and `implement` each write one and each declares that single-spec scope. `fold` and `consolidate` write two, so neither fits inside a single-spec command as a flag — widening one to accommodate a two-spec operation qualifies every statement it makes about its own scope.
+Consolidation is its own command rather than a flag, and the reason is scope rather than taste. The commands split on how many specs one operation writes: `amend`, `prune`, `clarify`, `plan`, and `implement` each operate on one spec and each declares that single-spec scope. A batch flag that repeats the same one-spec operation for every spec in the corpus — `analyze --all`, `prune --all` — leaves that scope intact, since each write it makes is still one spec's. `fold` and `consolidate` differ in kind: one operation writes two specs, so neither fits inside a single-spec command as a flag — widening one to accommodate a two-spec operation qualifies every statement it makes about its own scope.
+
+> **Signpost:** the batch-flag distinction was drawn when [041 — Spec directory pruning](../041-task-pruning/spec.md) gave `/prune` an `--all` flag, which repeats prune's one-spec reduction for every spec rather than writing two specs in one operation.
 
 That distinction was undocumented, and it is the thing that explains why several operations are separate commands rather than flags. `docs/slash-commands.md` states it, and names which commands sit on each side.
 
