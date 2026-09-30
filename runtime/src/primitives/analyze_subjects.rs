@@ -806,31 +806,33 @@ mod tests {
 
     /// The reach failure, not the read failure — the one that used to be
     /// dropped by `filter_map(Result::ok)`.
+    ///
+    /// Unix only: the test makes `scenarios/` untraversable with a mode
+    /// bit, which Windows has no equivalent of, so there it would assert
+    /// nothing.
+    #[cfg(unix)]
     #[test]
     fn a_subject_the_walk_cannot_reach_is_recorded() {
+        use std::os::unix::fs::PermissionsExt as _;
         let tmp = tempdir().unwrap();
         let dir = tmp.path().join("specs/001-x");
         seed(&dir, "");
         // Make `scenarios/` untraversable so the walk errors on it rather
         // than on any single file.
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt as _;
-            let scenarios = dir.join("scenarios");
-            fs::set_permissions(&scenarios, fs::Permissions::from_mode(0o000)).unwrap();
-            let digest = subject_digest(&dir, is_analyze_subject);
-            // Restore before asserting, so a failure cannot leave the tempdir
-            // undeletable.
-            fs::set_permissions(&scenarios, fs::Permissions::from_mode(0o755)).unwrap();
-            assert!(
-                !digest.unreadable.is_empty(),
-                "an unreachable subdirectory must not shrink the subject set silently: {digest:?}"
-            );
-            assert!(
-                !digest.digests.contains_key("scenarios/a.md"),
-                "the unreachable file is not digested: {digest:?}"
-            );
-        }
+        let scenarios = dir.join("scenarios");
+        fs::set_permissions(&scenarios, fs::Permissions::from_mode(0o000)).unwrap();
+        let digest = subject_digest(&dir, is_analyze_subject);
+        // Restore before asserting, so a failure cannot leave the tempdir
+        // undeletable.
+        fs::set_permissions(&scenarios, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(
+            !digest.unreadable.is_empty(),
+            "an unreachable subdirectory must not shrink the subject set silently: {digest:?}"
+        );
+        assert!(
+            !digest.digests.contains_key("scenarios/a.md"),
+            "the unreachable file is not digested: {digest:?}"
+        );
     }
 
     // --- the review's narrower subject set ----------------------------------

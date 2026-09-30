@@ -87,7 +87,7 @@ It confirms before acting, naming the source's scenarios individually, because i
 
 Reach for it only when the source spec no longer describes anything true. A spec that still describes live behavior is edited in place instead, through the `done → in-progress` back-edge.
 
-> **This is the only one of the three that removes a durable artifact.** The other two remove something that was never meant to last: `tasks.md` sections are ephemeral work-tracking, and a branch-scoped directory is a staging form whose content `/fold` has just migrated into its durable home. Consolidation is different in kind — it **migrates nothing**. The guard proves the target exists, never that anything actually landed there, so the confirmation names the content you are losing, scenario by scenario, rather than merely naming the directory.
+> **This is the only one of the three that removes a durable artifact.** The other two remove nothing durable: `/prune` drops spent `tasks.md` sections, which are ephemeral work-tracking, and `plan.md` sections outside the design record only once their durable pieces have moved home; a branch-scoped directory is a staging form whose content `/fold` has just migrated into its durable home. Consolidation is different in kind — it **migrates nothing**. The guard proves the target exists, never that anything actually landed there, so the confirmation names the content you are losing, scenario by scenario, rather than merely naming the directory.
 
 ## Brownfield — absorb existing reality
 

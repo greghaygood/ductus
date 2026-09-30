@@ -691,19 +691,28 @@ mod tests {
         assert!(matches!(err, PrimitiveError::InvalidPath { .. }));
     }
 
+    /// The write replaces the session file by renaming a new one over it,
+    /// never by rewriting it in place, so a reader outside the lock meets
+    /// the old file or the new one and never a torn one. The path names a
+    /// new inode afterwards; an in-place rewrite would keep the old one. The
+    /// old file is held open, so its inode cannot be reused meanwhile.
+    #[cfg(unix)]
     #[test]
-    fn dropping_named_tempfile_leaves_existing_session_unchanged() {
-        use std::io::Write;
+    fn a_write_replaces_the_session_file_rather_than_rewriting_it() {
+        use std::os::unix::fs::MetadataExt as _;
         let tmp = tempdir().unwrap();
         fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
         let session_path = tmp.path().join(".ductus/session.toml");
-        let original = "feature = \"unchanged\"\n";
-        fs::write(&session_path, original).unwrap();
-        {
-            let mut tf = tempfile::NamedTempFile::new_in(tmp.path()).unwrap();
-            tf.write_all(b"INTERRUPTED").unwrap();
-        }
-        assert_eq!(fs::read_to_string(&session_path).unwrap(), original);
+        fs::write(&session_path, "feature = \"before\"\n").unwrap();
+        let held = fs::File::open(&session_path).unwrap();
+        let before = held.metadata().unwrap().ino();
+        run_with_now(&base_args(), tmp.path(), fixed_now()).unwrap();
+        assert_ne!(fs::metadata(&session_path).unwrap().ino(), before);
+        assert!(
+            fs::read_to_string(&session_path)
+                .unwrap()
+                .contains("022-deterministic-runtime")
+        );
     }
 
     #[test]

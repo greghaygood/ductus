@@ -696,7 +696,7 @@ fn applied_waiver_threads_from_process_waivers_into_write_review() {
 
 /// Gate convention, primitive shape: a `gate-confirm` primitive step IS a
 /// blocking gate by virtue of the primitive — no "ask the user to
-/// approve" phrase required (prune.md step 4's shape). Denial is a clean
+/// approve" phrase required (prune.md step 6's shape). Denial is a clean
 /// `complete` with `confirmed: false`, and later steps never run.
 #[test]
 fn gate_confirm_primitive_step_blocks_without_the_phrase() {

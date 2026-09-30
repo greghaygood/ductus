@@ -345,8 +345,8 @@ fn host_is_insecure_allowed(host: &str) -> bool {
 /// the fields hyper-util's matcher reads on every client build when reqwest's
 /// system proxy is left on (hyper-util 0.1.20, `client/proxy/matcher.rs`,
 /// `Builder::from_env`), captured once here instead. An empty string is
-/// unset, as it is there.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// unset, as it is there. Deliberately without `Debug`: a proxy URL can
+/// carry credentials, which hyper-util's own `Debug` output omits.
 struct ProxyEnv {
     /// `REQUEST_METHOD` was set: a CGI environment, where the convention
     /// ignores every proxy variable.

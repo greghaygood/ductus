@@ -885,7 +885,7 @@ fn default_true() -> bool {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct WriteAnalysisArgs {
-    /// Feature directory whose `spec.md` records the analysis.
+    /// Feature directory whose `analysis.md` records the analysis.
     #[arg(long)]
     pub feature: String,
     /// ISO-8601 UTC timestamp recorded as `analyze.last-run`. Host-provided,
@@ -1355,7 +1355,7 @@ pub struct DeriveDependenciesArgs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DeriveDependenciesResult {
-    /// Whether any spec was rewritten (or, under `dry-run`, would be).
+    /// Whether any spec was rewritten (or, without `write`, would be).
     pub drift: bool,
     /// Repo-relative paths of the specs rewritten, sorted.
     pub updated: Vec<String>,
@@ -1425,7 +1425,7 @@ pub struct DeriveReferencesArgs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct DeriveReferencesResult {
-    /// Whether any spec was rewritten (or, under `dry-run`, would be).
+    /// Whether any spec was rewritten (or, without `write`, would be).
     pub drift: bool,
     /// Repo-relative paths of the specs rewritten, sorted.
     pub updated: Vec<String>,
@@ -2301,7 +2301,7 @@ pub struct EnforceManifestResult {
 
 /// Args for `merge-managed-block`.
 ///
-/// Generalization of [`MergeClaudeMdArgs`] that handles configurable
+/// Generalization of the retired `merge-claude-md` shim that handles configurable
 /// marker shapes. `marker-style: "html-comment"` (default) reproduces
 /// `merge-claude-md`'s exact behavior; `marker-style: "line-prefix"`
 /// uses a single `# {marker}` preamble line followed by the block,
@@ -2839,7 +2839,7 @@ pub struct PruneTasksSummary {
     pub applied: bool,
     /// `--reset` status-gate outcome.
     pub gate: PruneGate,
-    /// Spec status, read only when `reset` is set (otherwise `null`).
+    /// Spec status, read only when `reset` is set (otherwise absent).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
     /// Output equals input — nothing spent to prune (keep-pending), or
@@ -2931,8 +2931,9 @@ pub struct PruneWalk<T> {
     /// with nothing to reduce, so a clean corpus reads as examined, not as
     /// silence.
     pub examined: u32,
-    /// Each feature with something to report, in corpus order: the same
-    /// summary a single-feature call returns, plus the feature.
+    /// Each feature with something to report, in corpus order, beside its
+    /// `feature`: `prune-plan`'s full single-feature summary, or
+    /// `prune-tasks`' compact per-spec line (no per-section records).
     pub features: Vec<PruneWalkEntry<T>>,
     /// Each feature without the artifact, with the reason.
     pub skipped: Vec<SkippedFeature>,
@@ -3249,8 +3250,8 @@ pub struct WriteSessionResult {
     /// absent when the process is unidentified and wrote the default alone.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub identity: Option<String>,
-    /// Repo-relative per-process file written, when the process is
-    /// identified.
+    /// Repo-relative per-process file written — by a target or clear write
+    /// from an identified process; a host-config write stores none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub own_path: Option<String>,
     /// Other unexpired sessions targeting the feature just written — the
@@ -4045,15 +4046,16 @@ pub enum RecordFreshness {
     /// No block, or its `last-run` is null: the spec has never completed a
     /// run of the command that owns this record.
     NeverRun,
-    /// The record describes the compared tree: nothing in the subject set
-    /// changed since `analyzed-against`.
+    /// The record describes the compared tree: every subject-set artifact's
+    /// digest matches the one the run recorded.
     Current {
         /// The recorded `last-run` timestamp.
         last_run: String,
         /// The recorded `analyzed-against` sha.
         analyzed_against: String,
     },
-    /// One or more subject-set artifacts changed after `analyzed-against`.
+    /// One or more subject-set artifacts' digests differ from the recorded
+    /// ones.
     Stale {
         /// The recorded `last-run` timestamp.
         last_run: String,
@@ -4321,7 +4323,7 @@ pub struct InboxStanding {
 
 // -- append-inbox --------------------------------------------------------------
 
-/// Args for `append-inbox`. Appends one `- {text}` bullet to
+/// Args for `append-inbox`. Appends one `- [ ] {text}` bullet to
 /// `{specs-root}/inbox.md`, creating the file when missing. The surface
 /// behind `/ductus:log`, the inbox's only producer.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
@@ -5110,8 +5112,9 @@ pub struct RetireFeatureResult {
 
 // -- invalidate-review ---------------------------------------------------------
 
-/// Args for `invalidate-review`. Resets a spec's `review:` block to the
-/// un-reviewed state, so the pre-`done` gate demands a fresh review.
+/// Args for `invalidate-review`. Resets the review record in a spec's
+/// `review.md` to the un-reviewed state, so the pre-`done` gate demands a
+/// fresh review.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct InvalidateReviewArgs {
@@ -5132,7 +5135,7 @@ pub struct InvalidateReviewArgs {
 pub struct InvalidateReviewResult {
     /// Whether this call reset a recorded review.
     pub invalidated: bool,
-    /// Repo-relative path of the spec file, present either way.
+    /// Repo-relative path of the `review.md` record, present either way.
     pub path: String,
     /// The `last-run` value that was cleared, so the caller can say what it
     /// invalidated rather than only that it did. Absent when nothing was.

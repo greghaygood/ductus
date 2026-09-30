@@ -39,7 +39,7 @@ use crate::schema::primitives::{
 /// `framework/templates/spec/tasks.md` minus its H1 so the two never drift.
 const CANONICAL_EMPTY_TASKS_BODY: &str = "Tasks derived from the [plan](plan.md). Complete in order.\n\n<!-- Each task should be small enough to implement and verify independently.\n     Mark subtasks as they are completed. Every task MUST close with a\n     `- **Done when**: …` line stating its completion condition — the\n     tooling reads this exact form to confirm the task is fully specified.\n\n     A task body may also carry working notes — what the next session needs\n     to resume it: the mechanics, the order, what is left on disk. Write\n     them as prose on the pending task they concern, so they go when the\n     task is pruned. Put an ordering constraint on the task that must wait,\n     never above the first task, where it would outlive every task; and\n     never write a note as a checkbox, which would count toward the task's\n     completion. Anything that must outlast the task belongs in its durable\n     home first. Example:\n\n## 1. Create sessions table migration\n\n- [ ] Write SQL migration for `sessions` table\n- [ ] Run migration and verify schema\n\n- **Done when**: the migration applies cleanly and `sessions` matches the data model.\n\n## 2. Implement session store\n\nBlocked on task 1: the store tests run against the migrated schema.\n\n- [ ] Create `shared/auth/session.go` with Create, Get, Delete methods\n- [ ] Write store integration tests against real PostgreSQL\n\n- **Done when**: all store methods are covered by passing integration tests.\n\n## 3. Update README link to migration guide\n\n- [ ] Edit `README.md` to point at the new path\n\n- **Done when**: the README link resolves to the new path.\n\n-->\n";
 
-/// Frontmatter shape used only to read `status` for the `--reset` gate.
+/// Frontmatter shape used only to read `status` (see [`read_status`]).
 #[derive(serde::Deserialize)]
 struct StatusOnly {
     status: Option<String>,
@@ -271,8 +271,9 @@ fn summarize(
     })
 }
 
-/// Read the spec's frontmatter `status` — for the `--reset` gate here, and
-/// for `prune-plan`'s preview and reopen trigger.
+/// Read the spec's frontmatter `status` — for the `--reset` gate and the
+/// `all` walk's per-spec line here, and for `prune-plan`'s preview and
+/// reopen trigger.
 pub(crate) fn read_status(feature_dir: &Path, root: &str, feature: &str) -> Result<String> {
     let spec_path = feature_dir.join("spec.md");
     if !spec_path.is_file() {

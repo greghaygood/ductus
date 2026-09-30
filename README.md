@@ -108,7 +108,7 @@ They are plain markdown in your project's rule-file directory — the `rules/` d
 | --- | --- |
 | `security-backend.md` | Authentication, authorization, input validation, data protection, API security, logging and audit, dependency management, error handling |
 | `security-frontend.md` | XSS, CSRF, secure client-side storage, authentication UX, content security policy, dependencies, handling of sensitive data |
-| `quality-cross.md` | Silent stubs, unverified external contracts, unsubstantiated clean results |
+| `quality-cross.md` | Silent stubs, unverified external contracts, unsubstantiated clean results, unenumerated delegation to shared code, tests that cannot fail |
 | `reliability-backend.md` | Bounded timeouts, retry discipline, circuit breakers, graceful shutdown, bulkheads that shed load rather than queue unboundedly |
 | `performance-backend.md` | Query efficiency (N+1, unindexed filters, unbounded reads), caching with a stated expiry, connection-pool discipline, payload budgets, offloading slow work off the request path |
 | `performance-frontend.md` | Core Web Vitals budgets, bundle size, image delivery, resource loading, web-font discipline |
@@ -120,11 +120,13 @@ They are plain markdown in your project's rule-file directory — the `rules/` d
 
 The two security files carry the highest proportion of **MUST** rules, because the failures they describe are exploitable rather than merely untidy. Accessibility is AA because that is the baseline written into law in several jurisdictions, which is why it is a shipped rule file rather than a suggestion.
 
-`quality-cross.md` is the odd one out, and worth stating in full — three failure modes that look like working code and are not, on any surface:
+`quality-cross.md` is the odd one out, and worth stating in full — five failure modes that look like working code and are not, on any surface:
 
 - **Silent stubs** — an unimplemented path whose contract implies it does work, returning success anyway. A no-op rate limiter ships indistinguishably from a real one.
 - **Unverified external contracts** — code whose correctness depends on a schema, an API shape, or a file format it does not own, with nothing that fails loudly when the assumption is wrong.
 - **Unsubstantiated clean results** — a result that reports "clean" when it means "could not check". A caller cannot tell a verified-clean answer from an unverifiable one, and will read the reassuring one.
+- **Unenumerated delegation to shared code** — a hand-rolled predicate, parser or validator replaced by a shared one without first listing what the local version enforced by construction, so the change silently widens or narrows what it accepts.
+- **Tests that cannot fail** — a test that passes whether or not the behavior it names works: it asserts nothing about the result, pins a value incidental to it, or lets a fallback satisfy the assertion meant for the primary path.
 
 ### Which rules load
 

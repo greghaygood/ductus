@@ -588,7 +588,7 @@ Each audit command records its run in the frontmatter of the artifact it writes:
 | `analyzed-unreadable` | no | list of strings | Subjects that exist but could not be read. Recorded rather than digested as empty, so a record cannot claim to have covered a file it could not open. |
 | `hard-fail` | yes | integer | Malformed-artifact findings. |
 | `blocking-findings` | yes | integer | Findings in the blocking tier. Named for the tier, to keep it distinct from the derived `blocking` flag. |
-| `advisory` | yes | integer | Recorded and never gated on — the advisory tier's members carry their own published promotion criteria. |
+| `advisory` | yes | integer | Recorded and never gated on — some of the tier's checks carry their own published promotion criteria, and the rest stay advisory by design. |
 | `unexamined` | yes | integer | Targets the run could not examine. The field that makes a clean run honest: clean with nothing skipped and clean with something skipped are two different results. |
 | `unexamined-by-reason` | no | map of reason → integer | |
 | `dispositions` | no | map: `fixed`, `routed`, `discarded`, `undispositioned` → integer | What the run did with its findings, in every tier. `undispositioned` is the live tier total less the live findings routed or discarded, so a finding the run did not itemize counts as undispositioned. Recorded beside the tier counts because a run that produced five findings and decided none must not be byte-identical to one that decided all five. Absent is the pre-disposition state, as in the review record. |
@@ -597,11 +597,11 @@ Each audit command records its run in the frontmatter of the artifact it writes:
 
 #### Open-schema rule
 
-Additional fields beyond those listed above are permitted and ignored by uninterested consumers — with one exception, stated in **Audit records** above: a `review:` or `analyze:` block in a spec's frontmatter is a residual of the pre-relocation schema and is reported rather than tolerated. The rule admits fields nothing has claimed; it does not re-admit a field this schema has moved. Examples adopters or future `ductus` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/ductus:analyze` reports unknown fields as informational findings (not errors). Stale fields in done specs (e.g., `title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no findings.
+Additional fields beyond those listed above are permitted and ignored by uninterested consumers — with one exception, stated in **Audit records** above: a `review:` or `analyze:` block in a spec's frontmatter is a residual of the pre-relocation schema and is reported rather than tolerated. The rule admits fields nothing has claimed; it does not re-admit a field this schema has moved. Examples adopters or future `ductus` work might add: `owner`, `target_release`, `created_at`, `description`, `aliases`. Consumers MUST NOT error on the presence of unknown fields. `/{project}:analyze` reports unknown fields as informational findings (not errors). Stale fields in done specs (e.g., `title`, `tags`, `spec-ref`, `track`) remain valid under this rule and produce no findings.
 
 ### Validation Severity
 
-`/ductus:analyze` checks frontmatter against this schema with the following severity:
+`/{project}:analyze` checks frontmatter against this schema with the following severity:
 
 - **Hard fail** — frontmatter block missing on a spec or scenario file; frontmatter YAML malformed; `status` missing or not in the allowed set; `dependencies` missing or not a list; both `section` and the legacy `spec-ref` missing on a scenario; frontmatter block missing or malformed on a `review.md` or `analysis.md` that exists (the artifact's absence is a state, its presence without a parseable record is a defect); a `decisions:` list on either record that does not parse (read as empty, it would silently drop every stored decision).
 - **Blocking** — a `review:` or `analyze:` block present in a spec's frontmatter. It is not a hard fail: the spec file itself parses, and under the pre-relocation schema the block was valid. It is not informational either, because the open-schema rule does not cover it and a second copy of a gate-read record is the drift condition, not an unknown field. The remedy is the relocation migration, and the finding names it.
@@ -610,7 +610,7 @@ Additional fields beyond those listed above are permitted and ignored by uninter
 
 Hard fails block the validation pass. Advisory and informational findings are reported but do not block.
 
-For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules) — and for the one frontmatter check named above, a record block residual in a spec — `/ductus:analyze` adds a fourth tier, **Blocking**, between Hard fail and Advisory. The residual is the exception that proves the tier's shape rather than breaking it: the spec file is well-formed, so Hard fail would overstate the defect, while the artifact set is inconsistent with itself, which is precisely what Blocking says. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/analyze.md` for the full per-check severity assignment.
+For non-frontmatter checks (spec integrity, artifact completeness, plan/task consistency, dependencies, security rules) — and for the one frontmatter check named above, a record block residual in a spec — `/{project}:analyze` adds a fourth tier, **Blocking**, between Hard fail and Advisory. The residual is the exception that proves the tier's shape rather than breaking it: the spec file is well-formed, so Hard fail would overstate the defect, while the artifact set is inconsistent with itself, which is precisely what Blocking says. Blocking findings are structural or content issues that must be fixed before the next pipeline gate fires (e.g., missing `plan.md` on a `planned` spec, an unknown rule ID referenced in a spec). Hard fail and Blocking both prevent pipeline advancement; the distinction is that Hard fail says "the spec file itself is malformed," while Blocking says "the artifact set is incomplete or inconsistent." See `framework/commands/analyze.md` for the full per-check severity assignment.
 
 <!-- §runtime-boundary -->
 
@@ -734,9 +734,9 @@ The deterministic part of this audit is machine-checked by `/{project}:analyze`;
 Every blocking check in `/{project}:analyze` has a corresponding scaffolding element in the template that produces a passing artifact by default. The contract runs in both directions:
 
 - Adding a new blocking check requires a template update so a freshly-copied artifact passes the check without manual editing.
-- Adding template structure requires a corresponding rule (validate check, constitution rule, or both). Sections that don't trace back to a rule are dead weight.
+- Adding template structure requires a corresponding rule (an `/{project}:analyze` check, a constitution rule, or both). Sections that don't trace back to a rule are dead weight.
 
-Templates and validate evolve together. A diff that touches one without the other is incomplete.
+Templates and `/{project}:analyze` evolve together. A diff that touches one without the other is incomplete.
 
 ### Manifest discipline
 

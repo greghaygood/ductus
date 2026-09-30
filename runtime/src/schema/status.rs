@@ -16,7 +16,9 @@ pub(crate) const ALLOWED_STATUSES: &[&str] =
 /// (`traverse-deps`): the lifecycle tail from `planned` onward. `draft` and
 /// `clarified` block dependents because there is no committed plan to build
 /// against. Derived from [`ALLOWED_STATUSES`] so the subset cannot drift
-/// from the canonical order.
+/// from the canonical order. The exec analyze tally reads it too, as the
+/// `planned`-or-later condition on the plan-record advisory: both mean "from
+/// `planned` onward", so a change to one is a change to the other.
 pub(crate) const COMPATIBLE_STATUSES: &[&str] = ALLOWED_STATUSES.split_at(2).1;
 
 /// Statuses that satisfy a dependency for `dashboard`'s blocked-by

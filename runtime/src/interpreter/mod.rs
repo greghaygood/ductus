@@ -23,7 +23,7 @@
 //! Two step shapes gate, and step type decides which rule applies:
 //!
 //! - A `Step::Primitive` whose name is `gate-confirm` IS a blocking gate
-//!   by virtue of the primitive — phrase or no phrase (prune.md step 4's
+//!   by virtue of the primitive — phrase or no phrase (prune.md step 6's
 //!   shape). The walker emits the `gate-confirm` envelope itself and
 //!   awaits the `gate-response`; it does not dispatch through
 //!   [`dispatch_primitive`].
@@ -850,7 +850,7 @@ fn envelope_kind(message: &ProtocolMessage) -> &'static str {
 }
 
 /// What a session primitive's result has to tell the operator, one line
-/// each: its notices, the other sessions sharing the target it wrote, the
+/// each: its notices, the other sessions sharing the feature it wrote, the
 /// sessions its sweep removed, and the session files it could not check
 /// (spec 062). A host displays these; an exec
 /// walk has no host, so the walker emits them as progress lines, or the

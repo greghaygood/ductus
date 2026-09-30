@@ -2606,10 +2606,9 @@ pub(crate) fn list_feature_dirs(specs_dir: &Path) -> Vec<String> {
 ///
 /// The counter is compared **numerically**, which is the whole reason a
 /// comparator is needed rather than a plain sort: `1234.10-x` precedes
-/// `1234.2-x` lexicographically. Sequential names are unaffected — their
-/// prefix is exactly three digits, so byte order and numeric order agree
-/// — and a corpus holding only sequential directories comes back in the
-/// order it always did.
+/// `1234.2-x` lexicographically. Sequential names are compared by number
+/// too — `999-x` precedes `1000-x`, which byte order inverts — so a corpus
+/// of three-digit names comes back in the byte order it always did.
 ///
 /// The name is the final tiebreak, so the order is total: two directories
 /// that agree on form, number, identifier, and counter still sort
