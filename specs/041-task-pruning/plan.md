@@ -126,9 +126,9 @@ always kept.
 Each section outside the record is reported with its `heading`, its `ordinal`
 (position among all `##` sections), `lines`, `bytes`, a sha256 `digest` of the
 section's text, its `finding` (below), and `decided`; the result adds the
-spec's `status` and `examined`, the count of `##` sections read, so an empty
-list over no sections reads differently from one over sections all in the
-record. Preview returns only this summary. Apply takes
+spec's `status` and `sections-examined`, the count of `##` sections read, so
+an empty list over no sections reads differently from one over sections all
+in the record. Preview returns only this summary. Apply takes
 `remove: [{heading, digest}]` and removes exactly those sections; if any
 listed section's current digest differs, or no section carries that heading,
 the whole apply is refused as the domain outcome `stale-sections` and nothing
@@ -184,12 +184,26 @@ Both primitives take `all: bool`; exactly one of `feature` and `all` is
 required, and anything else is refused with the existing `MissingArgument` /
 `InvalidArgument` variants. The walk is `list_feature_dirs` in
 `feature_dir_cmp` order — sequential and branch-scoped directories alike. The
-result carries `examined`, a `features` list whose entries are the
-single-feature summary plus `feature`, and `skipped` naming each feature
-without the artifact (`no-tasks-file`, `no-plan-file`). `prune-tasks` with
-`all` and `apply` writes every feature's reduction under one confirmation;
-`prune-plan` with `all` is preview-only and refuses `apply`, because each
-plan section is a per-spec judgment. This is the batch shape
+result carries `examined`, a `features` list with one entry per spec that has
+something to report — each beside its `feature` — and `skipped` naming each
+feature without the artifact (`no-tasks-file`, `no-plan-file`); a spec with
+nothing to report is omitted and counted in `examined`. MCP requires a tool's
+output schema to be an object, so each result is one struct with two
+flattened, optional halves — the single-feature summary, on the wire exactly
+as before, or the walk — and because the halves share one key space no key
+may sit in both, which is why `prune-plan`'s section count is
+`sections-examined`. A `prune-tasks` walk lists each spec as a compact line —
+gate, status, applied, counts, sizes and path — rather than its summary: the
+per-section records would carry every task section in the corpus — 842 of
+them and 161,841 bytes over this repository's 60 specs, past the MCP output
+cap and against the token-reduction contract — where the lines come to 15,373
+bytes. The
+line carries `status` for every spec, keep-pending included, because only a
+`done` spec can be reopened and the corpus preview prices each row by it. A
+`prune-plan` walk keeps full summaries, since the host judges each section by
+heading. `prune-tasks` with `all` and `apply` writes every feature's
+reduction under one confirmation; `prune-plan` with `all` is preview-only and
+refuses `apply`, because each plan section is a per-spec judgment. This is the batch shape
 `/{project}:analyze --all` already has — the same one-spec operation repeated
 per spec, never one operation spanning two — so it does not contradict
 `docs/slash-commands.md`'s rule that a two-spec operation is its own command;
@@ -354,6 +368,7 @@ broadens from *Task Pruning*; the directory slug stays.
 | `framework/templates/spec/plan.md` | Edit | Trade-offs and optional sections; what-stays-out comment |
 | `framework/templates/spec/tasks.md` | Edit | Working-notes guidance |
 | `framework/commands/prune.md` | Edit | Spec-directory scope, discards, reopen, `--all` |
+| `framework/commands/consolidate.md` | Edit | 041's broadened title in its link |
 | `framework/commands/analyze.md` | Edit | The `prune-plan` step and `plan-record` reference |
 | `scripts/gen-help-tables.sh` | Edit | Prune's description |
 | `framework/commands/help.md` | Regenerate | Help table |

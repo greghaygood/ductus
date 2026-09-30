@@ -23,13 +23,14 @@ use std::path::Path;
 
 use crate::primitives::{
     PrimitiveError, Result, SkipScanner, TasksStructure, checkbox, detect_tasks_structure,
-    join_blocks, parse_atx_heading, read_text, rel_path, split_frontmatter, split_numbered_heading,
-    write_atomic,
+    join_blocks, list_feature_dirs, parse_atx_heading, read_text, rel_path, split_frontmatter,
+    split_numbered_heading, write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
     Classification, PruneAction, PruneGate, PruneMode, PruneSection, PruneTasksArgs,
-    PruneTasksResult, SizeSummary,
+    PruneTasksLine, PruneTasksResult, PruneTasksSummary, PruneWalk, PruneWalkEntry, SizeSummary,
+    SkipReason, SkippedFeature,
 };
 
 /// The template `tasks.md` body with its `# …` H1 line removed — the reset
@@ -95,12 +96,17 @@ impl Block {
     }
 }
 
-/// Execute the `prune-tasks` primitive against the given repo root.
+/// Execute the `prune-tasks` primitive against the given repo root: one
+/// feature's reduction, or every feature's under `all`.
 ///
 /// # Errors
 ///
+/// - [`PrimitiveError::MissingArgument`] when neither `feature` nor `all` is
+///   given, and [`PrimitiveError::InvalidArgument`] when both are, or when
+///   `all` comes with `force`.
 /// - [`PrimitiveError::FeatureNotFound`] when the feature directory is absent.
-/// - [`PrimitiveError::TasksFileMissing`] when the feature has no `tasks.md`.
+/// - [`PrimitiveError::TasksFileMissing`] when the named feature has no
+///   `tasks.md`; under `all` such a feature is skipped instead.
 /// - [`PrimitiveError::MalformedTasks`] when a `--reset` file has no `# …`
 ///   heading.
 /// - [`PrimitiveError::MissingSpecFile`] / [`PrimitiveError::StatusFieldMissing`]
@@ -108,27 +114,120 @@ impl Block {
 /// - [`PrimitiveError::Io`] / [`PrimitiveError::Yaml`] on filesystem or
 ///   frontmatter failure.
 pub fn run(args: &PruneTasksArgs, repo: &Path) -> Result<PruneTasksResult> {
-    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
-    let feature_dir = repo.join(&root).join(&args.feature);
+    let Some(feature) = one_feature_or_all("prune-tasks", args.feature.as_deref(), args.all)?
+    else {
+        if args.force {
+            return Err(PrimitiveError::InvalidArgument {
+                primitive: "prune-tasks".into(),
+                argument: "force".into(),
+                reason: "a forced reset across every spec would discard every in-flight todo \
+                         under one confirmation; force a reset one spec at a time"
+                    .into(),
+            });
+        }
+        return Ok(PruneTasksResult {
+            summary: None,
+            walk: Some(walk(args, repo, &root)?),
+        });
+    };
+    Ok(PruneTasksResult {
+        summary: Some(summarize(feature, args, repo, &root)?),
+        walk: None,
+    })
+}
+
+/// The feature a call names, or `None` for an `all` walk. Exactly one of the
+/// two is given, for both prune primitives.
+///
+/// # Errors
+///
+/// [`PrimitiveError::MissingArgument`] when neither is given, and
+/// [`PrimitiveError::InvalidArgument`] when both are.
+pub(crate) fn one_feature_or_all<'a>(
+    primitive: &str,
+    feature: Option<&'a str>,
+    all: bool,
+) -> Result<Option<&'a str>> {
+    match (feature, all) {
+        (Some(feature), false) => Ok(Some(feature)),
+        (None, true) => Ok(None),
+        (Some(_), true) => Err(PrimitiveError::InvalidArgument {
+            primitive: primitive.into(),
+            argument: "all".into(),
+            reason: "name one feature or walk them all, not both".into(),
+        }),
+        (None, false) => Err(PrimitiveError::MissingArgument {
+            primitive: primitive.into(),
+            argument: "feature".into(),
+            reason: "name the feature to prune, or pass all to walk every feature".into(),
+        }),
+    }
+}
+
+/// Every feature's reduction, in corpus order, one line each carrying the
+/// spec's status. A feature with nothing to reduce is examined and left out;
+/// one with no `tasks.md` is skipped with that reason. Under `apply` each
+/// permitted reduction is written, and a `--reset` stays gated per spec.
+fn walk(args: &PruneTasksArgs, repo: &Path, root: &str) -> Result<PruneWalk<PruneTasksLine>> {
+    let names = list_feature_dirs(&repo.join(root));
+    let mut features = Vec::new();
+    let mut skipped = Vec::new();
+    for feature in &names {
+        match summarize(feature, args, repo, root) {
+            Ok(summary) if summary.nothing_to_prune => {}
+            Ok(summary) => {
+                // A reset read the status for its gate; keep-pending did not.
+                let status = match &summary.status {
+                    Some(status) => status.clone(),
+                    None => read_status(&repo.join(root).join(feature), root, feature)?,
+                };
+                features.push(PruneWalkEntry {
+                    feature: feature.clone(),
+                    summary: PruneTasksLine::new(summary, status),
+                });
+            }
+            Err(PrimitiveError::TasksFileMissing { .. }) => skipped.push(SkippedFeature {
+                feature: feature.clone(),
+                reason: SkipReason::NoTasksFile,
+            }),
+            Err(other) => return Err(other),
+        }
+    }
+    Ok(PruneWalk {
+        examined: u32::try_from(names.len()).unwrap_or(u32::MAX),
+        features,
+        skipped,
+    })
+}
+
+/// One feature's reduction.
+fn summarize(
+    feature: &str,
+    args: &PruneTasksArgs,
+    repo: &Path,
+    root: &str,
+) -> Result<PruneTasksSummary> {
+    super::validate_no_traversal(feature)?;
+    let feature_dir = repo.join(root).join(feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
-            root,
-            feature: args.feature.clone(),
+            root: root.to_string(),
+            feature: feature.to_string(),
         });
     }
     let tasks_path = feature_dir.join("tasks.md");
     if !tasks_path.is_file() {
         return Err(PrimitiveError::TasksFileMissing {
-            root,
-            feature: args.feature.clone(),
+            root: root.to_string(),
+            feature: feature.to_string(),
         });
     }
     let content = read_text(&tasks_path)?;
 
     // The `--reset` status gate reads the spec status before touching tasks.
     let (mode, gate, status) = if args.reset {
-        let status = read_status(&feature_dir, &root, &args.feature)?;
+        let status = read_status(&feature_dir, root, feature)?;
         let gate = if status == "done" || args.force {
             PruneGate::Allowed
         } else {
@@ -157,7 +256,7 @@ pub fn run(args: &PruneTasksArgs, repo: &Path) -> Result<PruneTasksResult> {
         write_atomic(&tasks_path, &new_content)?;
     }
 
-    Ok(PruneTasksResult {
+    Ok(PruneTasksSummary {
         mode,
         applied,
         gate,
@@ -423,11 +522,17 @@ mod tests {
 
     fn args(reset: bool, force: bool, apply: bool) -> PruneTasksArgs {
         PruneTasksArgs {
-            feature: "041-task-pruning".into(),
+            feature: Some("041-task-pruning".into()),
+            all: false,
             reset,
             force,
             apply,
         }
+    }
+
+    /// One feature's summary from a single-feature call.
+    fn run(args: &PruneTasksArgs, repo: &Path) -> Result<PruneTasksSummary> {
+        super::run(args, repo).map(|result| result.summary.expect("a single-feature summary"))
     }
 
     const FLAT: &str = "# 041 — Task Pruning Tasks\n\nTasks derived from the [plan](plan.md). Complete in order.\n\n## 1. Done task\n\n- [x] a\n- [x] b\n\n## 2. Pending task\n\n- [ ] c\n- [x] d\n\n## 3. Prose task\n\nNo checkboxes here.\n";
@@ -540,6 +645,149 @@ mod tests {
         let (_tmp, repo) = write_repo(tasks, Some("done"));
         let err = run(&args(true, false, true), &repo).unwrap_err();
         assert!(matches!(err, PrimitiveError::MalformedTasks { .. }));
+    }
+
+    /// A corpus of features, each `(name, status, tasks)`; `None` tasks means
+    /// the feature has no `tasks.md`.
+    fn corpus(features: &[(&str, &str, Option<&str>)]) -> tempfile::TempDir {
+        let tmp = tempdir().unwrap();
+        for (name, status, tasks) in features {
+            let dir = tmp.path().join("specs").join(name);
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(
+                dir.join("spec.md"),
+                format!("---\nstatus: {status}\ndependencies: []\n---\n\n# Spec\n"),
+            )
+            .unwrap();
+            if let Some(tasks) = tasks {
+                fs::write(dir.join("tasks.md"), tasks).unwrap();
+            }
+        }
+        tmp
+    }
+
+    fn all(reset: bool, force: bool, apply: bool) -> PruneTasksArgs {
+        PruneTasksArgs {
+            feature: None,
+            all: true,
+            reset,
+            force,
+            apply,
+        }
+    }
+
+    const PENDING_ONLY: &str = "# T\n\n## 1. Pending\n\n- [ ] a\n";
+
+    #[test]
+    fn a_walk_reports_features_in_corpus_order_and_names_each_skip() {
+        let tmp = corpus(&[
+            ("1234.10-late", "in-progress", Some(FLAT)),
+            ("1234.2-early", "in-progress", Some(FLAT)),
+            ("010-sequential", "in-progress", Some(FLAT)),
+            ("002-first", "in-progress", Some(FLAT)),
+            ("003-no-tasks", "clarified", None),
+            ("004-lean", "in-progress", Some(PENDING_ONLY)),
+        ]);
+        let walk = super::run(&all(false, false, false), tmp.path())
+            .unwrap()
+            .walk
+            .expect("an all walk");
+        let order: Vec<&str> = walk.features.iter().map(|f| f.feature.as_str()).collect();
+        // Sequential by number, then branch-scoped by counter, numerically.
+        assert_eq!(
+            order,
+            [
+                "002-first",
+                "010-sequential",
+                "1234.2-early",
+                "1234.10-late"
+            ]
+        );
+        assert_eq!(
+            walk.skipped,
+            [SkippedFeature {
+                feature: "003-no-tasks".into(),
+                reason: SkipReason::NoTasksFile,
+            }]
+        );
+        // The lean feature is examined but, with nothing to reduce, not listed.
+        assert_eq!(walk.examined, 6);
+        assert!(walk.features.iter().all(|f| !f.summary.applied));
+        // Keep-pending reads no status for its own work; the walk reads it
+        // for every line it lists.
+        assert!(
+            walk.features
+                .iter()
+                .all(|f| f.summary.status == "in-progress")
+        );
+    }
+
+    #[test]
+    fn a_walk_is_either_one_feature_or_all_and_never_forced() {
+        let tmp = corpus(&[("002-first", "in-progress", Some(FLAT))]);
+        let mut neither = all(false, false, false);
+        neither.all = false;
+        assert!(matches!(
+            super::run(&neither, tmp.path()).unwrap_err(),
+            PrimitiveError::MissingArgument { .. }
+        ));
+        let mut both = all(false, false, false);
+        both.feature = Some("002-first".into());
+        assert!(matches!(
+            super::run(&both, tmp.path()).unwrap_err(),
+            PrimitiveError::InvalidArgument { .. }
+        ));
+        let before = fs::read_to_string(tmp.path().join("specs/002-first/tasks.md")).unwrap();
+        let err = super::run(&all(true, true, true), tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { argument, .. } if argument == "force"),
+            "{err}"
+        );
+        let after = fs::read_to_string(tmp.path().join("specs/002-first/tasks.md")).unwrap();
+        assert_eq!(before, after, "a refused forced walk writes nothing");
+    }
+
+    #[test]
+    fn a_reset_walk_keeps_its_gate_per_spec() {
+        let tmp = corpus(&[
+            ("002-done", "done", Some(FLAT)),
+            ("003-live", "in-progress", Some(FLAT)),
+        ]);
+        let walk = super::run(&all(true, false, true), tmp.path())
+            .unwrap()
+            .walk
+            .expect("an all walk");
+        let gates: Vec<(&str, PruneGate, bool, &str)> = walk
+            .features
+            .iter()
+            .map(|f| {
+                (
+                    f.feature.as_str(),
+                    f.summary.gate,
+                    f.summary.applied,
+                    f.summary.status.as_str(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            gates,
+            [
+                ("002-done", PruneGate::Allowed, true, "done"),
+                (
+                    "003-live",
+                    PruneGate::BlockedNeedsForce,
+                    false,
+                    "in-progress"
+                ),
+            ]
+        );
+        let live = fs::read_to_string(tmp.path().join("specs/003-live/tasks.md")).unwrap();
+        assert_eq!(live, FLAT, "the in-flight spec keeps its todos");
+        let done = fs::read_to_string(tmp.path().join("specs/002-done/tasks.md")).unwrap();
+        assert_eq!(
+            done,
+            format!("# 041 — Task Pruning Tasks\n\n{CANONICAL_EMPTY_TASKS_BODY}")
+        );
     }
 
     #[test]

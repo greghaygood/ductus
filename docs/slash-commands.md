@@ -44,7 +44,7 @@ Unlike `/review`, it audits artifacts against *each other* rather than against c
 
 ## Refine — adjust a spec's artifacts
 
-**Commands split on how many specs they write, and that is what decides whether a capability is a flag or a command of its own.** `/amend`, `/prune`, `/clarify`, `/plan` and `/implement` each write **one** spec, and each declares that single-spec scope. `/fold` and `/consolidate` write **two**, so neither fits inside a single-spec command as a flag — widening one to accommodate a two-spec operation qualifies every statement it makes about its own scope. That is why `/fold` gains no `--into`.
+**Commands split on how many specs one operation writes, and that is what decides whether a capability is a flag or a command of its own.** `/amend`, `/prune`, `/clarify`, `/plan` and `/implement` each operate on **one** spec, and each declares that single-spec scope. A batch flag that repeats the same one-spec operation for every spec in the corpus — `/analyze --all`, `/prune --all` — leaves that scope intact: each write it makes is still one spec's, and each spec is judged as itself. `/fold` and `/consolidate` differ in kind: **one** operation writes **two** specs, moving content from one into the other, so neither fits inside a single-spec command as a flag — widening one to accommodate a two-spec operation qualifies every statement it makes about its own scope. That is why `/fold` gains no `--into`.
 
 ### `/amend` — a question or scenario recorded, with the lifecycle back-edge taken
 
@@ -60,7 +60,7 @@ Three commands delete rather than rewrite. All three confirm before they act, an
 
 **Reach for it when `tasks.md` has turned into a changelog of finished work, or `plan.md` has grown journal, evidence or handoff sections beside its design.** It drops fully-checked task sections, or `--reset` takes `tasks.md` back to template state. For each `plan.md` section outside the design record — the plan template's own sections — it proposes where each durable piece goes (a changed decision into the entry it amends, contributor knowledge into `AGENTS.md`, owed work onto a pending task), and removes the section once you confirm the moves and the removal together.
 
-What it drops is recoverable only from git history, which already holds it: `tasks.md` is ephemeral work-tracking, and a plan's sections outside its record carry no claims once their durable pieces have moved. A section whose `/analyze` advisory you have discarded as part of the design is kept and never proposed. On a `done` spec, prune reopens it only when the diff changes the design record or adds owed work, and says so before it writes. The spec body, scenarios and data model are never touched. One spec.
+What it drops is recoverable only from git history, which already holds it: `tasks.md` is ephemeral work-tracking, and a plan's sections outside its record carry no claims once their durable pieces have moved. A section whose `/analyze` advisory you have discarded as part of the design is kept and never proposed. On a `done` spec, prune reopens it only when the diff changes the design record or adds owed work, and says so before it writes. The spec body, scenarios and data model are never touched. One spec — or, with `--all`, the same reduction repeated for every spec in the corpus: one table for the whole preview, one confirmation for every `tasks.md` reduction, and each plan's sections still judged spec by spec.
 
 ### `/fold` — the branch-scoped staging directory, after migrating its content
 

@@ -7,8 +7,11 @@ Defines the structures the two prune primitives own. `prune-tasks` reduces
 **design record** a section is classified against, the **finding** it shares
 with `/{project}:analyze`, and its schema (see *`prune-plan`* below). The
 **serialized** types — `PruneTasksArgs`, `PruneMode`, `Classification`,
-`PruneGate`, `PruneAction`, `SizeSummary`, `PruneSection`, `PrunePlanArgs`,
-`PlanRemoval`, `PlanFinding`, `PlanSection` and `PrunePlanResult` — live in
+`PruneGate`, `PruneAction`, `SizeSummary`, `PruneSection`,
+`PruneTasksSummary`, `PruneTasksLine`, `PruneTasksResult`, `PrunePlanArgs`,
+`PlanRemoval`, `PlanFinding`, `PlanSection`, `PrunePlanSummary`,
+`PrunePlanResult`, `PruneWalk`, `PruneWalkEntry`, `SkippedFeature` and
+`SkipReason` — live in
 `runtime/src/schema/primitives.rs` with `serde::{Serialize, Deserialize}`
 derives; their serialized JSON is the stable host contract, consistent with
 the primitive-schema convention in
@@ -142,13 +145,14 @@ Args:
 { "feature": "041-task-pruning", "reset": false, "force": false, "apply": false }
 ```
 
-- `feature` — feature directory under the configured spec-root.
+- `feature` — feature directory under the configured spec-root. Exactly one
+  of `feature` and `all` is given (see *Walking every spec* below).
 - `reset` — `false` = keep-pending; `true` = full reset.
 - `force` — override the `reset` status gate on a non-`done` spec.
 - `apply` — `false` = preview (compute + classify, **no write**); `true` =
   write the reduced file atomically.
 
-Result (a **compact summary — never the file body**):
+Result for one feature (a **compact summary — never the file body**):
 
 ```json
 {
@@ -264,7 +268,8 @@ Args:
   "remove": [{ "heading": "Implementation notes", "digest": "9f2c…" }] }
 ```
 
-- `feature` — feature directory under the configured spec-root.
+- `feature` — feature directory under the configured spec-root. Exactly one
+  of `feature` and `all` is given (see *Walking every spec* below).
 - `apply` — `false` (the default) is a preview and writes nothing; `true`
   removes the sections `remove` lists.
 - `remove` — each section to remove, named by the heading and digest a
@@ -278,7 +283,7 @@ Result (a **compact summary — never a section's text**):
   "path": "specs/041-task-pruning/plan.md",
   "missing": false,
   "status": "done",
-  "examined": 5,
+  "sections-examined": 5,
   "sections": [
     { "heading": "Implementation notes", "ordinal": 3, "lines": 3, "bytes": 42,
       "digest": "9f2c…",
@@ -298,9 +303,11 @@ Result (a **compact summary — never a section's text**):
   is written. A domain outcome, not an error: `/{project}:analyze` dispatches
   the preview on every spec, and a spec below `planned` has no plan.
 - `status` — the spec's frontmatter status, read on every call.
-- `examined` — `##` sections read, inside the record and out, so an empty
-  `sections` over `examined: 0` (no sections) reads differently from one over
-  `examined: 5` (all in the record).
+- `sections-examined` — `##` sections read, inside the record and out, so an
+  empty `sections` over `sections-examined: 0` (no sections) reads
+  differently from one over `sections-examined: 5` (all in the record). It is
+  named apart from a walk's `examined`, which counts features, because a
+  result's two halves share one key space (below).
 - `sections` — every section outside the record, as read before any removal,
   decided or not: `ordinal` is its 1-based position among all `##` sections,
   `lines` and `bytes` measure its text, and `digest` is the lowercase-hex
@@ -335,10 +342,69 @@ are, and is written with `write_atomic`, preserving the file's line endings.
 | --- | --- |
 | `feature-not-found` | feature directory absent under the spec-root |
 | `missing-spec-file` / `status-field-missing` | `spec.md` is absent or its frontmatter has no `status` |
-| `missing-argument` | `apply` with an empty `remove` |
-| `invalid-argument` | `remove` without `apply`, or naming a design-record section, which prune never removes |
+| `missing-argument` | `apply` with an empty `remove`; neither `feature` nor `all` |
+| `invalid-argument` | `remove` without `apply`, or naming a design-record section, which prune never removes; both `feature` and `all`; `all` with `apply` |
 | `yaml` | `analysis.md`'s `decisions:` list does not parse — read as empty, it would propose every section already decided |
 | `git` | an apply against a `done` spec cannot read HEAD for the reopen trigger |
+
+## Walking every spec
+
+Both primitives take `all: bool`, and exactly one of `feature` and `all` is
+given: neither is `missing-argument`, both is `invalid-argument`. A walk
+visits every feature directory `list_feature_dirs` recognizes under the
+spec-root, sequential and branch-scoped alike, in `feature_dir_cmp` order —
+sequential by number, then branch-scoped grouped by identifier with the
+counter compared numerically, so `1234.2-x` precedes `1234.10-x`. It needs no
+session target and writes none.
+
+`prune-tasks` refuses `force` with `all` before reading anything: a forced
+reset across the corpus would discard every in-flight todo under one
+confirmation. With `apply` it writes every spec's permitted reduction, the
+`--reset` gate applied per spec. `prune-plan` refuses `apply` with `all`: each
+plan section is a judgment about one spec, so a walk is preview-only.
+
+Each result is one object with two flattened, optional halves: a
+single-feature call carries the summary above at the top level, exactly as
+it always has, and a walk carries only the walk:
+
+```json
+{
+  "examined": 60,
+  "features": [
+    { "feature": "000-slash-commands", "gate": "not-applicable", "status": "done",
+      "applied": false, "removed-count": 18, "kept-count": 0,
+      "size-before": { "lines": 134, "bytes": 7514 },
+      "size-after":  { "lines": 9, "bytes": 418 },
+      "path": "specs/000-slash-commands/tasks.md" }
+  ],
+  "skipped": [ { "feature": "063-draft", "reason": "no-tasks-file" } ]
+}
+```
+
+- `examined` — every feature directory walked, the skipped and the
+  nothing-to-reduce ones included, so a clean corpus reads as examined rather
+  than as silence.
+- `features` — each spec with something to report, in walk order: for
+  `prune-tasks` a spec whose reduction is not a no-op, as a `PruneTasksLine`;
+  for `prune-plan` a spec whose plan holds a section outside the record, as
+  the full `PrunePlanSummary`.
+- `skipped` — each spec without the artifact: `no-tasks-file` or
+  `no-plan-file`. Any other error stops the walk, as it would stop a
+  single-feature call.
+
+A `PruneTasksLine` is the summary without its per-section records — `gate`,
+`status`, `applied`, the two counts, the two sizes and `path`. A corpus
+preview prices a spec by its counts; the records would carry every task
+section in the corpus, 842 of them and 161,841 bytes over this repository's
+60 specs when the walk was built, against 15,373 bytes as lines, status included. `status` is
+read for every line, keep-pending included, because only a `done` spec can be
+reopened and the corpus preview prices each row by it. A plan summary keeps
+its sections, since the host judges each one by heading.
+
+The two halves of a result share one key space, so no key may appear in
+both: a summary field named like `examined` would be consumed by the half
+deserialized first and lost to the other, which is why `prune-plan`'s
+section count is `sections-examined`.
 
 ## Notes
 

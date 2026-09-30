@@ -195,7 +195,8 @@ fn prune_tasks_preserves_crlf() {
 
     primitives::prune_tasks::run(
         &PruneTasksArgs {
-            feature: "050-alpha".into(),
+            feature: Some("050-alpha".into()),
+            all: false,
             reset: false,
             force: true,
             apply: true,
@@ -230,7 +231,8 @@ fn prune_tasks_reset_preserves_crlf() {
 
     primitives::prune_tasks::run(
         &PruneTasksArgs {
-            feature: "050-alpha".into(),
+            feature: Some("050-alpha".into()),
+            all: false,
             reset: true,
             force: true,
             apply: true,

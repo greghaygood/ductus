@@ -124,11 +124,11 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 
 ### 16. Prune --all walks every spec
 
-- [ ] Implement the behavior described in `scenarios/prune-all-walks-every-spec.md`
-- [ ] `all` on `prune-tasks` and `prune-plan`: exactly one of `feature` and `all`; `force` with `all` and `apply` with `all` on `prune-plan` refused through `InvalidArgument`; walk in `feature_dir_cmp` order; `features`, `skipped` and `examined` in the result; `data-model.md` updated
-- [ ] Tests proven red by mutation: the walk order, a skipped feature named with its reason, the refusals, and a per-spec reset gate
-- [ ] `framework/commands/prune.md`: the `--all` flow — one corpus preview, one confirmation for every `tasks.md` reduction, plans one spec at a time
-- [ ] `docs/slash-commands.md`: sharpen the flag-versus-command rule so a batch flag repeating a one-spec operation (`/{project}:analyze --all`, `/{project}:prune --all`) is distinct from a two-spec operation
+- [x] Implement the behavior described in `scenarios/prune-all-walks-every-spec.md`
+- [x] `all` on `prune-tasks` and `prune-plan`: exactly one of `feature` and `all`; `force` with `all` and `apply` with `all` on `prune-plan` refused through `InvalidArgument`; walk in `feature_dir_cmp` order; `features`, `skipped` and `examined` in the result; `data-model.md` updated
+- [x] Tests proven red by mutation: the walk order, a skipped feature named with its reason, the refusals, and a per-spec reset gate
+- [x] `framework/commands/prune.md`: the `--all` flow — one corpus preview, one confirmation for every `tasks.md` reduction, plans one spec at a time
+- [x] `docs/slash-commands.md`: sharpen the flag-versus-command rule so a batch flag repeating a one-spec operation (`/{project}:analyze --all`, `/{project}:prune --all`) is distinct from a two-spec operation
 - [ ] Discharge the declared `cross-spec-impact` on `052-spec-supersession-and-consolidation`: its body states the same rule ("`amend`, `prune`, `clarify`, `plan`, and `implement` each write one"), which `--all` falsifies for `prune` as written. Reopen 052 with `set-status` in its own commit, sharpen the sentence to the batch-versus-two-spec distinction with a `> **Signpost:**` blockquote linking back to 041, re-run `/{project}:analyze` on 052 (a `spec.md` edit, so no re-review), and return it to `done`
 
 - **Done when**: `/{project}:prune --all` previews the corpus, applies every `tasks.md` reduction under one confirmation, walks plans spec by spec, and the refusals hold.

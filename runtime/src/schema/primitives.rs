@@ -2717,14 +2717,22 @@ pub struct AppendTaskResult {
 
 /// Args for `prune-tasks`. Reduces the target feature's `tasks.md` by
 /// dropping spent (fully-checked) task sections, or resetting the file to
-/// its template initial state. See
+/// its template initial state — or, with `all`, every feature's. See
 /// `specs/041-task-pruning/data-model.md`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct PruneTasksArgs {
-    /// Feature directory name under `specs/`.
+    /// Feature directory name under `specs/`. Exactly one of `feature` and
+    /// `all` is given.
+    #[serde(default)]
     #[arg(long)]
-    pub feature: String,
+    pub feature: Option<String>,
+    /// Walk every feature under the spec root instead of one. Refused with
+    /// `force`: a forced reset across the corpus would discard every
+    /// in-flight todo under one confirmation.
+    #[serde(default)]
+    #[arg(long)]
+    pub all: bool,
     /// Full reset to the template's initial state, rather than the default
     /// keep-pending prune.
     #[serde(default)]
@@ -2818,12 +2826,12 @@ pub struct PruneSection {
     pub action: PruneAction,
 }
 
-/// Result for `prune-tasks`. A compact summary; the file body is never
-/// included — the token-reduction contract that motivates the primitive
-/// performing its own write.
+/// One feature's `prune-tasks` reduction. A compact summary; the file body
+/// is never included — the token-reduction contract that motivates the
+/// primitive performing its own write.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-pub struct PruneTasksResult {
+pub struct PruneTasksSummary {
     /// The reduction performed.
     pub mode: PruneMode,
     /// Whether a write happened. `false` on preview, on `nothing-to-prune`,
@@ -2853,17 +2861,133 @@ pub struct PruneTasksResult {
     pub path: String,
 }
 
+/// Result for `prune-tasks`: one feature's summary, at the top level exactly
+/// as a single-feature call has always returned it, or — under `all` — the
+/// walk. Both halves are flattened, so a result carries the keys of whichever
+/// half is present and nothing of the other.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneTasksResult {
+    /// The named feature's reduction; absent under `all`.
+    #[serde(flatten)]
+    pub summary: Option<PruneTasksSummary>,
+    /// Every feature's reduction, one line each; absent when one feature
+    /// was named.
+    #[serde(flatten)]
+    pub walk: Option<PruneWalk<PruneTasksLine>>,
+}
+
+/// One feature's line in a `prune-tasks` walk: its summary without the
+/// per-section records. A corpus preview prices each spec by its counts and
+/// sizes, and the records would carry every task section in the corpus —
+/// 842 of them, 161,841 bytes, over this repository's 60 specs when the walk
+/// was built — which is the file body the primitive exists to keep out of a
+/// host's context.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneTasksLine {
+    /// `--reset` status-gate outcome for this spec.
+    pub gate: PruneGate,
+    /// The spec's frontmatter status, read for every spec a walk lists, so a
+    /// corpus preview can price each row: only a `done` spec can be reopened.
+    pub status: String,
+    /// Whether this spec's reduction was written.
+    pub applied: bool,
+    /// Task sections removed.
+    pub removed_count: u32,
+    /// Task sections kept.
+    pub kept_count: u32,
+    /// Size before pruning.
+    pub size_before: SizeSummary,
+    /// Size after pruning.
+    pub size_after: SizeSummary,
+    /// Repo-relative path to the tasks file.
+    pub path: String,
+}
+
+impl PruneTasksLine {
+    /// A spec's line from its summary and its status.
+    #[must_use]
+    pub fn new(summary: PruneTasksSummary, status: String) -> Self {
+        Self {
+            gate: summary.gate,
+            status,
+            applied: summary.applied,
+            removed_count: summary.removed_count,
+            kept_count: summary.kept_count,
+            size_before: summary.size_before,
+            size_after: summary.size_after,
+            path: summary.path,
+        }
+    }
+}
+
+/// An `all` walk over every feature under the spec root, in the corpus
+/// order `feature_dir_cmp` defines.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneWalk<T> {
+    /// Feature directories walked, including every one skipped and every one
+    /// with nothing to reduce, so a clean corpus reads as examined, not as
+    /// silence.
+    pub examined: u32,
+    /// Each feature with something to report, in corpus order: the same
+    /// summary a single-feature call returns, plus the feature.
+    pub features: Vec<PruneWalkEntry<T>>,
+    /// Each feature without the artifact, with the reason.
+    pub skipped: Vec<SkippedFeature>,
+}
+
+/// One feature's summary within a walk.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PruneWalkEntry<T> {
+    /// Feature directory name.
+    pub feature: String,
+    /// The feature's summary, its keys beside `feature`.
+    #[serde(flatten)]
+    pub summary: T,
+}
+
+/// A feature a walk passed over, and why.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct SkippedFeature {
+    /// Feature directory name.
+    pub feature: String,
+    /// What the feature lacks.
+    pub reason: SkipReason,
+}
+
+/// Why a walk passed over a feature.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum SkipReason {
+    /// The feature has no `tasks.md`.
+    NoTasksFile,
+    /// The feature has no `plan.md`.
+    NoPlanFile,
+}
+
 // -- prune-plan --------------------------------------------------------------
 
 /// Args for `prune-plan`. Reports the `##` sections of a feature's `plan.md`
 /// that lie outside the design record, and on `apply` removes the ones the
-/// host lists. See `specs/041-task-pruning/data-model.md`.
+/// host lists — or, with `all`, previews every feature's. See
+/// `specs/041-task-pruning/data-model.md`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct PrunePlanArgs {
-    /// Feature directory name under `specs/`.
+    /// Feature directory name under `specs/`. Exactly one of `feature` and
+    /// `all` is given.
+    #[serde(default)]
     #[arg(long)]
-    pub feature: String,
+    pub feature: Option<String>,
+    /// Preview every feature under the spec root instead of one. Refused with
+    /// `apply`: each plan section is a judgment about one spec's content.
+    #[serde(default)]
+    #[arg(long)]
+    pub all: bool,
     /// Remove the sections listed in `remove`. When false (the default) the
     /// primitive is a pure preview and writes nothing.
     #[serde(default)]
@@ -2937,11 +3061,11 @@ pub struct PlanSection {
     pub decided: bool,
 }
 
-/// Result for `prune-plan`. A compact summary; no section's text is ever
+/// One feature's `prune-plan` summary. Compact; no section's text is ever
 /// included.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-pub struct PrunePlanResult {
+pub struct PrunePlanSummary {
     /// Repo-relative path to the plan file.
     pub path: String,
     /// The feature has no `plan.md`: nothing was examined, no section is
@@ -2949,8 +3073,11 @@ pub struct PrunePlanResult {
     pub missing: bool,
     /// The spec's frontmatter status.
     pub status: String,
-    /// `##` sections read, inside the design record and out.
-    pub examined: u32,
+    /// `##` sections read, inside the design record and out, so an empty
+    /// `sections` over none reads differently from one over sections all in
+    /// the record. Named apart from a walk's `examined`, which counts
+    /// features, because the two halves of a result share one key space.
+    pub sections_examined: u32,
     /// Every section outside the design record, as read before any removal.
     pub sections: Vec<PlanSection>,
     /// Whether the listed sections were removed. `false` on a preview and on
@@ -2973,6 +3100,19 @@ pub struct PrunePlanResult {
     /// means not computed, never `false`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reopen_required: Option<bool>,
+}
+
+/// Result for `prune-plan`: one feature's summary, at the top level, or —
+/// under `all` — the walk, shaped as `prune-tasks`' result is.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct PrunePlanResult {
+    /// The named feature's summary; absent under `all`.
+    #[serde(flatten)]
+    pub summary: Option<PrunePlanSummary>,
+    /// Every feature's preview; absent when one feature was named.
+    #[serde(flatten)]
+    pub walk: Option<PruneWalk<PrunePlanSummary>>,
 }
 
 // -- migrate-session-file ----------------------------------------------------
@@ -5011,12 +5151,13 @@ mod tests {
         InboxStanding, InboxState, LintMarkdownArgs, LintMarkdownResult, MarkCriterionArgs,
         MarkTaskArgs, MarkdownViolation, MigrateSessionFileArgs, MigrateSessionFileResult,
         OpenQuestion, PlanFinding, PlanRemoval, PlanSection, PruneAction, PruneGate, PruneMode,
-        PrunePlanArgs, PrunePlanResult, PruneSection, PruneTasksArgs, PruneTasksResult,
+        PrunePlanArgs, PrunePlanResult, PrunePlanSummary, PruneSection, PruneTasksArgs,
+        PruneTasksLine, PruneTasksResult, PruneTasksSummary, PruneWalk, PruneWalkEntry,
         ReadSpecArgs, ReadSpecResult, ReadTasksArgs, ReadTasksResult, ResolveAnchorArgs,
         ResolveAnchorResult, RuleCitation, RunGeneratorArgs, RunGeneratorResult,
-        ScenarioOpenQuestion, SetStatusArgs, SetStatusResult, SizeSummary, SpecSection, Subtask,
-        Task, TraverseDepsArgs, TraverseDepsResult, ValidateFrontmatterArgs,
-        ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
+        ScenarioOpenQuestion, SetStatusArgs, SetStatusResult, SizeSummary, SkipReason,
+        SkippedFeature, SpecSection, Subtask, Task, TraverseDepsArgs, TraverseDepsResult,
+        ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
     };
 
     fn round_trip<T>(value: &T) -> T
@@ -5156,7 +5297,8 @@ mod tests {
     #[test]
     fn prune_tasks_round_trip() {
         let args = PruneTasksArgs {
-            feature: "041-task-pruning".into(),
+            feature: Some("041-task-pruning".into()),
+            all: false,
             reset: false,
             force: false,
             apply: true,
@@ -5167,7 +5309,7 @@ mod tests {
         assert_eq!(value["apply"], true);
         assert_eq!(round_trip(&args), args);
 
-        let result = PruneTasksResult {
+        let summary = PruneTasksSummary {
             mode: PruneMode::KeepPending,
             applied: false,
             gate: PruneGate::NotApplicable,
@@ -5205,7 +5347,14 @@ mod tests {
             ],
             path: "specs/041-task-pruning/tasks.md".into(),
         };
+        let result = PruneTasksResult {
+            summary: Some(summary.clone()),
+            walk: None,
+        };
         let value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        // A single-feature result is the summary at the top level, as it has
+        // always been on the wire, with no walk key beside it.
+        assert_eq!(value, serde_json::to_value(&summary).unwrap());
         assert_eq!(value["mode"], "keep-pending");
         assert_eq!(value["gate"], "not-applicable");
         assert_eq!(value["nothing-to-prune"], false);
@@ -5217,12 +5366,38 @@ mod tests {
         // `status: None` must serialize as absent, not null.
         assert!(!value.as_object().unwrap().contains_key("status"));
         assert_eq!(round_trip(&result), result);
+
+        // Under `all` the result is the walk alone, each entry a spec's line
+        // beside its feature, without the per-section records.
+        let walked = PruneTasksResult {
+            summary: None,
+            walk: Some(PruneWalk {
+                examined: 3,
+                features: vec![PruneWalkEntry {
+                    feature: "041-task-pruning".into(),
+                    summary: PruneTasksLine::new(summary, "done".into()),
+                }],
+                skipped: vec![SkippedFeature {
+                    feature: "042-draft".into(),
+                    reason: SkipReason::NoTasksFile,
+                }],
+            }),
+        };
+        let value: serde_json::Value = serde_json::to_value(&walked).unwrap();
+        assert_eq!(value["examined"], 3);
+        assert_eq!(value["features"][0]["feature"], "041-task-pruning");
+        assert_eq!(value["features"][0]["removed-count"], 1);
+        assert!(value["features"][0].get("sections").is_none());
+        assert_eq!(value["skipped"][0]["reason"], "no-tasks-file");
+        assert!(!value.as_object().unwrap().contains_key("mode"));
+        assert_eq!(round_trip(&walked), walked);
     }
 
     #[test]
     fn prune_plan_round_trip() {
         let args = PrunePlanArgs {
-            feature: "041-task-pruning".into(),
+            feature: Some("041-task-pruning".into()),
+            all: false,
             apply: true,
             remove: vec![PlanRemoval {
                 heading: "Implementation notes".into(),
@@ -5238,11 +5413,11 @@ mod tests {
             serde_json::from_value(serde_json::json!({"feature": "041-task-pruning"})).unwrap();
         assert!(!bare.apply && bare.remove.is_empty());
 
-        let result = PrunePlanResult {
+        let summary = PrunePlanSummary {
             path: "specs/041-task-pruning/plan.md".into(),
             missing: false,
             status: "done".into(),
-            examined: 5,
+            sections_examined: 5,
             sections: vec![PlanSection {
                 heading: "Implementation notes".into(),
                 ordinal: 3,
@@ -5267,12 +5442,36 @@ mod tests {
             },
             reopen_required: None,
         };
+        let result = PrunePlanResult {
+            summary: Some(summary.clone()),
+            walk: None,
+        };
         let value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value, serde_json::to_value(&summary).unwrap());
         assert_eq!(value["sections"][0]["finding"]["family"], "plan-record");
         assert_eq!(value["stale-sections"], serde_json::json!([]));
         // Not computed is absent, never `false`.
         assert!(!value.as_object().unwrap().contains_key("reopen-required"));
         assert_eq!(round_trip(&result), result);
+
+        let walked = PrunePlanResult {
+            summary: None,
+            walk: Some(PruneWalk {
+                examined: 2,
+                features: vec![PruneWalkEntry {
+                    feature: "041-task-pruning".into(),
+                    summary,
+                }],
+                skipped: vec![SkippedFeature {
+                    feature: "042-draft".into(),
+                    reason: SkipReason::NoPlanFile,
+                }],
+            }),
+        };
+        let value: serde_json::Value = serde_json::to_value(&walked).unwrap();
+        assert_eq!(value["features"][0]["status"], "done");
+        assert_eq!(value["skipped"][0]["reason"], "no-plan-file");
+        assert_eq!(round_trip(&walked), walked);
     }
 
     #[test]

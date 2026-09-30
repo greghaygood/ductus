@@ -20,14 +20,16 @@ use sha2::{Digest, Sha256};
 
 use crate::primitives::analyze_subjects::hex;
 use crate::primitives::decisions::{RawDecision, read_decisions, same_key};
-use crate::primitives::prune_tasks::{read_status, size_of};
+use crate::primitives::prune_tasks::{one_feature_or_all, read_status, size_of};
 use crate::primitives::{
     ANALYSIS_RECORD_FILE, PrimitiveError, ProjectRepository, Result, SkipScanner, checkbox,
-    join_blocks, line_ending_of, parse_atx_heading, read_text, rel_path, write_atomic,
+    join_blocks, line_ending_of, list_feature_dirs, parse_atx_heading, read_text, rel_path,
+    write_atomic,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{
     DecisionOutcome, PlanFinding, PlanRemoval, PlanSection, PrunePlanArgs, PrunePlanResult,
+    PrunePlanSummary, PruneWalk, PruneWalkEntry, SkipReason, SkippedFeature,
 };
 
 /// The plan template's `##` headings, in template order — the design record.
@@ -143,36 +145,96 @@ fn unchecked_boxes(content: &str) -> usize {
         .count()
 }
 
-/// Execute the `prune-plan` primitive against the given project root.
+/// Execute the `prune-plan` primitive against the given project root: one
+/// feature's preview or apply, or every feature's preview under `all`.
 ///
 /// # Errors
 ///
+/// - [`PrimitiveError::MissingArgument`] when neither `feature` nor `all` is
+///   given, or when `apply` lists nothing to remove.
+/// - [`PrimitiveError::InvalidArgument`] when both `feature` and `all` are
+///   given, when `all` comes with `apply`, and when `remove` is given without
+///   `apply` or names a design-record section.
 /// - [`PrimitiveError::FeatureNotFound`] when the feature directory is absent.
 /// - [`PrimitiveError::MissingSpecFile`] / [`PrimitiveError::StatusFieldMissing`]
 ///   when the spec status cannot be read.
-/// - [`PrimitiveError::MissingArgument`] when `apply` lists nothing to remove,
-///   and [`PrimitiveError::InvalidArgument`] when `remove` is given without
-///   `apply` or names a design-record section.
 /// - [`PrimitiveError::Yaml`] when `analysis.md`'s `decisions:` list does not
 ///   parse — read as empty, it would propose every section already decided.
 /// - [`PrimitiveError::Git`] when an apply against a `done` spec cannot read
 ///   HEAD for the reopen trigger.
 /// - [`PrimitiveError::Io`] on filesystem failure.
 pub fn run(args: &PrunePlanArgs, repo: &Path) -> Result<PrunePlanResult> {
-    super::validate_no_traversal(&args.feature)?;
     let root = paths::Paths::load(repo).specs_root;
-    let feature_dir = repo.join(&root).join(&args.feature);
+    let feature = one_feature_or_all("prune-plan", args.feature.as_deref(), args.all)?;
+    check_removals(args)?;
+    let Some(feature) = feature else {
+        if args.apply {
+            return Err(PrimitiveError::InvalidArgument {
+                primitive: "prune-plan".into(),
+                argument: "apply".into(),
+                reason: "each plan section is a judgment about one spec's content; \
+                         apply one spec at a time"
+                    .into(),
+            });
+        }
+        return Ok(PrunePlanResult {
+            summary: None,
+            walk: Some(walk(args, repo, &root)?),
+        });
+    };
+    Ok(PrunePlanResult {
+        summary: Some(summarize(feature, args, repo, &root)?),
+        walk: None,
+    })
+}
+
+/// Every feature's preview, in corpus order. A feature whose plan holds no
+/// section outside the record is examined and left out; one with no
+/// `plan.md` is skipped with that reason.
+fn walk(args: &PrunePlanArgs, repo: &Path, root: &str) -> Result<PruneWalk<PrunePlanSummary>> {
+    let names = list_feature_dirs(&repo.join(root));
+    let mut features = Vec::new();
+    let mut skipped = Vec::new();
+    for feature in &names {
+        let summary = summarize(feature, args, repo, root)?;
+        if summary.missing {
+            skipped.push(SkippedFeature {
+                feature: feature.clone(),
+                reason: SkipReason::NoPlanFile,
+            });
+        } else if !summary.sections.is_empty() {
+            features.push(PruneWalkEntry {
+                feature: feature.clone(),
+                summary,
+            });
+        }
+    }
+    Ok(PruneWalk {
+        examined: u32::try_from(names.len()).unwrap_or(u32::MAX),
+        features,
+        skipped,
+    })
+}
+
+/// One feature's preview or apply.
+fn summarize(
+    feature: &str,
+    args: &PrunePlanArgs,
+    repo: &Path,
+    root: &str,
+) -> Result<PrunePlanSummary> {
+    super::validate_no_traversal(feature)?;
+    let feature_dir = repo.join(root).join(feature);
     if !feature_dir.is_dir() {
         return Err(PrimitiveError::FeatureNotFound {
-            root,
-            feature: args.feature.clone(),
+            root: root.to_string(),
+            feature: feature.to_string(),
         });
     }
-    check_removals(args)?;
-    let status = read_status(&feature_dir, &root, &args.feature)?;
+    let status = read_status(&feature_dir, root, feature)?;
     let plan_path = feature_dir.join("plan.md");
-    let plan_rel = format!("{root}/{}/plan.md", args.feature);
-    let tasks_rel = format!("{root}/{}/tasks.md", args.feature);
+    let plan_rel = format!("{root}/{feature}/plan.md");
+    let tasks_rel = format!("{root}/{feature}/tasks.md");
 
     let content = if plan_path.is_file() {
         Some(read_text(&plan_path)?)
@@ -221,11 +283,11 @@ pub fn run(args: &PrunePlanArgs, repo: &Path) -> Result<PrunePlanResult> {
         None
     };
 
-    Ok(PrunePlanResult {
+    Ok(PrunePlanSummary {
         path: rel_path(&plan_path, repo),
         missing: content.is_none(),
         status,
-        examined,
+        sections_examined: examined,
         sections: outside.into_iter().map(|(_, section)| section).collect(),
         applied,
         stale_sections,
@@ -381,15 +443,22 @@ mod tests {
 
     fn preview() -> PrunePlanArgs {
         PrunePlanArgs {
-            feature: FEATURE.into(),
+            feature: Some(FEATURE.into()),
+            all: false,
             apply: false,
             remove: Vec::new(),
         }
     }
 
+    /// One feature's summary from a single-feature call.
+    fn run(args: &PrunePlanArgs, repo: &Path) -> Result<PrunePlanSummary> {
+        super::run(args, repo).map(|result| result.summary.expect("a single-feature summary"))
+    }
+
     fn apply(sections: &[&PlanSection]) -> PrunePlanArgs {
         PrunePlanArgs {
-            feature: FEATURE.into(),
+            feature: Some(FEATURE.into()),
+            all: false,
             apply: true,
             remove: sections
                 .iter()
@@ -413,7 +482,7 @@ mod tests {
         project(tmp.path(), "in-progress", Some(PLAN));
         let result = run(&preview(), tmp.path()).unwrap();
         assert!(!result.missing);
-        assert_eq!(result.examined, 5);
+        assert_eq!(result.sections_examined, 5);
         assert_eq!(result.sections.len(), 1);
         let section = &result.sections[0];
         assert_eq!(section.heading, "Implementation notes");
@@ -437,7 +506,7 @@ mod tests {
         let plan = "# P\n\n## Overview\n\n```markdown\n## Not a section\n```\n\n<!--\n## Nor this\n-->\n\n## Technical Decisions\n\nText.\n";
         project(tmp.path(), "planned", Some(plan));
         let result = run(&preview(), tmp.path()).unwrap();
-        assert_eq!(result.examined, 2);
+        assert_eq!(result.sections_examined, 2);
         assert!(result.sections.is_empty(), "{:?}", result.sections);
     }
 
@@ -505,7 +574,8 @@ mod tests {
         let tmp = tempdir().unwrap();
         project(tmp.path(), "in-progress", Some(PLAN));
         let args = PrunePlanArgs {
-            feature: FEATURE.into(),
+            feature: Some(FEATURE.into()),
+            all: false,
             apply: true,
             remove: vec![PlanRemoval {
                 heading: "Gone".into(),
@@ -523,7 +593,8 @@ mod tests {
         let tmp = tempdir().unwrap();
         project(tmp.path(), "in-progress", Some(PLAN));
         let args = PrunePlanArgs {
-            feature: FEATURE.into(),
+            feature: Some(FEATURE.into()),
+            all: false,
             apply: true,
             remove: vec![PlanRemoval {
                 heading: "overview".into(),
@@ -543,7 +614,8 @@ mod tests {
         let tmp = tempdir().unwrap();
         project(tmp.path(), "in-progress", Some(PLAN));
         let nothing_listed = PrunePlanArgs {
-            feature: FEATURE.into(),
+            feature: Some(FEATURE.into()),
+            all: false,
             apply: true,
             remove: Vec::new(),
         };
@@ -552,7 +624,8 @@ mod tests {
             PrimitiveError::MissingArgument { .. }
         ));
         let no_apply = PrunePlanArgs {
-            feature: FEATURE.into(),
+            feature: Some(FEATURE.into()),
+            all: false,
             apply: false,
             remove: vec![PlanRemoval {
                 heading: "Implementation notes".into(),
@@ -597,9 +670,89 @@ mod tests {
         project(tmp.path(), "clarified", None);
         let result = run(&preview(), tmp.path()).unwrap();
         assert!(result.missing);
-        assert_eq!(result.examined, 0);
+        assert_eq!(result.sections_examined, 0);
         assert!(result.sections.is_empty());
         assert!(!feature_dir(tmp.path()).join("plan.md").exists());
+    }
+
+    fn all() -> PrunePlanArgs {
+        PrunePlanArgs {
+            feature: None,
+            all: true,
+            apply: false,
+            remove: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn a_walk_lists_plans_with_sections_outside_the_record_and_skips_missing_ones() {
+        let tmp = tempdir().unwrap();
+        let clean = "# P\n\n## Overview\n\nA.\n";
+        for (name, status, plan) in [
+            ("1234.10-late", "done", Some(PLAN)),
+            ("1234.2-early", "done", Some(PLAN)),
+            ("002-first", "in-progress", Some(PLAN)),
+            ("003-clean", "done", Some(clean)),
+            ("004-draft", "draft", None),
+        ] {
+            let dir = tmp.path().join("specs").join(name);
+            write(
+                &dir.join("spec.md"),
+                &format!("---\nstatus: {status}\ndependencies: []\n---\n\n# Spec\n"),
+            );
+            if let Some(plan) = plan {
+                write(&dir.join("plan.md"), plan);
+            }
+        }
+        let walk = super::run(&all(), tmp.path())
+            .unwrap()
+            .walk
+            .expect("an all walk");
+        let order: Vec<(&str, &str)> = walk
+            .features
+            .iter()
+            .map(|f| (f.feature.as_str(), f.summary.status.as_str()))
+            .collect();
+        assert_eq!(
+            order,
+            [
+                ("002-first", "in-progress"),
+                ("1234.2-early", "done"),
+                ("1234.10-late", "done")
+            ]
+        );
+        assert_eq!(
+            walk.skipped,
+            [SkippedFeature {
+                feature: "004-draft".into(),
+                reason: SkipReason::NoPlanFile,
+            }]
+        );
+        assert_eq!(walk.examined, 5);
+    }
+
+    #[test]
+    fn a_plan_walk_is_preview_only() {
+        let tmp = tempdir().unwrap();
+        project(tmp.path(), "done", Some(PLAN));
+        let mut applying = all();
+        applying.apply = true;
+        applying.remove = vec![PlanRemoval {
+            heading: "Implementation notes".into(),
+            digest: "00".into(),
+        }];
+        let err = super::run(&applying, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { argument, .. } if argument == "apply"),
+            "{err}"
+        );
+        assert_eq!(plan_text(tmp.path()), PLAN);
+        let mut neither = all();
+        neither.all = false;
+        assert!(matches!(
+            super::run(&neither, tmp.path()).unwrap_err(),
+            PrimitiveError::MissingArgument { .. }
+        ));
     }
 
     #[test]
@@ -634,7 +787,7 @@ mod tests {
         repository
     }
 
-    fn remove_journal(root: &Path) -> PrunePlanResult {
+    fn remove_journal(root: &Path) -> PrunePlanSummary {
         let previewed = run(&preview(), root).unwrap();
         run(&apply(&[&previewed.sections[0]]), root).unwrap()
     }
