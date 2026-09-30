@@ -1,19 +1,20 @@
 ---
 spec: 062-concurrent-session-targets
-last-run: 2026-09-29T23:54:41Z
-reviewed-against: 834b72a49c7c7ed42dce3fd5e1e32291f2c98fe3
-diff-base: 25c946eaf75727634cd849c8579baac00f4e4eb6
+last-run: 2026-09-30T13:56:20Z
+reviewed-against: 2d173c280c27da749dd83fd6eb63f442e57a9dce
+diff-base: 904671d5ca6f44f169c68af4a6e91da3432f0230
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 12
-scope: 81
+examined: 8
+scope: 38
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 85a06c141afc3f7b14d73d0e406b94b389a207bc6c72443acd3e8794f3caae0f
+  data-model.md: 9ce5458a99a6ba857f8778df877a8b2b0a2708037b23b05319588b4c06aaa10f
+  scenarios/first-writers-create-the-ignore-file-once.md: 02149b44fd9c6d76d8e9d97af6235df746bf028cad34e693bb57302dea1b1f15
 blocking: false
 dispositions:
-  fixed: 2
+  fixed: 3
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -150,7 +151,7 @@ decisions:
 
 ## Summary
 
-Not blocking. The third review's findings are resolved (tasks 24–25): a write names a malformed shared default as replaced, `/target` repairs one, the exec seed reads the default leniently again when the process has no own record, and the environment-variable inventory is accurate about the HTTP client's proxy, CGI and certificate behavior against the locked dependency sources. This pass read the in-scope files changed since the third review's head `ec96e802`; every other file is unchanged since an earlier pass examined it, and those passes' decisions are retained. No new finding; the one violation left is the per-fetch proxy and certificate read in spec 048's `fetch-archive`, waived here and routed to 048. Two observations were fixed in the run.
+Not blocking. A deliberate partial review over 062's reopen window (diff base `904671d5`, the commit before the 2026-09-30 reopen at `38b3cab6`), approved by the operator on the precedent of 058's and 052's partials. The five passes read the 8 files modified since that base, in full: `runtime/src/session.rs`, `specs/062-concurrent-session-targets/scenarios/first-writers-create-the-ignore-file-once.md`, `specs/062-concurrent-session-targets/spec.md`, `specs/062-concurrent-session-targets/tasks.md`, `specs/062-concurrent-session-targets/plan.md`, `specs/062-concurrent-session-targets/data-model.md`, `AGENTS.md` and `specs/041-task-pruning/tasks.md`. The window's behavior change is task 26: `lock_within` creates the sessions directory, takes the lock, and only then writes `.gitignore` when absent, so racing first writers create it once; `runtime` run 36665970819 passed on windows-latest, ubuntu-latest and macos-latest at `9a256750`. No rule finding in the window. Three observations were fixed in the run (`c30f4a58`): the data model and plan described the ignore file as created with the directory, the scenario's first edge case gained a test proven red by mutation, and 041's task 17 note was brought up to date. The CFG-ENV-001 waiver on `runtime/src/primitives/fetch_archive.rs` still applies: that file is unchanged since the pass that found it (`git diff 834b72a4..HEAD` is empty), so the finding stands without a re-read, and it is routed to 048. Stored decisions were retained, not re-matched, because their sources were not re-read (`restricted`). This is not a full five-pass review of 062's scope. `examined: 8` counts files against `scope: 38`, which counts scope entries: the 8 read are 8 of its 35 single-path entries, and the other 30 entries were not read this pass. Those are 27 single paths and 3 patterns covering 41 files (`.claude/commands/ductus/*.md`, 18 files; `framework/commands/{amend,analyze,clarify,consolidate,fold,groom,help,implement,plan,prune,review,specify,status,target}.md`, 14; `runtime/tests/golden/*.jsonl`, 9), 68 files in all, each unread: `.claude/commands/ductus/amend.md`, `.claude/commands/ductus/analyze.md`, `.claude/commands/ductus/audit.md`, `.claude/commands/ductus/clarify.md`, `.claude/commands/ductus/configure.md`, `.claude/commands/ductus/consolidate.md`, `.claude/commands/ductus/fold.md`, `.claude/commands/ductus/groom.md`, `.claude/commands/ductus/help.md`, `.claude/commands/ductus/implement.md`, `.claude/commands/ductus/link.md`, `.claude/commands/ductus/log.md`, `.claude/commands/ductus/plan.md`, `.claude/commands/ductus/prune.md`, `.claude/commands/ductus/review.md`, `.claude/commands/ductus/specify.md`, `.claude/commands/ductus/status.md`, `.claude/commands/ductus/target.md`, `.gitignore`, `README.md`, `docs/runtime.md`, `framework/bootstrap/configure/auggie.md`, `framework/bootstrap/configure/claude.md`, `framework/bootstrap/ductus.md`, `framework/commands/amend.md`, `framework/commands/analyze.md`, `framework/commands/clarify.md`, `framework/commands/consolidate.md`, `framework/commands/fold.md`, `framework/commands/groom.md`, `framework/commands/help.md`, `framework/commands/implement.md`, `framework/commands/plan.md`, `framework/commands/prune.md`, `framework/commands/review.md`, `framework/commands/specify.md`, `framework/commands/status.md`, `framework/commands/target.md`, `framework/constitution.md`, `framework/runtime-tools.txt`, `framework/templates/project/gitignore`, `runtime/Cargo.toml`, `runtime/src/interpreter/mod.rs`, `runtime/src/lib.rs`, `runtime/src/main.rs`, `runtime/src/mcp/server.rs`, `runtime/src/primitives/create_feature.rs`, `runtime/src/primitives/dashboard.rs`, `runtime/src/primitives/fetch_archive.rs`, `runtime/src/primitives/mod.rs`, `runtime/src/primitives/resolve_session.rs`, `runtime/src/primitives/retarget_sessions.rs`, `runtime/src/primitives/write_session.rs`, `runtime/src/schema/paths.rs`, `runtime/src/schema/primitives.rs`, `runtime/src/schema/registry.rs`, `runtime/tests/common/mod.rs`, `runtime/tests/concurrent_sessions.rs`, `runtime/tests/golden/analyze-basic.jsonl`, `runtime/tests/golden/cross-service-basic.jsonl`, `runtime/tests/golden/ductus-basic.jsonl`, `runtime/tests/golden/implement-basic.jsonl`, `runtime/tests/golden/plan-basic.jsonl`, `runtime/tests/golden/review-basic.jsonl`, `runtime/tests/golden/specify-basic.jsonl`, `runtime/tests/golden/status-basic.jsonl`, `runtime/tests/golden/target-basic.jsonl`, `specs/010-agent-autonomy/spec.md`.
 
 ## MUST violations (blocking)
 
@@ -177,8 +178,9 @@ Not blocking. The third review's findings are resolved (tasks 24–25): a write 
 
 ## Observations
 
-- simplicity: the exec seed peeked even with no own record, then discarded the result and any error — `runtime/src/main.rs:505` — **fixed**
-- record: the CFG-ENV-001 waiver's reason named only the proxy variables, while 048's scenario says the certificate variables were waived too — `specs/062-concurrent-session-targets/review.md:23` — **fixed**
+- record: 062's data-model.md and plan.md said the sessions .gitignore is created with the directory; the first lock holder writes it — `specs/062-concurrent-session-targets/data-model.md:10` — **fixed**
+- test-gap: the scenario's first edge case, an existing .gitignore left as it is, had no test — `runtime/src/session.rs:312` — **fixed**
+- record: 041 task 17's note predated 062 task 26's Windows verdict and the operator's decision on 048 — `specs/041-task-pruning/tasks.md:138` — **fixed**
 
 ## Skipped passes
 
