@@ -50,6 +50,27 @@ fn copy_recursively(src: &Path, dst: &Path) {
     }
 }
 
+/// Vendor a `markdownlint-cli2` that reports nothing and exits 0, which
+/// `lint-markdown` prefers over `npx` — so a test whose subject is not the lint
+/// never waits on a download.
+fn vendor_a_clean_markdownlint(root: &Path) {
+    let bin = root.join("node_modules").join(".bin");
+    fs::create_dir_all(&bin).unwrap();
+    #[cfg(windows)]
+    fs::write(bin.join("markdownlint-cli2.cmd"), "@exit /b 0\r\n").unwrap();
+    #[cfg(not(windows))]
+    {
+        let stub = bin.join("markdownlint-cli2");
+        fs::write(&stub, "#!/bin/sh\nexit 0\n").unwrap();
+        #[cfg(unix)]
+        {
+            let mut perms = fs::metadata(&stub).unwrap().permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&stub, perms).unwrap();
+        }
+    }
+}
+
 async fn start_pair(repo: PathBuf) -> rmcp::service::RunningService<rmcp::service::RoleClient, ()> {
     let (server_side, client_side) = tokio::io::duplex(64 * 1024);
     let server = GovRuntimeServer::new(repo);
@@ -686,9 +707,17 @@ async fn compute_review_scope_returns_structured_scope_via_mcp() {
 /// 0.48.0 added two more, the `inbox-standing` fields on `diff-cross-spec`
 /// and `write-review`; spec 058 removed both, and the standing inbox count now
 /// crosses the wire on `dashboard`, asserted below.
+///
+/// The gate lints the feature directory before it reaches the cross-spec
+/// check, so the fixture vendors a linter that exits clean. Without one the
+/// gate falls back to `npx`, which downloads `markdownlint-cli2` into a bare
+/// tempdir: on Windows that download failed twice in CI (2026-09-15 and
+/// 2026-09-30), and the gate answered `markdown-lint` before the check this
+/// test is about.
 #[tokio::test]
 async fn the_cross_spec_impact_gate_reports_per_entry_via_mcp() {
     let tmp = tempfile::tempdir().unwrap();
+    vendor_a_clean_markdownlint(tmp.path());
     let dir = tmp.path().join("specs/001-x");
     fs::create_dir_all(&dir).unwrap();
     fs::write(
