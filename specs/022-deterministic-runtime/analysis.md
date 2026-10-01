@@ -1,16 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-10-01T18:58:23Z
-analyzed-against: 10e760b9b2ea4f8a7ac0500dbaed76d4a23c031a
+last-run: 2026-10-01T21:04:30Z
+analyzed-against: 2cc1d33a9a327da746977bb55f1b6f06f2906392
 hard-fail: 0
 blocking-findings: 0
 advisory: 9
-unexamined: 2
+unexamined: 0
 analyzed-digest:
-  data-model.md: 98b6b5e54781654d83c62b2deb9ae6f5c175594c136853507270ad94f17a4968
+  data-model.md: 3c187ce903de262d1831d5f2ed04dad49ba436ce8efe1ef7f76747ee47698ec4
   plan.md: 549a28e4de11de67d4a5fd75dd244f393987d9ef2d417bd86351fa948f07dfa9
-  review.md: 029e5320ed98d2a1ec868a51cd99a5ed48d91300751c36ee1ea37397dafac6b2
-  scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
+  review.md: 015408fc5e53407e58e791e48942ee36f460232958e751cdc8ec2de3e885f3be
+  scenarios/a-done-spec-has-no-transition-to-gate.md: 2041c659a2dbee3e17a05a702a11c9b1f59d30ce68acc19f616889696b66da2b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 80ec329393c3b78c0926ef45f61792502c311b1bccaa0dba6526234bac53e161
@@ -102,14 +102,14 @@ analyzed-digest:
   scenarios/the-cli-surface-nothing-pins.md: f63de14533aeb6b2c77f33421af289633e0fded63e795f219b82bfa30f071c8c
   scenarios/the-committed-tree-horizon.md: 20857abb817761824891eb284ed1f89e7455a413f3d7a83a25f029c7a256534b
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
-  scenarios/the-cross-spec-impact-gate.md: 80d698a71127af8797f8dde1865910686ae420b22a4a6f89072384b03b73bb96
+  scenarios/the-cross-spec-impact-gate.md: 874fd2fbefdc6d39f38b8d136f921efc20a99968841d837ad2c91db7c7aa3799
   scenarios/the-inbox-row.md: f29a57dc733dfbaa62b54a94ca7486cb7fbc2c93d4a4e6ded07ab8714483ae04
   scenarios/the-promotion-coverage-line.md: 151e741fad3c4f953d85e14d3183fed27ef08bcce0cbd9b42ed7bc89e22fba29
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
   scenarios/waiver-processing-order.md: 0adb750e651d94ac8bcf06dd0dfbba84cd937c09817035e913ec08b77687f8e8
-  scenarios/write-analysis-and-the-second-gate.md: 97439d6e86852ebd2fff85e7cbefe14c0e77ee0edf98f97b23a01a11e1ea4940
+  scenarios/write-analysis-and-the-second-gate.md: b6c0840fc0b5e57d93299b5c27a16d91a7a9fe36890c3819018cfa29adf6df57
   scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
   scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
   scenarios/write-session-primitive.md: 88b1f94a05bf09e168b9fcc30a82cecf6886ee750dcb44d333545dbff44fc1de
@@ -118,11 +118,9 @@ analyzed-digest:
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: a8d53475b51e8a184617a0ee92889c5b0fc044eef820be325bc3780386a53b78
   tasks.md: 23d9a2dd6997c26542014936a71a91dd0016ac2ac70dfbd6c1e9cc0aa11b76cc
-unexamined-by-reason:
-  not-a-live-claim: 2
 blocking: false
 dispositions:
-  fixed: 8
+  fixed: 0
   routed: 0
   discarded: 9
   undispositioned: 0
@@ -178,7 +176,7 @@ decisions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 9 advisory; not blocking. 2 unexamined target(s). Dispositions: 8 fixed, 0 routed, 9 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 9 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 9 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -202,15 +200,8 @@ decisions:
 
 ## Unexamined targets
 
-- not-a-live-claim: 2
+*None — every target was examined.*
 
 ## Fixed in this run
 
-- plan-record — plan.md §Cross-Spec Validation is outside the design record — `specs/022-deterministic-runtime/plan.md` — **fixed**
-- rule-assessment — BE-TIMEOUT-001: lint-markdown and run-generator wait on a subprocess with no bounded timeout — `specs/022-deterministic-runtime/spec.md` — **fixed**
-- rule-assessment — BE-SCHEMA-003: plan.md says generated JSON Schema files live beside the code with no regenerate-and-diff gate — `specs/022-deterministic-runtime/plan.md` — **fixed**
-- grounding — plan.md says the runtime makes zero outbound HTTP calls, but fetch-archive uses reqwest — `specs/022-deterministic-runtime/plan.md` — **fixed**
-- grounding — plan.md calls git2 a pure-Rust libgit2 binding — `specs/022-deterministic-runtime/plan.md` — **fixed**
-- grounding — plan.md names serde_yaml as the frontmatter parser; the runtime uses serde_norway — `specs/022-deterministic-runtime/plan.md` — **fixed**
-- grounding — spec.md and plan.md say the gen-*.sh scripts stay bash and unwrapped, though the frontmatter generators became derive-dependencies and derive-references — `specs/022-deterministic-runtime/spec.md` — **fixed**
-- grounding — spec.md lists lint-tool-coverage.sh as a primitive's bash counterpart and calls run-generator adopter-only — `specs/022-deterministic-runtime/spec.md` — **fixed**
+*None.*
