@@ -889,6 +889,15 @@ pub(crate) fn split_frontmatter_with_offset<'a>(
     Err(PrimitiveError::UnclosedFrontmatter { path: path.into() })
 }
 
+/// Lowercase hex of `bytes` — the form every recorded sha256 digest takes.
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    bytes.iter().fold(String::new(), |mut acc, byte| {
+        use std::fmt::Write as _;
+        let _ = write!(acc, "{byte:02x}");
+        acc
+    })
+}
+
 /// The line ending an existing text file uses, for a rewrite that has to
 /// give the file back the way it found it.
 ///
@@ -911,15 +920,6 @@ pub(crate) fn split_frontmatter_with_offset<'a>(
 /// rather than having the disagreement encoded permanently; and a file with
 /// no line ending at all — empty, or one unterminated line — carries no
 /// evidence either way, so it takes the platform-neutral default.
-/// Lowercase hex of `bytes` — the form every recorded sha256 digest takes.
-pub(crate) fn hex(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::new(), |mut acc, byte| {
-        use std::fmt::Write as _;
-        let _ = write!(acc, "{byte:02x}");
-        acc
-    })
-}
-
 pub(crate) fn line_ending_of(content: &str) -> &'static str {
     let crlf = content.matches("\r\n").count();
     // Every `\r\n` contains an `\n`, so the bare-LF count is the difference.
@@ -1949,9 +1949,10 @@ pub(crate) struct MarkdownBlock {
 /// deliberately **not** pushed into `SkipScanner`: that scanner is shared by
 /// the tasks primitives, `prune-plan`'s section segmentation, and the section
 /// and bullet walkers, so teaching it a fourth region would change how each
-/// of them reads a quoted line. (Inline code spans are the fourth exempt context, but they are
-/// an *intra-line* concern — see [`inline_code_spans`] — so a consumer
-/// applies them to a block's text rather than the splitter dropping lines.)
+/// of them reads a quoted line. (Inline code spans are the fourth exempt
+/// context, but they are an *intra-line* concern — see [`inline_code_spans`]
+/// — so a consumer applies them to a block's text rather than the splitter
+/// dropping lines.)
 pub(crate) fn split_blocks(content: &str) -> Vec<MarkdownBlock> {
     let mut skip = SkipScanner::default();
     let mut blocks: Vec<MarkdownBlock> = Vec::new();

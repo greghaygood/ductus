@@ -30,8 +30,9 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
 ### Fixed
 
 - **`ductus exec prune` writes what the operator confirmed.** A confirmed
-  gate now binds `apply: true` for the steps after it, so `/{project}:prune`'s
-  step 7 applies the reduction step 6 confirmed. Before, it previewed a
+  gate now binds `apply: true` into the arguments of every primitive
+  dispatched after it, so `/{project}:prune`'s step 7 applies the reduction
+  step 6 confirmed. Extension payloads do not carry it. Before, it previewed a
   second time and the walk completed with exit 0 having written nothing. A
   denied gate still ends the walk. Spec 022, scenario
   `a-confirmed-gate-authorizes-the-writes-after-it`.

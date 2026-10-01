@@ -88,13 +88,13 @@ When `reset` is true the primitive reads `spec.md` frontmatter `status`.
 `status == done` (or `force: true`) → `gate: "allowed"`, proceed.
 Otherwise → `gate: "blocked-needs-force"`, `applied: false`, no write — a
 **domain outcome** carried in the result, not an operational error (matching
-the `mod.rs` convention that domain results ride the struct). a single-feature
+the `mod.rs` convention that domain results ride the struct). A single-feature
 keep-pending call never reads `spec.md` (`status` omitted, `gate:
 "not-applicable"`); an `all` walk reads each listed spec's status for its
-line. The command
-surfaces a blocked reset by naming the status, pointing at the keep-pending
-default, and mentioning `--reset --force`. Under `--all` the gate is applied
-per spec, and `force` alongside `all` is refused before anything is read.
+line. The command surfaces a blocked reset by naming the status, pointing at
+the keep-pending default, and mentioning `--reset --force`. Under `--all` the
+gate is applied per spec, and `force` alongside `all` is refused before
+anything is read.
 
 ### The design record is the plan template's `##` headings
 
