@@ -73,7 +73,7 @@ A declared fold target is **owed work that never holds `done`**. `dashboard` qua
 
 Fold-back processes one branch-scoped spec at a time (AC29): each spec's fold completes its writes and its retirement before the next begins, so an interruption leaves every spec other than the one in flight untouched. The one in flight is **recoverable, not atomic**. The runtime has no multi-file transaction, so every per-spec write is a no-op where a previous run already landed — `append-task`'s scenario-pointer dedup provides that for the one step that lacked it — and the recovery is a second run rather than a rollback. Claiming per-spec all-or-nothing would have been claiming a transaction.
 
-`/ductus:fold` re-targets the session after retiring the directory; without it every follow-on command lands on a path that is gone. The source spec's own scenarios cross over on *either* route — the route decides the body's shape, never its scenarios'.
+After retiring the directory, `/ductus:fold` re-points every session in the working tree that named the folded spec at the upstream spec, through `retarget-sessions` (spec 062); without it every follow-on command in those sessions lands on a path that is gone. The source spec's own scenarios cross over on *either* route — the route decides the body's shape, never its scenarios'.
 
 `check-orphaned-references` is the verifier, not the repair path. Its report-don't-repair stance rests on a migration knowing only its own hop (`runtime/src/primitives/check_orphaned_references.rs:8`, `:16`); fold-back knows both endpoints, so it rewrites and the check confirms the result is clean (AC22).
 
