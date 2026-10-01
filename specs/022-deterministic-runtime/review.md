@@ -1,16 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-10-01T21:03:13Z
-reviewed-against: 5fd2c3a5f40e44f45db536bafaa30ffa860cba41
-diff-base: 2ccf71a5236c903b633e0d8b5dd0fb22bab5ed33
+last-run: 2026-10-01T22:06:13Z
+reviewed-against: c9ccf64c1bc3b511392c36ec597ce746bdc8fd1b
+diff-base: 38112a1d4f001640858dbc4488900733a62ff7b2
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 29
-scope: 62
+examined: 4
+scope: 69
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 3c187ce903de262d1831d5f2ed04dad49ba436ce8efe1ef7f76747ee47698ec4
+  data-model.md: 897814e43c7183efa578f6d819ccfc8ddcd71a108564a3a65039c33c787aecda
+  scenarios/a-confirmed-gate-authorizes-the-writes-after-it.md: d092f9d4f59c67c575cc59039a6e0fdf162546969de2820e747b609d7a3d43c7
   scenarios/a-done-spec-has-no-transition-to-gate.md: 2041c659a2dbee3e17a05a702a11c9b1f59d30ce68acc19f616889696b66da2b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -119,8 +120,8 @@ reviewed-digest:
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
 blocking: false
 dispositions:
-  fixed: 0
-  routed: 1
+  fixed: 3
+  routed: 0
   discarded: 0
   undispositioned: 0
 decisions:
@@ -135,7 +136,7 @@ decisions:
 
 ## Summary
 
-022's reopen for 051's scenario a-pending-fold-never-holds-done, over the window since 022 re-entered in-progress (diff-base 2ccf71a5): 0 MUST, 0 SHOULD, 0 low-confidence; not blocking. Examined 29 in scope: every hunk the window carries outside the four .claude/commands/ductus mirrors, which gen-claude-commands regenerates from the framework sources read here and reported in sync. The runtime change is the one 051's review (697ec1b6) examined — the fold check's removal from check-review-gate, the dashboard's done-first Next Action, and their tests, each shown to fail under mutation — and 022's own edits re-state its gate record: the data model's check list (renumbered, pending-fold removed) and three scenarios annotated with links back to 051. The plan-affected files this window did not touch were not read, among them runtime/src/primitives/read_spec.rs, so the four stored discards anchored there expired unobserved rather than resolved; a later review that re-observes them asks again. One observation: 051's plan said /fold re-targets "the session", which predates 062 — routed by operator decision to 051's plan and corrected in 5fd2c3a5, reopening 051.
+Not blocking. A deliberate partial review of 022-deterministic-runtime's reopen (022's reopen d3d73fb2 follows the two commits it reviews, so the base is 38112a1d, where the previous review left 022 (a --since override, used verbatim)), in the shape the operator approved on 2026-10-01: the change this reopen carries, not a full pass. The five passes read the complete diff since 38112a1d — every changed hunk of every changed file, with context, including 3e323778's exec-gate fix and the review chores in dc703836, 3e323778 and c9ccf64c — and these 4 of 69 scope entries in full: `specs/022-deterministic-runtime/scenarios/a-confirmed-gate-authorizes-the-writes-after-it.md`; `specs/041-task-pruning/scenarios/plan-records-the-design-as-it-stands.md`; `specs/041-task-pruning/scenarios/prune-reduces-the-spec-directory.md`; `specs/047-analyze-findings-durability/scenarios/analyze-run-durability.md`. No rule finding. The exec /prune QUAL-STUB-001 MUST that the review run beside 0.56.0's found is fixed in 3e323778 (022 scenario a-confirmed-gate-authorizes-the-writes-after-it); its walker test fails with the binding removed. 3 observation(s), each fixed in c9ccf64c. Not read in full, named individually: `.claude/commands/ductus/analyze.md`; `.claude/commands/ductus/consolidate.md`; `.claude/commands/ductus/fold.md`; `.claude/commands/ductus/implement.md`; `.claude/commands/ductus/prune.md`; `.github/workflows/markdown-only-pipeline.yml`; `.github/workflows/runtime-release.yml`; `.github/workflows/runtime.yml`; `AGENTS.md`; `README.md`; `docs/analyze.md`; `framework/bootstrap/ductus.md`; `framework/commands/analyze.md`; `framework/commands/consolidate.md`; `framework/commands/fold.md`; `framework/commands/implement.md`; `framework/commands/plan.md`; `framework/commands/prune.md`; `framework/commands/specify.md`; `framework/commands/status.md`; `framework/commands/target.md`; `framework/constitution.md`; `framework/runtime-tools.txt`; `runtime/.gitignore`; `runtime/CHANGELOG.md`; `runtime/Cargo.lock`; `runtime/Cargo.toml`; `runtime/legacy-prose-commands.txt`; `runtime/src/interpreter/`; `runtime/src/interpreter/mod.rs`; `runtime/src/io.rs`; `runtime/src/lib.rs`; `runtime/src/main.rs`; `runtime/src/mcp/`; `runtime/src/parser/`; `runtime/src/primitives/`; `runtime/src/primitives/analyze_subjects.rs`; `runtime/src/primitives/check_stuck.rs`; `runtime/src/primitives/fetch_archive.rs`; `runtime/src/primitives/mod.rs`; `runtime/src/primitives/prune_plan.rs`; `runtime/src/primitives/prune_tasks.rs`; `runtime/src/primitives/write_analysis.rs`; `runtime/src/schema/`; `runtime/src/schema/primitives.rs`; `runtime/tests/`; `runtime/tests/crlf_preservation.rs`; `runtime/tests/fixtures/`; `runtime/tests/golden/`; `runtime/tests/golden/implement-basic.jsonl`; `runtime/tests/mcp.rs`; `runtime/tests/parity/`; `runtime/tests/walker.rs`; `scripts/lint-procedure-parseability.sh`; `specs/022-deterministic-runtime/data-model.md`; `specs/022-deterministic-runtime/plan.md`; `specs/022-deterministic-runtime/spec.md`; `specs/022-deterministic-runtime/tasks.md`; `specs/041-task-pruning/plan.md`; `specs/041-task-pruning/spec.md`; `specs/041-task-pruning/tasks.md`; `specs/047-analyze-findings-durability/spec.md`; `specs/047-analyze-findings-durability/tasks.md`; `specs/062-concurrent-session-targets/spec.md`; `specs/062-concurrent-session-targets/tasks.md` — changed files among them were read at their changed hunks only, directory entries were not walked, and unchanged files were not re-read. This is not a full five-pass review of every path in scope.
 
 ## MUST violations (blocking)
 
@@ -155,7 +156,9 @@ decisions:
 
 ## Observations
 
-- convention: 051's plan said /ductus:fold re-targets "the session"; since 062 it re-points every session that named the folded spec — `specs/051-branch-scoped-spec-numbering/plan.md` — **routed** to `specs/051-branch-scoped-spec-numbering/plan.md`
+- doc: hex sat inside line_ending_of's doc comment, leaving line_ending_of undocumented — `runtime/src/primitives/mod.rs:892` — **fixed**
+- convention: the reflowed split_blocks doc left a line past 100 characters — `runtime/src/primitives/mod.rs` — **fixed**
+- claim: the CHANGELOG's exec-gate entry said the binding covers the steps after the gate, where it binds primitive arguments — `runtime/CHANGELOG.md` — **fixed**
 
 ## Skipped passes
 
