@@ -1,15 +1,15 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-09-27T19:00:52Z
-analyzed-against: 5715ed7bb74d4551973fcbd9c95fdf2b92b81b70
+last-run: 2026-10-01T18:58:23Z
+analyzed-against: 10e760b9b2ea4f8a7ac0500dbaed76d4a23c031a
 hard-fail: 0
 blocking-findings: 0
-advisory: 0
+advisory: 9
 unexamined: 2
 analyzed-digest:
   data-model.md: 98b6b5e54781654d83c62b2deb9ae6f5c175594c136853507270ad94f17a4968
-  plan.md: a0092914896b5408ce1ae97d687d0a5a076bb48744c907282b9c5d9250f3f3b2
-  review.md: b4e468a3ae08f7cc1aa22ff475137dde59bf30976f836723df97ca52df77d655
+  plan.md: 549a28e4de11de67d4a5fd75dd244f393987d9ef2d417bd86351fa948f07dfa9
+  review.md: 029e5320ed98d2a1ec868a51cd99a5ed48d91300751c36ee1ea37397dafac6b2
   scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -46,7 +46,7 @@ analyzed-digest:
   scenarios/derive-references-unstaged-drift-is-reported.md: 358d0b1eb96d338a4dee7ee026382bd9011599407d408d5921e564ec4862d846
   scenarios/derive-unparseable-frontmatter-is-reported.md: 5bb6709b881d43b5dc048ee95aebafcf207a18dbc75d5ab30dfb5689f1c077fb
   scenarios/done-when-authoring-forms.md: 080f8717135b67c8400e072dae02f172e40cb0b6ad596c3e227d6cc5f90d0191
-  scenarios/exec-analyze-derives-its-list-seeds.md: 1f7a5b070674cc990876fe9537a64622e558f2150556e191b2ae074194b16440
+  scenarios/exec-analyze-derives-its-list-seeds.md: 9fda65d4cd7a5ec0fab7e07ba9d5d25e794944c967cd09e7b3547f8e1d560726
   scenarios/exec-clarify-asks-each-open-question.md: 4851dc543c6dd80603aa86c776543017b9ab1a7adac469e1b49ec311a9877cab
   scenarios/extension-request-hygiene.md: 1b0c77335af3a2caf82e01896207d60261cd0071a8bc8da3162b9785f7c16e48
   scenarios/fetch-archive-dns-rebinding.md: 39482bed2a531d36dce770c9c20ae3848ba254da0d02ee51d5c6feabe7967031
@@ -66,6 +66,7 @@ analyzed-digest:
   scenarios/merge-managed-block-subsection-insertion.md: 2a0a7f5f443ef78811f1550a34b419054c9d9bb29bc800b51b86033be350e2f8
   scenarios/merge-managed-block-trailing-append.md: 6f18642416470c96b6f582a0305d62137a9ae2ec6f1ec054eccac421d8e68a4f
   scenarios/numbered-heading-grammar-single-source.md: 359d35403e9b3f853e4a7cbcca71f3fc032ad556406bae6a584272c6bcd97862
+  scenarios/open-questions-are-any-list-item.md: e91d7466be00bcd396959c274dfce64c1d94d0e913b761b7e991da0bf611d6d7
   scenarios/opencode-command-resolution.md: eaa0eba65ccf3f1b3a610db8a10231a9635994f71b5df780111e8f5731118e1e
   scenarios/orphan-check-adopter-authored-references.md: b47b815a5d2380fc979d2ad5a8020c05d95a7593f962235795ff19cd3cb1e6fd
   scenarios/orphaned-reference-check.md: 928a5373030b895a3fe185e36f3a66867e0c657ddcd59abae023a1b925e11f30
@@ -115,23 +116,69 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: 49cc696c3b45a18d1e5872e4591aad88f3ddd3325ce0d6bd4573e499afd60a40
-  tasks.md: 0d2b5daca9fede545ae9ca25ed7fe5932f01c25d56a7ca65719c1c99f7994c2c
+  spec.md: a8d53475b51e8a184617a0ee92889c5b0fc044eef820be325bc3780386a53b78
+  tasks.md: 23d9a2dd6997c26542014936a71a91dd0016ac2ac70dfbd6c1e9cc0aa11b76cc
 unexamined-by-reason:
   not-a-live-claim: 2
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 8
   routed: 0
-  discarded: 0
+  discarded: 9
   undispositioned: 0
+decisions:
+  - key: "rule-assessment — BE-METRIC-001: the MCP tool handlers commit to no rate, error or duration metrics"
+    outcome: discarded
+    reason: the runtime is a per-agent stdio process with no metrics pipeline, and no primitive emits metrics; adding the first belongs to a spec about the runtime's observability (as discarded in 062's analysis)
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — spec.md says a single-feature /ductus:analyze takes 2-4 minutes of LLM wall-clock time today
+    outcome: discarded
+    reason: a motivation measured when the spec was written, describing the problem the runtime was built to solve rather than current behavior
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — spec.md says 11 of 13 analyze check sections are mechanical
+    outcome: discarded
+    reason: a motivation measured when the spec was written; analyze's sections have since been restructured, and the claim records the case for the runtime, not current behavior
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — spec.md and plan.md call rmcp the reference MCP SDK
+    outcome: discarded
+    reason: the rationale for a 2026-05 dependency choice, recorded in a Resolved Question and the plan's dependency list
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — spec.md says homebrew-core has popularity gates
+    outcome: discarded
+    reason: the rationale for a distribution choice recorded in a Resolved Question; no current behavior rests on it
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — spec.md says a hardcoded .claude/gov-session.json broke adopters
+    outcome: discarded
+    reason: a past-incident account in a Resolved Question; the commit history is its record
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — plan.md says POSIX rename is atomic and Windows rename is weaker
+    outcome: discarded
+    reason: a property of the platforms the atomic-write design rests on, stated as rationale; the CI matrix exercises the write on all three
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: grounding — plan.md says certain markdown extensions are off by default in pulldown-cmark
+    outcome: discarded
+    reason: rationale for a rejected alternative in Trade-offs; no current behavior rests on it
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
+  - key: data-model — data-model.md names check-orphaned-references twice in one list
+    outcome: discarded
+    reason: a duplicated name changes no meaning, and editing 022's data model stales its review digest for no gain
+    decided-at: 2026-10-01T18:58:23Z
+    decided-by: andy@stone.dev
 ---
 
 # Analysis — 022-deterministic-runtime
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 2 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 9 advisory; not blocking. 2 unexamined target(s). Dispositions: 8 fixed, 0 routed, 9 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -143,7 +190,15 @@ dispositions:
 
 ## Advisory findings
 
-*None.*
+- rule-assessment — BE-METRIC-001: the MCP tool handlers commit to no rate, error or duration metrics — `specs/022-deterministic-runtime/plan.md` — **discarded**: the runtime is a per-agent stdio process with no metrics pipeline, and no primitive emits metrics; adding the first belongs to a spec about the runtime's observability (as discarded in 062's analysis)
+- grounding — spec.md says a single-feature /ductus:analyze takes 2-4 minutes of LLM wall-clock time today — `specs/022-deterministic-runtime/spec.md` — **discarded**: a motivation measured when the spec was written, describing the problem the runtime was built to solve rather than current behavior
+- grounding — spec.md says 11 of 13 analyze check sections are mechanical — `specs/022-deterministic-runtime/spec.md` — **discarded**: a motivation measured when the spec was written; analyze's sections have since been restructured, and the claim records the case for the runtime, not current behavior
+- grounding — spec.md and plan.md call rmcp the reference MCP SDK — `specs/022-deterministic-runtime/spec.md` — **discarded**: the rationale for a 2026-05 dependency choice, recorded in a Resolved Question and the plan's dependency list
+- grounding — spec.md says homebrew-core has popularity gates — `specs/022-deterministic-runtime/spec.md` — **discarded**: the rationale for a distribution choice recorded in a Resolved Question; no current behavior rests on it
+- grounding — spec.md says a hardcoded .claude/gov-session.json broke adopters — `specs/022-deterministic-runtime/spec.md` — **discarded**: a past-incident account in a Resolved Question; the commit history is its record
+- grounding — plan.md says POSIX rename is atomic and Windows rename is weaker — `specs/022-deterministic-runtime/plan.md` — **discarded**: a property of the platforms the atomic-write design rests on, stated as rationale; the CI matrix exercises the write on all three
+- grounding — plan.md says certain markdown extensions are off by default in pulldown-cmark — `specs/022-deterministic-runtime/plan.md` — **discarded**: rationale for a rejected alternative in Trade-offs; no current behavior rests on it
+- data-model — data-model.md names check-orphaned-references twice in one list — `specs/022-deterministic-runtime/data-model.md` — **discarded**: a duplicated name changes no meaning, and editing 022's data model stales its review digest for no gain
 
 ## Unexamined targets
 
@@ -151,4 +206,11 @@ dispositions:
 
 ## Fixed in this run
 
-- link-adjacent-drift — line 9: prose asserting `open question` is contradicted by its link target specs/022-deterministic-runtime/scenarios/clarify-command-acceleration.md, which reports zero open questions — `specs/022-deterministic-runtime/scenarios/exec-clarify-asks-each-open-question.md` — **fixed**
+- plan-record — plan.md §Cross-Spec Validation is outside the design record — `specs/022-deterministic-runtime/plan.md` — **fixed**
+- rule-assessment — BE-TIMEOUT-001: lint-markdown and run-generator wait on a subprocess with no bounded timeout — `specs/022-deterministic-runtime/spec.md` — **fixed**
+- rule-assessment — BE-SCHEMA-003: plan.md says generated JSON Schema files live beside the code with no regenerate-and-diff gate — `specs/022-deterministic-runtime/plan.md` — **fixed**
+- grounding — plan.md says the runtime makes zero outbound HTTP calls, but fetch-archive uses reqwest — `specs/022-deterministic-runtime/plan.md` — **fixed**
+- grounding — plan.md calls git2 a pure-Rust libgit2 binding — `specs/022-deterministic-runtime/plan.md` — **fixed**
+- grounding — plan.md names serde_yaml as the frontmatter parser; the runtime uses serde_norway — `specs/022-deterministic-runtime/plan.md` — **fixed**
+- grounding — spec.md and plan.md say the gen-*.sh scripts stay bash and unwrapped, though the frontmatter generators became derive-dependencies and derive-references — `specs/022-deterministic-runtime/spec.md` — **fixed**
+- grounding — spec.md lists lint-tool-coverage.sh as a primitive's bash counterpart and calls run-generator adopter-only — `specs/022-deterministic-runtime/spec.md` — **fixed**
