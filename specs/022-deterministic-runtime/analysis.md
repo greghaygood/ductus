@@ -1,7 +1,7 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-10-01T21:04:30Z
-analyzed-against: 2cc1d33a9a327da746977bb55f1b6f06f2906392
+last-run: 2026-10-01T21:05:59Z
+analyzed-against: 6dca33024b4c51f437f387418bbfc04bb06fefa2
 hard-fail: 0
 blocking-findings: 0
 advisory: 9
@@ -116,7 +116,7 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: a8d53475b51e8a184617a0ee92889c5b0fc044eef820be325bc3780386a53b78
+  spec.md: 79ed06f654f7a3f8b341907cc4e7a57c9d00867de3a0b08b391fcb5001bb7100
   tasks.md: 23d9a2dd6997c26542014936a71a91dd0016ac2ac70dfbd6c1e9cc0aa11b76cc
 blocking: false
 dispositions:
