@@ -1,7 +1,7 @@
 ---
 spec: 041-task-pruning
-last-run: 2026-10-01T18:58:23Z
-analyzed-against: 10e760b9b2ea4f8a7ac0500dbaed76d4a23c031a
+last-run: 2026-10-01T19:01:12Z
+analyzed-against: 04f09019af07b17d7b221cfd92c7beb4e5a15713
 hard-fail: 0
 blocking-findings: 0
 advisory: 12
@@ -13,13 +13,13 @@ analyzed-digest:
   scenarios/plan-records-the-design-as-it-stands.md: 617feb2d97e676600074e386b656b15f9d9c632500aaf418d554e2d91364a4eb
   scenarios/prune-all-walks-every-spec.md: 4b605a7c3d07bff5e6a90bd02e982e93f7360d12f3934f9663a0eb44ebc9fc92
   scenarios/prune-reduces-the-spec-directory.md: 2f1a33caf5c5c72e94c6e13c6652e0e8465162ffe2d1e9c158a0ce18e60b8c30
-  spec.md: 99c6a6755d9ec7d074208f6c6d3fa21c70f3a14964312a0bdf53d17e8d3eb019
+  spec.md: d212ce188630a3a5d0bcd0f27116e34374c30bf10d1859cb63f70e1ac4171d0a
   tasks.md: a6d5b0961f3604f82a7590ba8de7d5e7dc4baf13f2db170beb39cbbd5abac512
 unexamined-by-reason:
   ships-to-adopter: 1
 blocking: false
 dispositions:
-  fixed: 8
+  fixed: 0
   routed: 0
   discarded: 12
   undispositioned: 0
@@ -90,7 +90,7 @@ decisions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 12 advisory; not blocking. 1 unexamined target(s). Dispositions: 8 fixed, 0 routed, 12 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 12 advisory; not blocking. 1 unexamined target(s). Dispositions: 0 fixed, 0 routed, 12 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -121,11 +121,4 @@ decisions:
 
 ## Fixed in this run
 
-- rule-assessment — BE-INPUT-004: the feature argument is joined into file paths with no traversal check committed — `specs/041-task-pruning/plan.md` — **fixed**
-- rule-assessment — BE-INPUT-008: spec.md frontmatter and analysis.md decisions are read as YAML with no safe-loading mode named — `specs/041-task-pruning/plan.md` — **fixed**
-- rule-assessment — BE-PAYLOAD-001: the --all walk returns a corpus-sized list with no committed size bound — `specs/041-task-pruning/plan.md` — **fixed**
-- grounding — plan.md says MCP requires a tool's output schema to be an object, uncited — `specs/041-task-pruning/plan.md` — **fixed**
-- grounding — plan.md says the exec walker halts on a primitive error, uncited — `specs/041-task-pruning/plan.md` — **fixed**
-- grounding — plan.md cites mark-task's locate_task_range and the list_feature_dirs walk with no path — `specs/041-task-pruning/plan.md` — **fixed**
-- grounding — spec.md says /implement directs an empty task list back to /plan, which no implement step does — `specs/041-task-pruning/spec.md` — **fixed**
-- grounding — spec.md says groom operates on a repo-level inbox.md, uncited — `specs/041-task-pruning/spec.md` — **fixed**
+*None.*
