@@ -137,8 +137,11 @@ teammate's session is unreachable. Sessions held by other processes in the same
 working tree are reachable, so the rule extends to all of them. A fold
 re-targets every session naming the folded spec to its upstream home. A
 consolidation clears every session naming the removed spec. The shared default
-follows the same rule. Each affected session is told at its next command what
-happened to its target and which session's command did it.
+follows the same rule. Each affected per-process session is told at its next
+command what happened to its target and which session's command did it. The
+shared default is changed without a notice: every process without an identity
+reads it, so there is no single reader to tell, and the acting command's report
+names it among the sessions it changed.
 
 ### Concurrent writes lose nothing
 
@@ -189,7 +192,7 @@ own session file, so the two compose.
 - [x] AC18: A per-process target neither resolved nor written for seven days is removed by the next target write in any process, and a target used within that window is never removed
 - [x] AC19: When a target write names a feature another unexpired session also targets, the writing session is told which sessions and when each last used its target, and each of those sessions is told once at its next ductus command; neither command is blocked
 - [x] AC20: A cleared target, whether cleared by its own process or by a consolidation, leaves the process with no target: its targeted commands stop and ask for `/ductus:target`, and it does not adopt the shared default
-- [x] AC21: After `/ductus:fold` removes a staging spec, every session that targeted it targets the upstream spec; after `/ductus:consolidate` removes a spec, every session that targeted it is cleared; each affected session is told at its next command what happened to its target and which session's command did it
+- [x] AC21: After `/ductus:fold` removes a staging spec, every session that targeted it targets the upstream spec; after `/ductus:consolidate` removes a spec, every session that targeted it is cleared; each affected per-process session is told at its next command what happened to its target and which session's command did it, and the shared default, which has no single reader to tell, is changed without a notice and named in the acting command's report
 - [x] AC22: A file holding session state that cannot be parsed is reported by name, and the process does not treat it as absent or adopt the default in its place
 - [x] AC23: `ductus exec` run from an agent's shell tool resolves that agent's target, and run from a terminal with no identity it resolves the shared default
 - [x] AC24: The markdown-only path states that, having no sanctioned way to read its environment, it resolves and writes the shared default only

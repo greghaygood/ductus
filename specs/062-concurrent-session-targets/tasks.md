@@ -215,3 +215,10 @@ The fix and its test landed in `9a256750`. The first item is checked once a `run
 - [x] A test that fails when the ignore file is written before the lock: a contender that times out on a held lock has not written it
 
 - **Done when**: the ignore file is written only under the session lock, the test is proven red against the old order, and `runtime` is green on windows-latest, ubuntu-latest and macos-latest
+
+## 27. Narrow the removal-notice claim to per-process sessions
+
+- [x] AC21 and the Removal strands no process section: the shared default is changed without a notice, because every unidentified process reads it, and the acting command's report names it
+- [x] The constitution's §concurrent-features, fold.md and consolidate.md say the same
+
+- **Done when**: every statement of the rule matches session::retarget, and 062's analyze records this reopen

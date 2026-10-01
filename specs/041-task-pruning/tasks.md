@@ -168,3 +168,14 @@ Released: `ductus-v0.56.0` at `62cc9490`, with `framework-checks`, `runtime`, `g
 - [x] `plan.md`: "which the template omits today" is now false; a narration of this reopen sits inside the design record; "a seventh registration set"; no Cross-spec impact section for 052. `data-model.md`: `tasks-file-missing` directs to `/plan` only when there is no plan either
 
 - **Done when**: every item is fixed, or put to the operator and decided; `data-model.md`, the scenarios and the code agree; and `cargo test` passes.
+
+### 20. Correct what the review beside 0.56.0's found
+
+- [x] Exec /prune wrote nothing after a confirmed gate (QUAL-STUB-001): routed to 022 scenario a-confirmed-gate-authorizes-the-writes-after-it, task 128, which binds apply at a confirmed gate
+- [x] AC19, the Behavior paragraph, prune.md's Scope Boundaries and the scenario: each reopen is named before the write that causes it, not before anything is written
+- [x] spec.md's Runtime eligibility names both compiled-in divergences, the reset body and the design-record heading set
+- [x] plan.md: keep-pending's status is omitted (a walk reads it), the step-renumbering narration, the Title and slug heading, Affected Files for write_analysis.rs and the hex move
+- [x] Scenario resolutions: the reopen-cost resolution points at the preview resolution; plan-records says the template then omitted Trade-offs
+- [x] Code and tests from the review: CRLF prune tests assert the write; the fenced-H1 reset refusal; the PruneTasksLine mapping test; doc comments on TasksFileMissing, split_blocks, PruneTasksLine, prune-plan's errors and analysis.md's readers
+
+- **Done when**: every correction is on disk, the code changes' tests fail with their behavior reverted, and 041's review and analyze record this reopen

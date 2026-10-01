@@ -64,3 +64,9 @@ Implements `scenarios/analyze-run-durability.md`. Findings outlived the session;
 - [x] Re-run `/{project}:review` so the retired `QUAL-CLAIM-001` finding leaves the report by being fixed rather than dispositioned
 
 - **Done when**: staleness is a digest comparison, the row and the gate return the same answer before and after a commit, a record predating the digest reads undeterminable, and committing content an analysis already read does not block.
+
+## 6. Correct the advisory tier's promotion-criteria claim
+
+- [x] scenarios/analyze-run-durability.md: the advisory tier is advisory by design — some checks carry published promotion criteria, and the plan record and un-folded branch specs stay advisory for good
+
+- **Done when**: the scenario says what the tier is, matching analyze.md and the constitution, and 047's review and analyze record this reopen

@@ -136,7 +136,7 @@ The two counts that gate. Together they derive `blocking`, and either above zero
 
 ### `advisory`
 
-Recorded and never gated on, which is the deliberate asymmetry with the review record — there, an outstanding SHOULD does block `done`, because §implement-phase says advisory is not ignorable at the review gate. Analyze's advisory tier is a different contract: its members are checks introduced advisory **with their own published promotion criteria**, and gating on them here would promote every one of them at once, past the criteria each declares. The count still rides the gate's guidance line, so a blocked spec says how much advisory work stands.
+Recorded and never gated on, which is the deliberate asymmetry with the review record — there, an outstanding SHOULD does block `done`, because §implement-phase says advisory is not ignorable at the review gate. Analyze's advisory tier is advisory by design: some of its checks were introduced advisory **with their own published promotion criteria**, and the rest — the plan record and un-folded branch specs among them — stay advisory for good, so gating on them here would promote every one of them at once, past the criteria some declare and against the design of the rest. The count still rides the gate's guidance line, so a blocked spec says how much advisory work stands.
 
 ### `unexamined`
 

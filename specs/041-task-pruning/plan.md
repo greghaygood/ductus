@@ -88,8 +88,10 @@ When `reset` is true the primitive reads `spec.md` frontmatter `status`.
 `status == done` (or `force: true`) → `gate: "allowed"`, proceed.
 Otherwise → `gate: "blocked-needs-force"`, `applied: false`, no write — a
 **domain outcome** carried in the result, not an operational error (matching
-the `mod.rs` convention that domain results ride the struct). keep-pending
-never reads `spec.md` (`status: null`, `gate: "not-applicable"`). The command
+the `mod.rs` convention that domain results ride the struct). a single-feature
+keep-pending call never reads `spec.md` (`status` omitted, `gate:
+"not-applicable"`); an `all` walk reads each listed spec's status for its
+line. The command
 surfaces a blocked reset by naming the status, pointing at the keep-pending
 default, and mentioning `--reset --force`. Under `--all` the gate is applied
 per spec, and `force` alongside `all` is refused before anything is read.
@@ -287,9 +289,8 @@ arguments from its context (`runtime/src/interpreter/mod.rs`, the `call!`
 macro), so the step dispatches with the feature and no `apply` — a preview.
 The exec walker's analyze tally counts each section on a `planned`-or-later
 spec as advisory (`runtime/src/interpreter/analyze_tally.rs`), as it counts
-every detection step's findings, so an exec record states them. With the step
-at 16, analyze's steps 17–21 are the ones numbered 16–20 before it, and every
-present-tense citation of them names the new number.
+every detection step's findings, so an exec record states them. Steps 17–21
+follow it, and every present-tense citation of them names those numbers.
 
 ### Constitution, templates and docs
 
@@ -372,7 +373,7 @@ Then add `prune-plan` to `framework/runtime-tools.txt` and run
 `runtime/tests/mcp.rs` holds the manifest set-equal to the registry, and
 `main::tests::every_registry_primitive_has_a_clap_subcommand` pins the CLI.
 
-### The title broadened; the slug did not
+### Title and slug
 
 The spec is titled *Spec Directory Pruning*, for its spec-directory scope,
 while its directory stays `041-task-pruning`: a rename is a corpus sweep that
@@ -388,9 +389,10 @@ buys nothing here.
 | `runtime/src/schema/registry.rs` | Edit | `prune-plan` in `PRIMITIVE_REGISTRY` |
 | `runtime/src/primitives/prune_tasks.rs` | Edit | `all` walk; reset constant follows the tasks template; status reader and size shared with `prune-plan` |
 | `runtime/src/primitives/prune_plan.rs` | Create | Segmentation, classification, finding key, digest-guarded removal, reopen trigger |
-| `runtime/src/primitives/mod.rs` | Edit | `pub mod prune_plan;`, the promoted HEAD-blob reader, the shared block renderer |
+| `runtime/src/primitives/mod.rs` | Edit | `pub mod prune_plan;`, the promoted HEAD-blob reader, the shared block renderer, the hex encoder the section digest uses |
 | `runtime/src/primitives/check_stuck.rs` | Edit | Calls the promoted HEAD-blob reader |
-| `runtime/src/primitives/analyze_subjects.rs` | Edit | Its hex encoder shared for the section digest |
+| `runtime/src/primitives/analyze_subjects.rs` | Edit | Its hex encoder moved to `mod.rs`; `prune-plan` named among `analysis.md`'s readers |
+| `runtime/src/primitives/write_analysis.rs` | Edit | `finding_key_of`, the key builder `prune-plan` shares |
 | `runtime/src/interpreter/analyze_tally.rs` | Edit | The `plan-record` advisory in an exec analyze record |
 | `runtime/src/schema/status.rs` | Edit | Names the tally as a consumer of the `planned`-onward set |
 | `runtime/src/main.rs` | Edit | CLI subcommand for `prune-plan` |
