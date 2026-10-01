@@ -1,7 +1,7 @@
 ---
 spec: 051-branch-scoped-spec-numbering
-last-run: 2026-10-01T20:40:15Z
-analyzed-against: 10bd770e7ce01f46dd15ea36d059eb11c505c575
+last-run: 2026-10-01T20:41:18Z
+analyzed-against: 0b3e54ad0d8fa9cf006b941e010d9da7ce5fbe41
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
@@ -15,11 +15,11 @@ analyzed-digest:
   scenarios/fold-target-checked-before-the-rewrite.md: 40bfa2011fb9af497ae85dac6f23f2ad8719dddcc8c5f5654dda7560aade7f32
   scenarios/rewrites-preserve-line-endings.md: 1ab09161757ade0d1f4a3959f574e54d68dab19f275ec84b345b8d16a75ccd26
   scenarios/the-numbering-grammar-reaches-every-surface.md: d4f11334754c65e3cf73346d224aaf8d782f5385a266a2bf22d3339a1079089a
-  spec.md: 96a3900e2b347b49551ff22b2dfac8c0d4ecf6a5959fb7ce38be9eeeee9b4da2
+  spec.md: d55918fb897749b1ada232b8efbee6b10f1389bf8b187da5bad70666975365cd
   tasks.md: 240ee514e4bdb435e78deed9d242bb6aa3b800a2ef492ba7ac90c6a096f8b7dc
 blocking: false
 dispositions:
-  fixed: 1
+  fixed: 0
   routed: 0
   discarded: 0
   undispositioned: 0
@@ -29,7 +29,7 @@ dispositions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 1 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 0 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -49,4 +49,4 @@ dispositions:
 
 ## Fixed in this run
 
-- plan-record — plan.md §Implementation notes is outside the design record — `specs/051-branch-scoped-spec-numbering/plan.md` — **fixed**
+*None.*
