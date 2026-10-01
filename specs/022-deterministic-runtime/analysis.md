@@ -1,15 +1,16 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-10-01T21:05:59Z
-analyzed-against: 6dca33024b4c51f437f387418bbfc04bb06fefa2
+last-run: 2026-10-01T22:08:36Z
+analyzed-against: 7f1688a2cbbe12b68d8e541b6f5fe3f029c6e214
 hard-fail: 0
 blocking-findings: 0
 advisory: 9
-unexamined: 0
+unexamined: 2
 analyzed-digest:
-  data-model.md: 3c187ce903de262d1831d5f2ed04dad49ba436ce8efe1ef7f76747ee47698ec4
+  data-model.md: 897814e43c7183efa578f6d819ccfc8ddcd71a108564a3a65039c33c787aecda
   plan.md: 549a28e4de11de67d4a5fd75dd244f393987d9ef2d417bd86351fa948f07dfa9
-  review.md: 015408fc5e53407e58e791e48942ee36f460232958e751cdc8ec2de3e885f3be
+  review.md: 0fa57218626cebfbd12412141fea12e489b96eb073c6cd97936d99aa2c0c4559
+  scenarios/a-confirmed-gate-authorizes-the-writes-after-it.md: d092f9d4f59c67c575cc59039a6e0fdf162546969de2820e747b609d7a3d43c7
   scenarios/a-done-spec-has-no-transition-to-gate.md: 2041c659a2dbee3e17a05a702a11c9b1f59d30ce68acc19f616889696b66da2b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
@@ -116,8 +117,10 @@ analyzed-digest:
   scenarios/writecode-boundary-derivation.md: 9e4d5b406b4d5e25c4a4dd9e5264995a5e4bc83075ec20eae2c3eb3e36adcd81
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
-  spec.md: 79ed06f654f7a3f8b341907cc4e7a57c9d00867de3a0b08b391fcb5001bb7100
-  tasks.md: 23d9a2dd6997c26542014936a71a91dd0016ac2ac70dfbd6c1e9cc0aa11b76cc
+  spec.md: ea12fb92d001ec16fd2b816f33a4b890fc1d660c36e436ac5eee39f9f41645e0
+  tasks.md: f45931ccc4ef82b32c5ef09a0c379b9b02947a85fd1a2a8736610f46c958ea06
+unexamined-by-reason:
+  not-a-live-claim: 2
 blocking: false
 dispositions:
   fixed: 0
@@ -176,7 +179,7 @@ decisions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 9 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 9 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 9 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 9 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -200,7 +203,7 @@ decisions:
 
 ## Unexamined targets
 
-*None — every target was examined.*
+- not-a-live-claim: 2
 
 ## Fixed in this run
 

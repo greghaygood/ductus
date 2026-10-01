@@ -1,7 +1,7 @@
 ---
 spec: 062-concurrent-session-targets
-last-run: 2026-09-30T13:59:23Z
-analyzed-against: 239b1fa51fffc3500bc3750d46f2831501d9b70c
+last-run: 2026-10-01T22:08:36Z
+analyzed-against: 7f1688a2cbbe12b68d8e541b6f5fe3f029c6e214
 hard-fail: 0
 blocking-findings: 0
 advisory: 1
@@ -11,8 +11,8 @@ analyzed-digest:
   plan.md: 385e2262d3d3dfd5cd8bfc2a905769c6d8d95d560275d9ae9440bd655d9f1cfb
   review.md: 07e87c7b0154ca8fb0a3e4c9dc10df28ff0f18e562e47ab9e8894d448090adaa
   scenarios/first-writers-create-the-ignore-file-once.md: 02149b44fd9c6d76d8e9d97af6235df746bf028cad34e693bb57302dea1b1f15
-  spec.md: 22d1291dfd81f7f66d20ca7b14b29cb6d7cfad44e2b9d3f23cf561c74941adac
-  tasks.md: 11f3eee926e34c47cf88c173dae0f24a2377fd0b59e70962d92431795701649c
+  spec.md: c7ce74b6509c4a2a9d131723537af487a4ae19a80c623d6e0036b249c7f02b50
+  tasks.md: 749447d2e70c3c3fa988944d2ecc507b86fe95eebe96d7dfc01922c10dcf3e98
 blocking: false
 dispositions:
   fixed: 0

@@ -1,20 +1,20 @@
 ---
 spec: 041-task-pruning
-last-run: 2026-10-01T19:01:12Z
-analyzed-against: 04f09019af07b17d7b221cfd92c7beb4e5a15713
+last-run: 2026-10-01T22:08:36Z
+analyzed-against: 7f1688a2cbbe12b68d8e541b6f5fe3f029c6e214
 hard-fail: 0
 blocking-findings: 0
 advisory: 12
 unexamined: 1
 analyzed-digest:
   data-model.md: d1e04eeaa9f74921b26f7c3b5101c70832e7469dfc590f15e787d24cea604535
-  plan.md: a2e0fd098231551f3bb9428ec664142753a400f463df9121f9dc1b699ec01246
-  review.md: f30c42c1d93e5b307f9d0455520da1f80885c4e4cc591439b0c3478f45a198b9
-  scenarios/plan-records-the-design-as-it-stands.md: 617feb2d97e676600074e386b656b15f9d9c632500aaf418d554e2d91364a4eb
+  plan.md: 57401c526f70fe60dfe826c5ab139bf1eef02ac1cc0c14dd2a1a2b5e386b4853
+  review.md: 3762ffcbbce67e89077c57651713fc7844455b4d42583de5a15f80a4a4ffa42f
+  scenarios/plan-records-the-design-as-it-stands.md: a50174ff23b21bc5475d52cb6f289f06085066fae8c7151fbf1be8eaa727221b
   scenarios/prune-all-walks-every-spec.md: 4b605a7c3d07bff5e6a90bd02e982e93f7360d12f3934f9663a0eb44ebc9fc92
-  scenarios/prune-reduces-the-spec-directory.md: 2f1a33caf5c5c72e94c6e13c6652e0e8465162ffe2d1e9c158a0ce18e60b8c30
-  spec.md: d212ce188630a3a5d0bcd0f27116e34374c30bf10d1859cb63f70e1ac4171d0a
-  tasks.md: a6d5b0961f3604f82a7590ba8de7d5e7dc4baf13f2db170beb39cbbd5abac512
+  scenarios/prune-reduces-the-spec-directory.md: 9f59c1ae42c42cc57e4f7a86379aefed593080ddbe40a0bbeea9e11c59bbb604
+  spec.md: 24f644fd65c2b77ca97dcddc57dc0798714dd6e0e4555d0fcb863b83c2825080
+  tasks.md: 827503ba4343c00b59a983a16585d2092d0bcffd70d949458ade8b3da9a0533e
 unexamined-by-reason:
   ships-to-adopter: 1
 blocking: false
