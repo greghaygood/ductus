@@ -239,3 +239,9 @@ Phase 1 (tasks 1–5) makes branch-scoped directories creatable and visible. Pha
 - [x] 022's `data-model.md` and the scenarios that restate the fold check carry the change with a link back to this spec, discharging its `cross-spec-impact`
 
 - **Done when**: a branch-scoped spec whose target is absent from the tree reaches `done` through the normal gate when everything else passes; one whose target is present is still blocked with `pending-fold`; `check-unfolded-specs` reports both with their status; `/{project}:fold` works on a `done` staging spec; the constitution, this spec, the command sources, 022's record, and the tests agree; and `cargo test --release --locked`, `clippy -D warnings`, markdownlint, and `scripts/audit/run-all.sh` pass
+
+## 27. Implement scenario: a-pending-fold-never-holds-done
+
+- [ ] Implement the behavior described in `scenarios/a-pending-fold-never-holds-done.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
