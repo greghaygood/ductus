@@ -180,7 +180,7 @@ Fill in the spec following `.ductus/constitution.md` rules (§spec-requirements,
 - Describe behavior and contracts, not implementation.
 - No language-specific code, function signatures, or package paths.
 - Acceptance criteria must be concrete and testable when present. For brownfield use, sparse acceptance criteria are expected and valid — leave the section with a placeholder comment if no criteria are known yet; criteria emerge as real work touches the feature (§brownfield-process).
-- List all open questions in the spec body.
+- List all open questions in the spec body, each as one list item under `## Open Questions` — a paragraph there is not read as a question.
 - When the spec depends on other specs, link them inline in the body (e.g., `[NNN-feature](../NNN-feature/spec.md)`) — `ductus derive-dependencies` (run by the pre-commit hook) derives the `dependencies:` frontmatter from those links on every commit.
 
 ### Label the acceptance criteria

@@ -527,3 +527,13 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Confirm `resolve_clarify_question`'s doc still describes what the walker now does
 
 - **Done when**: the new walker tests pass, having failed before the change, and the full runtime suite passes.
+
+## 126. Implement scenario: open-questions-are-any-list-item
+
+- [x] Implement the behavior described in `scenarios/open-questions-are-any-list-item.md`
+- [x] Write parser tests first: every list marker starts an entry, a nested item folds into its parent, and a nested item after a blank line adds nothing each fail before the change; a list indented as a whole and emphasis at a line's start pin behavior that must not change
+- [x] In `runtime/src/primitives/read_spec.rs`, start an entry at any list marker no deeper than the section's first entry, and fold a deeper one into the entry above
+- [x] Spec template and `/{project}:specify`: a question is one list item; `/{project}:clarify`'s markdown-only count names every list marker
+- [x] Prove each new test red by mutation, one at a time, restoring the file after each
+
+- **Done when**: the parser tests pass, each having failed with its behavior reverted; the template, `specify.md` and `clarify.md` agree with the parser; and `cargo test --release --locked` and `clippy -D warnings` pass.

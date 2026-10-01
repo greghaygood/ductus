@@ -276,11 +276,18 @@ pub(crate) fn parse_checkboxes(body: &str, section_heading: &str) -> Vec<Accepta
     out
 }
 
-/// Parse the `- ` bullet entries of the named questions section
+/// Parse the list items of the named questions section into entries
 /// (continuation lines fold in; the placeholder lines in
 /// [`QUESTION_PLACEHOLDERS`] are skipped). `pub(crate)`: shared with
 /// `append-question`, whose dedup must see exactly the entries this
 /// reader reports.
+///
+/// An entry starts at any list item — see [`list_item`] for the markers —
+/// indented no deeper than the section's first entry. A deeper item is a
+/// sub-item and folds into the entry above it, like any other continuation
+/// line, so a question with nested options is one question. A paragraph is
+/// not an entry: prose under the section is how "none" gets written, in
+/// spellings no placeholder list could enumerate.
 ///
 /// Walks [`section_line_indices`] — the comment- and fence-aware section
 /// helper [`parse_checkboxes`] already uses — so the example questions a
@@ -297,10 +304,15 @@ pub(crate) fn parse_checkboxes(body: &str, section_heading: &str) -> Vec<Accepta
 pub(crate) fn parse_open_questions(body: &str, section_heading: &str) -> Vec<OpenQuestion> {
     let mut out = Vec::new();
     let mut current: Option<String> = None;
+    // The indentation of the section's first entry: the list's own level.
+    let mut level: Option<usize> = None;
     let lines: Vec<&str> = body.lines().collect();
     for idx in section_line_indices(&lines, section_heading) {
         let trimmed = lines[idx].trim_start();
-        if let Some(rest) = trimmed.strip_prefix("- ") {
+        let entry =
+            list_item(lines[idx]).filter(|(indent, _)| level.is_none_or(|level| *indent <= level));
+        if let Some((indent, rest)) = entry {
+            level.get_or_insert(indent);
             if let Some(prev) = current.take() {
                 push_question(&mut out, &prev);
             }
@@ -321,6 +333,27 @@ pub(crate) fn parse_open_questions(body: &str, section_heading: &str) -> Vec<Ope
         push_question(&mut out, &prev);
     }
     out
+}
+
+/// The indentation and text of a line that opens a list item, or `None`. A
+/// marker is `-`, `*` or `+`, or one to nine digits followed by `.` or `)`,
+/// and it must be followed by whitespace, so a thematic break (`---`) and
+/// emphasis at the start of a line (`**Bold**`, `*None — all resolved.*`)
+/// open nothing.
+fn list_item(line: &str) -> Option<(usize, &str)> {
+    let rest = line.trim_start();
+    let indent = line.len() - rest.len();
+    let after = if let Some(after) = rest.strip_prefix(['-', '*', '+']) {
+        after
+    } else {
+        let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
+        if !(1..=9).contains(&digits) {
+            return None;
+        }
+        rest[digits..].strip_prefix(['.', ')'])?
+    };
+    let text = after.strip_prefix([' ', '\t'])?;
+    Some((indent, text))
 }
 
 /// The "no entries here" placeholder lines a questions section may carry:
@@ -716,6 +749,70 @@ mod tests {
             "A question that wraps onto a second line"
         );
         assert_eq!(questions[1].text, "A second question");
+    }
+
+    // --- the list grammar (022 scenario open-questions-are-any-list-item) --
+
+    #[test]
+    fn every_list_marker_starts_an_entry() {
+        for (marker_a, marker_b) in [("1.", "2."), ("1)", "2)"), ("*", "*"), ("+", "+")] {
+            let body = format!(
+                "## Open Questions\n\n{marker_a} A first question\n{marker_b} A second question\n"
+            );
+            let questions = parse_open_questions(&body, "Open Questions");
+            let texts: Vec<&str> = questions.iter().map(|q| q.text.as_str()).collect();
+            assert_eq!(
+                texts,
+                ["A first question", "A second question"],
+                "marker {marker_a}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_nested_item_folds_into_the_question_above_it() {
+        let body = "\
+## Open Questions
+
+1. Which store?
+   - option a
+   - option b
+2. Which cache?
+";
+        let questions = parse_open_questions(body, "Open Questions");
+        let texts: Vec<&str> = questions.iter().map(|q| q.text.as_str()).collect();
+        assert_eq!(
+            texts,
+            ["Which store? - option a - option b", "Which cache?"]
+        );
+    }
+
+    #[test]
+    fn a_nested_item_after_a_blank_line_adds_no_entry() {
+        let body = "\
+## Open Questions
+
+- Which store?
+
+  - option a
+";
+        let questions = parse_open_questions(body, "Open Questions");
+        assert_eq!(questions.len(), 1, "{questions:?}");
+        assert_eq!(questions[0].text, "Which store?");
+    }
+
+    #[test]
+    fn a_list_indented_as_a_whole_reads_as_unindented() {
+        let body = "## Open Questions\n\n  - A first question\n  - A second question\n";
+        assert_eq!(parse_open_questions(body, "Open Questions").len(), 2);
+    }
+
+    #[test]
+    fn emphasis_at_the_start_of_a_line_is_not_a_marker() {
+        let body = "## Open Questions\n\n**Not a question**\n\n- A question\n";
+        let questions = parse_open_questions(body, "Open Questions");
+        let texts: Vec<&str> = questions.iter().map(|q| q.text.as_str()).collect();
+        assert_eq!(texts, ["A question"]);
     }
 
     /// Build a throwaway repo with one feature, optionally seeding

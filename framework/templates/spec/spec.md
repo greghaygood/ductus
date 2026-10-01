@@ -95,6 +95,8 @@ At least one concrete, testable criterion is required before `/{project}:clarify
 
 <!-- Uncertainties, unresolved decisions, and areas needing investigation.
      All open questions must be resolved before moving to the plan phase.
+     Write each question as one list item: a paragraph here is not read as
+     a question.
 
      To surface questions: assume this feature shipped and failed — what went wrong? Example:
 
