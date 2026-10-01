@@ -133,6 +133,13 @@ Each identified agent process — one with `DUCTUS_SESSION`, or Claude Code's
   `-`-only count that read inside HTML comments. The spec template,
   `/{project}:specify` and `/{project}:clarify` say a question is one list
   item. Spec 022.
+- **`lint-markdown` and `run-generator` stop a subprocess that hangs.**
+  Each waited on its child with no bound, so an `npx` fetch that never
+  answered, or a generator that never exited, held the primitive — and the
+  review gate that lints through it — forever. Both now run the child under
+  a five-minute timeout (`LINT_MARKDOWN_TIMEOUT`, `GENERATOR_TIMEOUT`), kill
+  one that outlives it, and fail naming the program and the timeout. Spec
+  022.
 - **`prune-tasks` keep-pending keeps a phase heading it did not empty.** It
   dropped every phase container with no surviving task section, so a
   phase heading governing no task — one added to hold a note — was

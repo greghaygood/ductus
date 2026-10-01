@@ -10,10 +10,18 @@
 use std::path::Path;
 use std::process::Command;
 use std::sync::OnceLock;
+use std::time::Duration;
 
 use regex::Regex;
 
-use crate::primitives::{PrimitiveError, Result};
+use crate::primitives::{PrimitiveError, Result, output_within};
+
+/// How long the linter may run before it is stopped (`BE-TIMEOUT-001`).
+/// `npx` can reach the network to fetch `markdownlint-cli2` on its first run,
+/// and a fetch that never answers would otherwise hold this primitive — and
+/// the review gate that calls it — forever. Five minutes covers a cold fetch
+/// and a whole-repository lint.
+pub(crate) const LINT_MARKDOWN_TIMEOUT: Duration = Duration::from_secs(300);
 use crate::schema::primitives::{LintMarkdownArgs, LintMarkdownResult, MarkdownViolation};
 
 /// Pick the markdownlint-cli2 invocation: a repo-local
@@ -90,8 +98,19 @@ pub(crate) fn feature_markdown_glob(rel_dir: &str) -> String {
 /// never the thing that was missing. A non-zero markdownlint-cli2 exit code
 /// is not an error — it's recorded in the result alongside the parsed
 /// violations. [`PrimitiveError::InvalidArgument`] is returned for a path
-/// beginning with `-`.
+/// beginning with `-`, and [`PrimitiveError::ToolTimedOut`] when the linter
+/// outlives [`LINT_MARKDOWN_TIMEOUT`] and is stopped.
 pub fn run(args: &LintMarkdownArgs, repo: &Path) -> Result<LintMarkdownResult> {
+    run_within(args, repo, LINT_MARKDOWN_TIMEOUT)
+}
+
+/// [`run`] under a caller-chosen timeout — the seam a test uses to prove a
+/// hung linter is stopped without waiting five minutes.
+pub(crate) fn run_within(
+    args: &LintMarkdownArgs,
+    repo: &Path,
+    timeout: Duration,
+) -> Result<LintMarkdownResult> {
     // A path beginning with `-` would be parsed by markdownlint-cli2 as an
     // option, not a file — `--config=evil.json` can load a `customRules` JS
     // module, i.e. arbitrary code under this primitive's permission. Reject
@@ -120,11 +139,16 @@ pub fn run(args: &LintMarkdownArgs, repo: &Path) -> Result<LintMarkdownResult> {
     }
     cmd.current_dir(repo);
 
-    let output = cmd.output().map_err(|source| PrimitiveError::ToolLaunch {
-        program: program.clone(),
-        guidance: launch_guidance(source.kind(), via_npx),
-        source,
-    })?;
+    let output = output_within(&mut cmd, timeout)
+        .map_err(|source| PrimitiveError::ToolLaunch {
+            program: program.clone(),
+            guidance: launch_guidance(source.kind(), via_npx),
+            source,
+        })?
+        .ok_or_else(|| PrimitiveError::ToolTimedOut {
+            program: program.clone(),
+            seconds: timeout.as_secs(),
+        })?;
 
     let exit_code = output.status.code().unwrap_or(-1);
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -321,6 +345,35 @@ mod tests {
     // The first version of this comment claimed a directory is "reliably
     // unspawnable on every platform". That was an unverified cross-platform
     // assertion, and CI disproved it.
+    // Unix-only: the stub is a shell script that sleeps, which needs the
+    // exec bit; the timeout itself is platform-independent.
+    #[cfg(unix)]
+    #[test]
+    fn a_linter_that_outlives_its_timeout_is_stopped() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let bin = tmp.path().join("node_modules").join(".bin");
+        std::fs::create_dir_all(&bin).unwrap();
+        let stub = bin.join("markdownlint-cli2");
+        std::fs::write(&stub, "#!/bin/sh\nsleep 5\n").unwrap();
+        std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let started = std::time::Instant::now();
+        let err = run_within(
+            &LintMarkdownArgs {
+                paths: vec!["README.md".into()],
+                fix: false,
+            },
+            tmp.path(),
+            Duration::from_millis(200),
+        )
+        .expect_err("a hung linter must be stopped");
+        assert!(matches!(err, PrimitiveError::ToolTimedOut { .. }), "{err}");
+        assert!(
+            started.elapsed() < Duration::from_secs(4),
+            "the linter was stopped, not waited for"
+        );
+    }
+
     #[cfg(unix)]
     #[test]
     fn a_broken_vendored_binary_names_itself_rather_than_falling_back() {

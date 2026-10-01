@@ -393,6 +393,17 @@ pub enum PrimitiveError {
         /// a `PATH` explanation it has no basis for.
         guidance: Option<String>,
     },
+    /// A subprocess a primitive runs outlived its bounded timeout, so it was
+    /// killed and its output discarded. A child that never exits would
+    /// otherwise hold the primitive — and every caller waiting on it — forever
+    /// (`BE-TIMEOUT-001`).
+    #[error("{program} did not finish within {seconds}s and was stopped")]
+    ToolTimedOut {
+        /// The executable that was stopped, as invoked.
+        program: String,
+        /// The timeout it outlived, in seconds.
+        seconds: u64,
+    },
     /// `set-status` was invoked with a `from` or `to` value outside the
     /// constitution's lifecycle set. Transition-edge legality stays with
     /// procedures; the primitive guards set membership only.
@@ -1245,6 +1256,56 @@ pub(crate) fn resolve_path(repo: &Path, path_arg: &str) -> PathBuf {
     } else {
         repo.join(candidate)
     }
+}
+
+/// Run `cmd` to completion with stdout and stderr captured, as
+/// [`std::process::Command::output`] does, but stop it once it has run for
+/// `timeout`: the child is killed and `Ok(None)` returned. Both pipes are
+/// drained on their own threads, so a child that fills a pipe cannot block
+/// while this waits for it to exit. Stdin is closed, as `output` closes it.
+///
+/// # Errors
+///
+/// The spawn or wait error, as `output` would return it.
+pub(crate) fn output_within(
+    cmd: &mut std::process::Command,
+    timeout: std::time::Duration,
+) -> std::io::Result<Option<std::process::Output>> {
+    use std::io::Read;
+    use std::process::Stdio;
+    fn drain<R: Read + Send + 'static>(pipe: Option<R>) -> std::thread::JoinHandle<Vec<u8>> {
+        std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            if let Some(mut pipe) = pipe {
+                let _ = pipe.read_to_end(&mut buf);
+            }
+            buf
+        })
+    }
+    let mut child = cmd
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    let stdout = drain(child.stdout.take());
+    let stderr = drain(child.stderr.take());
+    let started = std::time::Instant::now();
+    let status = loop {
+        if let Some(status) = child.try_wait()? {
+            break status;
+        }
+        if started.elapsed() >= timeout {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Ok(None);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    };
+    Ok(Some(std::process::Output {
+        status,
+        stdout: stdout.join().unwrap_or_default(),
+        stderr: stderr.join().unwrap_or_default(),
+    }))
 }
 
 /// Reject caller-supplied paths that contain parent-directory components
@@ -3532,6 +3593,24 @@ mod tests {
                 "proj-9.1-other".to_string(),
             ]
         );
+    }
+
+    // Unix-only: `sh` is the portable way to emit on both streams and exit
+    // non-zero from a test; the helper itself is platform-independent.
+    #[cfg(unix)]
+    #[test]
+    fn output_within_captures_what_output_would() {
+        let output = output_within(
+            std::process::Command::new("sh")
+                .arg("-c")
+                .arg("echo out; echo err >&2; exit 3"),
+            std::time::Duration::from_secs(30),
+        )
+        .unwrap()
+        .expect("finished well inside its timeout");
+        assert_eq!(output.stdout, b"out\n");
+        assert_eq!(output.stderr, b"err\n");
+        assert_eq!(output.status.code(), Some(3));
     }
 
     #[test]

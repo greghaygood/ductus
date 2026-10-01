@@ -542,3 +542,11 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] Prove each new review-fix test red by mutation, one at a time, restoring the file after each
 
 - **Done when**: the parser tests pass, each having failed with its behavior reverted; the template, `specify.md` and `clarify.md` agree with the parser; and `cargo test --release --locked` and `clippy -D warnings` pass.
+
+## 127. Disposition analyze finding: BE-TIMEOUT-001 — lint-markdown and run-generator wait on a subprocess with no bound
+
+- [x] Run both subprocesses under a bounded timeout, named constants LINT_MARKDOWN_TIMEOUT and GENERATOR_TIMEOUT (five minutes), through a shared output_within helper that drains both pipes and kills a child that outlives it, failing with ToolTimedOut
+- [x] Tests: a hung script and a hung linter are stopped well inside their wait; output_within captures stdout, stderr and the exit code as output() did; each proven red by mutation
+- [x] plan.md names the timeouts; the 0.56.0 CHANGELOG records the fix
+
+- **Done when**: both primitives stop a hung child and say so, the tests fail with the timeout removed, and the full runtime suite passes.

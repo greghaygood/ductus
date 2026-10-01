@@ -32,9 +32,10 @@ segmentations, both classifications, and the request/response schemas.
 `iter_phase_ranges`, because the empty-phase-drop rule needs the governing
 phase as an index into the block list rather than as a line range.
 A task section's line range terminates at the next heading whose level is
-`<= task_level` — the same rule `mark-task`'s `locate_task_range` uses. This
-guarantees the section-boundary grammar the spec deferred to the plan matches
-every other tasks primitive; no separate parser is introduced.
+`<= task_level` — the same rule `mark-task`'s `locate_task_range`
+(`runtime/src/primitives/mark_task.rs`) uses. This guarantees the
+section-boundary grammar the spec deferred to the plan matches every other
+tasks primitive; no separate parser is introduced.
 
 ### Segmentation → classification → rebuild
 
@@ -147,9 +148,11 @@ a dispatch with neither argument is always a preview.
 
 A feature with no `plan.md` is the domain outcome `missing`, not an error:
 `/{project}:analyze` dispatches the preview on every spec, a spec below
-`planned` has no plan, and the exec walker halts on a primitive error — so an
-error would stop every exec analyze of a `draft` or `clarified` spec, the
-`analyze-basic` fixture among them.
+`planned` has no plan, and the exec walker halts on a primitive error
+(`runtime/src/interpreter/mod.rs`, `handle_primitive`, which emits an `error`
+envelope and ends the walk `Errored`) — so an error would stop every exec
+analyze of a `draft` or `clarified` spec, the `analyze-basic` fixture among
+them.
 
 ### One finding key serves the advisory and prune
 
@@ -193,30 +196,38 @@ that guards it.
 Both primitives take `all: bool`; exactly one of `feature` and `all` is
 required, and anything else is refused with the existing `MissingArgument` /
 `InvalidArgument` variants. The walk is `list_feature_dirs` in
-`feature_dir_cmp` order — sequential and branch-scoped directories alike. The
-result carries `examined`, a `features` list with one entry per spec that has
-something to report — each beside its `feature` — and `skipped` naming each
+`feature_dir_cmp` order (both in `runtime/src/primitives/mod.rs`) —
+sequential and branch-scoped directories alike. The result carries
+`examined`, a `features` list with one entry per spec that has something to
+report — each beside its `feature` — and `skipped` naming each
 feature without the artifact (`no-tasks-file`, `no-plan-file`); a spec with
 nothing to report is omitted and counted in `examined`. For `prune-plan`,
 something to report is a section outside the record, or `reopen-required`
 true on a `done` spec: such a spec is listed even with no such section or no
 `plan.md`, so a reopen that edits made before the run require reaches the
 corpus preview, and `no-plan-file` names only a spec with no `plan.md` and
-nothing else to report. MCP requires a tool's
-output schema to be an object, so each result is one struct with two
-flattened, optional halves — the single-feature summary, on the wire exactly
-as before, or the walk — and because the halves share one key space no key
-may sit in both, which is why `prune-plan`'s section count is
-`sections-examined`. A `prune-tasks` walk lists each spec as a compact line —
-gate, status, applied, counts, sizes and path — rather than its summary: the
-per-section records would carry every task section in the corpus — 842 of
-them and 161,841 bytes over this repository's 60 specs when the walk was
-built, past the MCP output cap and against the token-reduction contract —
-where the lines came to 15,373 bytes. The
-line carries `status` for every spec, keep-pending included, because only a
-`done` spec can be reopened and the corpus preview prices each row by it. A
+nothing else to report. MCP requires a tool's output schema to be an object
+(rmcp 2.2.0's `validate_and_strip`, `src/handler/server/common.rs`; the
+`#[tool]` macro panics at registration on any other root type), so each
+result is one struct with two flattened, optional halves — the
+single-feature summary, on the wire exactly as before, or the walk — and
+because the halves share one key space no key may sit in both, which is why
+`prune-plan`'s section count is `sections-examined`. A `prune-tasks` walk
+lists each spec as a compact line — gate, status, applied, counts, sizes and
+path — rather than its summary: the per-section records would carry every
+task section in the corpus — 842 of them and 161,841 bytes over this
+repository's 60 specs when the walk was built, past the MCP output cap and
+against the token-reduction contract — where the lines came to 15,373 bytes.
+The line carries `status` for every spec, keep-pending included, because only
+a `done` spec can be reopened and the corpus preview prices each row by it. A
 `prune-plan` walk keeps full summaries, since the host judges each section by
-heading. `prune-tasks` with `all` and `apply` writes every feature's
+heading. Either way a walk never carries a file body or a section's text: a
+`prune-tasks` walk carries one fixed-shape line per listed spec, and a
+`prune-plan` walk a summary only for a spec with something to report, with
+per-section metadata only, so its size grows with the number of specs and of
+sections outside the record, never with file sizes. Pagination is not
+provided, because the corpus is the project's own spec directory.
+`prune-tasks` with `all` and `apply` writes every feature's
 reduction under one confirmation; `prune-plan` with `all` is preview-only and
 refuses `apply`, before it checks the `remove` list, because each plan
 section is a per-spec judgment. This is the batch shape
@@ -309,6 +320,19 @@ present-tense citation of them names the new number.
 
 ### Error taxonomy
 
+Before any path is opened, `feature` passes `validate_no_traversal`
+(`runtime/src/primitives/mod.rs`), the lexical check every primitive that
+joins a caller-supplied `feature` into a path runs: an empty value, an
+absolute or rooted path, a drive or UNC prefix, or a `..` component is
+refused with `InvalidPath`. It must then name an existing directory under the
+spec root, else `FeatureNotFound`. The check resolves no symlink, so a link
+the operator placed inside their own tree is followed.
+
+`spec.md` frontmatter and `analysis.md`'s `decisions:` list are read with
+`serde_norway`, a data-only YAML parser that deserializes into typed structs
+and constructs nothing from tags — the safe-loading mode BE-INPUT-008 asks a
+spec to name.
+
 `TasksFileMissing { root, feature }` and `MalformedTasks { path, reason }`
 serve `prune-tasks`; `prune-plan` adds no variant, since a missing plan is its
 `missing` outcome. `FeatureNotFound` is reused for a missing feature dir;
@@ -316,12 +340,12 @@ serve `prune-tasks`; `prune-plan` adds no variant, since a missing plan is its
 `MissingArgument` / `InvalidArgument` for `prune-plan`'s `remove`/`apply`
 pairing and a listed design-record section, and for the `feature`/`all`
 exclusivity, `force` with `all`, and `apply` with `all` on `prune-plan`;
-`Yaml` for an `analysis.md` decisions list that does not parse; and `Git` for
-a HEAD the reopen trigger cannot read. A digest mismatch is the
-`stale-sections` domain outcome, not an error. Each error writes nothing to
-the spec it fires on; an applying `prune-tasks` walk keeps the reductions it
-already wrote to the specs it reached before the error, and running the walk
-again resumes.
+`Yaml` for `spec.md` frontmatter or an `analysis.md` decisions list that does
+not parse; and `Git` for a HEAD the reopen trigger cannot read. A digest
+mismatch is the `stale-sections` domain outcome, not an error. Each error
+writes nothing to the spec it fires on; an applying `prune-tasks` walk keeps
+the reductions it already wrote to the specs it reached before the error, and
+running the walk again resumes.
 
 ### Runtime wiring (fully-wired primitives)
 

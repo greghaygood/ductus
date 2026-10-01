@@ -31,7 +31,7 @@ The runtime is a single binary crate at `runtime/Cargo.toml` (sibling to `framew
 - `runtime/src/interpreter/` — procedure walker + JSON protocol I/O.
 - `runtime/src/primitives/` — one module per primitive, each exposing a pure-Rust function plus `clap`-derive args for the CLI surface.
 - `runtime/src/mcp/` — MCP server wiring (uses `rmcp`).
-- `runtime/src/schema/` — request/response schemas for primitives, JSON protocol messages, and extension points. Generated `JSONSchema` representations live alongside.
+- `runtime/src/schema/` — request/response schemas for primitives, JSON protocol messages, and extension points. `schemars` derives each JSON Schema from these types at runtime — the MCP tool schemas when the server registers its tools, the protocol envelope's on demand through `parse --emit-schema` — and no generated schema file is committed, so there is nothing to regenerate and diff.
 - `runtime/tests/` — integration tests against fixture repos under `runtime/tests/fixtures/`.
 - `runtime/CHANGELOG.md` — runtime release notes, maintained in lockstep with framework releases per §runtime-boundary.
 
@@ -50,9 +50,9 @@ Each pick has a one-line rationale; cargo-version pins go into `Cargo.toml`.
 - `thiserror` — typed error definitions per primitive and interpreter surface.
 - `anyhow` — `main()` error bubbling only; not used in primitive APIs.
 - `regex` — limited use in lints (e.g., anchor reference matching). The bulk of "matching" is structural via `pulldown-cmark` events.
-- `serde_yaml` — frontmatter parsing in `read-spec` and `validate-frontmatter`. Chosen over hand-rolled because frontmatter is real YAML.
+- `serde_norway` — frontmatter parsing in `read-spec` and `validate-frontmatter`. Chosen over hand-rolled because frontmatter is real YAML; it replaced `serde_yaml` in 0.11.1 (`5e82f339`).
 - `walkdir` — `derive-boundary` and lint primitives need recursive directory walks.
-- `git2` — `derive-boundary` and `check-stuck` need access to git history. Pure-Rust libgit2 binding; no shell-out to `git`, which would couple the runtime to system git on PATH.
+- `git2` — `derive-boundary` and `check-stuck` need access to git history. Rust bindings to the C library libgit2, which the `vendored-libgit2` feature (`runtime/Cargo.toml`) compiles from bundled source and links statically, so no system libgit2 is needed; no shell-out to `git`, which would couple the runtime to system git on PATH.
 
 No `tracing`, no `log`, no async logging crates. Human-readable stderr output uses `eprintln!`; structured `progress` JSON messages over stdout are emitted by the interpreter directly. Observability is a single function in `src/io.rs` that writes one JSON object per line. Keeping the dependency surface tight matters because every new crate is supply-chain surface for a tool that runs in every adopter's environment.
 
@@ -213,9 +213,9 @@ One additional line is appended to the "Next steps" list in both First-run and U
 
 The line is the only place the bootstrap output mentions the runtime; per the spec's install-policy resolution, no slash command may detect-and-warn about the missing binary.
 
-### Generator scripts stay untouched
+### This repository's generator scripts stay bash
 
-Per the spec's non-goals and §runtime-boundary principle 3, the `gen-*.sh` scripts under `scripts/` are not wrapped, modified, or replaced by the runtime. The pre-commit hook continues to call them directly. The runtime's `run-generator` primitive is a thin wrapper for procedure use (invokes the same bash script with `--dry-run` and surfaces drift as a finding), but the pre-commit path never goes through it.
+The `gen-*.sh` scripts under `scripts/` that build this repository's own artifacts (`gen-claude-commands.sh`, `gen-help-tables.sh`, `gen-configure-mcp.sh`) are not wrapped or replaced by the runtime; the pre-commit hook calls them directly. The two frontmatter derivations were the exception: `derive-dependencies` and `derive-references` replaced the adopter-facing generator scripts (scenario `adopter-generator-promotion`). The runtime's `run-generator` primitive invokes a generator with `--dry-run` for procedure use and surfaces drift as a finding — `/{project}:analyze` runs `scripts/gen-help-tables.sh` through it — but the pre-commit path never goes through it.
 
 ### `framework/runtime-tools.txt` is the manifest
 
@@ -266,12 +266,12 @@ Considered and rejected:
 - **Separate `procedure` parser surface separate from `Instructions`** — rejected at clarify-time (spec resolution). Plan reaffirms: prose IS the procedure.
 - **Cargo workspace with `runtime-core` + `runtime-cli`** — rejected. A workspace is premature factoring for a single binary with no other consumer; the boundary between primitive logic and CLI args is already small. If a second consumer ever appears, splitting is a small refactor.
 - **`tracing` for structured logs** — rejected. Tracing's value is multi-target output sinks and async-aware spans; this runtime is short-lived and single-threaded for the walker. `eprintln!` on stderr is the floor; structured JSON `progress` messages on stdout are the structured channel. Adding tracing would increase dep surface and binary size for no observability win.
-- **`reqwest` for any HTTP** — runtime makes zero outbound HTTP calls. No HTTP client dep.
+- **`reqwest` for HTTP** — rejected while the runtime made no outbound HTTP call, and since adopted: `reqwest` is a dependency (`runtime/Cargo.toml`) used by `fetch-archive`, which this spec's [ductus-bootstrap](scenarios/govern-bootstrap.md) scenario added to download the framework tarball `/ductus` installs. That is the runtime's one outbound HTTP path; `048-govern-acquired-runtime`'s `fetch-archive-reads-its-proxy-once` scenario has it read its proxy and certificate configuration once per process. No other primitive makes an HTTP request of its own (`lint-markdown`'s `npx` may fetch `markdownlint-cli2`, which is npm's request, not the runtime's).
 - **Daemon / persistent mode** — explicit non-goal in the spec.
 - **In-process LLM client** — explicit non-goal (`Determinism only` principle).
 - **Build the runtime as part of the markdown-only-pipeline workflow PR-by-PR** — rejected as default; only the parseability check builds it locally. The markdown-only assertion remains intact.
 - **Cross-platform parity testing in CI** — out of scope for this spec. The release workflow builds cross-platform artifacts; parity testing is Linux-only in `runtime.yml`. macOS/Windows binary correctness is covered by the release workflow's smoke test (each platform's binary runs `runtime --version` after build).
-- **Embedding a markdown linter natively** — explicit non-goal in spec; runtime wraps `npx markdownlint-cli2` via the `lint-markdown` primitive.
+- **Embedding a markdown linter natively** — explicit non-goal in spec; runtime wraps `npx markdownlint-cli2` via the `lint-markdown` primitive. Wrapping a tool means waiting on a child process, so `lint-markdown` and `run-generator` each run theirs under a bounded timeout (`BE-TIMEOUT-001`) — named constants in their modules, `LINT_MARKDOWN_TIMEOUT` and `GENERATOR_TIMEOUT`, five minutes each — and a child that outlives it is killed and the call errors naming the timeout.
 
 ### Known limitations
 
@@ -318,13 +318,6 @@ Considered and rejected:
 | `specs/022-deterministic-runtime/plan.md` | Create | This file |
 | `specs/022-deterministic-runtime/tasks.md` | Create | Task breakdown |
 | `specs/022-deterministic-runtime/data-model.md` | Create | Procedure AST, JSON protocol, primitive and extension-point schemas |
-
-## Cross-Spec Validation
-
-- **`framework/constitution.md`** read; plan is consistent with §runtime-boundary (5 principles, 3 eligibility criteria, opt-in invariant, lockstep versioning, non-scope). The plan introduces no spec-authoring tooling, no workflow orchestration, no long-running services, no storage layer. Schemas live in this spec body and `data-model.md`; the constitution does not import them.
-- **`specs/021-runtime-boundary/spec.md`** read; plan implements the runtime that 021 makes constitutionally admissible. The CI parseability check coexists with 021's opt-in invariant checks; the resolution above explains why the binary's presence in the parseability step does not violate check (a) in 021's workflow.
-- **`specs/events.md` / `specs/errors.md`** — not present in this project (project-level cross-cutting files). No event or error-code coordination needed.
-- No sibling spec data models exist that conflict with this feature's data model. The runtime data structures are internal to the binary and the JSON protocol; they do not bleed into other specs.
 
 ## Trade-offs
 

@@ -7,9 +7,17 @@
 
 use std::path::Path;
 use std::process::Command;
+use std::time::Duration;
 
-use crate::primitives::{PrimitiveError, Result, resolve_path, validate_no_traversal};
+use crate::primitives::{
+    PrimitiveError, Result, output_within, resolve_path, validate_no_traversal,
+};
 use crate::schema::primitives::{RunGeneratorArgs, RunGeneratorResult};
+
+/// How long a generator may run before it is stopped (`BE-TIMEOUT-001`). A
+/// generator finishes in seconds; five minutes is room for a slow machine,
+/// and a hung script no longer holds its caller forever.
+pub(crate) const GENERATOR_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// Execute the `run-generator` primitive.
 ///
@@ -20,8 +28,19 @@ use crate::schema::primitives::{RunGeneratorArgs, RunGeneratorResult};
 /// # Errors
 ///
 /// Returns [`PrimitiveError::Io`] when `bash` cannot be spawned or the
-/// script path does not exist.
+/// script path does not exist, and [`PrimitiveError::ToolTimedOut`] when the
+/// script outlives [`GENERATOR_TIMEOUT`] and is stopped.
 pub fn run(args: &RunGeneratorArgs, repo: &Path) -> Result<RunGeneratorResult> {
+    run_within(args, repo, GENERATOR_TIMEOUT)
+}
+
+/// [`run`] under a caller-chosen timeout — the seam a test uses to prove a
+/// hung script is stopped without waiting five minutes.
+pub(crate) fn run_within(
+    args: &RunGeneratorArgs,
+    repo: &Path,
+    timeout: Duration,
+) -> Result<RunGeneratorResult> {
     // The script is passed straight to `bash`, so a caller who allowlists
     // this primitive (mental model: "runs the repo's generator scripts")
     // would otherwise be granting "run any bash script at any path". Bound
@@ -36,15 +55,21 @@ pub fn run(args: &RunGeneratorArgs, repo: &Path) -> Result<RunGeneratorResult> {
         });
     }
 
-    let output = Command::new("bash")
-        .arg(&script_path)
-        .arg("--dry-run")
-        .current_dir(repo)
-        .output()
-        .map_err(|source| PrimitiveError::Io {
-            path: script_path.clone(),
-            source,
-        })?;
+    let output = output_within(
+        Command::new("bash")
+            .arg(&script_path)
+            .arg("--dry-run")
+            .current_dir(repo),
+        timeout,
+    )
+    .map_err(|source| PrimitiveError::Io {
+        path: script_path.clone(),
+        source,
+    })?
+    .ok_or_else(|| PrimitiveError::ToolTimedOut {
+        program: format!("bash {}", args.script),
+        seconds: timeout.as_secs(),
+    })?;
 
     let exit_code = output.status.code().unwrap_or(-1);
     Ok(RunGeneratorResult {
@@ -69,6 +94,26 @@ mod tests {
         let mut perms = fs::metadata(path).unwrap().permissions();
         perms.set_mode(0o755);
         fs::set_permissions(path, perms).unwrap();
+    }
+
+    #[test]
+    fn a_script_that_outlives_its_timeout_is_stopped() {
+        let tmp = tempdir().unwrap();
+        write_script(&tmp.path().join("gen.sh"), "#!/usr/bin/env bash\nsleep 5\n");
+        let started = std::time::Instant::now();
+        let err = run_within(
+            &RunGeneratorArgs {
+                script: "gen.sh".into(),
+            },
+            tmp.path(),
+            Duration::from_millis(200),
+        )
+        .unwrap_err();
+        assert!(matches!(err, PrimitiveError::ToolTimedOut { .. }), "{err}");
+        assert!(
+            started.elapsed() < Duration::from_secs(4),
+            "the script was stopped, not waited for"
+        );
     }
 
     #[test]
