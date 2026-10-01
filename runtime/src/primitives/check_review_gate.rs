@@ -6,10 +6,11 @@
 //! already `done`, then the feature directory's markdown lint (through the
 //! `lint-markdown` machinery, replacing the raw `npx markdownlint-cli2`
 //! invocation), then unresolved scenario open questions, then an
-//! undischarged `cross-spec-impact`, then the review record in `review.md` and whether it is still current,
-//! then the analyze record in `analysis.md` and whether it is still current,
-//! and last the two records' `dispositions:` maps — a record that predates
-//! them, then any undispositioned finding (spec 058). The first failing
+//! undischarged `cross-spec-impact`, then the review record in `review.md`
+//! and whether it is still current, then the analyze record in
+//! `analysis.md` and whether it is still current, and last the two records'
+//! `dispositions:` maps — a record that predates them, then any
+//! undispositioned finding (spec 058). The first failing
 //! check wins and produces the canonical `blocked: …` message — with the
 //! adopter's `[host] project` command namespace substituted into the
 //! `/{project}:review` references — plus, on `must-violations`, the
