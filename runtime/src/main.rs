@@ -680,7 +680,8 @@ fn main() -> ExitCode {
     // allowlist and the proxy variables — are read here, once, for every
     // subcommand (`CFG-ENV-001`), and primitives answer from this reading.
     // The inventory is docs/runtime.md's. The certificate variables are the
-    // one exception it names: on Linux, `fetch-archive` reads them once per
+    // one exception it names: on Linux and other non-Apple Unix,
+    // `fetch-archive` reads them once per
     // process, at its first fetch (spec 048, `fetch-archive-reads-its-proxy-once`).
     ductus::session::init_process_identity();
     ductus::primitives::fetch_archive::init_insecure_hosts();

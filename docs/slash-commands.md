@@ -54,7 +54,7 @@ It takes the back-edge for you: a new question reopens the spec to `draft`, a ne
 
 ## Destructive — these remove content
 
-Three commands delete rather than rewrite. All three confirm before they act, and none writes a backup.
+Three commands remove content. All three confirm before they act, and none writes a backup.
 
 ### `/prune` — spent tasks, and plan sections outside the design record
 

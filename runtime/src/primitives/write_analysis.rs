@@ -55,6 +55,7 @@ use std::fmt::Write as _;
 use std::path::Path;
 
 use crate::primitives::decisions;
+use crate::primitives::write_review::yaml_string;
 use crate::primitives::{
     PrimitiveError, Result, flatten_line, read_text, rel_path, split_frontmatter,
     validate_no_traversal, write_atomic,
@@ -117,10 +118,6 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
             source,
         })?;
 
-    let replaced = fm_text
-        .lines()
-        .any(|line| !line.starts_with([' ', '\t']) && line.starts_with("analyze:"));
-
     // A blank timestamp would be stamped onto every new decision as a blank
     // `decided-at`, an entry the decisions reader classifies as malformed.
     if single_line(&args.analyzed_at).is_empty() {
@@ -141,6 +138,7 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     // `decisions:` list cannot be read, and writing over it would drop
     // decisions nobody can see (spec 058).
     let analysis_path = feature_dir.join(crate::primitives::ANALYSIS_RECORD_FILE);
+    let replaced = analysis_path.is_file();
     let stored = decisions::read_decisions(&feature_dir, crate::primitives::ANALYSIS_RECORD_FILE)?;
     let merged = decisions::merge(
         stored,
@@ -206,9 +204,7 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
     // also guarantees this digest and the one the gate recomputes come from
     // one function, which is what makes the two surfaces agree.
     let subjects = crate::primitives::analyze_subjects::subject_digest(
-        &spec_path
-            .parent()
-            .map_or_else(|| repo.to_path_buf(), std::path::Path::to_path_buf),
+        &feature_dir,
         crate::primitives::analyze_subjects::is_analyze_subject,
     );
     // The artifact is written on every run it is not refused — clean,
@@ -373,7 +369,8 @@ fn finding_key(finding: &AnalysisFinding) -> String {
 /// The stored-decision key of the analyze finding with this family and
 /// message, `{family} — {message}`. `prune-plan` looks a plan section's stored
 /// decision up by it, so the key prune reads and the key this primitive writes
-/// come from one function.
+/// for a finding the host matched to no earlier decision come from one
+/// function; a finding re-matched by judgment keeps its stored key instead.
 pub(crate) fn finding_key_of(family: &str, message: &str) -> String {
     format!("{} — {}", single_line(family), single_line(message))
 }
@@ -402,12 +399,19 @@ fn render_analysis(
         (derived.blocking, derived.unexamined, derived.dispositions);
     let feature = &args.feature;
     let mut out = String::from("---\n");
-    let _ = writeln!(out, "spec: {}", single_line(feature));
-    let _ = writeln!(out, "last-run: {}", single_line(&args.analyzed_at));
+    // Every caller-supplied scalar and key is flattened to one line and then
+    // quoted when a plain scalar would not read back — a `: ` or a leading
+    // `#` in one would otherwise leave a record the next run refuses.
+    let _ = writeln!(out, "spec: {}", yaml_string(&single_line(feature)));
+    let _ = writeln!(
+        out,
+        "last-run: {}",
+        yaml_string(&single_line(&args.analyzed_at))
+    );
     let _ = writeln!(
         out,
         "analyzed-against: {}",
-        single_line(&args.analyzed_against)
+        yaml_string(&single_line(&args.analyzed_against))
     );
     let _ = writeln!(out, "hard-fail: {}", args.hard_fail);
     let _ = writeln!(out, "blocking-findings: {}", args.blocking_findings);
@@ -428,7 +432,7 @@ fn render_analysis(
     if !by_reason.is_empty() {
         let _ = writeln!(out, "unexamined-by-reason:");
         for (reason, count) in by_reason {
-            let _ = writeln!(out, "  {reason}: {count}");
+            let _ = writeln!(out, "  {}: {count}", yaml_string(&single_line(reason)));
         }
     }
     let _ = writeln!(out, "blocking: {blocking}");
@@ -555,7 +559,7 @@ fn render_unexamined(unexamined: u32, by_reason: &BTreeMap<String, u32>) -> Stri
     }
     by_reason
         .iter()
-        .map(|(reason, count)| format!("- {reason}: {count}"))
+        .map(|(reason, count)| format!("- {}: {count}", plain(reason)))
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -962,7 +966,8 @@ mod tests {
         let review = "---\nspec: 042-demo\nlast-run: 2020-01-01T00:00:00Z\nblocking: false\n---\n\n# Review\n";
         fs::write(dir.join("review.md"), review).unwrap();
 
-        run(&args(), tmp.path()).unwrap();
+        let result = run(&args(), tmp.path()).unwrap();
+        assert!(result.replaced, "an analysis.md already existed");
 
         let report = analysis_md(&tmp);
         assert!(!report.contains("2019-01-01T00:00:00Z"), "{report}");
@@ -980,6 +985,33 @@ mod tests {
                 .unwrap()
                 .contains("next-criterion: 7")
         );
+    }
+
+    #[test]
+    fn a_reason_or_scalar_that_would_not_read_back_is_quoted() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let mut hostile = args();
+        hostile.analyzed_against = "abc status: done".into();
+        hostile.unexamined_by_reason = vec![
+            ("root-absent\nblocking: false".into(), 1),
+            ("a: b".into(), 2),
+            ("# not a comment".into(), 1),
+        ];
+        run(&hostile, tmp.path()).unwrap();
+        let report = analysis_md(&tmp);
+        let (fm, _) = split_frontmatter(&report, Path::new("analysis.md")).unwrap();
+        let parsed: serde_norway::Value =
+            serde_norway::from_str(fm).expect("the record reads back");
+        assert_eq!(parsed["analyzed-against"], "abc status: done");
+        assert_eq!(parsed["blocking"], false);
+        let reasons = &parsed["unexamined-by-reason"];
+        assert_eq!(reasons["root-absent blocking: false"], 1, "{fm}");
+        assert_eq!(reasons["a: b"], 2, "{fm}");
+        assert_eq!(reasons["# not a comment"], 1, "{fm}");
+        // The newline injected no key of its own.
+        assert_eq!(fm.matches("blocking: false").count(), 2, "{fm}");
+        // And the next run reads the record it left.
+        run(&args(), tmp.path()).unwrap();
     }
 
     #[test]
@@ -1128,10 +1160,12 @@ mod tests {
         )
         .unwrap();
         let report = analysis_md(&tmp);
-        assert!(
-            report.contains("analyzed-against: abc status: done"),
-            "{report}"
-        );
+        // Flattened to one line, and quoted, so the record reads back with the
+        // value intact rather than as a scalar the YAML reader rejects.
+        let (fm, _) = split_frontmatter(&report, Path::new("analysis.md")).unwrap();
+        let parsed: serde_norway::Value =
+            serde_norway::from_str(fm).expect("the record reads back");
+        assert_eq!(parsed["analyzed-against"], "abc status: done", "{report}");
         assert!(
             !report.contains("\nstatus: done"),
             "an embedded newline must not become a frontmatter key: {report}"

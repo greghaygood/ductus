@@ -24,7 +24,8 @@
 //! rather than `pub(crate)`: `main.rs` is a separate crate from the library
 //! and has to be able to name the canonical set to be tested against it.
 
-/// Every primitive name exposed by the runtime, in manifest order. Names
+/// Every primitive name exposed by the runtime. Its order is its own — the
+/// tests compare it with `framework/runtime-tools.txt` as a set. Names
 /// are bare `<verb>-<noun>` strings; server-level namespacing (`ductus`) is
 /// supplied by the host's MCP registration.
 pub const PRIMITIVE_REGISTRY: &[&str] = &[

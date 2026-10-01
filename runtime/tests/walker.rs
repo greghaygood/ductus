@@ -827,8 +827,8 @@ fn primitive_step_with_gate_phrase_keeps_its_dispatch() {
 /// the shipped command file parses with document step numbers 1..10, step 6
 /// is a `gate-confirm` primitive (no phrase), and walking the procedure
 /// blocks there — a denied gate leaves tasks.md untouched. The plan preview
-/// at step 3 dispatches with the walker's feature binding and reports a
-/// missing plan rather than halting the walk.
+/// at step 3 dispatches with the walker's feature binding, and the fixture's
+/// missing plan does not halt the walk, which goes on to the gate.
 #[test]
 fn prune_command_gate_blocks_on_the_exec_path() {
     let source = std::fs::read_to_string(

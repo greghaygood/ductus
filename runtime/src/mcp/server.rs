@@ -8,9 +8,9 @@
 //! `primitives::<name>::run` functions; the server holds an `Arc<PathBuf>`
 //! to the repo root that every primitive operates on. Blocking-heavy
 //! primitives (network downloads, subprocess shell-outs, whole-archive
-//! decompression, and full-history git revwalks) are dispatched through
-//! [`dispatch_blocking`] so they run on tokio's blocking pool instead of
-//! pinning an async worker thread.
+//! decompression, full-history git revwalks, and the session primitives'
+//! lock waits) are dispatched through [`dispatch_blocking`] so they run on
+//! tokio's blocking pool instead of pinning an async worker thread.
 //!
 //! `gate-confirm` is special-cased: the MCP surface returns the prompt
 //! payload (gate + prompt + fresh request-id) without blocking. The LLM
@@ -234,7 +234,9 @@ fn strip_numeric_formats(value: &mut Value) {
 /// CPU-bound and unbounded in a large adopter repo, so they route here too,
 /// as do `check-review-gate`, which shells out to the markdown linter and
 /// reads history for its rename exemption, and `dashboard`, which blames the
-/// inbox for its oldest item. The CLI surfaces
+/// inbox for its oldest item. `write-session`, `resolve-session` and
+/// `retarget-sessions` wait on the sessions lock for up to ten seconds, so
+/// they take the seam as well. The CLI surfaces
 /// (`main.rs` subcommands and the subprocess interpreter) call the
 /// primitives directly with no tokio runtime and are unaffected.
 async fn dispatch_blocking<T, F>(work: F) -> Result<Json<T>, String>
@@ -692,7 +694,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "prune-tasks",
-        description = "Reduce a feature's tasks.md — drop spent task sections (keep-pending) or reset to template state."
+        description = "Reduce a feature's tasks.md — drop spent task sections (keep-pending) or reset to template state; or, with `all`, every spec's, returning one line per spec (gate, status, counts, sizes, path) and the specs skipped for having no tasks.md. `force` overrides the reset gate on one spec and is refused with `all`."
     )]
     async fn prune_tasks(
         &self,
@@ -705,7 +707,7 @@ impl GovRuntimeServer {
 
     #[tool(
         name = "prune-plan",
-        description = "Report a feature's plan.md sections outside the design record (the plan template's own ## headings, compared case-insensitively), each with its size, a digest, the plan-record advisory /{project}:analyze records for it, and whether analysis.md stores a discard for that advisory. With apply, remove the listed sections by heading and digest, refusing the whole write when any changed since the preview (stale-sections); on a done spec, report whether the change since HEAD reopens it. Never returns a section's text."
+        description = "Report a feature's plan.md sections outside the design record (the plan template's own ## headings, compared case-insensitively), each with its size, a digest, the plan-record advisory /{project}:analyze records for it, and whether analysis.md stores a discard for that advisory. With apply, remove the listed sections by heading and digest, refusing the whole write when any changed since the preview (stale-sections). On a done spec every call reports whether the tree takes the done → in-progress back-edge against HEAD (reopen-required): a preview for the tree as it stands, an apply for the tree it leaves, computed before it writes. With `all`, preview every spec — listing each whose plan holds such a section, or a done spec that already requires a reopen — and refuse `apply`. Never returns a section's text."
     )]
     async fn prune_plan(
         &self,

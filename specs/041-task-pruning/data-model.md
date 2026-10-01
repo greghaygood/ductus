@@ -45,8 +45,9 @@ enum Kind {
     /// The preamble, the `# …` heading, and any other non-task heading
     /// group. Always kept.
     Structure,
-    /// Phased files only: a `## …` non-numeric heading. Kept iff a task
-    /// section within it survives.
+    /// Phased files only: a `## …` non-numeric heading. Dropped only when
+    /// it governs at least one task section and every one is dropped; a
+    /// phase governing none is kept.
     Phase,
     /// A numbered task section. Dropped when spent.
     Task,
@@ -100,15 +101,16 @@ For each `Block`, in order:
 - `Task` classified `Spent` → **dropped**.
 - `Task` classified `Pending` or `NoCheckbox` → **kept verbatim** (its own
   already-checked boxes included; prune never edits a section's interior).
-- `Phase` → kept **iff at least one `Task` it governs survives**; otherwise
-  dropped so no empty phase container lingers.
+- `Phase` → **dropped only when the reduction empties it**: it governs at
+  least one `Task`, and every one it governs is dropped. A phase that
+  governs no `Task` is kept, since the prune did not empty it.
 
 Seams between kept blocks are normalized to a single blank line and the file
 ends with exactly one trailing newline, so the result is `markdownlint`-clean.
 
-When no section is `Spent`, the computed output equals the input: the
-primitive sets `nothing-to-prune: true` and writes nothing even under
-`apply: true`.
+When no section is `Spent`, no block is dropped, so the computed output
+equals the input, flat or phased: the primitive sets `nothing-to-prune: true`
+and writes nothing even under `apply: true`.
 
 ### reset (`--reset`)
 
@@ -197,15 +199,20 @@ Result for one feature (a **compact summary — never the file body**):
 
 ### Operational errors
 
-Reported as `error` envelopes (not result fields); the primitive writes
-nothing when any fires:
+Reported as `error` envelopes (not result fields). The primitive writes
+nothing to the spec an error fires on; an applying `all` walk keeps the
+reductions it already wrote to the specs it reached before the error, and
+running it again resumes:
 
 | Code | Condition |
 | --- | --- |
 | `feature-not-found` | feature directory absent under the spec-root |
-| `tasks-file-missing` | feature directory exists but has no `tasks.md` (the command directs the user to `/{project}:plan` when there is no `plan.md` either, and otherwise reduces the plan and reports the missing task list) |
+| `tasks-file-missing` | feature directory exists but has no `tasks.md` (the command directs the user to `/{project}:plan` when there is no `plan.md` either, and otherwise reduces the plan and reports the missing task list); a walk skips such a spec instead |
 | `malformed-tasks` | file has no `# …` heading (reset cannot preserve identity) |
-| `missing-spec-file` / `status-field-missing` | `reset` requested but `spec.md` is absent or its frontmatter has no `status` |
+| `missing-spec-file` / `status-field-missing` / `missing-frontmatter` | `spec.md` is absent, opens no frontmatter, or its frontmatter has no `status`, when a `reset` reads it for its gate or a walk reads it for a spec it lists |
+| `yaml` | that `spec.md` frontmatter does not parse |
+| `missing-argument` | neither `feature` nor `all` |
+| `invalid-argument` | both `feature` and `all`; `force` with `all` |
 
 ## `prune-plan`
 
@@ -337,7 +344,9 @@ Result (a **compact summary — never a section's text**):
   and computes it before its own write, so an apply that cannot read HEAD
   writes nothing. HEAD is read through `ProjectRepository::read_at_head`, so
   a project in a subdirectory of its repository resolves. The command, not
-  the primitive, performs the reopen with `set-status`.
+  the primitive, performs the reopen with `set-status`, and decides it on a
+  fresh preview taken once the run has finished writing to the spec, so the
+  reopen follows the tree the run leaves.
 
 A removal whose sections are removed has its seams normalized as keep-pending's
 are, and is written with `write_atomic`, preserving the file's line endings.
@@ -349,7 +358,7 @@ Reported as `error` envelopes; the primitive writes nothing when any fires:
 | Code | Condition |
 | --- | --- |
 | `feature-not-found` | feature directory absent under the spec-root |
-| `missing-spec-file` / `status-field-missing` | `spec.md` is absent or its frontmatter has no `status` |
+| `missing-spec-file` / `status-field-missing` / `missing-frontmatter` | `spec.md` is absent, opens no frontmatter, or its frontmatter has no `status` |
 | `missing-argument` | `apply` with an empty `remove`; neither `feature` nor `all` |
 | `invalid-argument` | `remove` without `apply`, or naming a design-record section, which prune never removes; both `feature` and `all`; `all` with `apply` |
 | `yaml` | `analysis.md`'s `decisions:` list does not parse — read as empty, it would propose every section already decided |
@@ -368,12 +377,13 @@ session target and writes none.
 `prune-tasks` refuses `force` with `all` before reading anything: a forced
 reset across the corpus would discard every in-flight todo under one
 confirmation. With `apply` it writes every spec's permitted reduction, the
-`--reset` gate applied per spec. `prune-plan` refuses `apply` with `all`: each
-plan section is a judgment about one spec, so a walk is preview-only.
+`--reset` gate applied per spec. `prune-plan` refuses `apply` with `all`,
+before it checks the `remove` list: each plan section is a judgment about one
+spec, so a walk is preview-only.
 
 Each result is one object with two flattened, optional halves: a
-single-feature call carries the summary above at the top level, exactly as
-it always has, and a walk carries only the walk:
+single-feature call carries the summary above at the top level, unchanged,
+and a walk carries only the walk:
 
 ```json
 {
@@ -394,13 +404,16 @@ it always has, and a walk carries only the walk:
   than as silence.
 - `features` — each spec with something to report, in walk order: for
   `prune-tasks` a spec whose reduction is not a no-op, as a `PruneTasksLine`;
-  for `prune-plan` a spec whose plan holds a section outside the record, as
-  the full `PrunePlanSummary`.
-- `skipped` — each spec without the artifact: `no-tasks-file` or
-  `no-plan-file`. Any other error stops the walk, as it would stop a
-  single-feature call. A `prune-tasks` walk reads a listed spec's status
-  before an apply writes its reduction, so a status that will not read stops
-  the walk with that spec's `tasks.md` untouched.
+  for `prune-plan`, as the full `PrunePlanSummary`, a spec whose plan holds a
+  section outside the record, and a `done` spec whose `reopen-required` is
+  `true` even when it has no such section or no `plan.md`, so a reopen from
+  edits made before the run reaches the corpus preview.
+- `skipped` — for `prune-tasks`, each spec without a `tasks.md`
+  (`no-tasks-file`); for `prune-plan`, each spec without a `plan.md` and
+  nothing else to report (`no-plan-file`). Any other error stops the walk, as
+  it would stop a single-feature call. A `prune-tasks` walk reads a listed
+  spec's status before an apply writes its reduction, so a status that will
+  not read stops the walk with that spec's `tasks.md` untouched.
 
 A `PruneTasksLine` is the summary without its per-section records — `gate`,
 `status`, `applied`, the two counts, the two sizes and `path`. A corpus

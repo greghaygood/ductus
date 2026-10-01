@@ -919,8 +919,8 @@ pub struct WriteAnalysisArgs {
     pub unexamined: u32,
     /// The `unexamined` set broken out over the closed reason set, as
     /// `reason=count` pairs. Repeatable on the CLI
-    /// (`--unexamined-reason not-a-live-claim=81`); a map on the MCP and
-    /// interpreter paths.
+    /// (`--unexamined-reason not-a-live-claim=81`); an array of
+    /// `[reason, count]` pairs on the MCP and interpreter paths.
     ///
     /// A bare total answers *that* something was unexamined and nothing
     /// about what, and the reasons are not equivalent — an exclusion by
@@ -993,9 +993,9 @@ pub struct WriteAnalysisResult {
     /// when one was supplied, so a caller can confirm the two agree.
     #[serde(default)]
     pub unexamined: u32,
-    /// Whether an `analyze:` block already existed and was replaced, as
-    /// opposed to being inserted for the first time. Reported so a caller can
-    /// tell a re-analysis from a spec leaving the grandfathered population.
+    /// Whether an `analysis.md` record already existed and this write
+    /// replaced it, as opposed to writing the spec's first. Reported so a
+    /// caller can tell a re-analysis from a first one.
     pub replaced: bool,
     /// The `dispositions:` map actually written.
     pub dispositions: Dispositions,
@@ -1357,7 +1357,8 @@ pub struct DeriveDependenciesArgs {
 pub struct DeriveDependenciesResult {
     /// Whether any spec was rewritten (or, without `write`, would be).
     pub drift: bool,
-    /// Repo-relative paths of the specs rewritten, sorted.
+    /// Repo-relative paths of the drifted specs, sorted: rewritten under
+    /// `write`, and only reported without it.
     pub updated: Vec<String>,
     /// Specs examined and found drifted but deliberately not written —
     /// the `staged` case. Neither "in sync" nor "not examined", so they are
@@ -1427,7 +1428,8 @@ pub struct DeriveReferencesArgs {
 pub struct DeriveReferencesResult {
     /// Whether any spec was rewritten (or, without `write`, would be).
     pub drift: bool,
-    /// Repo-relative paths of the specs rewritten, sorted.
+    /// Repo-relative paths of the drifted specs, sorted: rewritten under
+    /// `write`, and only reported without it.
     pub updated: Vec<String>,
     /// Specs examined and found drifted but deliberately not written — the
     /// `staged` case. Neither "in sync" nor "not examined", so they are
@@ -2722,7 +2724,7 @@ pub struct AppendTaskResult {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct PruneTasksArgs {
-    /// Feature directory name under `specs/`. Exactly one of `feature` and
+    /// Feature directory name under the spec root. Exactly one of `feature` and
     /// `all` is given.
     #[serde(default)]
     #[arg(long)]
@@ -2794,7 +2796,7 @@ pub enum PruneAction {
     Kept,
 }
 
-/// Line and byte size of a `tasks.md`, before or after pruning.
+/// Line and byte size of a `tasks.md` or `plan.md`, before or after pruning.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct SizeSummary {
@@ -2979,7 +2981,7 @@ pub enum SkipReason {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, clap::Args)]
 #[serde(rename_all = "kebab-case")]
 pub struct PrunePlanArgs {
-    /// Feature directory name under `specs/`. Exactly one of `feature` and
+    /// Feature directory name under the spec root. Exactly one of `feature` and
     /// `all` is given.
     #[serde(default)]
     #[arg(long)]
@@ -3058,7 +3060,9 @@ pub struct PlanSection {
     /// The advisory `/{project}:analyze` records for the section.
     pub finding: PlanFinding,
     /// `analysis.md` stores a discard for this section's finding, under its
-    /// exact key: prune does not propose it.
+    /// key as every stored-decision reader compares keys: prune does not
+    /// propose it. A decision kept under an earlier wording is not matched
+    /// here; the host matches it by judgment.
     pub decided: bool,
 }
 
@@ -4054,7 +4058,8 @@ pub enum RecordFreshness {
     Current {
         /// The recorded `last-run` timestamp.
         last_run: String,
-        /// The recorded `analyzed-against` sha.
+        /// The recorded sha the run compared against: `analyzed-against`
+        /// for the analyze record, `reviewed-against` for the review record.
         analyzed_against: String,
     },
     /// One or more subject-set artifacts' digests differ from the recorded
@@ -4062,15 +4067,16 @@ pub enum RecordFreshness {
     Stale {
         /// The recorded `last-run` timestamp.
         last_run: String,
-        /// The recorded `analyzed-against` sha.
+        /// The recorded sha the run compared against: `analyzed-against`
+        /// for the analyze record, `reviewed-against` for the review record.
         analyzed_against: String,
         /// Repo-relative paths that changed, sorted; at most three are
         /// rendered by the callers, with a count for the remainder.
         paths: Vec<String>,
     },
-    /// Freshness could not be determined — no git repository, an
-    /// `analyzed-against` that does not resolve in this tree (a rebase or a
-    /// shallow clone), or a failed diff.
+    /// Freshness could not be determined: the record carries no digest, so
+    /// what it examined is unknown — a record written before digests were
+    /// recorded.
     ///
     /// A distinct state rather than a fold into [`Self::Current`]: reporting
     /// "could not check" as "checked and clean" is the `QUAL-CLAIM-001`
@@ -5459,6 +5465,17 @@ mod tests {
         // Not computed is absent, never `false`.
         assert!(!value.as_object().unwrap().contains_key("reopen-required"));
         assert_eq!(round_trip(&result), result);
+        // Computed and false is present: a `done` spec's every call says so.
+        let computed = PrunePlanResult {
+            summary: Some(PrunePlanSummary {
+                reopen_required: Some(false),
+                ..summary.clone()
+            }),
+            walk: None,
+        };
+        let value: serde_json::Value = serde_json::to_value(&computed).unwrap();
+        assert_eq!(value["reopen-required"], false);
+        assert_eq!(round_trip(&computed), computed);
 
         let walked = PrunePlanResult {
             summary: None,

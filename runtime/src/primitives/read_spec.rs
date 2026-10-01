@@ -172,9 +172,9 @@ pub(crate) fn scenario_names(questions: &[ScenarioOpenQuestion]) -> Vec<&str> {
 
 /// Split a spec body into its `##`-and-deeper sections, in document order.
 ///
-/// A single reader for the section scan, kept in one place rather than
-/// splitter is a second answer to "what are this spec's sections", and the
-/// two would drift on the first heading form one of them learned about.
+/// The single reader for the section scan, kept in one place because a
+/// second splitter is a second answer to "what are this spec's sections", and
+/// the two would drift on the first heading form one of them learned about.
 pub(crate) fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection> {
     let mut sections: Vec<SpecSection> = Vec::new();
     let mut pending_body: Vec<&str> = Vec::new();
@@ -217,7 +217,8 @@ pub(crate) fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection>
     sections
 }
 
-/// Walk the named section's checkboxes with comment/fence awareness
+/// Parse the checkbox list under `section_heading` into criteria, walking the
+/// section with comment/fence awareness
 /// ([`section_line_indices`]): example checkboxes inside a template
 /// guidance comment or a fenced code block are not criteria. The indexes
 /// of the returned criteria form a contract with `mark-criterion`'s
@@ -231,7 +232,6 @@ pub(crate) fn parse_sections(body: &str, include_body: bool) -> Vec<SpecSection>
 /// mid-sentence. The index derivation stays keyed to checkbox lines only —
 /// a continuation line never pushes a new entry — so the read/mark index
 /// contract is preserved.
-/// Parse the checkbox list under `section_heading` into criteria.
 ///
 /// Kept in one place for the same reason as
 /// [`parse_sections`]: it already skips comments and fenced blocks, and a
@@ -310,19 +310,18 @@ pub(crate) fn parse_open_questions(body: &str, section_heading: &str) -> Vec<Ope
     for idx in section_line_indices(&lines, section_heading) {
         let trimmed = lines[idx].trim_start();
         let entry =
-            list_item(lines[idx]).filter(|(indent, _)| level.is_none_or(|level| *indent <= level));
+            list_item(lines[idx]).filter(|(indent, _)| level.is_none_or(|first| *indent <= first));
         if let Some((indent, rest)) = entry {
             level.get_or_insert(indent);
             if let Some(prev) = current.take() {
                 push_question(&mut out, &prev);
             }
             current = Some(rest.trim().to_string());
-        } else if !trimmed.is_empty() && current.is_some() {
-            let continuation = trimmed.to_string();
-            if let Some(buf) = current.as_mut() {
-                buf.push(' ');
-                buf.push_str(&continuation);
-            }
+        } else if !trimmed.is_empty()
+            && let Some(buf) = current.as_mut()
+        {
+            buf.push(' ');
+            buf.push_str(trimmed);
         } else if trimmed.is_empty()
             && let Some(prev) = current.take()
         {
@@ -337,12 +336,22 @@ pub(crate) fn parse_open_questions(body: &str, section_heading: &str) -> Vec<Ope
 
 /// The indentation and text of a line that opens a list item, or `None`. A
 /// marker is `-`, `*` or `+`, or one to nine digits followed by `.` or `)`,
-/// and it must be followed by whitespace, so a thematic break (`---`) and
-/// emphasis at the start of a line (`**Bold**`, `*None — all resolved.*`)
-/// open nothing.
-fn list_item(line: &str) -> Option<(usize, &str)> {
+/// followed by whitespace or by nothing — a bare marker opens an item whose
+/// text its continuation lines supply. Emphasis at the start of a line
+/// (`**Bold**`, `*None — all resolved.*`) opens nothing, since its `*` is
+/// followed by text, and neither does a thematic break (`---`, `* * *`).
+/// Indentation is counted in bytes, so a tab counts as one.
+///
+/// `append-question` strips a marker with it too, so what it writes and what
+/// this reader counts agree. `mod.rs`'s `opens_list_item` is a different
+/// question — where a list block starts for claim splitting, where a nested
+/// marker is its own block — and keeps its own grammar.
+pub(crate) fn list_item(line: &str) -> Option<(usize, &str)> {
     let rest = line.trim_start();
     let indent = line.len() - rest.len();
+    if is_thematic_break(rest) {
+        return None;
+    }
     let after = if let Some(after) = rest.strip_prefix(['-', '*', '+']) {
         after
     } else {
@@ -352,15 +361,36 @@ fn list_item(line: &str) -> Option<(usize, &str)> {
         }
         rest[digits..].strip_prefix(['.', ')'])?
     };
-    let text = after.strip_prefix([' ', '\t'])?;
+    let text = if after.is_empty() {
+        after
+    } else {
+        after.strip_prefix([' ', '\t'])?
+    };
     Some((indent, text))
 }
 
-/// The "no entries here" placeholder lines a questions section may carry:
-/// the spec template's, and the one `create-scenario` compiles into every
-/// new scenario. Neither is authored as a `- ` bullet today, so the guard
-/// is belt-and-braces — but the set means the behavior no longer depends
-/// on that (spec 046).
+/// Whether `trimmed` is a thematic break: three or more of one of `-`, `*` or
+/// `_`, optionally separated by spaces or tabs, and nothing else.
+fn is_thematic_break(trimmed: &str) -> bool {
+    let mut marks = trimmed.chars().filter(|c| !matches!(c, ' ' | '\t'));
+    let Some(first) = marks.next() else {
+        return false;
+    };
+    let mut count = 1;
+    for mark in marks {
+        if mark != first {
+            return false;
+        }
+        count += 1;
+    }
+    matches!(first, '-' | '*' | '_') && count >= 3
+}
+
+/// The "no entries here" placeholder lines a questions section may carry: the
+/// spec template's, the one `create-scenario` compiles into every new
+/// scenario's Open Questions, and its Resolved Questions twin. None is
+/// authored as a list item today, so the guard is belt-and-braces — but the
+/// set means the behavior no longer depends on that (spec 046).
 const QUESTION_PLACEHOLDERS: [&str; 3] = [
     "*None — all resolved.*",
     "*None — captured during scenario authoring.*",
@@ -805,6 +835,39 @@ mod tests {
     fn a_list_indented_as_a_whole_reads_as_unindented() {
         let body = "## Open Questions\n\n  - A first question\n  - A second question\n";
         assert_eq!(parse_open_questions(body, "Open Questions").len(), 2);
+    }
+
+    #[test]
+    fn a_thematic_break_is_not_a_question() {
+        let body = "## Open Questions\n\n- A question\n\n* * *\n\n- - -\n\n- Another\n";
+        let questions = parse_open_questions(body, "Open Questions");
+        let texts: Vec<&str> = questions.iter().map(|q| q.text.as_str()).collect();
+        assert_eq!(texts, ["A question", "Another"]);
+    }
+
+    #[test]
+    fn a_bare_marker_takes_its_text_from_the_next_line() {
+        let body = "## Open Questions\n\n1.\n   Which store?\n2. Which cache?\n";
+        let questions = parse_open_questions(body, "Open Questions");
+        let texts: Vec<&str> = questions.iter().map(|q| q.text.as_str()).collect();
+        assert_eq!(texts, ["Which store?", "Which cache?"]);
+    }
+
+    #[test]
+    fn markers_may_mix_in_one_section() {
+        // A numbered list with a `-` appended by `append-question`.
+        let body =
+            "## Open Questions\n\n1. Which store?\n2) Which cache?\n- Which queue?\n* Which log?\n";
+        assert_eq!(parse_open_questions(body, "Open Questions").len(), 4);
+    }
+
+    #[test]
+    fn an_ordered_marker_has_at_most_nine_digits() {
+        let body = "## Open Questions\n\n123456789. Nine digits\n1234567890. Ten digits\n";
+        let questions = parse_open_questions(body, "Open Questions");
+        let texts: Vec<&str> = questions.iter().map(|q| q.text.as_str()).collect();
+        // The ten-digit line is no marker, so it continues the entry above.
+        assert_eq!(texts, ["Nine digits 1234567890. Ten digits"]);
     }
 
     #[test]

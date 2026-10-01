@@ -155,7 +155,8 @@ fn parse_style(s: &str) -> Result<MarkerStyle> {
         STYLE_HTML_COMMENT => Ok(MarkerStyle::HtmlComment),
         STYLE_LINE_PREFIX => Ok(MarkerStyle::LinePrefix),
         other => Err(PrimitiveError::UnknownManifestStrategy {
-            strategy: format!("marker-style '{other}' (expected 'html-comment' or 'line-prefix')"),
+            strategy: other.to_string(),
+            expected: format!("a marker-style of '{STYLE_HTML_COMMENT}' or '{STYLE_LINE_PREFIX}'"),
         }),
     }
 }
@@ -929,7 +930,7 @@ mod tests {
         let path = tmp.path().join("x.md");
         let err = run(&args(&path, "x", Some("yaml-block")), tmp.path()).unwrap_err();
         match err {
-            PrimitiveError::UnknownManifestStrategy { strategy } => {
+            PrimitiveError::UnknownManifestStrategy { strategy, .. } => {
                 assert!(strategy.contains("yaml-block"));
             }
             other => panic!("expected UnknownManifestStrategy, got {other:?}"),

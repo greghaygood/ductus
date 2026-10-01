@@ -67,11 +67,12 @@ preview → apply shape.
 
 - **keep-pending** (`reset: false`): emit the preamble verbatim, keep every
   `Pending`/`NoCheckbox` section verbatim, drop every `Spent` section, and in
-  phased files drop a `## …` phase container that has no surviving task
-  section (no empty phases linger). Seams normalize to a single blank line
-  with one trailing newline so the result is `markdownlint`-clean. When no
-  section is spent the output equals the input → `nothing-to-prune: true`, no
-  write.
+  phased files drop a `## …` phase container the reduction empties — one that
+  governs at least one task section, every one of them dropped. A phase that
+  governs no task section is kept: the prune did not empty it. Seams
+  normalize to a single blank line with one trailing newline so the result is
+  `markdownlint`-clean. When no section is spent the output equals the input,
+  flat or phased → `nothing-to-prune: true`, no write.
 - **reset** (`reset: true`): emit the file's existing first `# …` heading
   followed by a canonical empty-tasks body — a constant equal to
   `framework/templates/spec/tasks.md` with its own H1 removed (the intro line
@@ -112,10 +113,14 @@ step 2).
 
 Segmentation feeds every line through `SkipScanner`
 (`runtime/src/primitives/mod.rs`, `struct SkipScanner`), so a `##` inside a
-fenced block or an HTML comment is not structure. Both occur: this
-repository's 60 plans hold 6 `##` lines inside fenced blocks and 3 inside
-HTML comments, across 4 plans (010, 026, 027, 058), and a scan that counted
-them as sections would propose removing text that is not a section at all.
+fenced block or an HTML comment is not structure. Fences occur: this
+repository's 60 plans hold 7 `##` heading lines inside fenced blocks, across
+010, 026 and 027, and a scan that counted them as sections would propose
+removing text that is not a section at all. None sits inside a real HTML
+comment, and the comment test has to ignore a delimiter in code font, as
+`SkipScanner`'s does: 058's plan mentions `<!-- Rules:` in code font ahead of
+its last three sections, which a test blind to code spans would read as a
+comment hiding them.
 A section is a level-2 heading from `parse_atx_heading` and every line up to
 the next heading at level 2 or above outside a skipped region; `###` and
 deeper stay inside their parent, and a `#` heading opens a structural block
@@ -192,7 +197,12 @@ required, and anything else is refused with the existing `MissingArgument` /
 result carries `examined`, a `features` list with one entry per spec that has
 something to report — each beside its `feature` — and `skipped` naming each
 feature without the artifact (`no-tasks-file`, `no-plan-file`); a spec with
-nothing to report is omitted and counted in `examined`. MCP requires a tool's
+nothing to report is omitted and counted in `examined`. For `prune-plan`,
+something to report is a section outside the record, or `reopen-required`
+true on a `done` spec: such a spec is listed even with no such section or no
+`plan.md`, so a reopen that edits made before the run require reaches the
+corpus preview, and `no-plan-file` names only a spec with no `plan.md` and
+nothing else to report. MCP requires a tool's
 output schema to be an object, so each result is one struct with two
 flattened, optional halves — the single-feature summary, on the wire exactly
 as before, or the walk — and because the halves share one key space no key
@@ -200,15 +210,16 @@ may sit in both, which is why `prune-plan`'s section count is
 `sections-examined`. A `prune-tasks` walk lists each spec as a compact line —
 gate, status, applied, counts, sizes and path — rather than its summary: the
 per-section records would carry every task section in the corpus — 842 of
-them and 161,841 bytes over this repository's 60 specs, past the MCP output
-cap and against the token-reduction contract — where the lines come to 15,373
-bytes. The
+them and 161,841 bytes over this repository's 60 specs when the walk was
+built, past the MCP output cap and against the token-reduction contract —
+where the lines came to 15,373 bytes. The
 line carries `status` for every spec, keep-pending included, because only a
 `done` spec can be reopened and the corpus preview prices each row by it. A
 `prune-plan` walk keeps full summaries, since the host judges each section by
 heading. `prune-tasks` with `all` and `apply` writes every feature's
 reduction under one confirmation; `prune-plan` with `all` is preview-only and
-refuses `apply`, because each plan section is a per-spec judgment. This is the batch shape
+refuses `apply`, before it checks the `remove` list, because each plan
+section is a per-spec judgment. This is the batch shape
 `/{project}:analyze --all` already has — the same one-spec operation repeated
 per spec, never one operation spanning two — so it does not contradict
 `docs/slash-commands.md`'s rule that a two-spec operation is its own command;
@@ -230,12 +241,15 @@ dropped, and confirms the moves and the removal together, naming the reopen
 the moves imply on a `done` spec. A reopen the preview reports — edits made
 before the run already require it — is named in the preview, before
 anything is written. On confirmation the host writes the moves and calls
-`prune-plan` apply with that section's heading and digest. On a `done` spec
-the command calls `set-status` once the run has written to it and the reopen
-is known: after its first write when the preview reported one, else after
-the first apply that does. An apply that reports a reopen nothing named — a
-move whose effect the host misjudged — is asked about before the flip,
-never performed silently. A declined section is skipped
+`prune-plan` apply with that section's heading and digest. The reopen is
+decided on a fresh reading: once the run has finished writing to a `done`
+spec, the command previews that feature again and calls `set-status` only
+when that result reports `reopen-required`. A reopen named earlier is then
+performed; one nothing named — a move whose effect the host misjudged — is
+asked about before the flip, never performed silently; and one the preview
+named that the fresh reading no longer requires, such as a `--reset` that
+removed the unchecked boxes it came from, is not performed. A spec the run
+wrote nothing to keeps its status. A declined section is skipped
 for that run, and the prompt names an analyze discard as the lasting keep.
 The write surface is `tasks.md`, `plan.md`, `AGENTS.md` for moved knowledge,
 and status through `set-status`; knowledge that holds more widely is named
@@ -304,7 +318,10 @@ pairing and a listed design-record section, and for the `feature`/`all`
 exclusivity, `force` with `all`, and `apply` with `all` on `prune-plan`;
 `Yaml` for an `analysis.md` decisions list that does not parse; and `Git` for
 a HEAD the reopen trigger cannot read. A digest mismatch is the
-`stale-sections` domain outcome, not an error. Each error writes nothing.
+`stale-sections` domain outcome, not an error. Each error writes nothing to
+the spec it fires on; an applying `prune-tasks` walk keeps the reductions it
+already wrote to the specs it reached before the error, and running the walk
+again resumes.
 
 ### Runtime wiring (fully-wired primitives)
 
@@ -330,9 +347,6 @@ Then add `prune-plan` to `framework/runtime-tools.txt` and run
 `scripts/gen-configure-mcp.sh` followed by `scripts/gen-claude-commands.sh`.
 `runtime/tests/mcp.rs` holds the manifest set-equal to the registry, and
 `main::tests::every_registry_primitive_has_a_clap_subcommand` pins the CLI.
-Finish with a `runtime/CHANGELOG.md` `### Added` entry and a minor version
-bump across the three version sites, released with a `ductus-v<version>` tag
-once every affected spec is `done`.
 
 ### The title broadened; the slug did not
 
@@ -402,10 +416,12 @@ buys nothing here.
   satisfy "restores … heading plus guidance comment"). Cost: a constant that
   must track the template, guarded by a drift test. The design-record heading
   set takes the same trade.
-- **Empty phase containers are dropped in keep-pending.** Rejected preserving
-  them (leaves noisy empty `## Phase …` headings). Cost: a phase the user
+- **A phase container keep-pending empties is dropped.** Rejected preserving
+  it (leaves noisy empty `## Phase …` headings). Cost: a phase the user
   intends to refill loses its heading; re-planning re-adds it. Accepted —
-  keep-pending targets a lean working set.
+  keep-pending targets a lean working set. A phase that governs no task
+  section was not emptied by the prune, so it is kept, and a file with
+  nothing spent comes back unchanged.
 - **A sibling primitive, not a wider `prune-tasks`.** Rejected folding plan
   reduction into `prune-tasks`: its name, its byte-parity criterion (AC11) and
   its result shape are all about one artifact, and a plan reduction's apply is
@@ -414,12 +430,12 @@ buys nothing here.
 - **The advisory rides `prune-plan`, not a `check-artifacts` family.** A new
   family would have to be registered in 022's data model, the canonical
   registry of check families, which is a durable contract there and would
-  reopen 022 for a full re-review of 105 scenarios and a 1,529-line data
-  model; feature-specific primitives already live with their feature
-  (`prune-tasks` here, 062's session primitives in 062). Cost: the advisory is
-  documented in `framework/commands/analyze.md` and this spec's data model
-  rather than beside the other families. Accepted, and `AGENTS.md`'s routing
-  entry is corrected to match.
+  reopen 022 for a full re-review of what were, when this was decided, 105
+  scenarios and a 1,529-line data model; feature-specific primitives already
+  live with their feature (`prune-tasks` here, 062's session primitives in
+  062). Cost: the advisory is documented in `framework/commands/analyze.md`
+  and this spec's data model rather than beside the other families.
+  Accepted, and `AGENTS.md`'s routing entry is corrected to match.
 - **Removal is digest-guarded.** Rejected removing by heading alone: a
   section edited between preview and apply would lose content the host never
   judged. Cost: a stale preview refuses the apply, and the run re-previews.

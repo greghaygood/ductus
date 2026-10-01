@@ -205,6 +205,7 @@ fn process_entry(
         "skip-if-conflict" => apply_skip_if_conflict(&source_path, &dest_path, dest_exists),
         other => Err(PrimitiveError::UnknownManifestStrategy {
             strategy: other.to_string(),
+            expected: "'update', 'create', or 'skip-if-conflict'".into(),
         }),
     }
 }
@@ -1021,7 +1022,7 @@ mod tests {
         );
         let err = run(&args, tmp.path()).unwrap_err();
         match err {
-            PrimitiveError::UnknownManifestStrategy { strategy } => {
+            PrimitiveError::UnknownManifestStrategy { strategy, .. } => {
                 assert_eq!(strategy, "replace-everywhere");
             }
             other => panic!("expected UnknownManifestStrategy, got {other:?}"),

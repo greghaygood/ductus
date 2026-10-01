@@ -678,27 +678,13 @@ fn count_scenario_files(scenarios_dir: &Path) -> u32 {
     u32::try_from(list_scenario_files(scenarios_dir).len()).unwrap_or(u32::MAX)
 }
 
-/// Count unresolved entries in a spec body's `## Open Questions` section.
-/// Every `- ` bullet at any indentation is an entry — nested sub-bullets
-/// DO count, matching `read_spec::parse_open_questions`, which likewise
-/// starts a new question on each `- ` line regardless of indent (the
-/// two-paths parity). Non-bullet continuation lines don't add to the
-/// count, and the canonical `*None — all resolved.*` placeholder is
-/// treated as zero. Shares section traversal with `read_spec` via the
-/// shared `section_lines` helper — the two consumers only differ in how
-/// they fold the yielded lines into their result shape.
+/// Count unresolved entries in a spec or scenario body's `## Open Questions`
+/// section, with `read-spec`'s own parser ([`read_spec::parse_open_questions`])
+/// rather than a second one, so `/{project}:status` and `/{project}:clarify`
+/// never disagree about whether a spec has open questions: the count drives
+/// the recovery Next Action, and a second reader is a second answer.
 fn count_open_questions(body: &str) -> u32 {
-    let mut count: u32 = 0;
-    for line in section_lines(body, "Open Questions") {
-        let trimmed = line.trim_start();
-        if let Some(rest) = trimmed.strip_prefix("- ") {
-            let entry = rest.trim();
-            if !entry.is_empty() && entry != "*None — all resolved.*" {
-                count += 1;
-            }
-        }
-    }
-    count
+    u32::try_from(read_spec::parse_open_questions(body, "Open Questions").len()).unwrap_or(u32::MAX)
 }
 
 /// Compute the sorted, deduplicated union of every spec's `tags` array.
@@ -851,8 +837,9 @@ fn load_scenario_detail(repo: &Path, rel_path: &str) -> Result<Option<DashboardS
 
 /// First non-blank, non-HTML-comment line of the scenario body's
 /// `## Context` section, trimmed. Empty string when the section is
-/// absent or contains only blanks and comments. Shares section
-/// traversal with the open-question counter via `section_lines`.
+/// absent or contains only blanks and comments. Walks the section with
+/// `section_lines`, which skips no comment or fence: a comment is filtered
+/// here by its opening line.
 fn context_summary(body: &str) -> String {
     for line in section_lines(body, "Context") {
         let trimmed = line.trim();
@@ -1600,18 +1587,28 @@ reason = "Deferred until v2 perf budget lands."
     }
 
     #[test]
-    fn open_question_count_includes_nested_sub_bullets() {
-        // Documented behavior (read_spec parity): every `- ` bullet at
-        // any indentation is an entry — nested sub-bullets DO count.
+    fn open_question_count_is_read_specs_count() {
+        // Numbered entries, a nested option folding into its question, and an
+        // example inside a comment: the dashboard counts exactly what
+        // read-spec reports, so /status and /clarify agree.
         let tmp = TempDir::new().unwrap();
+        // The old `-`-only counter read this as 2: the nested option and the
+        // commented example.
+        let questions = "1. Which store?\n   - option a\n2. Which cache?\n3. Which queue?\n\n<!--\n- An example, not asked\n-->";
         write_spec(
             tmp.path(),
             "001-x",
             "status: draft\ndependencies: []\n",
-            "- Top-level question?\n  - Nested sub-bullet also counts.\n- Second top-level?",
+            questions,
         );
         let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
         assert_eq!(result.specs[0].open_question_count, 3);
+        let body = format!("## Open Questions\n\n{questions}\n");
+        assert_eq!(
+            read_spec::parse_open_questions(&body, "Open Questions").len(),
+            3,
+            "the two readers agree"
+        );
     }
 
     #[test]

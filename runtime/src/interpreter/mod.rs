@@ -1617,7 +1617,7 @@ mod tests {
             steps: vec![
                 step(2, "validate-frontmatter"),
                 step(8, "check-artifacts"),
-                step(19, "write-analysis"),
+                step(20, "write-analysis"),
             ],
         };
         let mut context = Map::new();
@@ -1684,7 +1684,7 @@ mod tests {
     /// An `/analyze` procedure of `steps` closed by `write-analysis`.
     fn analyze_procedure(mut steps: Vec<Step>) -> Procedure {
         steps.push(Step::Primitive {
-            number: StepNumber(vec![19]),
+            number: StepNumber(vec![20]),
             name: "write-analysis".into(),
             prose: String::new(),
             location: loc(),

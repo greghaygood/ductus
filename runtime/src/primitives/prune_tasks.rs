@@ -110,9 +110,14 @@ impl Block {
 /// - [`PrimitiveError::MalformedTasks`] when a `--reset` file has no `# …`
 ///   heading.
 /// - [`PrimitiveError::MissingSpecFile`] / [`PrimitiveError::StatusFieldMissing`]
-///   when a `--reset` cannot read the spec status.
+///   when the spec status cannot be read: by a `--reset`, for its gate, and by
+///   an `all` walk, for each spec it lists.
 /// - [`PrimitiveError::Io`] / [`PrimitiveError::Yaml`] on filesystem or
 ///   frontmatter failure.
+///
+/// Each error writes nothing to the feature it fires on. An applying `all`
+/// walk keeps the reductions it already wrote to the features before it;
+/// each is atomic, so running the walk again resumes.
 pub fn run(args: &PruneTasksArgs, repo: &Path) -> Result<PruneTasksResult> {
     let root = paths::Paths::load(repo).specs_root;
     let Some(feature) = one_feature_or_all("prune-tasks", args.feature.as_deref(), args.all)?
@@ -408,14 +413,20 @@ fn segment(content: &str) -> Vec<Block> {
 /// keep-pending reduction: drop spent task sections and emptied phase
 /// containers. Returns `(new_content, sections, removed, kept)`.
 fn reduce_keep_pending(content: &str, blocks: &[Block]) -> (String, Vec<PruneSection>, u32, u32) {
-    // Phases with at least one surviving (non-spent) task section.
+    // A phase is dropped only when this reduction empties it: it governs a
+    // task section, and every one it governs is spent. A phase governing no
+    // task section is structure the prune did not empty, so it is kept, and
+    // a file with nothing spent comes back byte-for-byte.
+    let mut phase_has_task: HashSet<usize> = HashSet::new();
     let mut phase_has_survivor: HashSet<usize> = HashSet::new();
     for block in blocks {
         if block.kind == Kind::Task
-            && block.classification() != Classification::Spent
             && let Some(p) = block.governing_phase
         {
-            phase_has_survivor.insert(p);
+            phase_has_task.insert(p);
+            if block.classification() != Classification::Spent {
+                phase_has_survivor.insert(p);
+            }
         }
     }
 
@@ -429,10 +440,10 @@ fn reduce_keep_pending(content: &str, blocks: &[Block]) -> (String, Vec<PruneSec
         match block.kind {
             Kind::Structure => kept_lines.push(block),
             Kind::Phase => {
-                if phase_has_survivor.contains(&idx) {
-                    kept_lines.push(block);
-                } else {
+                if phase_has_task.contains(&idx) && !phase_has_survivor.contains(&idx) {
                     dropped_any = true;
+                } else {
+                    kept_lines.push(block);
                 }
             }
             Kind::Task => {
@@ -626,6 +637,19 @@ mod tests {
     }
 
     #[test]
+    fn keep_pending_keeps_a_phase_it_did_not_empty() {
+        // A phase governing no task — a heading a person added for a note —
+        // is not emptied by the prune, so nothing is written.
+        let tasks = "# T\n\nTasks derived from the [plan](plan.md). Complete in order.\n\n## Phase A — Live\n\n### 1. Pending\n\n- [ ] a\n\n## Notes for the next session\n\nRun the suites after task 1.\n";
+        let (_tmp, repo) = write_repo(tasks, None);
+        let result = run(&args(false, false, true), &repo).unwrap();
+        assert!(result.nothing_to_prune);
+        assert!(!result.applied);
+        let after = fs::read_to_string(repo.join("specs/041-task-pruning/tasks.md")).unwrap();
+        assert_eq!(after, tasks, "no write when nothing is spent");
+    }
+
+    #[test]
     fn reset_produces_template_state_when_done() {
         let (_tmp, repo) = write_repo(FLAT, Some("done"));
         let result = run(&args(true, false, true), &repo).unwrap();
@@ -709,8 +733,8 @@ mod tests {
     fn a_walk_reports_features_in_corpus_order_and_names_each_skip() {
         let tmp = corpus(&[
             ("1234.10-late", "in-progress", Some(FLAT)),
-            ("1234.2-early", "in-progress", Some(FLAT)),
-            ("010-sequential", "in-progress", Some(FLAT)),
+            ("1234.2-early", "done", Some(FLAT)),
+            ("010-sequential", "planned", Some(FLAT)),
             ("002-first", "in-progress", Some(FLAT)),
             ("003-no-tasks", "clarified", None),
             ("004-lean", "in-progress", Some(PENDING_ONLY)),
@@ -740,12 +764,21 @@ mod tests {
         // The lean feature is examined but, with nothing to reduce, not listed.
         assert_eq!(walk.examined, 6);
         assert!(walk.features.iter().all(|f| !f.summary.applied));
-        // Keep-pending reads no status for its own work; the walk reads it
-        // for every line it lists.
-        assert!(
-            walk.features
-                .iter()
-                .all(|f| f.summary.status == "in-progress")
+        // Keep-pending reads no status for its own work; the walk reads each
+        // listed spec's own.
+        let statuses: Vec<(&str, &str)> = walk
+            .features
+            .iter()
+            .map(|f| (f.feature.as_str(), f.summary.status.as_str()))
+            .collect();
+        assert_eq!(
+            statuses,
+            [
+                ("002-first", "in-progress"),
+                ("010-sequential", "planned"),
+                ("1234.2-early", "done"),
+                ("1234.10-late", "in-progress")
+            ]
         );
     }
 

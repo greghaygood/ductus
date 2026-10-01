@@ -535,5 +535,10 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] In `runtime/src/primitives/read_spec.rs`, start an entry at any list marker no deeper than the section's first entry, and fold a deeper one into the entry above
 - [x] Spec template and `/{project}:specify`: a question is one list item; `/{project}:clarify`'s markdown-only count names every list marker
 - [x] Prove each new test red by mutation, one at a time, restoring the file after each
+- [x] Review fix: `dashboard` counts the spec body's and the targeted scenario's open questions with `read-spec`'s parser, replacing its own `-`-only, comment-unaware count
+- [x] Review fix: a thematic break opens no entry, and a marker with nothing after it opens one its continuation lines fill, an entry left empty dropped; a test for each
+- [x] Review fix: `append-question` strips a leading list marker of any kind `read-spec` recognizes before its duplicate check and before it writes the question
+- [x] Review fix: tests for a section mixing markers and for the one-to-nine-digit bound on a numbered marker
+- [x] Prove each new review-fix test red by mutation, one at a time, restoring the file after each
 
 - **Done when**: the parser tests pass, each having failed with its behavior reverted; the template, `specify.md` and `clarify.md` agree with the parser; and `cargo test --release --locked` and `clippy -D warnings` pass.

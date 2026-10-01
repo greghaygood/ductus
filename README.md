@@ -75,7 +75,7 @@ Each entry below says what the command **does**; the section it links to says wh
 - **Refine — adjust a spec's artifacts**
   - [`/amend`](docs/slash-commands.md#amend--a-question-or-scenario-recorded-with-the-lifecycle-back-edge-taken) — add a question or scenario to a spec, reopening it if its status requires
 - **Destructive — these remove content**
-  - [`/prune`](docs/slash-commands.md#prune--spent-tasks-and-plan-sections-outside-the-design-record) — drop completed task sections from `tasks.md`, and move a plan's sections outside its design record home before removing them
+  - [`/prune`](docs/slash-commands.md#prune--spent-tasks-and-plan-sections-outside-the-design-record) — drop completed task sections from `tasks.md`, or with `--reset` reset it to template state, pending tasks included; move the durable pieces of each plan section outside the design record home, then remove the section; `--all` repeats it for every spec
   - [`/fold`](docs/slash-commands.md#fold--the-branch-scoped-staging-directory-after-migrating-its-content) — merge a branch-scoped spec into its durable home and remove the staging directory
   - [`/consolidate`](docs/slash-commands.md#consolidate--an-entire-spec-directory) — re-point every reference to a replaced spec, then remove it
 - **Brownfield — absorb existing reality**
@@ -98,7 +98,7 @@ Each command is documented in full — what it is for, why it exists, and what i
 
 They are plain markdown in your project's rule-file directory — the `rules/` directory under your spec root once scaffolded, or [`framework/rules/`](framework/rules/) here in `ductus`'s own repo — and they are the **only** normative source a review may cite: `/review` is instructed not to invent criteria beyond these files and your `AGENTS.md`. That is what keeps two reviews of the same code from disagreeing, and what makes a finding arguable — every one quotes the rule it came from.
 
-**Every rule uses RFC 2119 language, and the distinction is load-bearing.** **MUST** / **MUST NOT** violations are blocking: they hold the spec out of `done` until they are fixed or waived with a recorded reason. **SHOULD** / **SHOULD NOT** violations are advisory — reported, never blocking.
+**Every rule uses RFC 2119 language, and the distinction is load-bearing.** **MUST** / **MUST NOT** violations are blocking: they hold the spec out of `done` until they are fixed or waived with a recorded reason. **SHOULD** / **SHOULD NOT** violations are advisory — reported, never blocking the review record — but an outstanding SHOULD still keeps the spec out of `done` until it is fixed or waived.
 
 **Every rule carries a permanent ID** (`BE-AUTHN-003`, `FE-XSS-001`, `QUAL-CLAIM-001`). IDs are never renumbered or reused, even when a rule moves within its file, so a waiver, a code comment, or a spec can cite one and still mean the same thing years later.
 
@@ -202,7 +202,7 @@ In all four cases the artifact update is the primary outcome, not a bug report. 
 
 ## The runtime
 
-The `ductus` runtime is the deterministic execution layer the pipeline runs on. It parses the prose of each command and runs the mechanical work (reading specs, walking tasks, checking dependencies, atomic checkbox updates, gate handshakes) in native Rust instead of slow LLM tokens — invoking the model only where semantic judgment actually matters (`assessSpecQuality`, `writeCode`, `writeSpecBody`).
+The `ductus` runtime is the deterministic execution layer the pipeline runs on. It parses the prose of each command and runs the mechanical work (reading specs, walking tasks, checking dependencies, atomic checkbox updates, gate handshakes) in native Rust instead of slow LLM tokens — invoking the model only where semantic judgment actually matters (`askClarifyQuestion`, `assessSpecQuality`, `performReview`, `registerService`, `routeFold`, `routeInboxItem`, `verifyCriteria`, `writeCode`, `writeSpecBody`).
 
 **You do not install it.** `/ductus` acquires it during adoption: it reads the runtime version this framework revision pins, downloads the matching release asset for your platform, verifies its checksum, and installs it into a ductus-owned store. Your `PATH` is not consulted, and nothing binary enters your repository.
 

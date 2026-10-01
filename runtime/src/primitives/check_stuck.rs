@@ -76,8 +76,7 @@ pub fn run(args: &CheckStuckArgs, repo: &Path) -> Result<CheckStuckResult> {
 /// Compare the linear line-index of the first `- [ ]` group in `tasks`, a
 /// path from the project root, at the commit `since_sha` vs. at HEAD. Returns
 /// `true` when both indices exist and match (the first incomplete subtask
-/// hasn't advanced). Returns
-/// `false` when either index is unavailable (no tasks.md at since, or all
+/// hasn't advanced). Returns `false` when either index is unavailable (no tasks.md at since, or all
 /// subtasks complete at HEAD) — vacuous-false matches the scenario's edge
 /// cases (no first-incomplete subtask at baseline / completion is the
 /// opposite of stuck).

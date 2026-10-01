@@ -271,14 +271,16 @@ pub enum PrimitiveError {
         /// One-line description of the structural failure.
         reason: String,
     },
-    /// Manifest entry referenced an unknown strategy. Valid values are
-    /// `update`, `create`, and `skip-if-conflict`.
-    #[error(
-        "unknown manifest strategy '{strategy}' (expected 'update', 'create', or 'skip-if-conflict')"
-    )]
+    /// A manifest entry, or a managed-block merge, named a strategy the
+    /// primitive does not know. `expected` names the valid set for the
+    /// primitive that raised it: `apply-manifest`'s `update`, `create` and
+    /// `skip-if-conflict`, or `merge-managed-block`'s marker styles.
+    #[error("unknown manifest strategy '{strategy}' (expected {expected})")]
     UnknownManifestStrategy {
         /// Strategy string as it appeared in the manifest entry.
         strategy: String,
+        /// The values the raising primitive accepts, quoted and joined.
+        expected: String,
     },
     /// A substitution key was given in placeholder form (`{project}`) rather
     /// than bare (`project`), or was empty.
@@ -1460,8 +1462,8 @@ impl ProjectRepository {
     }
 
     /// The text of `rel`, a `/`-separated path from the project root, as
-    /// HEAD's tree holds it: `None` when that tree has no such file or its
-    /// blob is not UTF-8.
+    /// HEAD's tree holds it: `None` when that tree has no entry there or its
+    /// blob is not UTF-8. A directory at `rel` is not a blob, and errors.
     ///
     /// # Errors
     ///
@@ -1479,14 +1481,18 @@ impl ProjectRepository {
 ///
 /// # Errors
 ///
-/// [`PrimitiveError::Git`] when the entry's blob cannot be read.
+/// [`PrimitiveError::Git`] when the lookup fails for any reason other than an
+/// absent entry, or the entry's blob cannot be read — so a tree that could
+/// not be searched never reads as one without the file.
 pub(crate) fn blob_text(
     repository: &git2::Repository,
     tree: &git2::Tree<'_>,
     git_path: &str,
 ) -> Result<Option<String>> {
-    let Ok(entry) = tree.get_path(Path::new(git_path)) else {
-        return Ok(None);
+    let entry = match tree.get_path(Path::new(git_path)) {
+        Ok(entry) => entry,
+        Err(err) if err.code() == git2::ErrorCode::NotFound => return Ok(None),
+        Err(err) => return Err(err.into()),
     };
     let blob = repository.find_blob(entry.id())?;
     Ok(std::str::from_utf8(blob.content()).ok().map(str::to_string))
@@ -2155,12 +2161,10 @@ pub(crate) fn parse_atx_heading(line: &str) -> Option<(u8, String)> {
 /// apply their own filters. When the heading appears more than once,
 /// lines from every matching section are yielded in document order.
 ///
-/// Shared between `read_spec::parse_open_questions` (returns
-/// `Vec<OpenQuestion>`) and `dashboard::{count_open_questions,
-/// context_summary}` (return a `u32` count and a `String` summary
-/// respectively). The iteration semantics are the single source of
-/// truth for "lines inside section X"; consumers diverge only in how
-/// they fold the yielded lines into their result shape.
+/// It skips no fenced block or HTML comment; a reader that must is built on
+/// [`section_line_indices`] instead, as `read_spec::parse_open_questions` and
+/// `parse_checkboxes` are. `dashboard::context_summary` reads through this
+/// one and filters comment lines itself.
 pub(crate) fn section_lines<'a>(body: &'a str, heading: &str) -> Vec<&'a str> {
     let mut out = Vec::new();
     let mut in_section = false;
@@ -2231,9 +2235,9 @@ pub(crate) fn section_line_indices(lines: &[&str], heading: &str) -> Vec<usize> 
 /// fold-back discharges it into that spec.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum FeatureForm {
-    /// `NNN-slug` — three ASCII digits, a hyphen, and a slug.
+    /// `NNN-slug` — three or more ASCII digits, a hyphen, and a slug.
     Sequential {
-        /// The three-digit prefix as a number.
+        /// The numeric prefix as a number.
         number: u32,
     },
     /// `{identifier}.{n}-slug` — a branch namespace and its counter.
@@ -2575,8 +2579,9 @@ pub(crate) fn list_staged_specs(
     Ok(out)
 }
 
-/// List feature directories (`NNN-slug`) under the spec root, sorted by
-/// name. Best-effort: a missing or unreadable spec root yields an empty
+/// List feature directories under the spec root — sequential (`NNN-slug`)
+/// and branch-scoped (`{identifier}.{n}-slug`) alike — in corpus order
+/// ([`feature_dir_cmp`]), which compares numbers numerically. Best-effort: a missing or unreadable spec root yields an empty
 /// list — a repo without a spec root has no features by definition, and
 /// every caller reports the empty case as "no features" rather than an
 /// operational error.
@@ -2762,20 +2767,22 @@ pub(crate) fn resolve_template(
 /// writeCode plan reader (`interpreter::payload`) and `compute-review-scope`
 /// so both readers agree on the one canonical plan format (a table; see spec
 /// 022 task 47).
+///
+/// A table inside a fenced block or an HTML comment is not the plan's: the
+/// plan template carries an example table inside its guidance comment, and a
+/// scaffolded plan that keeps it must not put the example's paths in a review
+/// scope.
 pub(crate) fn parse_affected_files(plan_content: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut in_section = false;
-    let mut in_fence = false;
     let mut saw_header = false;
+    let mut skip = SkipScanner::default();
     for line in plan_content.lines() {
+        // `skip` runs first on every line, so the scanner advances in order.
+        if skip.skip(line) {
+            continue;
+        }
         let trimmed = line.trim_start();
-        if trimmed.starts_with("```") {
-            in_fence = !in_fence;
-            continue;
-        }
-        if in_fence {
-            continue;
-        }
         if let Some(rest) = trimmed.strip_prefix("## ") {
             // Heading boundary: enter the section when we hit its header,
             // exit on any other H2.
@@ -3525,6 +3532,21 @@ mod tests {
                 "proj-9.1-other".to_string(),
             ]
         );
+    }
+
+    #[test]
+    fn feature_dir_cmp_compares_a_sequential_prefix_numerically() {
+        // Past 999 the prefix grows a digit, and byte order would put
+        // `1000-x` first.
+        let mut names = vec!["1000-x".to_string(), "999-y".to_string()];
+        names.sort_by(|a, b| feature_dir_cmp(a, b));
+        assert_eq!(names, ["999-y", "1000-x"]);
+    }
+
+    #[test]
+    fn parse_affected_files_ignores_a_table_inside_an_html_comment() {
+        let plan = "# P\n\n## Affected Files\n\n<!-- Example:\n\n| File | Action |\n| --- | --- |\n| `src/example` | Create |\n\n-->\n\n| File | Action |\n| --- | --- |\n| `src/real` | Edit |\n";
+        assert_eq!(parse_affected_files(plan), ["src/real"]);
     }
 
     #[test]

@@ -76,7 +76,7 @@ pub fn run(args: &AppendQuestionArgs, repo: &Path) -> Result<AppendQuestionResul
     // Normalize before the dedup comparison below, not after: the stripped
     // form is both what is compared and what is written, so an entry can
     // never be stored in one form and matched in another.
-    let question = strip_bullet_marker(&args.question);
+    let question = question_text(&args.question);
     let question = question.as_str();
     if question.is_empty() {
         return Err(PrimitiveError::InvalidArgument {
@@ -156,6 +156,19 @@ pub fn run(args: &AppendQuestionArgs, repo: &Path) -> Result<AppendQuestionResul
 /// Amend's normalized-whitespace comparison key: whitespace runs collapse
 /// to a single space, leading/trailing whitespace trims away, and the
 /// comparison is case-insensitive.
+/// The question with one leading list marker removed: a `-` bullet or
+/// checkbox through the shared [`strip_bullet_marker`], else any other marker
+/// `read-spec` reads as an entry (`*`, `+`, `1.`, `1)`), so a question passed
+/// as `1. Which store?` dedups against the entry `read-spec` reports as
+/// `Which store?` instead of being appended as `- 1. Which store?`.
+fn question_text(raw: &str) -> String {
+    let stripped = strip_bullet_marker(raw);
+    if stripped != raw.trim() {
+        return stripped;
+    }
+    read_spec::list_item(&stripped).map_or(stripped.clone(), |(_, text)| text.trim().to_string())
+}
+
 fn normalize(text: &str) -> String {
     super::collapse_whitespace(text).to_lowercase()
 }
@@ -480,6 +493,27 @@ mod tests {
     /// The marker is stripped before the dedup comparison *and* before the
     /// insert, so an entry can never be stored in one form and matched in
     /// another: a marker-prefixed question dedups against its unmarked twin.
+    #[test]
+    fn any_list_marker_is_stripped_before_the_duplicate_check() {
+        let tmp = tempdir().unwrap();
+        seed_spec(
+            tmp.path(),
+            "---\nstatus: draft\n---\n\n# 009\n\n## Open Questions\n\n1. Which store?\n",
+        );
+        for marked in ["2. Which store?", "* Which store?", "+ which  store?"] {
+            let result = run(&args(marked), tmp.path()).unwrap();
+            assert!(
+                !result.appended,
+                "{marked} must dedup against the numbered entry"
+            );
+        }
+        let fresh = run(&args("3) Which cache?"), tmp.path()).unwrap();
+        assert!(fresh.appended);
+        let content = read_spec_file(tmp.path());
+        assert!(content.contains("- Which cache?"), "{content}");
+        assert!(!content.contains("3)"), "{content}");
+    }
+
     #[test]
     fn marker_prefixed_question_is_stripped_and_dedups_against_its_twin() {
         let tmp = tempdir().unwrap();

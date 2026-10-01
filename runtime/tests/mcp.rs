@@ -6,8 +6,9 @@
 //! 1. Lists tools and asserts every name in `TOOL_NAMES` is present.
 //! 2. Asserts `framework/runtime-tools.txt` (the shipped manifest) is
 //!    set-equal to `TOOL_NAMES` (the canonical primitive registry).
-//! 3. Invokes each read-only primitive against the shared fixture repo and
-//!    asserts the response is a structured JSON object.
+//! 3. Invokes read-only primitives against the shared fixture repo and
+//!    asserts each response is a structured JSON object — a sample of the
+//!    surface, not every tool.
 //! 4. Invokes the write primitives against per-test scratch copies of the
 //!    fixture so each test is hermetic.
 

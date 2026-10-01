@@ -23,7 +23,7 @@ Resolve the session target as above. If it includes a `scenario` and `scenario-p
 
 ## Gate
 
-On a feature-targeted run, read the spec's frontmatter `status` field and count the list-item entries in the `## Open Questions` section (a question is one list item — `-`, `*`, `+` or numbered — at the list's own level, a deeper item belonging to the question above it, and a paragraph is not an entry — exactly the entries `read-spec`'s parser and `append-question`'s dedup count; treat the section as having zero entries when it is missing, empty, or contains only a placeholder line such as `*None — all resolved.*`). Branch on the pair `(status, open-question count)`:
+On a feature-targeted run, read the spec's frontmatter `status` field and count the list-item entries in the `## Open Questions` section (a question is one list item — `-`, `*`, `+` or numbered — at the list's own level, a deeper item folding into the question above it (and adding nothing after a blank line), and a bare marker taking its text from its continuation lines (with none, it is no entry); a paragraph, a thematic break such as `---`, and a list item inside an HTML comment or a fenced block are not entries — exactly the entries `read-spec`'s parser and `append-question`'s dedup count; treat the section as having zero entries when it is missing, empty, or contains only a placeholder line such as `*None — all resolved.*`). Branch on the pair `(status, open-question count)`:
 
 | Status | Open questions? | Behavior |
 | --- | --- | --- |

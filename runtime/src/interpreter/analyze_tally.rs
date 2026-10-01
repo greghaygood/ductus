@@ -145,8 +145,9 @@ impl AnalyzeTally {
             }
             "check-unfolded-specs" => self.advisory += count("unfolded"),
             // Step 16: on a spec at `planned` or later, every plan section
-            // outside the design record is advisory, decided or not — a
-            // decided one is matched to its stored discard, never skipped.
+            // outside the design record is advisory, decided or not. Exec
+            // matches no stored decision (step 17 is a host step), so a
+            // decided section is counted live here, as every finding is.
             "prune-plan" => {
                 let status = result.get("status").and_then(Value::as_str);
                 if status.is_some_and(|status| COMPATIBLE_STATUSES.contains(&status)) {
@@ -362,18 +363,19 @@ mod tests {
     }
 
     /// Step 16 counts a plan's sections outside the design record on a
-    /// `planned`-or-later spec, decided ones included, and none below it,
-    /// where the plan is not yet the spec's design.
+    /// `planned`-or-later spec, decided ones included, and none below it.
     #[test]
     fn plan_sections_outside_the_record_are_advisory_from_planned_on() {
         let sections = json!([{ "decided": true }, { "decided": false }]);
-        let mut planned = AnalyzeTally::new();
-        planned.record_primitive(
-            "prune-plan",
-            &json!({ "status": "planned", "sections": sections }),
-            &Map::new(),
-        );
-        assert_eq!(bound(&planned)["advisory"], 2);
+        for status in ["planned", "in-progress", "done"] {
+            let mut tally = AnalyzeTally::new();
+            tally.record_primitive(
+                "prune-plan",
+                &json!({ "status": status, "sections": sections }),
+                &Map::new(),
+            );
+            assert_eq!(bound(&tally)["advisory"], 2, "{status}");
+        }
         let mut clarified = AnalyzeTally::new();
         clarified.record_primitive(
             "prune-plan",

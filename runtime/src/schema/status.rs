@@ -3,10 +3,12 @@
 //! Single source of truth for the constitution's lifecycle set
 //! (§text-first-artifacts): `validate-frontmatter` (membership findings),
 //! `set-status` (from/to argument validation), `resolve-references`
-//! (linked-spec status read), `traverse-deps` (compatibility subset), and the
-//! exec analyze tally (the consumer-status condition on an incompatible
-//! dependency, and the `planned`-or-later condition on the plan-record
-//! advisory) all consume these constants instead of hand-maintaining copies.
+//! (linked-spec status read), `traverse-deps` (compatibility subset),
+//! `check-artifacts` (the `planned`-or-later completeness tier), `dashboard`
+//! (blocked-by and lifecycle checks), and the exec analyze tally (the
+//! consumer-status condition on an incompatible dependency, and the
+//! `planned`-or-later condition on the plan-record advisory) all consume these
+//! constants instead of hand-maintaining copies.
 
 /// The constitution's lifecycle set, in pipeline order.
 pub(crate) const ALLOWED_STATUSES: &[&str] =
@@ -16,9 +18,10 @@ pub(crate) const ALLOWED_STATUSES: &[&str] =
 /// (`traverse-deps`): the lifecycle tail from `planned` onward. `draft` and
 /// `clarified` block dependents because there is no committed plan to build
 /// against. Derived from [`ALLOWED_STATUSES`] so the subset cannot drift
-/// from the canonical order. The exec analyze tally reads it too, as the
-/// `planned`-or-later condition on the plan-record advisory: both mean "from
-/// `planned` onward", so a change to one is a change to the other.
+/// from the canonical order. `check-artifacts` reads it as its
+/// `planned`-or-later completeness tier, and the exec analyze tally as the
+/// `planned`-or-later condition on the plan-record advisory: each means "from
+/// `planned` onward", so a change to one is a change to all three.
 pub(crate) const COMPATIBLE_STATUSES: &[&str] = ALLOWED_STATUSES.split_at(2).1;
 
 /// Statuses that satisfy a dependency for `dashboard`'s blocked-by

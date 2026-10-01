@@ -169,9 +169,11 @@ fn adds_unchecked_box(now: &str, head: &str) -> bool {
 /// - [`PrimitiveError::InvalidArgument`] when both `feature` and `all` are
 ///   given, when `all` comes with `apply`, and when `remove` is given without
 ///   `apply` or names a design-record section.
+/// - [`PrimitiveError::InvalidPath`] when `feature` would escape the spec root.
 /// - [`PrimitiveError::FeatureNotFound`] when the feature directory is absent.
 /// - [`PrimitiveError::MissingSpecFile`] / [`PrimitiveError::StatusFieldMissing`]
-///   when the spec status cannot be read.
+///   / [`PrimitiveError::MissingFrontmatter`] / [`PrimitiveError::Yaml`] when
+///   the spec status cannot be read.
 /// - [`PrimitiveError::Yaml`] when `analysis.md`'s `decisions:` list does not
 ///   parse — read as empty, it would propose every section already decided.
 /// - [`PrimitiveError::Git`] when a call against a `done` spec cannot read
@@ -182,17 +184,19 @@ fn adds_unchecked_box(now: &str, head: &str) -> bool {
 pub fn run(args: &PrunePlanArgs, repo: &Path) -> Result<PrunePlanResult> {
     let root = paths::Paths::load(repo).specs_root;
     let feature = one_feature_or_all("prune-plan", args.feature.as_deref(), args.all)?;
+    // Refused before the `remove` list is checked, so a walk asked to apply is
+    // told why it cannot rather than to list a section it then may not remove.
+    if feature.is_none() && args.apply {
+        return Err(PrimitiveError::InvalidArgument {
+            primitive: "prune-plan".into(),
+            argument: "apply".into(),
+            reason: "each plan section is a judgment about one spec's content; \
+                     apply one spec at a time"
+                .into(),
+        });
+    }
     check_removals(args)?;
     let Some(feature) = feature else {
-        if args.apply {
-            return Err(PrimitiveError::InvalidArgument {
-                primitive: "prune-plan".into(),
-                argument: "apply".into(),
-                reason: "each plan section is a judgment about one spec's content; \
-                         apply one spec at a time"
-                    .into(),
-            });
-        }
         return Ok(PrunePlanResult {
             summary: None,
             walk: Some(walk(args, repo, &root)?),
@@ -204,24 +208,27 @@ pub fn run(args: &PrunePlanArgs, repo: &Path) -> Result<PrunePlanResult> {
     })
 }
 
-/// Every feature's preview, in corpus order. A feature whose plan holds no
-/// section outside the record is examined and left out; one with no
-/// `plan.md` is skipped with that reason.
+/// Every feature's preview, in corpus order. A feature is listed when its
+/// plan holds a section outside the record, or when it is a `done` spec whose
+/// tree already requires a reopen — the one thing a walk must not drop, since
+/// `/{project}:prune` names that reopen on the spec's row. Any other feature
+/// is examined and left out, and one with no `plan.md` is skipped with that
+/// reason.
 fn walk(args: &PrunePlanArgs, repo: &Path, root: &str) -> Result<PruneWalk<PrunePlanSummary>> {
     let names = list_feature_dirs(&repo.join(root));
     let mut features = Vec::new();
     let mut skipped = Vec::new();
     for feature in &names {
         let summary = summarize(feature, args, repo, root)?;
-        if summary.missing {
-            skipped.push(SkippedFeature {
-                feature: feature.clone(),
-                reason: SkipReason::NoPlanFile,
-            });
-        } else if !summary.sections.is_empty() {
+        if !summary.sections.is_empty() || summary.reopen_required == Some(true) {
             features.push(PruneWalkEntry {
                 feature: feature.clone(),
                 summary,
+            });
+        } else if summary.missing {
+            skipped.push(SkippedFeature {
+                feature: feature.clone(),
+                reason: SkipReason::NoPlanFile,
             });
         }
     }
@@ -277,7 +284,9 @@ fn summarize(
         join_blocks(&kept, ending)
     };
 
-    let applied = args.apply && content.is_some() && stale_sections.is_empty();
+    // With no plan every listed removal is stale, so an apply over a missing
+    // plan is refused by the same test.
+    let applied = args.apply && stale_sections.is_empty();
     let after = if applied {
         without(&claimed)
     } else if args.apply {
@@ -775,12 +784,105 @@ mod tests {
             "{err}"
         );
         assert_eq!(plan_text(tmp.path()), PLAN);
+        // Refused for the walk even with nothing listed, rather than being
+        // told to list a section it then may not remove.
+        let mut nothing_listed = all();
+        nothing_listed.apply = true;
+        let err = super::run(&nothing_listed, tmp.path()).unwrap_err();
+        assert!(
+            matches!(&err, PrimitiveError::InvalidArgument { argument, .. } if argument == "apply"),
+            "{err}"
+        );
         let mut neither = all();
         neither.all = false;
         assert!(matches!(
             super::run(&neither, tmp.path()).unwrap_err(),
             PrimitiveError::MissingArgument { .. }
         ));
+    }
+
+    #[test]
+    fn a_walk_lists_a_done_spec_whose_tree_requires_a_reopen() {
+        let tmp = tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
+        let clean = "# P\n\n## Overview\n\nA.\n\n## Technical Decisions\n\nWhy.\n";
+        let spec = |name: &str, status: &str| {
+            write(
+                &tmp.path().join("specs").join(name).join("spec.md"),
+                &format!("---\nstatus: {status}\ndependencies: []\n---\n\n# Spec\n"),
+            );
+        };
+        spec("001-edited", "done");
+        write(&tmp.path().join("specs/001-edited/plan.md"), clean);
+        spec("002-no-plan", "done");
+        write(
+            &tmp.path().join("specs/002-no-plan/tasks.md"),
+            "# Tasks\n\n## 1. Done\n\n- [x] a\n",
+        );
+        spec("003-quiet", "done");
+        write(&tmp.path().join("specs/003-quiet/plan.md"), clean);
+        spec("004-draft", "draft");
+        commit_all(&repository, "corpus");
+        // Edits made before the run: a design-record change, and owed work on
+        // a spec with no plan. Neither spec has a section to prune.
+        write(
+            &tmp.path().join("specs/001-edited/plan.md"),
+            &clean.replace("Why.", "Why, as it now stands."),
+        );
+        write(
+            &tmp.path().join("specs/002-no-plan/tasks.md"),
+            "# Tasks\n\n## 1. Done\n\n- [x] a\n\n## 2. Owed\n\n- [ ] b\n",
+        );
+        let walk = super::run(&all(), tmp.path())
+            .unwrap()
+            .walk
+            .expect("an all walk");
+        let listed: Vec<(&str, Option<bool>)> = walk
+            .features
+            .iter()
+            .map(|f| (f.feature.as_str(), f.summary.reopen_required))
+            .collect();
+        assert_eq!(
+            listed,
+            [("001-edited", Some(true)), ("002-no-plan", Some(true))]
+        );
+        assert_eq!(
+            walk.skipped,
+            [SkippedFeature {
+                feature: "004-draft".into(),
+                reason: SkipReason::NoPlanFile,
+            }]
+        );
+        assert_eq!(walk.examined, 4);
+    }
+
+    #[test]
+    fn a_section_listed_twice_is_claimed_once() {
+        let tmp = tempdir().unwrap();
+        project(tmp.path(), "in-progress", Some(PLAN));
+        let previewed = run(&preview(), tmp.path()).unwrap();
+        let journal = &previewed.sections[0];
+        let result = run(&apply(&[journal, journal]), tmp.path()).unwrap();
+        assert!(!result.applied);
+        assert_eq!(result.stale_sections, ["Implementation notes"]);
+        assert_eq!(plan_text(tmp.path()), PLAN);
+    }
+
+    #[test]
+    fn an_apply_keeps_crlf_line_endings() {
+        let tmp = tempdir().unwrap();
+        let crlf = PLAN.replace('\n', "\r\n");
+        project(tmp.path(), "in-progress", Some(&crlf));
+        let previewed = run(&preview(), tmp.path()).unwrap();
+        let result = run(&apply(&[&previewed.sections[0]]), tmp.path()).unwrap();
+        assert!(result.applied);
+        let written = plan_text(tmp.path());
+        assert!(!written.contains("Implementation notes"));
+        assert_eq!(
+            written.matches('\n').count(),
+            written.matches("\r\n").count(),
+            "every line ending stays CRLF: {written:?}"
+        );
     }
 
     #[test]
@@ -866,6 +968,20 @@ mod tests {
         );
         let result = remove_journal(tmp.path());
         assert_eq!(result.reopen_required, Some(true));
+    }
+
+    #[test]
+    fn an_unchecked_box_in_a_comment_or_a_fence_adds_nothing() {
+        // The tasks template's guidance comment carries example `- [ ]` lines,
+        // so a reset body holds them: they are not owed work.
+        let tmp = tempdir().unwrap();
+        let _repository = committed_done_spec(tmp.path());
+        write(
+            &feature_dir(tmp.path()).join("tasks.md"),
+            "# Tasks\n\n## 1. Done\n\n- [x] a\n\n<!--\n- [ ] an example\n-->\n\n```markdown\n- [ ] another\n```\n",
+        );
+        let result = remove_journal(tmp.path());
+        assert_eq!(result.reopen_required, Some(false));
     }
 
     #[test]

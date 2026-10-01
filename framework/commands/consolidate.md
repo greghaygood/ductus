@@ -9,13 +9,13 @@ Remove a spec directory whose content belongs with another, after re-pointing ev
 
 ## Purpose
 
-**This is the only command that removes a durable artifact.** `/{project}:prune` removes only content the framework classes as not durable — spent task sections of `tasks.md`, or every section under `--reset`, since `tasks.md` is ephemeral work-tracking, and `plan.md` sections outside its design record, whose durable pieces it moves home first; `spec.md` is a durable source of truth, and consolidation deletes it along with everything else in its directory. Recovery is git history and nothing else.
+**This is the only command that removes a durable artifact.** `/{project}:prune` removes only content the framework classes as not durable: spent task sections of `tasks.md`, or every section under `--reset`, since `tasks.md` is ephemeral work-tracking; and the `plan.md` sections outside its design record, whose durable pieces it moves home first. `spec.md` is a durable source of truth, and consolidation deletes it along with everything else in its directory. Recovery is git history and nothing else.
 
 It exists because the alternative is worse. A corpus of small overlapping specs accumulates ones whose content was never a separate concern, and an operator's only current recourse is `rm -rf` — no pointer rewriting, no anti-stranding refusal, no confirmation naming what is lost. Safety comes from the guards, not from withholding the command.
 
 The question this command answers is whether the source spec still describes something true. A spec whose content was never a separate concern from a sibling, or that a later spec absorbed outright, is consolidated. A spec that still describes live behavior is not — it is edited in place instead, through the `done → in-progress` back-edge, which leaves one true description where consolidation would leave none.
 
-It is a **cleanup command**, in the family of [041 — Spec directory pruning](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/spec.md): operator-initiated, confirmed, and not a pipeline state transition.
+It is a **cleanup command**, in the family of [041 — Spec directory pruning](https://github.com/stonean/ductus/blob/main/specs/041-task-pruning/spec.md): operator-initiated, confirmed, and never a way to advance a spec — this command changes no status, and prune changes one only to reopen a `done` spec.
 
 ## Context
 
@@ -65,7 +65,7 @@ An interruption *before* the rewrite leaves the corpus exactly as it was. One *b
 1. Invoke `read-spec` (with `include-body`) against both specs — the source for its status and its body, and the target to establish that it holds a readable `spec.md`. A target that does not is the refusal both primitives enforce; report it and stop before anything is examined further, since there is no home for the content to have landed in.
 
 <!-- audit:ignore-promotion -->
-2. Enumerate what the removal destroys (host responsibility; a directory walk, not a decision). List the source directory's contents by name — **each scenario individually**, then `plan.md`, `tasks.md`, `review.md`, `data-model.md`, and any other artifact present. The scenarios are named one by one rather than summarized: they are destroyed with the directory and migrated nowhere, and "the spec is removed" does not make an operator picture them. This list is what the confirmation in step 3 carries.
+2. Enumerate what the removal destroys (host responsibility; a directory walk, not a decision). List the source directory's contents by name — **each scenario individually**, then `plan.md`, `tasks.md`, `review.md`, `analysis.md`, `data-model.md`, and any other artifact present. The scenarios are named one by one rather than summarized: they are destroyed with the directory and migrated nowhere, and "the spec is removed" does not make an operator picture them. This list is what the confirmation in step 3 carries.
 
 3. Invoke `gate-confirm` with a `gate` name (e.g. `consolidate-remove`) and a `prompt` that names **content loss**, not merely the removal of a directory: this command migrates nothing, so everything step 2 enumerated is destroyed — the scenarios by name among it. Name the source and target, and that recovery is git history alone. No write happens before this step; denial ends the run cleanly with nothing written and nothing removed.
 
@@ -96,7 +96,7 @@ A spec that is not `done` is the common case for consolidation: it delivered not
 
 List the source directory's contents before confirming, and name **each scenario separately**. The confirmation is the operator's only look at what they are losing, and a general claim about "the spec's content" is not one — a scenario carries its own behavior, its own edge cases, and its own open-question gate, none of which survive and none of which migrate.
 
-Everything else in the directory goes too: `plan.md`, `tasks.md`, `review.md`, `data-model.md`, research notes. None of it is copied anywhere. The target's own artifacts are not touched at all — this command writes nothing into the target beyond what a re-pointed inbound link does to third-party specs.
+Everything else in the directory goes too: `plan.md`, `tasks.md`, `review.md`, `analysis.md`, `data-model.md`, research notes. None of it is copied anywhere. The target's own artifacts are not touched at all — this command writes nothing into the target beyond what a re-pointed inbound link does to third-party specs.
 
 ### Re-pointing and removing
 

@@ -4,13 +4,15 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
 
 ## [0.56.0] — 2026-10-01
 
-Each agent process now holds its own session target (spec 062),
-`/{project}:prune` reduces a feature's whole spec directory, or every spec's
-with `--all` (spec 041), and `fetch-archive` reads its proxy and certificate
-configuration once (spec 048). Three tools are new: `resolve-session`,
-`retarget-sessions` and `prune-plan`. `read-spec` counts an open question
-written as any list item (spec 022). The minimum supported Rust version
-rises from 1.88 to 1.89, for `std::fs::File::lock`.
+Each identified agent process — one with `DUCTUS_SESSION`, or Claude Code's
+`CLAUDE_CODE_SESSION_ID` — now holds its own session target on the
+`.ductus/` layout (spec 062), `/{project}:prune` reduces a feature's
+`tasks.md` and `plan.md`, or every spec's with `--all` (spec 041), and
+`fetch-archive` reads its proxy and certificate configuration once (spec
+048). Three tools are new: `resolve-session`, `retarget-sessions` and
+`prune-plan`. `read-spec` counts an open question written as any list item
+(spec 022). The minimum supported Rust version rises from 1.88 to 1.89, for
+`std::fs::File::try_lock`.
 
 ### Added
 
@@ -22,13 +24,14 @@ rises from 1.88 to 1.89, for `std::fs::File::lock`.
   also sets the shared default, `.ductus/session.toml`, which an unidentified
   process uses exactly as before. An identified process with no target of its
   own adopts the default on its first resolution and says so. A target
-  neither resolved nor written for seven days is removed by the next write.
-  A write naming a feature another session targets tells both sessions. A
-  cleared target never adopts the default. A session file that does not parse
-  is reported by name. Session writes are serialized by an advisory lock on
-  `.ductus/sessions/.lock`, waited on for at most ten seconds. The directory
-  ignores itself with a `.gitignore` of `*`, and the framework's gitignore
-  template lists it. Spec 062.
+  neither resolved nor written for seven days is removed by the next target
+  or clear write. A write naming a feature another session targets tells
+  both sessions. A cleared target never adopts the default. A session file
+  that does not parse is reported by name. Session writes are serialized by
+  an advisory lock on `.ductus/sessions/.lock`, waited on for at most ten
+  seconds. The directory ignores itself with a `.gitignore` of `*`, written
+  by the process holding the lock, and the framework's gitignore template
+  lists it. Spec 062.
 - **`resolve-session`** resolves this process's target, reporting its
   identity, the source (own, adopted, default, cleared or none), and the
   notices to show once. Every command that resolved the target by hand now
@@ -51,14 +54,19 @@ rises from 1.88 to 1.89, for `std::fs::File::lock`.
 - **`/{project}:prune` covers the spec directory.** Beside `tasks.md`, each
   plan section outside the design record is proposed, and removed once its
   durable pieces have moved home, confirmed section by section. A section
-  whose advisory is stored as discarded is kept. A `done` spec reopens exactly
-  when the diff changes the design record or adds an unchecked checkbox to
-  `tasks.md` — a box moved or re-indented adds nothing — and the reopen is
-  named before anything is written. Spec 041.
+  whose advisory is stored as discarded is kept. A `done` spec the run writes
+  to reopens exactly when the diff changes the design record or adds an
+  unchecked checkbox to `tasks.md` — a box moved or re-indented adds
+  nothing. The reopen is named before anything is written, and decided on a
+  fresh reading once the run has written to the spec, so a `--reset` that
+  removes the unchecked boxes a named reopen came from leaves the spec
+  `done`. Under `--all`, a `done` spec whose tree already requires a reopen
+  is listed even with nothing else to reduce. Spec 041.
 - **`--all` on both prune primitives** walks every feature in corpus order.
   It lists each spec with something to report and names each one skipped for
-  a missing `tasks.md` or `plan.md`. `prune-tasks` refuses `force` with
-  `all`, and `prune-plan` refuses `apply` with `all`. Spec 041.
+  a missing `tasks.md`, or for a missing `plan.md` with nothing else to
+  report. `prune-tasks` refuses `force` with `all`, and `prune-plan` refuses
+  `apply` with `all`. Spec 041.
 - **`/{project}:analyze` reports the plan-record advisory** at a new step 16,
   on a spec at `planned` or later. It reports every section outside the
   record, decided or not, so a stored discard is matched rather than
@@ -77,21 +85,34 @@ rises from 1.88 to 1.89, for `std::fs::File::lock`.
   gains Trade-offs and three optional sections. The tasks template says a
   task body may carry working notes. Spec 041.
 - **`write-session` and `dashboard` go through the session core**, and
-  `dashboard` peeks the session read-only. `ductus exec` shows session
-  notices and resolves the invoking agent's target. `fetch-archive` reads its
-  allowlist variable once, at startup. Spec 062.
+  `dashboard` peeks the session read-only. `write-session` refuses a
+  `feature` that is not a feature directory name and a `scenario` that is
+  not a scenario slug, and its result gains `identity`, `own-path`, `peers`,
+  `expired`, `unreadable` and `notices`. `dashboard`'s result gains
+  `session-identity`, `session-source`, `session-notices` and
+  `session-unreadable`. `ductus exec` peeks the invoking agent's target, and
+  shows as progress lines what the walked command's own `resolve-session`
+  and `write-session` steps report: notices, peers, and removed or
+  unreadable sessions. It halts with `session-identity-invalid` on a
+  `DUCTUS_SESSION` that sanitizes to nothing, and with `session-unreadable`
+  when the invoking agent's own session cannot be read. Spec 062.
 - **`fetch-archive` reads its proxy and certificate configuration once.**
   The proxy variables (`ALL_PROXY`, `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`,
   each uppercase first) and whether `REQUEST_METHOD` is set are captured at
   startup and applied as explicit proxies, keeping the convention's selection
-  and its CGI guard. On Linux and other non-Apple Unix the system certificate
-  roots, `SSL_CERT_FILE` and `SSL_CERT_DIR` included, load once per process
-  at the first fetch, and a store that yields no certificate is refused by
+  and its CGI guard. `fetch-archive` reads its allowlist variable once, at
+  startup (spec 062). On Linux and other non-Apple Unix the trusted
+  certificates load once per process, at the first fetch: the system roots,
+  or, when `SSL_CERT_FILE` or `SSL_CERT_DIR` is set, only those it names in
+  place of the system store. A store that yields no certificate is refused by
   name. Through a proxy, the operator's proxy is the documented trust
   boundary; the SSRF screen and a direct connection's address pin are
-  unchanged. `docs/runtime.md`'s inventory says when each variable is read.
-  `rustls` and `rustls-native-certs` become direct dependencies, at the
-  versions already in the graph. Spec 048.
+  unchanged. `docs/runtime.md` gains an inventory of the environment
+  variables that configure the runtime, `DUCTUS_SESSION` and
+  `CLAUDE_CODE_SESSION_ID` among them, saying when each is read; an invalid
+  `DUCTUS_SESSION` is refused with an error naming it. `rustls` and
+  `rustls-native-certs` become direct dependencies, at the versions already
+  in the graph. Spec 048.
 
 ### Fixed
 
@@ -99,13 +120,34 @@ rises from 1.88 to 1.89, for `std::fs::File::lock`.
   only `-` bullets under `## Open Questions`, so a numbered, `*` or `+` list
   of questions read as zero, and `/{project}:clarify` could advance a spec
   with them unresolved. A list item at the list's own level is an entry, and
-  a deeper one folds into the question above it. The spec template,
+  a deeper one folds into the question above it, so nested `-` sub-bullets
+  now make one question where each used to count. A thematic break (`---`,
+  `* * *`) opens nothing, and a marker with nothing after it opens an entry
+  its continuation lines fill. Every reader of the section now agrees: a
+  scenario with a numbered, `*` or `+` open question blocks the pre-`done`
+  gate (`check-review-gate`) and is reported by `check-artifacts`'
+  `scenario-open-questions` family, where 0.55.0 read it as clean;
+  `append-question`'s duplicate check sees such entries, and it strips any
+  list marker from the question it is given; and `dashboard`
+  (`/{project}:status`) counts with the same parser, where it kept its own
+  `-`-only count that read inside HTML comments. The spec template,
   `/{project}:specify` and `/{project}:clarify` say a question is one list
   item. Spec 022.
-- **Concurrent first writers no longer race on the sessions `.gitignore`.**
-  It is written only by the process holding the session lock. Before, every
-  writer on a fresh tree replaced it by rename, which Windows refuses while
-  another process is replacing it. Spec 062.
+- **`prune-tasks` keep-pending keeps a phase heading it did not empty.** It
+  dropped every phase container with no surviving task section, so a
+  phase heading governing no task — one added to hold a note — was
+  removed, and a phased file with nothing spent could still be rewritten. A
+  phase is now dropped only when it governs a task section and every one is
+  dropped. Spec 041.
+- **`write-analysis` quotes what a plain YAML scalar would not read back.**
+  An `unexamined-by-reason` key is flattened to one line, and it and the
+  `spec`, `last-run` and `analyzed-against` values are quoted whenever a
+  plain scalar would not read back — one holding a colon and a space, or
+  starting with `#` — so a reason carrying a newline or a colon can no
+  longer inject a frontmatter key or leave a record the next run refuses.
+  Its `replaced` result reports whether an `analysis.md` already existed; it
+  looked for an `analyze:` block in `spec.md`, which the primitive no longer
+  writes. Spec 041.
 
 ## [0.55.0] — 2026-09-28
 
