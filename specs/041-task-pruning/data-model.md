@@ -203,7 +203,7 @@ nothing when any fires:
 | Code | Condition |
 | --- | --- |
 | `feature-not-found` | feature directory absent under the spec-root |
-| `tasks-file-missing` | feature directory exists but has no `tasks.md` (command directs the user to `/{project}:plan`) |
+| `tasks-file-missing` | feature directory exists but has no `tasks.md` (the command directs the user to `/{project}:plan` when there is no `plan.md` either, and otherwise reduces the plan and reports the missing task list) |
 | `malformed-tasks` | file has no `# …` heading (reset cannot preserve identity) |
 | `missing-spec-file` / `status-field-missing` | `reset` requested but `spec.md` is absent or its frontmatter has no `status` |
 
@@ -321,22 +321,30 @@ Result (a **compact summary — never a section's text**):
   section.
 - `size-after` — on a preview, the size were every undecided section removed;
   on an apply, the size written, or `size-before` when it was refused.
-- `reopen-required` — present only on an apply against a `done` spec, the one
-  case prune reopens; absent means not computed, never `false`. It is `true`
+- `reopen-required` — present on every call against a `done` spec, the one
+  status prune reopens; absent means not computed, never `false`. It is `true`
   when any design-record section's text differs from the same section in
   `plan.md` at HEAD — the sections compared in order by lowercased heading
-  and text — or when `tasks.md` holds more unchecked checkboxes, outside
-  fenced blocks and HTML comments, than it does at HEAD. An artifact absent at
-  HEAD triggers nothing. It is computed after the write, and whether or not
-  the removal was refused, because the host's moves are already on disk. HEAD
-  is read through `ProjectRepository::read_at_head`, so a project in a
-  subdirectory of its repository resolves. The command, not the primitive,
-  performs the reopen with `set-status`.
+  and text — or when `tasks.md` adds an unchecked checkbox: holds an
+  unchecked checkbox line, trimmed and outside fenced blocks and HTML
+  comments, more times than `tasks.md` at HEAD holds that line, so a box
+  moved or re-indented adds nothing and one added or reworded does. An
+  artifact absent at HEAD triggers nothing. A preview answers for the tree as
+  it stands — removing a section outside the record changes no design-record
+  section — so a reopen from edits made before the run is known before the
+  host writes anything. An apply answers for the tree it leaves, whether or
+  not the removal was refused, because the host's moves are already on disk,
+  and computes it before its own write, so an apply that cannot read HEAD
+  writes nothing. HEAD is read through `ProjectRepository::read_at_head`, so
+  a project in a subdirectory of its repository resolves. The command, not
+  the primitive, performs the reopen with `set-status`.
 
 A removal whose sections are removed has its seams normalized as keep-pending's
 are, and is written with `write_atomic`, preserving the file's line endings.
 
 ### Operational errors
+
+Reported as `error` envelopes; the primitive writes nothing when any fires:
 
 | Code | Condition |
 | --- | --- |
@@ -345,7 +353,7 @@ are, and is written with `write_atomic`, preserving the file's line endings.
 | `missing-argument` | `apply` with an empty `remove`; neither `feature` nor `all` |
 | `invalid-argument` | `remove` without `apply`, or naming a design-record section, which prune never removes; both `feature` and `all`; `all` with `apply` |
 | `yaml` | `analysis.md`'s `decisions:` list does not parse — read as empty, it would propose every section already decided |
-| `git` | an apply against a `done` spec cannot read HEAD for the reopen trigger |
+| `git` | a call against a `done` spec cannot read HEAD for the reopen trigger |
 
 ## Walking every spec
 
@@ -390,7 +398,9 @@ it always has, and a walk carries only the walk:
   the full `PrunePlanSummary`.
 - `skipped` — each spec without the artifact: `no-tasks-file` or
   `no-plan-file`. Any other error stops the walk, as it would stop a
-  single-feature call.
+  single-feature call. A `prune-tasks` walk reads a listed spec's status
+  before an apply writes its reduction, so a status that will not read stops
+  the walk with that spec's `tasks.md` untouched.
 
 A `PruneTasksLine` is the summary without its per-section records — `gate`,
 `status`, `applied`, the two counts, the two sizes and `path`. A corpus

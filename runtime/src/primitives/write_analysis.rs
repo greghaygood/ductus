@@ -367,11 +367,15 @@ fn finding_key(finding: &AnalysisFinding) -> String {
     {
         return key;
     }
-    format!(
-        "{} — {}",
-        single_line(&finding.family),
-        single_line(&finding.message)
-    )
+    finding_key_of(&finding.family, &finding.message)
+}
+
+/// The stored-decision key of the analyze finding with this family and
+/// message, `{family} — {message}`. `prune-plan` looks a plan section's stored
+/// decision up by it, so the key prune reads and the key this primitive writes
+/// come from one function.
+pub(crate) fn finding_key_of(family: &str, message: &str) -> String {
+    format!("{} — {}", single_line(family), single_line(message))
 }
 
 /// The counts this call derived, rendered into the record.

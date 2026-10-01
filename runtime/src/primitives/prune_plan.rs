@@ -14,6 +14,7 @@
 //! judgment. Everything here is deterministic, and no section's text ever
 //! leaves the runtime.
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use sha2::{Digest, Sha256};
@@ -21,6 +22,7 @@ use sha2::{Digest, Sha256};
 use crate::primitives::analyze_subjects::hex;
 use crate::primitives::decisions::{RawDecision, read_decisions, same_key};
 use crate::primitives::prune_tasks::{one_feature_or_all, read_status, size_of};
+use crate::primitives::write_analysis::finding_key_of;
 use crate::primitives::{
     ANALYSIS_RECORD_FILE, PrimitiveError, ProjectRepository, Result, SkipScanner, checkbox,
     join_blocks, line_ending_of, list_feature_dirs, parse_atx_heading, read_text, rel_path,
@@ -131,18 +133,30 @@ fn design_record(content: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-/// Unchecked task-list checkboxes in `content`, outside fenced blocks and
-/// HTML comments — the subject of the reopen trigger's tasks half.
-fn unchecked_boxes(content: &str) -> usize {
+/// Each unchecked task-list checkbox line in `content`, outside fenced blocks
+/// and HTML comments, trimmed, with how many times it occurs — the subject of
+/// the reopen trigger's tasks half.
+fn unchecked_lines(content: &str) -> HashMap<&str, usize> {
     let mut skip = SkipScanner::default();
-    content
-        .lines()
-        .filter(|line| !skip.skip(line))
-        .filter(|line| {
-            checkbox::find_checkbox_line(line)
-                .is_some_and(|(_bracket, marker)| line.as_bytes()[marker] == b' ')
-        })
-        .count()
+    let mut lines = HashMap::new();
+    for line in content.lines().filter(|line| !skip.skip(line)) {
+        if checkbox::find_checkbox_line(line)
+            .is_some_and(|(_bracket, marker)| line.as_bytes()[marker] == b' ')
+        {
+            *lines.entry(line.trim()).or_insert(0) += 1;
+        }
+    }
+    lines
+}
+
+/// Whether `now` adds an unchecked checkbox to `head`: holds an unchecked
+/// checkbox line more times than `head` does. A line moved, or only
+/// re-indented, adds nothing; a line added, or reworded, does.
+fn adds_unchecked_box(now: &str, head: &str) -> bool {
+    let before = unchecked_lines(head);
+    unchecked_lines(now)
+        .into_iter()
+        .any(|(line, count)| count > before.get(line).copied().unwrap_or(0))
 }
 
 /// Execute the `prune-plan` primitive against the given project root: one
@@ -160,9 +174,11 @@ fn unchecked_boxes(content: &str) -> usize {
 ///   when the spec status cannot be read.
 /// - [`PrimitiveError::Yaml`] when `analysis.md`'s `decisions:` list does not
 ///   parse — read as empty, it would propose every section already decided.
-/// - [`PrimitiveError::Git`] when an apply against a `done` spec cannot read
+/// - [`PrimitiveError::Git`] when a call against a `done` spec cannot read
 ///   HEAD for the reopen trigger.
 /// - [`PrimitiveError::Io`] on filesystem failure.
+///
+/// Each error writes nothing.
 pub fn run(args: &PrunePlanArgs, repo: &Path) -> Result<PrunePlanResult> {
     let root = paths::Paths::load(repo).specs_root;
     let feature = one_feature_or_all("prune-plan", args.feature.as_deref(), args.all)?;
@@ -263,9 +279,7 @@ fn summarize(
 
     let applied = args.apply && content.is_some() && stale_sections.is_empty();
     let after = if applied {
-        let reduced = without(&claimed);
-        write_atomic(&plan_path, &reduced)?;
-        reduced
+        without(&claimed)
     } else if args.apply {
         before.to_string()
     } else {
@@ -277,11 +291,19 @@ fn summarize(
         without(&proposed)
     };
 
-    let reopen_required = if args.apply && status == "done" {
+    // Computed before the write, so an apply that cannot read HEAD writes
+    // nothing. A preview reads the tree as it stands — removing sections
+    // outside the record changes no design-record section — so a reopen the
+    // tree already carries, from edits made before the run, is known before
+    // the host writes anything.
+    let reopen_required = if status == "done" {
         Some(reopen_required(repo, &plan_rel, &tasks_rel, &after)?)
     } else {
         None
     };
+    if applied {
+        write_atomic(&plan_path, &after)?;
+    }
 
     Ok(PrunePlanSummary {
         path: rel_path(&plan_path, repo),
@@ -302,7 +324,7 @@ fn summarize(
 /// `stored` holds a well-formed discard under its finding's exact key.
 fn outside_record(blocks: &[Block], stored: &[RawDecision]) -> (u32, Vec<(usize, PlanSection)>) {
     let decided = |finding: &PlanFinding| {
-        let key = format!("{} — {}", finding.family, finding.message);
+        let key = finding_key_of(&finding.family, &finding.message);
         stored.iter().any(|entry| {
             entry.to_ref().is_ok_and(|decision| {
                 decision.outcome == DecisionOutcome::Discarded && same_key(&decision.key, &key)
@@ -391,10 +413,10 @@ fn check_removals(args: &PrunePlanArgs) -> Result<()> {
     Ok(())
 }
 
-/// Whether the tree as it now stands takes a `done` spec's back-edge against
-/// HEAD: any design-record section of `plan` differs from HEAD's, or
-/// `tasks.md` holds more unchecked checkboxes than HEAD's. An artifact absent
-/// at HEAD triggers nothing — a `done` spec's artifacts are committed.
+/// Whether the tree, with `plan` as its plan, takes a `done` spec's back-edge
+/// against HEAD: any design-record section of `plan` differs from HEAD's, or
+/// `tasks.md` adds an unchecked checkbox to HEAD's. An artifact absent at HEAD
+/// triggers nothing — a `done` spec's artifacts are committed.
 fn reopen_required(repo: &Path, plan_rel: &str, tasks_rel: &str, plan: &str) -> Result<bool> {
     let project = ProjectRepository::discover(repo)?;
     if let Some(head) = project.read_at_head(plan_rel)?
@@ -409,7 +431,7 @@ fn reopen_required(repo: &Path, plan_rel: &str, tasks_rel: &str, plan: &str) -> 
         } else {
             String::new()
         };
-        return Ok(unchecked_boxes(&now) > unchecked_boxes(&head));
+        return Ok(adds_unchecked_box(&now, &head));
     }
     Ok(false)
 }
@@ -541,7 +563,7 @@ mod tests {
         assert!(written.contains("### A decision\n\nWhy.\n\n## Affected Files"));
         assert!(!written.contains("\n\n\n"));
         assert_eq!(result.size_after.bytes, written.len());
-        // Only an apply against a `done` spec computes the trigger.
+        // Only a call against a `done` spec computes the trigger.
         assert!(result.reopen_required.is_none());
     }
 
@@ -641,6 +663,7 @@ mod tests {
     #[test]
     fn a_stored_discard_sets_decided() {
         let tmp = tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
         let plan = format!("{PLAN}\n## Known limitations\n\nDesign.\n");
         project(tmp.path(), "done", Some(&plan));
         // A discard of the journal's finding, a route of the limitations':
@@ -649,6 +672,8 @@ mod tests {
             &feature_dir(tmp.path()).join("analysis.md"),
             "---\nspec: 041-task-pruning\ndecisions:\n  - key: \"plan-record — plan.md §Implementation notes is outside the design record\"\n    outcome: discarded\n    reason: deliberate\n    decided-at: 2026-09-29T00:00:00Z\n    decided-by: a@b.c\n  - key: \"plan-record — plan.md §Known limitations is outside the design record\"\n    outcome: routed\n    target: specs/041-task-pruning/tasks.md\n    decided-at: 2026-09-29T00:00:00Z\n    decided-by: a@b.c\n---\n\n# Analysis\n",
         );
+        // A `done` spec's preview reads HEAD for the reopen trigger.
+        commit_all(&repository, "done");
         let result = run(&preview(), tmp.path()).unwrap();
         let decided: Vec<(&str, bool)> = result
             .sections
@@ -687,6 +712,7 @@ mod tests {
     #[test]
     fn a_walk_lists_plans_with_sections_outside_the_record_and_skips_missing_ones() {
         let tmp = tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
         let clean = "# P\n\n## Overview\n\nA.\n";
         for (name, status, plan) in [
             ("1234.10-late", "done", Some(PLAN)),
@@ -704,6 +730,8 @@ mod tests {
                 write(&dir.join("plan.md"), plan);
             }
         }
+        // Each `done` spec's preview reads HEAD for the reopen trigger.
+        commit_all(&repository, "corpus");
         let walk = super::run(&all(), tmp.path())
             .unwrap()
             .walk
@@ -838,6 +866,72 @@ mod tests {
         );
         let result = remove_journal(tmp.path());
         assert_eq!(result.reopen_required, Some(true));
+    }
+
+    #[test]
+    fn adding_one_unchecked_box_and_checking_another_reopens() {
+        // The count of unchecked boxes is unchanged; the diff still adds one.
+        let tmp = tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
+        project(tmp.path(), "done", Some(PLAN));
+        write(
+            &feature_dir(tmp.path()).join("tasks.md"),
+            "# Tasks\n\n## 1. Owed\n\n- [ ] a\n",
+        );
+        commit_all(&repository, "done, carrying an unchecked box");
+        write(
+            &feature_dir(tmp.path()).join("tasks.md"),
+            "# Tasks\n\n## 1. Owed\n\n- [x] a\n\n## 2. More\n\n- [ ] b\n",
+        );
+        let result = remove_journal(tmp.path());
+        assert_eq!(result.reopen_required, Some(true));
+    }
+
+    #[test]
+    fn moving_or_reindenting_an_unchecked_box_does_not_reopen() {
+        let tmp = tempdir().unwrap();
+        let repository = git2::Repository::init(tmp.path()).unwrap();
+        project(tmp.path(), "done", Some(PLAN));
+        write(
+            &feature_dir(tmp.path()).join("tasks.md"),
+            "# Tasks\n\n## 1. One\n\n- [ ] a\n\n## 2. Two\n\n- [x] b\n",
+        );
+        commit_all(&repository, "done, carrying an unchecked box");
+        // The unchecked box moves under task 2 and is nested there.
+        write(
+            &feature_dir(tmp.path()).join("tasks.md"),
+            "# Tasks\n\n## 1. One\n\nProse.\n\n## 2. Two\n\n- [x] b\n  - [ ] a\n",
+        );
+        let result = remove_journal(tmp.path());
+        assert_eq!(result.reopen_required, Some(false));
+    }
+
+    #[test]
+    fn a_preview_reports_the_reopen_the_tree_already_carries() {
+        let tmp = tempdir().unwrap();
+        let _repository = committed_done_spec(tmp.path());
+        let clean = run(&preview(), tmp.path()).unwrap();
+        assert_eq!(clean.reopen_required, Some(false));
+        // A design-record edit made before the run is known at the preview.
+        let edited = PLAN.replace("Why.\n", "Why, corrected by hand.\n");
+        write(&feature_dir(tmp.path()).join("plan.md"), &edited);
+        let result = run(&preview(), tmp.path()).unwrap();
+        assert_eq!(result.reopen_required, Some(true));
+        assert!(!result.applied);
+        assert_eq!(plan_text(tmp.path()), edited, "a preview must not write");
+    }
+
+    #[test]
+    fn an_apply_that_cannot_read_head_writes_nothing() {
+        // No repository: the trigger cannot be computed, and the removal must
+        // not land ahead of the error.
+        let tmp = tempdir().unwrap();
+        project(tmp.path(), "in-progress", Some(PLAN));
+        let previewed = run(&preview(), tmp.path()).unwrap();
+        project(tmp.path(), "done", None);
+        let err = run(&apply(&[&previewed.sections[0]]), tmp.path()).unwrap_err();
+        assert!(matches!(err, PrimitiveError::Git(..)), "{err}");
+        assert_eq!(plan_text(tmp.path()), PLAN);
     }
 
     #[test]

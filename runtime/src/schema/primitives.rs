@@ -3094,11 +3094,14 @@ pub struct PrunePlanSummary {
     /// section removed; on an apply, the size written, or `size-before` when
     /// it was refused.
     pub size_after: SizeSummary,
-    /// On an apply against a `done` spec — the one case prune reopens —
+    /// On a call against a `done` spec — the one status prune reopens —
     /// whether the change since HEAD takes the `done → in-progress`
     /// back-edge: a design-record section differs from HEAD's, or `tasks.md`
-    /// holds more unchecked checkboxes than HEAD's. Absent otherwise, which
-    /// means not computed, never `false`.
+    /// adds an unchecked checkbox to HEAD's. A preview answers for the tree as
+    /// it stands, so a reopen from edits made before the run is known before
+    /// anything is written; an apply answers for the tree it leaves, computed
+    /// before its write. Absent on any other status, which means not
+    /// computed, never `false`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reopen_required: Option<bool>,
 }

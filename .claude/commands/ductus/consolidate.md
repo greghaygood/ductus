@@ -9,7 +9,7 @@ Remove a spec directory whose content belongs with another, after re-pointing ev
 
 ## Purpose
 
-**This is the only command that removes a durable artifact.** `/ductus:prune` removes only content the framework classes as not durable — spent task sections of `tasks.md`, which is ephemeral work-tracking, and `plan.md` sections outside its design record, whose durable pieces it moves home first; `spec.md` is a durable source of truth, and consolidation deletes it along with everything else in its directory. Recovery is git history and nothing else.
+**This is the only command that removes a durable artifact.** `/ductus:prune` removes only content the framework classes as not durable — spent task sections of `tasks.md`, or every section under `--reset`, since `tasks.md` is ephemeral work-tracking, and `plan.md` sections outside its design record, whose durable pieces it moves home first; `spec.md` is a durable source of truth, and consolidation deletes it along with everything else in its directory. Recovery is git history and nothing else.
 
 It exists because the alternative is worse. A corpus of small overlapping specs accumulates ones whose content was never a separate concern, and an operator's only current recourse is `rm -rf` — no pointer rewriting, no anti-stranding refusal, no confirmation naming what is lost. Safety comes from the guards, not from withholding the command.
 

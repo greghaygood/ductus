@@ -8,9 +8,9 @@ Implements [{NNN} — {Feature Name}](spec.md).
      is now true; never append a note that it changed, because git history
      already keeps what the plan said when. Everything else has a home that is
      not the plan: verification evidence in the commit that lands the task,
-     contributor knowledge in AGENTS.md (or the constitution, when it holds for
-     every project), a finding's decision where the finding was dispositioned,
-     and handoff notes on the pending task in tasks.md. `/{project}:analyze`
+     contributor knowledge where §drift-prevention's "Shared knowledge stays
+     in git" routes it, a finding's decision where the finding was
+     dispositioned, and handoff notes on the pending task in tasks.md. `/{project}:analyze`
      reports any other `##` section as outside the design record. -->
 
 ## Overview

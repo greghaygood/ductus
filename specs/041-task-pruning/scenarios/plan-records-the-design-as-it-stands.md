@@ -1,5 +1,5 @@
 ---
-section: "Framework consistency — tasks.md is ephemeral tracking"
+section: "Framework consistency — each artifact by its durability class"
 ---
 
 # Plan-records-the-design-as-it-stands

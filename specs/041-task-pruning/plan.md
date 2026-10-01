@@ -77,9 +77,8 @@ preview → apply shape.
   `framework/templates/spec/tasks.md` with its own H1 removed (the intro line
   and guidance comment). A unit test asserts the constant matches that template
   body so they never drift. A file with no `# …` heading fails
-  `malformed-tasks` and writes nothing. This reopen edits the tasks template's
-  guidance comment (handoff notes, below), so the constant is updated in the
-  same change — the drift test fails until it is.
+  `malformed-tasks` and writes nothing. The constant carries the template's
+  whole guidance comment, its handoff-note guidance (below) included.
 
 ### Status gate for `--reset`
 
@@ -103,11 +102,11 @@ optional. The set is a constant compiled into the primitive, pinned to
 `framework/templates/spec/plan.md` by a unit test that parses the template's
 `##` headings and asserts equality — the same pinning the reset body uses, and
 the same bounded divergence: an adopter who customizes the template sees their
-own set only on the markdown-only path. The template gains Trade-offs and the
-three optional sections, each optional one marked to be omitted when it does
-not apply, so it names every section `/{project}:plan` fills
-(`framework/commands/plan.md` §Create the plan step 2 fills Data Model and
-Trade-offs, which the template omits today).
+own set only on the markdown-only path. The template carries Trade-offs and
+the three optional sections, each optional one marked to be omitted when it
+does not apply, so it names every section `/{project}:plan` fills, Data Model
+and Trade-offs among them (`framework/commands/plan.md` §Create the plan
+step 2).
 
 ### `prune-plan` — fence-aware sections, digest-guarded removal
 
@@ -163,13 +162,19 @@ before it proposes the section.
 
 ### The reopen trigger is computed from the diff
 
-`prune-plan`'s apply result carries `reopen-required` on an apply against a
+`prune-plan`'s result carries `reopen-required` on every call against a
 `done` spec, and omits it otherwise — absent is not computed, never `false`.
 It is true when any design-record section's text differs from the same
-section in `plan.md` at HEAD, or when `tasks.md` holds more unchecked
-checkboxes than it does at HEAD — the two diff-visible triggers the scenario
-fixes. It is computed after the write, and whether or not the removal was
-refused, because the host's moves are already on disk. Both read HEAD through one shared reader, promoted from the private
+section in `plan.md` at HEAD, or when `tasks.md` adds an unchecked checkbox —
+holds an unchecked checkbox line, trimmed, more times than it does at HEAD,
+so a box moved or re-indented adds nothing — the two diff-visible triggers
+the scenario fixes. A preview computes it over the tree as it stands:
+removing a section outside the record changes no design-record section, so
+a reopen that edits made before the run already require is known before the
+host writes anything. An apply computes it over the tree it leaves, whether
+or not the removal was refused, because the host's moves are already on
+disk, and before its own write, so an apply that cannot read HEAD writes
+nothing. Both read HEAD through one shared reader, promoted from the private
 `read_blob_at_head` in `runtime/src/primitives/check_stuck.rs` into `mod.rs`
 and built on `ProjectRepository`, so a project in a repository subdirectory
 resolves correctly (the 059 convention). An artifact absent at HEAD is not a
@@ -219,18 +224,23 @@ before → after, plan sections kept because `analysis.md` decided them, and —
 under `--all` — one row per spec with its status. The `tasks.md` reduction is
 confirmed through `gate-confirm` and applied. Then, per undecided plan
 section, the host reads the section with its own file tools, proposes where
-each durable piece goes (a Technical Decisions entry, `AGENTS.md`, a pending
-task) and what is dropped, and confirms the moves and the removal together,
-naming the reopen the moves imply on a `done` spec. On confirmation the host
-writes the moves, calls `prune-plan` apply with that section's heading and
-digest, and — when the spec is `done` and `reopen-required` is true — calls
-`set-status`. If `reopen-required` reports a reopen the confirmation did not
-name (uncommitted design-record edits made before the run), the command asks
-before flipping rather than reopening silently. A declined section is skipped
+each durable piece goes (a Technical Decisions entry, `AGENTS.md` for
+knowledge that holds for this project alone, a pending task) and what is
+dropped, and confirms the moves and the removal together, naming the reopen
+the moves imply on a `done` spec. A reopen the preview reports — edits made
+before the run already require it — is named in the preview, before
+anything is written. On confirmation the host writes the moves and calls
+`prune-plan` apply with that section's heading and digest. On a `done` spec
+the command calls `set-status` once the run has written to it and the reopen
+is known: after its first write when the preview reported one, else after
+the first apply that does. An apply that reports a reopen nothing named — a
+move whose effect the host misjudged — is asked about before the flip,
+never performed silently. A declined section is skipped
 for that run, and the prompt names an analyze discard as the lasting keep.
 The write surface is `tasks.md`, `plan.md`, `AGENTS.md` for moved knowledge,
-and status through `set-status`; knowledge true for every project is named
-for the operator to route and never written by prune. A missing `tasks.md`
+and status through `set-status`; knowledge that holds more widely is named
+for the operator to route where §drift-prevention's *Shared knowledge stays
+in git* sends it, and never written by prune. A missing `tasks.md`
 stops the run with the "run `/{project}:plan`" directive only when there is
 no plan either; with a plan, the plan half runs and the missing task list is
 reported.
@@ -252,17 +262,9 @@ arguments from its context (`runtime/src/interpreter/mod.rs`, the `call!`
 macro), so the step dispatches with the feature and no `apply` — a preview.
 The exec walker's analyze tally counts each section on a `planned`-or-later
 spec as advisory (`runtime/src/interpreter/analyze_tally.rs`), as it counts
-every detection step's findings, so an exec record states them. Inserting the
-step renumbers analyze's steps 16–20 to 17–21, which moves the `analyze-basic`
-parity golden; it is re-blessed filtered to that golden and its diff read
-line by line. The renumbering is swept through every present-tense citation
-of those steps — four `058-findings-route-at-discovery` scenarios, one
-`022-deterministic-runtime` scenario, and prose in 058's plan and 060's spec
-and plan — as a mechanical edit, reopening nothing. The review-staleness rule
-exempts four of the five scenarios as a repo-wide substitution; the fifth,
-058's `analyze-state-drift-judges-the-record-it-writes`, rewrites `18` to `19`
-in no other file, so it stales 058's review, whose digest is refreshed before
-the release.
+every detection step's findings, so an exec record states them. With the step
+at 16, analyze's steps 17–21 are the ones numbered 16–20 before it, and every
+present-tense citation of them names the new number.
 
 ### Constitution, templates and docs
 
@@ -332,14 +334,11 @@ Finish with a `runtime/CHANGELOG.md` `### Added` entry and a minor version
 bump across the three version sites, released with a `ductus-v<version>` tag
 once every affected spec is `done`.
 
-### This spec's body
+### The title broadened; the slug did not
 
-Implementing the scenarios corrects the body they supersede: the *Scope
-confirmation* resolution, the Behavior section's "the command's scope is
-`tasks.md` only", AC1, and the *Framework consistency* section, which gains
-`plan.md`'s classification beside `tasks.md`'s. New criteria for the three
-scenarios are added unlabelled and labelled by `label-criteria`. The title
-broadens from *Task Pruning*; the directory slug stays.
+The spec is titled *Spec Directory Pruning*, for its spec-directory scope,
+while its directory stays `041-task-pruning`: a rename is a corpus sweep that
+buys nothing here.
 
 ## Affected Files
 
@@ -410,8 +409,8 @@ broadens from *Task Pruning*; the directory slug stays.
 - **A sibling primitive, not a wider `prune-tasks`.** Rejected folding plan
   reduction into `prune-tasks`: its name, its byte-parity criterion (AC11) and
   its result shape are all about one artifact, and a plan reduction's apply is
-  a list of host-chosen removals rather than a mode. Cost: a seventh
-  registration set and a second schema. Accepted.
+  a list of host-chosen removals rather than a mode. Cost: a second pass through
+  the seven registration sites, and a second schema. Accepted.
 - **The advisory rides `prune-plan`, not a `check-artifacts` family.** A new
   family would have to be registered in 022's data model, the canonical
   registry of check families, which is a durable contract there and would
@@ -432,3 +431,12 @@ broadens from *Task Pruning*; the directory slug stays.
   not silent behavior. The design-record detector reads `##` sections only, so
   a journal nested under a design heading is not seen; the rule still applies
   there, and no heading test reaches it.
+
+## Cross-spec impact
+
+- **`052-spec-supersession-and-consolidation`** — its *One-spec and two-spec
+  commands* said `prune` writes one spec, which `--all` falsified as written.
+  052 now draws the distinction `--all` needs: a batch flag repeating a
+  one-spec operation for every spec is not a two-spec operation, so `prune`
+  stays among the one-spec commands. A `> **Signpost:**` there links back to
+  this spec.

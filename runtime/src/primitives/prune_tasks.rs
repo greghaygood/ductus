@@ -19,7 +19,7 @@
 //! runtime (`apply: true`) or withheld (`apply: false` preview).
 
 use std::collections::HashSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::primitives::{
     PrimitiveError, Result, SkipScanner, TasksStructure, checkbox, detect_tasks_structure,
@@ -37,7 +37,7 @@ use crate::schema::primitives::{
 /// target that follows the preserved feature heading. A unit test
 /// ([`tests::canonical_empty_body_matches_template`]) asserts this equals
 /// `framework/templates/spec/tasks.md` minus its H1 so the two never drift.
-const CANONICAL_EMPTY_TASKS_BODY: &str = "Tasks derived from the [plan](plan.md). Complete in order.\n\n<!-- Each task should be small enough to implement and verify independently.\n     Mark subtasks as they are completed. Every task MUST close with a\n     `- **Done when**: …` line stating its completion condition — the\n     tooling reads this exact form to confirm the task is fully specified.\n\n     A task body may also carry working notes — what the next session needs\n     to resume it: the mechanics, the order, what is left on disk. Write\n     them as prose on the pending task they concern, so they go when the\n     task is pruned. Put an ordering constraint on the task that must wait,\n     never above the first task, where it would outlive every task; and\n     never write a note as a checkbox, which would count toward the task's\n     completion. Anything that must outlast the task belongs in its durable\n     home first. Example:\n\n## 1. Create sessions table migration\n\n- [ ] Write SQL migration for `sessions` table\n- [ ] Run migration and verify schema\n\n- **Done when**: the migration applies cleanly and `sessions` matches the data model.\n\n## 2. Implement session store\n\nBlocked on task 1: the store tests run against the migrated schema.\n\n- [ ] Create `shared/auth/session.go` with Create, Get, Delete methods\n- [ ] Write store integration tests against real PostgreSQL\n\n- **Done when**: all store methods are covered by passing integration tests.\n\n## 3. Update README link to migration guide\n\n- [ ] Edit `README.md` to point at the new path\n\n- **Done when**: the README link resolves to the new path.\n\n-->\n";
+const CANONICAL_EMPTY_TASKS_BODY: &str = "Tasks derived from the [plan](plan.md). Complete in order.\n\n<!-- Each task should be small enough to implement and verify independently.\n     Mark subtasks as they are completed. Every task MUST close with a\n     `- **Done when**: …` line stating its completion condition — the\n     tooling reads this exact form to confirm the task is fully specified.\n\n     A task body may also carry working notes — what the next session needs\n     to resume it: the mechanics, the order, what is left on disk — placed\n     as §tasks-phase says. Write them as prose on the pending task they\n     concern, so they go when the task is pruned. Put an ordering constraint\n     on the task that must wait, never above the first task or under a\n     heading of its own, which outlive every task; and never write a note as\n     a checkbox, which would count toward the task's completion. Anything\n     that must outlast the task belongs in its durable home first. Example:\n\n## 1. Create sessions table migration\n\n- [ ] Write SQL migration for `sessions` table\n- [ ] Run migration and verify schema\n\n- **Done when**: the migration applies cleanly and `sessions` matches the data model.\n\n## 2. Implement session store\n\nBlocked on task 1: the store tests run against the migrated schema.\n\n- [ ] Create `shared/auth/session.go` with Create, Get, Delete methods\n- [ ] Write store integration tests against real PostgreSQL\n\n- **Done when**: all store methods are covered by passing integration tests.\n\n## 3. Update README link to migration guide\n\n- [ ] Edit `README.md` to point at the new path\n\n- **Done when**: the README link resolves to the new path.\n\n-->\n";
 
 /// Frontmatter shape used only to read `status` (see [`read_status`]).
 #[derive(serde::Deserialize)]
@@ -174,17 +174,19 @@ fn walk(args: &PruneTasksArgs, repo: &Path, root: &str) -> Result<PruneWalk<Prun
     let mut features = Vec::new();
     let mut skipped = Vec::new();
     for feature in &names {
-        match summarize(feature, args, repo, root) {
-            Ok(summary) if summary.nothing_to_prune => {}
-            Ok(summary) => {
-                // A reset read the status for its gate; keep-pending did not.
-                let status = match &summary.status {
+        match reduce(feature, args, repo, root) {
+            Ok(reduction) if reduction.summary.nothing_to_prune => {}
+            Ok(reduction) => {
+                // Read before an apply writes this spec's reduction, so a
+                // status that will not read stops the walk with its file
+                // untouched. A reset read it for its gate; keep-pending did not.
+                let status = match &reduction.summary.status {
                     Some(status) => status.clone(),
                     None => read_status(&repo.join(root).join(feature), root, feature)?,
                 };
                 features.push(PruneWalkEntry {
                     feature: feature.clone(),
-                    summary: PruneTasksLine::new(summary, status),
+                    summary: PruneTasksLine::new(reduction.write()?, status),
                 });
             }
             Err(PrimitiveError::TasksFileMissing { .. }) => skipped.push(SkippedFeature {
@@ -201,13 +203,36 @@ fn walk(args: &PruneTasksArgs, repo: &Path, root: &str) -> Result<PruneWalk<Prun
     })
 }
 
-/// One feature's reduction.
+/// One feature's reduction, written when the call applies it.
 fn summarize(
     feature: &str,
     args: &PruneTasksArgs,
     repo: &Path,
     root: &str,
 ) -> Result<PruneTasksSummary> {
+    reduce(feature, args, repo, root)?.write()
+}
+
+/// One feature's reduction, computed and not yet written.
+struct Reduction {
+    /// The summary, its `applied` saying whether [`Reduction::write`] writes.
+    summary: PruneTasksSummary,
+    tasks_path: PathBuf,
+    new_content: String,
+}
+
+impl Reduction {
+    /// Write the reduction when the call applies it, and return its summary.
+    fn write(self) -> Result<PruneTasksSummary> {
+        if self.summary.applied {
+            write_atomic(&self.tasks_path, &self.new_content)?;
+        }
+        Ok(self.summary)
+    }
+}
+
+/// Compute one feature's reduction without writing it.
+fn reduce(feature: &str, args: &PruneTasksArgs, repo: &Path, root: &str) -> Result<Reduction> {
     super::validate_no_traversal(feature)?;
     let feature_dir = repo.join(root).join(feature);
     if !feature_dir.is_dir() {
@@ -252,22 +277,23 @@ fn summarize(
     // reset) only when the gate permits it. keep-pending is never gated.
     let gate_permits = !matches!(gate, PruneGate::BlockedNeedsForce);
     let applied = args.apply && !nothing_to_prune && gate_permits;
-    if applied {
-        write_atomic(&tasks_path, &new_content)?;
-    }
 
-    Ok(PruneTasksSummary {
-        mode,
-        applied,
-        gate,
-        status,
-        nothing_to_prune,
-        removed_count: removed,
-        kept_count: kept,
-        size_before: size_of(&content),
-        size_after: size_of(&new_content),
-        sections,
-        path: rel_path(&tasks_path, repo),
+    Ok(Reduction {
+        summary: PruneTasksSummary {
+            mode,
+            applied,
+            gate,
+            status,
+            nothing_to_prune,
+            removed_count: removed,
+            kept_count: kept,
+            size_before: size_of(&content),
+            size_after: size_of(&new_content),
+            sections,
+            path: rel_path(&tasks_path, repo),
+        },
+        tasks_path,
+        new_content,
     })
 }
 
@@ -746,6 +772,22 @@ mod tests {
         );
         let after = fs::read_to_string(tmp.path().join("specs/002-first/tasks.md")).unwrap();
         assert_eq!(before, after, "a refused forced walk writes nothing");
+    }
+
+    #[test]
+    fn an_applying_walk_reads_the_status_before_it_writes() {
+        // A keep-pending reduction reads no status for its own work, but the
+        // walk's line carries one, so a spec whose status will not read must
+        // stop the walk before its reduction is written.
+        let tmp = corpus(&[("002-first", "in-progress", Some(FLAT))]);
+        fs::remove_file(tmp.path().join("specs/002-first/spec.md")).unwrap();
+        let err = super::run(&all(false, false, true), tmp.path()).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::MissingSpecFile { .. }),
+            "{err}"
+        );
+        let after = fs::read_to_string(tmp.path().join("specs/002-first/tasks.md")).unwrap();
+        assert_eq!(after, FLAT, "the walk stopped with the file untouched");
     }
 
     #[test]
