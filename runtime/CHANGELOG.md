@@ -2,6 +2,111 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+## [0.56.0] — 2026-10-01
+
+Each agent process now holds its own session target (spec 062),
+`/{project}:prune` reduces a feature's whole spec directory, or every spec's
+with `--all` (spec 041), and `fetch-archive` reads its proxy and certificate
+configuration once (spec 048). Three tools are new: `resolve-session`,
+`retarget-sessions` and `prune-plan`. `read-spec` counts an open question
+written as any list item (spec 022). The minimum supported Rust version
+rises from 1.88 to 1.89, for `std::fs::File::lock`.
+
+### Added
+
+- **Per-process session targets.** A process's identity is the
+  operator-set `DUCTUS_SESSION`, else the identifier its agent passes to the
+  processes it spawns (Claude Code's `CLAUDE_CODE_SESSION_ID`), else none. An
+  identified process reads and writes its own target in
+  `.ductus/sessions/{identity}.toml`, and every target write in any process
+  also sets the shared default, `.ductus/session.toml`, which an unidentified
+  process uses exactly as before. An identified process with no target of its
+  own adopts the default on its first resolution and says so. A target
+  neither resolved nor written for seven days is removed by the next write.
+  A write naming a feature another session targets tells both sessions. A
+  cleared target never adopts the default. A session file that does not parse
+  is reported by name. Session writes are serialized by an advisory lock on
+  `.ductus/sessions/.lock`, waited on for at most ten seconds. The directory
+  ignores itself with a `.gitignore` of `*`, and the framework's gitignore
+  template lists it. Spec 062.
+- **`resolve-session`** resolves this process's target, reporting its
+  identity, the source (own, adopted, default, cleared or none), and the
+  notices to show once. Every command that resolved the target by hand now
+  calls it. Spec 062.
+- **`retarget-sessions`**: `/{project}:fold` re-targets, and
+  `/{project}:consolidate` clears, every session that named the removed
+  spec. Each affected session is told at its next command. Spec 062.
+- **`prune-plan`** reports each `plan.md` section outside the design record,
+  meaning the plan template's own `##` headings, compared case-insensitively.
+  A heading in a fenced block or an HTML comment is not a section. Each
+  section comes with its size, a digest, the `plan-record` advisory
+  `/{project}:analyze` records for it, and whether `analysis.md` stores a
+  discard for that advisory. An apply removes the sections the host lists by
+  heading and digest, and refuses the whole write when any changed since the
+  preview. On a `done` spec every call reports whether the spec reopens: a
+  preview for the tree as it stands, so a reopen from edits made before the
+  run is known before anything is written, and an apply for the tree it
+  leaves, computed before it writes. A feature with no `plan.md` is reported
+  as `missing`, not an error. Spec 041.
+- **`/{project}:prune` covers the spec directory.** Beside `tasks.md`, each
+  plan section outside the design record is proposed, and removed once its
+  durable pieces have moved home, confirmed section by section. A section
+  whose advisory is stored as discarded is kept. A `done` spec reopens exactly
+  when the diff changes the design record or adds an unchecked checkbox to
+  `tasks.md` — a box moved or re-indented adds nothing — and the reopen is
+  named before anything is written. Spec 041.
+- **`--all` on both prune primitives** walks every feature in corpus order.
+  It lists each spec with something to report and names each one skipped for
+  a missing `tasks.md` or `plan.md`. `prune-tasks` refuses `force` with
+  `all`, and `prune-plan` refuses `apply` with `all`. Spec 041.
+- **`/{project}:analyze` reports the plan-record advisory** at a new step 16,
+  on a spec at `planned` or later. It reports every section outside the
+  record, decided or not, so a stored discard is matched rather than
+  expired. Spec 041.
+
+### Changed
+
+- **`prune-tasks` takes `feature` or `all`.** A single-feature result is
+  unchanged on the wire. A walk lists one line per spec — gate, status,
+  counts, sizes, path — rather than its per-section records. Spec 041.
+- **`/{project}:analyze`'s steps 16–20 are now 17–21.** Spec 041.
+- **A plan records the design as it stands.** The constitution's
+  §plan-phase says so, and says where evidence, contributor knowledge,
+  findings and handoff state go instead; its canonical-sources table names
+  the plan template as the source of the design record. The plan template
+  gains Trade-offs and three optional sections. The tasks template says a
+  task body may carry working notes. Spec 041.
+- **`write-session` and `dashboard` go through the session core**, and
+  `dashboard` peeks the session read-only. `ductus exec` shows session
+  notices and resolves the invoking agent's target. `fetch-archive` reads its
+  allowlist variable once, at startup. Spec 062.
+- **`fetch-archive` reads its proxy and certificate configuration once.**
+  The proxy variables (`ALL_PROXY`, `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`,
+  each uppercase first) and whether `REQUEST_METHOD` is set are captured at
+  startup and applied as explicit proxies, keeping the convention's selection
+  and its CGI guard. On Linux and other non-Apple Unix the system certificate
+  roots, `SSL_CERT_FILE` and `SSL_CERT_DIR` included, load once per process
+  at the first fetch, and a store that yields no certificate is refused by
+  name. Through a proxy, the operator's proxy is the documented trust
+  boundary; the SSRF screen and a direct connection's address pin are
+  unchanged. `docs/runtime.md`'s inventory says when each variable is read.
+  `rustls` and `rustls-native-certs` become direct dependencies, at the
+  versions already in the graph. Spec 048.
+
+### Fixed
+
+- **`read-spec` counts an open question written as any list item.** It read
+  only `-` bullets under `## Open Questions`, so a numbered, `*` or `+` list
+  of questions read as zero, and `/{project}:clarify` could advance a spec
+  with them unresolved. A list item at the list's own level is an entry, and
+  a deeper one folds into the question above it. The spec template,
+  `/{project}:specify` and `/{project}:clarify` say a question is one list
+  item. Spec 022.
+- **Concurrent first writers no longer race on the sessions `.gitignore`.**
+  It is written only by the process holding the session lock. Before, every
+  writer on a fresh tree replaced it by rename, which Windows refuses while
+  another process is replacing it. Spec 062.
+
 ## [0.55.0] — 2026-09-28
 
 Updates now track the latest release rather than `main` (spec 061). The
