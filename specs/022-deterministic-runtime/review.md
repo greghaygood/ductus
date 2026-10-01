@@ -1,17 +1,17 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-10-01T18:24:24Z
-reviewed-against: 0fbcaae60f485190a448bf3d43d74a6b52f736fb
-diff-base: 7b53587e1bfd5fdde4c0abfdf198d8c0daa92cc4
+last-run: 2026-10-01T21:03:13Z
+reviewed-against: 5fd2c3a5f40e44f45db536bafaa30ffa860cba41
+diff-base: 2ccf71a5236c903b633e0d8b5dd0fb22bab5ed33
 must-violations: 0
 should-violations: 0
 low-confidence: 0
-examined: 45
-scope: 74
+examined: 29
+scope: 62
 skipped-passes: []
 reviewed-digest:
-  data-model.md: 98b6b5e54781654d83c62b2deb9ae6f5c175594c136853507270ad94f17a4968
-  scenarios/a-done-spec-has-no-transition-to-gate.md: 0897ef8243a2be1552e1a4887f547f0477c42adb387acae6720700d99bec8fa4
+  data-model.md: 3c187ce903de262d1831d5f2ed04dad49ba436ce8efe1ef7f76747ee47698ec4
+  scenarios/a-done-spec-has-no-transition-to-gate.md: 2041c659a2dbee3e17a05a702a11c9b1f59d30ce68acc19f616889696b66da2b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
   scenarios/adopter-corpus-link-integrity.md: a36b79e3e04489a765cfab1c3e657ac0c34ef66a289d0512866a27303eeb5358
   scenarios/adopter-generator-promotion.md: 80ec329393c3b78c0926ef45f61792502c311b1bccaa0dba6526234bac53e161
@@ -103,14 +103,14 @@ reviewed-digest:
   scenarios/the-cli-surface-nothing-pins.md: f63de14533aeb6b2c77f33421af289633e0fded63e795f219b82bfa30f071c8c
   scenarios/the-committed-tree-horizon.md: 20857abb817761824891eb284ed1f89e7455a413f3d7a83a25f029c7a256534b
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
-  scenarios/the-cross-spec-impact-gate.md: 80d698a71127af8797f8dde1865910686ae420b22a4a6f89072384b03b73bb96
+  scenarios/the-cross-spec-impact-gate.md: 874fd2fbefdc6d39f38b8d136f921efc20a99968841d837ad2c91db7c7aa3799
   scenarios/the-inbox-row.md: f29a57dc733dfbaa62b54a94ca7486cb7fbc2c93d4a4e6ded07ab8714483ae04
   scenarios/the-promotion-coverage-line.md: 151e741fad3c4f953d85e14d3183fed27ef08bcce0cbd9b42ed7bc89e22fba29
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
   scenarios/unreadable-scenario-is-reported.md: 28c763fee22e177c50586f69989911128438c23964e1fa4831f628ae366792ae
   scenarios/waiver-processing-order.md: 0adb750e651d94ac8bcf06dd0dfbba84cd937c09817035e913ec08b77687f8e8
-  scenarios/write-analysis-and-the-second-gate.md: 97439d6e86852ebd2fff85e7cbefe14c0e77ee0edf98f97b23a01a11e1ea4940
+  scenarios/write-analysis-and-the-second-gate.md: b6c0840fc0b5e57d93299b5c27a16d91a7a9fe36890c3819018cfa29adf6df57
   scenarios/write-boundary-path-normalization.md: aea2703ee38d7a2ab5806444dd12f99370bfee540bafd8935c9f20d43bd86dee
   scenarios/write-review-known-field-quoting.md: 48b65cafacab7740d365586d51ae2f8db43344308229320a2d4204b570858147
   scenarios/write-session-primitive.md: 88b1f94a05bf09e168b9fcc30a82cecf6886ee750dcb44d333545dbff44fc1de
@@ -119,30 +119,15 @@ reviewed-digest:
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
 blocking: false
 dispositions:
-  fixed: 11
-  routed: 0
-  discarded: 4
+  fixed: 0
+  routed: 1
+  discarded: 0
   undispositioned: 0
 decisions:
-  - key: "edge: indentation is counted in bytes, so a tab counts as one column — `runtime/src/primitives/read_spec.rs:345`"
-    outcome: discarded
-    reason: no tab-indented question list exists here, and a tab read as one column over-counts, which holds a spec back rather than letting it advance; the list_item doc now states the byte count
-    decided-at: 2026-10-01T18:24:24Z
-    decided-by: andy@stone.dev
-  - key: "edge: a list item indented deeper than the first entry, after an intervening paragraph, is dropped — `runtime/src/primitives/read_spec.rs:312`"
-    outcome: discarded
-    reason: by the scenario's rule a deeper item is a sub-item; a question list interrupted by a paragraph and resumed deeper is not a shape the template or this corpus produces
-    decided-at: 2026-10-01T18:24:24Z
-    decided-by: andy@stone.dev
-  - key: "edge: a continuation line beginning `2.` opens a new entry where CommonMark would not let it interrupt a paragraph — `runtime/src/primitives/read_spec.rs:307`"
-    outcome: discarded
-    reason: over-counting holds a spec at clarify, the safe direction, and following CommonMark's interrupt rule would add paragraph tracking for no case seen
-    decided-at: 2026-10-01T18:24:24Z
-    decided-by: andy@stone.dev
-  - key: "simplicity: trim_start runs twice per line, in the parser and in list_item — `runtime/src/primitives/read_spec.rs:311`"
-    outcome: discarded
-    reason: the second trim is of a borrowed slice and costs nothing measurable, and it keeps list_item callable on any raw line, which append-question now relies on
-    decided-at: 2026-10-01T18:24:24Z
+  - key: "convention: 051's plan said /ductus:fold re-targets \"the session\"; since 062 it re-points every session that named the folded spec — `specs/051-branch-scoped-spec-numbering/plan.md`"
+    outcome: routed
+    target: specs/051-branch-scoped-spec-numbering/plan.md
+    decided-at: 2026-10-01T21:03:13Z
     decided-by: andy@stone.dev
 ---
 
@@ -150,7 +135,7 @@ decisions:
 
 ## Summary
 
-Not blocking. A deliberate partial review of 022's reopen for read-spec's open-question list grammar (4db75eea, 5e47691b), the operator's queued item, against natural base 7b53587e. It is not the full five-pass review of 022's 106 scenarios. 45 of the 74 scope entries were read in full this session, all five passes, against the eight backend and cross rule files; the three frontend files apply to no file here. Fourteen are the entries the reopen and the 0.56.0 bump changed: read_spec.rs, the new scenario, 022's spec.md and tasks.md, clarify.md, specify.md, the spec template, their two mirrors (each byte-compared with its source), specs/inbox.md, runtime/CHANGELOG.md, Cargo.toml, Cargo.lock and version. 022's reviewer read them. The other 31 were read in full by the same session's reviewers for 041's review: AGENTS.md, README.md, docs/slash-commands.md, the constitution, analyze.md, consolidate.md, prune.md and their three mirrors, analyze_tally.rs, interpreter/mod.rs, main.rs, server.rs, check_stuck.rs, mod.rs, prune_plan.rs, prune_tasks.rs, write_analysis.rs, schema/primitives.rs, registry.rs, status.rs, tests/mcp.rs, tests/walker.rs, and 041's spec.md, plan.md, data-model.md, tasks.md and three scenarios. They joined 022's window when the fixes from both reviews landed (0fbcaae6). Read only in the hunks 0fbcaae6 changed: dashboard.rs, append_question.rs, apply_manifest.rs and merge_managed_block.rs. Not read: the 25 entries unchanged since the base: three workflows under .github/workflows/, framework/bootstrap/ductus.md, implement.md, plan.md, status.md, target.md, framework/runtime-tools.txt, runtime/.gitignore, runtime/legacy-prose-commands.txt, the runtime/src/interpreter/, mcp/, parser/, primitives/ and schema/ directory entries, io.rs, lib.rs, runtime/tests/ with its fixtures/, golden/ and parity/ entries, scripts/lint-procedure-parseability.sh, and 022's data-model.md and plan.md. This record claims nothing about changes made to those 25 between 022's previous record (520645ac) and the base, which came under 041, 048, 052 and 062. Every file was read before the fixes. The fixes were re-checked as a diff (0fbcaae6) against each observation, and each new test was proven red by mutation, but no file was re-read whole. No rule finding. 15 observations: 11 fixed in 0fbcaae6, 4 discarded with their reasons.
+022's reopen for 051's scenario a-pending-fold-never-holds-done, over the window since 022 re-entered in-progress (diff-base 2ccf71a5): 0 MUST, 0 SHOULD, 0 low-confidence; not blocking. Examined 29 in scope: every hunk the window carries outside the four .claude/commands/ductus mirrors, which gen-claude-commands regenerates from the framework sources read here and reported in sync. The runtime change is the one 051's review (697ec1b6) examined — the fold check's removal from check-review-gate, the dashboard's done-first Next Action, and their tests, each shown to fail under mutation — and 022's own edits re-state its gate record: the data model's check list (renumbered, pending-fold removed) and three scenarios annotated with links back to 051. The plan-affected files this window did not touch were not read, among them runtime/src/primitives/read_spec.rs, so the four stored discards anchored there expired unobserved rather than resolved; a later review that re-observes them asks again. One observation: 051's plan said /fold re-targets "the session", which predates 062 — routed by operator decision to 051's plan and corrected in 5fd2c3a5, reopening 051.
 
 ## MUST violations (blocking)
 
@@ -170,21 +155,7 @@ Not blocking. A deliberate partial review of 022's reopen for read-spec's open-q
 
 ## Observations
 
-- parity: dashboard counted open questions with its own `-`-only, comment-blind reader, so /status and /clarify disagreed once read-spec read every list item — `runtime/src/primitives/dashboard.rs:681` — **fixed**
-- doc: list_item said a thematic break opens nothing, but a spaced `* * *` opened an entry — `runtime/src/primitives/read_spec.rs:338` — **fixed**
-- edge: a list marker with nothing after it opened no entry, folding its question into the one above — `runtime/src/primitives/read_spec.rs:355` — **fixed**
-- coverage: a section mixing markers and the one-to-nine-digit bound on a numbered marker had no test — `runtime/src/primitives/read_spec.rs:350` — **fixed**
-- reuse: list_item and mod.rs's opens_list_item are two list-marker grammars and neither said why they differ — `runtime/src/primitives/read_spec.rs:338` — **fixed**
-- asymmetry: append-question stripped only a `-` marker, so a question passed as `1. Which store?` missed its dedup and was appended as `- 1. Which store?` — `runtime/src/primitives/append_question.rs:79` — **fixed**
-- simplicity: a closure parameter shadowed `level`, and a continuation line was copied before it was appended — `runtime/src/primitives/read_spec.rs:313` — **fixed**
-- doc: the QUESTION_PLACEHOLDERS, parse_sections and parse_checkboxes docs were stale or garbled, and section_lines named parse_open_questions as a caller — `runtime/src/primitives/read_spec.rs:175` — **fixed**
-- claim: the scenario counted all 36 prose lines under Open Questions as none notes, but one is template guidance — `specs/022-deterministic-runtime/scenarios/open-questions-are-any-list-item.md:27` — **fixed**
-- gap: the scenario, task 126 and the CHANGELOG entry left out the dashboard's separate counter — `specs/022-deterministic-runtime/scenarios/open-questions-are-any-list-item.md:21` — **fixed**
-- prose: clarify.md's count did not exclude list items inside HTML comments or fences, or say a deeper item after a blank line adds nothing — `framework/commands/clarify.md:26` — **fixed**
-- edge: indentation is counted in bytes, so a tab counts as one column — `runtime/src/primitives/read_spec.rs:345` — **discarded**: no tab-indented question list exists here, and a tab read as one column over-counts, which holds a spec back rather than letting it advance; the list_item doc now states the byte count
-- edge: a list item indented deeper than the first entry, after an intervening paragraph, is dropped — `runtime/src/primitives/read_spec.rs:312` — **discarded**: by the scenario's rule a deeper item is a sub-item; a question list interrupted by a paragraph and resumed deeper is not a shape the template or this corpus produces
-- edge: a continuation line beginning `2.` opens a new entry where CommonMark would not let it interrupt a paragraph — `runtime/src/primitives/read_spec.rs:307` — **discarded**: over-counting holds a spec at clarify, the safe direction, and following CommonMark's interrupt rule would add paragraph tracking for no case seen
-- simplicity: trim_start runs twice per line, in the parser and in list_item — `runtime/src/primitives/read_spec.rs:311` — **discarded**: the second trim is of a borrowed slice and costs nothing measurable, and it keeps list_item callable on any raw line, which append-question now relies on
+- convention: 051's plan said /ductus:fold re-targets "the session"; since 062 it re-points every session that named the folded spec — `specs/051-branch-scoped-spec-numbering/plan.md` — **routed** to `specs/051-branch-scoped-spec-numbering/plan.md`
 
 ## Skipped passes
 
