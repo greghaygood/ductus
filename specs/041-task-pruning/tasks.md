@@ -140,8 +140,8 @@ The operator's queued item was inbox item 2, read-spec's open-question list gram
 Order: (1) land those fixes; (2) re-run the affected review passes and write both review records; (3) `/{project}:analyze` on both specs; (4) the two completion gates, this spec's verifying AC1, AC9, AC10 and AC15–AC20; (5) read `git log --oneline origin/main..HEAD`, push, tag and push the tag in the same sitting, and read every workflow run for the release sha. The review and analyze use the binary built from this tree: the MCP server runs the binary it started with, so a primitive changed since then goes through `runtime/target/release/ductus` on the CLI. `main` is not pushed ahead of the tag, since it now carries the release commit.
 
 - [ ] The full local gate, as `AGENTS.md` §Workflow lists it
-- [ ] `runtime/CHANGELOG.md` `### Added` and a minor bump across `version`, `runtime/Cargo.toml` and the changelog heading, in one commit
-- [ ] `/{project}:review` and `/{project}:analyze` on this spec, then the completion gate to `done`
+- [x] `runtime/CHANGELOG.md` `### Added` and a minor bump across `version`, `runtime/Cargo.toml` and the changelog heading, in one commit
+- [x] `/{project}:review` and `/{project}:analyze` on this spec, then the completion gate to `done`
 - [ ] Tag `ductus-v<version>` in the same sitting and read every workflow run for that sha
 
 - **Done when**: 041 is `done`, the tag is pushed, and every workflow run for the release commit has concluded successfully.
