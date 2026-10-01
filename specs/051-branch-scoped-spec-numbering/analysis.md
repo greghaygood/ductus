@@ -1,14 +1,14 @@
 ---
 spec: 051-branch-scoped-spec-numbering
-last-run: 2026-10-01T20:41:18Z
-analyzed-against: 0b3e54ad0d8fa9cf006b941e010d9da7ce5fbe41
+last-run: 2026-10-01T21:11:39Z
+analyzed-against: bfb01e8fd3666917449d06d43d5ef6640bb8a6a4
 hard-fail: 0
 blocking-findings: 0
 advisory: 0
 unexamined: 0
 analyzed-digest:
   data-model.md: 416e488447e1fb195e85babd92882b3d5eefa1cb5e3e2876809a59f487420818
-  plan.md: 530d4fc0b0111221db840441ce7dc6f00139f49e29e2bfa39f6f19b50f3aaa2e
+  plan.md: 173d2d5f1396b9d7fff3541e968db81d772bff2cbfb4a25e141a7af8509466d3
   review.md: 8f9d800c0ca792068d09ce2f1fa55f28f33d7f7935ae1fcc3f6af35b6bb74398
   scenarios/a-fold-owed-to-another-tree-does-not-hold-done.md: ca44ec6cd85ccd0d3a52d9124c047fff81958807c8ffdb55f2858d6fd60a54aa
   scenarios/a-pending-fold-never-holds-done.md: 29f85dfd8b78f2030ffaf7a517a4e0236ec580bfe8e05d8f1cbaa772c6ff0c08
