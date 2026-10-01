@@ -19,12 +19,11 @@ use std::path::Path;
 
 use sha2::{Digest, Sha256};
 
-use crate::primitives::analyze_subjects::hex;
 use crate::primitives::decisions::{RawDecision, read_decisions, same_key};
 use crate::primitives::prune_tasks::{one_feature_or_all, read_status, size_of};
 use crate::primitives::write_analysis::finding_key_of;
 use crate::primitives::{
-    ANALYSIS_RECORD_FILE, PrimitiveError, ProjectRepository, Result, SkipScanner, checkbox,
+    ANALYSIS_RECORD_FILE, PrimitiveError, ProjectRepository, Result, SkipScanner, checkbox, hex,
     join_blocks, line_ending_of, list_feature_dirs, parse_atx_heading, read_text, rel_path,
     write_atomic,
 };
@@ -172,10 +171,13 @@ fn adds_unchecked_box(now: &str, head: &str) -> bool {
 /// - [`PrimitiveError::InvalidPath`] when `feature` would escape the spec root.
 /// - [`PrimitiveError::FeatureNotFound`] when the feature directory is absent.
 /// - [`PrimitiveError::MissingSpecFile`] / [`PrimitiveError::StatusFieldMissing`]
-///   / [`PrimitiveError::MissingFrontmatter`] / [`PrimitiveError::Yaml`] when
+///   / [`PrimitiveError::MissingFrontmatter`] /
+///   [`PrimitiveError::UnclosedFrontmatter`] / [`PrimitiveError::Yaml`] when
 ///   the spec status cannot be read.
 /// - [`PrimitiveError::Yaml`] when `analysis.md`'s `decisions:` list does not
-///   parse — read as empty, it would propose every section already decided.
+///   parse, and [`PrimitiveError::UnclosedFrontmatter`] when its frontmatter
+///   never closes — read as empty, either would propose every section already
+///   decided.
 /// - [`PrimitiveError::Git`] when a call against a `done` spec cannot read
 ///   HEAD for the reopen trigger.
 /// - [`PrimitiveError::Io`] on filesystem failure.

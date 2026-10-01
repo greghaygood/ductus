@@ -656,13 +656,7 @@ fn is_sha256_hex(token: &str) -> bool {
 fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    let digest = hasher.finalize();
-    let mut out = String::with_capacity(64);
-    for byte in digest {
-        use std::fmt::Write as _;
-        let _ = write!(&mut out, "{byte:02x}");
-    }
-    out
+    super::hex(&hasher.finalize())
 }
 
 /// Cap the per-fetch body size to ~256 MiB. Framework release tarballs

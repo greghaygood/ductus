@@ -486,7 +486,9 @@ pub enum PrimitiveError {
         feature: String,
     },
     /// Feature directory exists but has no `tasks.md`. `prune-tasks` raises
-    /// this so the command can direct the user to run the plan phase.
+    /// this for a named feature, and a walk records the feature as a
+    /// `no-tasks-file` skip instead; `/{project}:prune` directs to the plan
+    /// phase only when the feature has no `plan.md` either.
     #[error("tasks.md not found: {root}/{feature}/tasks.md")]
     TasksFileMissing {
         /// Configured spec-root directory name (default `specs`; spec 040).
@@ -909,6 +911,15 @@ pub(crate) fn split_frontmatter_with_offset<'a>(
 /// rather than having the disagreement encoded permanently; and a file with
 /// no line ending at all — empty, or one unterminated line — carries no
 /// evidence either way, so it takes the platform-neutral default.
+/// Lowercase hex of `bytes` — the form every recorded sha256 digest takes.
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    bytes.iter().fold(String::new(), |mut acc, byte| {
+        use std::fmt::Write as _;
+        let _ = write!(acc, "{byte:02x}");
+        acc
+    })
+}
+
 pub(crate) fn line_ending_of(content: &str) -> &'static str {
     let crlf = content.matches("\r\n").count();
     // Every `\r\n` contains an `\n`, so the bare-LF count is the difference.
@@ -1936,9 +1947,9 @@ pub(crate) struct MarkdownBlock {
 /// and HTML comments are dropped by [`SkipScanner`], which every line passes
 /// through first; blockquote lines (`>`) are dropped here. The split is
 /// deliberately **not** pushed into `SkipScanner`: that scanner is shared by
-/// `read-tasks`, `mark-task`, `prune-tasks`, and the task-number walkers, so
-/// teaching it a fourth region would change how each of them reads a quoted
-/// task line. (Inline code spans are the fourth exempt context, but they are
+/// the tasks primitives, `prune-plan`'s section segmentation, and the section
+/// and bullet walkers, so teaching it a fourth region would change how each
+/// of them reads a quoted line. (Inline code spans are the fourth exempt context, but they are
 /// an *intra-line* concern — see [`inline_code_spans`] — so a consumer
 /// applies them to a block's text rather than the splitter dropping lines.)
 pub(crate) fn split_blocks(content: &str) -> Vec<MarkdownBlock> {
@@ -3576,15 +3587,20 @@ mod tests {
             "051-b".to_string(),
             "proj-9.1-other".to_string(),
             "1234.2-early".to_string(),
+            "1000-e".to_string(),
             "007-a".to_string(),
+            "999-d".to_string(),
         ];
         names.sort_by(|a, b| feature_dir_cmp(a, b));
         assert_eq!(
             names,
             vec![
-                // Sequential first, by number.
+                // Sequential first, by number — 999 before 1000, which byte
+                // order inverts.
                 "007-a".to_string(),
                 "051-b".to_string(),
+                "999-d".to_string(),
+                "1000-e".to_string(),
                 // Then branch-scoped, grouped by identifier, counter
                 // compared numerically — 2 before 10, which a plain
                 // lexicographic sort would invert.

@@ -917,7 +917,62 @@ fn prune_command_gate_blocks_on_the_exec_path() {
     assert_eq!(envelopes[3]["gate"], "step-6");
     assert_eq!(envelopes[5]["result"]["confirmed"], false);
 
-    // The denied gate wrote nothing.
+    // The denied gate wrote nothing. A confirmed one writes (below), so this
+    // can fail.
     let after = std::fs::read_to_string(feature_dir.join("tasks.md")).unwrap();
     assert_eq!(after, tasks_body, "tasks.md must be untouched after denial");
+}
+
+/// A confirmed gate authorizes the write after it: prune.md step 7 runs
+/// `prune-tasks` with `apply`, so the spent section goes and the pending one
+/// stays. Before the walker bound `apply` at a confirmed gate, step 7
+/// previewed a second time and the walk completed having written nothing.
+#[test]
+fn prune_command_applies_after_a_confirmed_gate() {
+    let source = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("runtime/.. exists")
+            .join("framework/commands/prune.md"),
+    )
+    .unwrap();
+    let procedure = ductus::parser::parse(&source, "prune").expect("prune.md parses");
+
+    let tmp = tempfile::tempdir().unwrap();
+    let feature_dir = tmp.path().join("specs/001-basic");
+    std::fs::create_dir_all(&feature_dir).unwrap();
+    std::fs::write(
+        feature_dir.join("spec.md"),
+        "---\nstatus: in-progress\ndependencies: []\n---\n\n# 001\n",
+    )
+    .unwrap();
+    std::fs::write(
+        feature_dir.join("tasks.md"),
+        "# 001\n\n## 1. Spent\n\n- [x] Done subtask.\n\n## 2. Pending\n\n- [ ] Open subtask.\n",
+    )
+    .unwrap();
+
+    let mut context = Map::new();
+    context.insert("feature".into(), Value::String("001-basic".into()));
+    let response = "{\"type\":\"gate-response\",\"request-id\":\"req-1\",\"confirmed\":true}\n";
+    let mut reader = Cursor::new(response.to_string());
+    let mut writer: Vec<u8> = Vec::new();
+    let mut walker = Walker::new(
+        &procedure,
+        tmp.path().to_path_buf(),
+        context,
+        &mut reader,
+        &mut writer,
+    );
+    assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+
+    let after = std::fs::read_to_string(feature_dir.join("tasks.md")).unwrap();
+    assert!(
+        !after.contains("## 1. Spent"),
+        "the confirmed reduction removes the spent section:\n{after}"
+    );
+    assert!(
+        after.contains("## 2. Pending") && after.contains("- [ ] Open subtask."),
+        "the pending section survives whole:\n{after}"
+    );
 }

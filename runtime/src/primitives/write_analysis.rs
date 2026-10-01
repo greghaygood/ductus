@@ -35,11 +35,12 @@
 //!
 //! - `advisory` is recorded and never gated on. An outstanding SHOULD blocks
 //!   `done` at the review gate because §implement-phase says advisory is not
-//!   ignorable there. Analyze's advisory tier is a different contract: its
-//!   members are checks introduced advisory *with published promotion
-//!   criteria* — grounding, Applicable-Rules citations, decision drift — and
-//!   gating on them here would promote every one of them at once, past the
-//!   criteria each declares.
+//!   ignorable there. Analyze's advisory tier is advisory by design: some of
+//!   its checks were introduced advisory *with published promotion criteria*
+//!   — grounding, Applicable-Rules citations, decision drift — and the rest,
+//!   the plan record and un-folded branch specs among them, stay advisory for
+//!   good. Gating on them here would promote every one of them at once, past
+//!   the criteria some declare and against the design of the rest.
 //! - `unexamined` has no counterpart in `review:` at all, and is the field
 //!   that makes this record honest. A clean analyze is two states, not one,
 //!   and the command's own contract says so: "clean with nothing skipped is
@@ -155,7 +156,9 @@ pub fn run(args: &WriteAnalysisArgs, repo: &Path) -> Result<WriteAnalysisResult>
         args.unexamined_by_reason
             .iter()
             .fold(BTreeMap::new(), |mut acc, (reason, count)| {
-                *acc.entry(reason.clone()).or_default() += *count;
+                // Keyed as rendered, so two reasons that flatten to one line
+                // are one entry rather than a duplicate YAML key.
+                *acc.entry(single_line(reason)).or_default() += *count;
                 acc
             });
     // A registered shared constitution this run could not read is an unexamined
@@ -432,7 +435,7 @@ fn render_analysis(
     if !by_reason.is_empty() {
         let _ = writeln!(out, "unexamined-by-reason:");
         for (reason, count) in by_reason {
-            let _ = writeln!(out, "  {}: {count}", yaml_string(&single_line(reason)));
+            let _ = writeln!(out, "  {}: {count}", yaml_string(reason));
         }
     }
     let _ = writeln!(out, "blocking: {blocking}");
@@ -1087,6 +1090,25 @@ mod tests {
                 "ships-to-adopter"
             ]
         );
+    }
+
+    /// Reasons are folded by the key they render as, so two that flatten to
+    /// one line are one entry, never a duplicate key the next reader refuses.
+    #[test]
+    fn reasons_that_flatten_alike_are_one_entry() {
+        let tmp = spec_repo("status: in-progress\ndependencies: []");
+        let result = run(
+            &WriteAnalysisArgs {
+                unexamined_by_reason: vec![("a\nb".into(), 1), ("a b".into(), 2)],
+                ..args()
+            },
+            tmp.path(),
+        )
+        .unwrap();
+        assert_eq!(result.unexamined, 3);
+        let spec = analysis_md(&tmp);
+        assert_eq!(spec.matches("  a b:").count(), 1, "{spec}");
+        assert!(spec.contains("  a b: 3"), "{spec}");
     }
 
     /// The breakdown is the authority: a total a caller can contradict is a

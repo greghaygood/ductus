@@ -18,7 +18,7 @@ use std::path::Path;
 use git2::{Repository, Sort};
 
 use crate::primitives::{
-    PrimitiveError, ProjectRepository, Result, SkipScanner, blob_text, frontmatter_status,
+    PrimitiveError, ProjectRepository, Result, SkipScanner, blob_text, checkbox, frontmatter_status,
 };
 use crate::schema::paths;
 use crate::schema::primitives::{CheckStuckArgs, CheckStuckResult};
@@ -113,9 +113,12 @@ fn first_incomplete_subtask_index(content: &str) -> Option<usize> {
         if skip.skip(line) {
             continue;
         }
-        // Match `- [ ]` exactly (space inside the brackets, not [x]/[X]).
-        // Allow leading whitespace before the `-` for nested list items.
-        if line.trim_start().starts_with("- [ ]") {
+        // An unchecked box by the grammar every tasks parser shares, so a
+        // nested or tab-separated `- [ ]` counts here as it does in
+        // `read-tasks`.
+        if checkbox::find_checkbox_line(line)
+            .is_some_and(|(_bracket, marker)| line.as_bytes()[marker] == b' ')
+        {
             return Some(idx);
         }
     }
@@ -320,6 +323,21 @@ mod tests {
     /// to a splitter that only knows the LF form.
     fn spec_crlf(status: &str) -> String {
         format!("---\r\nstatus: {status}\r\ndependencies: []\r\n---\r\n\r\n# X\r\n")
+    }
+
+    /// An unchecked box is read by the grammar every tasks parser shares, so
+    /// a tab after the dash counts, and a `]` run into text does not.
+    #[test]
+    fn the_first_unchecked_box_uses_the_shared_grammar() {
+        assert_eq!(
+            first_incomplete_subtask_index("# T\n\n- [x] a\n-\t[ ] tabbed\n"),
+            Some(3)
+        );
+        assert_eq!(
+            first_incomplete_subtask_index("# T\n\n  - [ ] nested\n"),
+            Some(2)
+        );
+        assert_eq!(first_incomplete_subtask_index("# T\n\n- [ ]x\n"), None);
     }
 
     #[test]
@@ -846,7 +864,7 @@ mod tests {
         assert_eq!(result.commit_count, 4);
         // But subtasks advanced across the window: the first incomplete
         // subtask moved from line 4 (subtask A) at since-sha to a later
-        // index (line 9, the new Follow-on D) at HEAD. NOT stuck.
+        // index (line 10, the new Follow-on D) at HEAD. NOT stuck.
         assert!(
             !result.stuck,
             "stuck must not fire when first-incomplete index has advanced"

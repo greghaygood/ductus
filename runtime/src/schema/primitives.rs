@@ -2883,8 +2883,8 @@ pub struct PruneTasksResult {
 /// per-section records. A corpus preview prices each spec by its counts and
 /// sizes, and the records would carry every task section in the corpus —
 /// 842 of them, 161,841 bytes, over this repository's 60 specs when the walk
-/// was built — which is the file body the primitive exists to keep out of a
-/// host's context.
+/// was built — bulk a corpus preview does not need, and past the MCP output
+/// cap.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub struct PruneTasksLine {
@@ -5291,29 +5291,17 @@ mod tests {
         assert_eq!(round_trip(&result), result);
     }
 
-    #[test]
-    fn prune_tasks_round_trip() {
-        let args = PruneTasksArgs {
-            feature: Some("041-task-pruning".into()),
-            all: false,
-            reset: false,
-            force: false,
-            apply: true,
-        };
-        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
-        assert_eq!(value["feature"], "041-task-pruning");
-        assert_eq!(value["reset"], false);
-        assert_eq!(value["apply"], true);
-        assert_eq!(round_trip(&args), args);
-
-        let summary = PruneTasksSummary {
+    /// A keep-pending summary with every count distinct, so a field mapped
+    /// to the wrong one shows.
+    fn prune_tasks_summary() -> PruneTasksSummary {
+        PruneTasksSummary {
             mode: PruneMode::KeepPending,
             applied: false,
             gate: PruneGate::NotApplicable,
             status: None,
             nothing_to_prune: false,
             removed_count: 1,
-            kept_count: 1,
+            kept_count: 2,
             size_before: SizeSummary {
                 lines: 40,
                 bytes: 900,
@@ -5341,9 +5329,36 @@ mod tests {
                     checkbox_checked: 1,
                     action: PruneAction::Kept,
                 },
+                PruneSection {
+                    number: "3".into(),
+                    heading: "Notes".into(),
+                    phase: Some("Phase A".into()),
+                    classification: Classification::NoCheckbox,
+                    checkbox_total: 0,
+                    checkbox_checked: 0,
+                    action: PruneAction::Kept,
+                },
             ],
             path: "specs/041-task-pruning/tasks.md".into(),
+        }
+    }
+
+    #[test]
+    fn prune_tasks_round_trip() {
+        let args = PruneTasksArgs {
+            feature: Some("041-task-pruning".into()),
+            all: false,
+            reset: false,
+            force: false,
+            apply: true,
         };
+        let value: serde_json::Value = serde_json::to_value(&args).unwrap();
+        assert_eq!(value["feature"], "041-task-pruning");
+        assert_eq!(value["reset"], false);
+        assert_eq!(value["apply"], true);
+        assert_eq!(round_trip(&args), args);
+
+        let summary = prune_tasks_summary();
         let result = PruneTasksResult {
             summary: Some(summary.clone()),
             walk: None,
@@ -5363,7 +5378,11 @@ mod tests {
         // `status: None` must serialize as absent, not null.
         assert!(!value.as_object().unwrap().contains_key("status"));
         assert_eq!(round_trip(&result), result);
+    }
 
+    #[test]
+    fn prune_tasks_walk_round_trip() {
+        let summary = prune_tasks_summary();
         // Under `all` the result is the walk alone, each entry a spec's line
         // beside its feature, without the per-section records.
         let walked = PruneTasksResult {
@@ -5382,9 +5401,22 @@ mod tests {
         };
         let value: serde_json::Value = serde_json::to_value(&walked).unwrap();
         assert_eq!(value["examined"], 3);
-        assert_eq!(value["features"][0]["feature"], "041-task-pruning");
-        assert_eq!(value["features"][0]["removed-count"], 1);
-        assert!(value["features"][0].get("sections").is_none());
+        // Every field the line maps, each distinct, so a swapped or dropped
+        // mapping in `PruneTasksLine::new` shows.
+        assert_eq!(
+            value["features"][0],
+            serde_json::json!({
+                "feature": "041-task-pruning",
+                "gate": "not-applicable",
+                "status": "done",
+                "applied": false,
+                "removed-count": 1,
+                "kept-count": 2,
+                "size-before": { "lines": 40, "bytes": 900 },
+                "size-after": { "lines": 20, "bytes": 450 },
+                "path": "specs/041-task-pruning/tasks.md",
+            })
+        );
         assert_eq!(value["skipped"][0]["reason"], "no-tasks-file");
         assert!(!value.as_object().unwrap().contains_key("mode"));
         assert_eq!(round_trip(&walked), walked);

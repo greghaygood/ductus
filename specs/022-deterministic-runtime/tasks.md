@@ -550,3 +550,12 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 - [x] plan.md names the timeouts; the 0.56.0 CHANGELOG records the fix
 
 - **Done when**: both primitives stop a hung child and say so, the tests fail with the timeout removed, and the full runtime suite passes.
+
+## 128. Implement scenario: a-confirmed-gate-authorizes-the-writes-after-it
+
+- [x] Implement the behavior described in `scenarios/a-confirmed-gate-authorizes-the-writes-after-it.md`
+- [x] Bind apply: true into the arguments of every primitive dispatched after a confirmed gate, never the walker context, and say why in the module doc's gate convention
+- [x] Walker test: prune.md walked with a confirmed gate removes the spent section and keeps the pending one, proven red with the binding removed
+- [x] data-model.md's JSON-over-stdio section states the binding
+
+- **Done when**: a confirmed gate under ductus exec prune writes the confirmed reduction, a denied one writes nothing, and both walker tests pass, the new one having failed with the binding removed

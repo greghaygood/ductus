@@ -32,7 +32,7 @@ use std::path::Path;
 
 use sha2::{Digest, Sha256};
 
-use crate::primitives::read_text;
+use crate::primitives::{hex, read_text};
 use crate::schema::primitives::{AnalyzeBlock, RecordFreshness};
 
 /// Any `.md` artifact under the feature except the analyze record itself —
@@ -51,9 +51,10 @@ use crate::schema::primitives::{AnalyzeBlock, RecordFreshness};
 /// exactly as `review.md` is `/{project}:review`'s and is excluded from
 /// [`is_review_contract`] for the identical stated reason. Nothing reads its
 /// body: its readers — the pre-done gate, `write-review`'s analyze-freshness
-/// row, `read-spec`, `validate-frontmatter`, `process-decisions` and
-/// `write-analysis` reading its stored decisions, and `/{project}:analyze`
-/// judging drift from the record it has just written — read its frontmatter.
+/// row, `read-spec`, `validate-frontmatter`, `process-decisions`,
+/// `write-analysis` and `prune-plan` reading its stored decisions, and
+/// `/{project}:analyze` judging drift from the record it has just written —
+/// read its frontmatter.
 ///
 /// Spec 057 first excluded only that frontmatter, which is the half the record
 /// moved with. That left the **body** digested, and `write-analysis` rewrites
@@ -197,15 +198,6 @@ pub(crate) fn subject_digest(feature_dir: &Path, is_subject: fn(&str) -> bool) -
     }
     out.unreadable.sort();
     out
-}
-
-/// Lowercase hex of `bytes` — the form every recorded sha256 digest takes.
-pub(crate) fn hex(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::new(), |mut acc, byte| {
-        use std::fmt::Write as _;
-        let _ = write!(acc, "{byte:02x}");
-        acc
-    })
 }
 
 /// Compare a spec's recorded analyze digest against its subjects as they are

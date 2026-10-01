@@ -121,6 +121,8 @@ Newline-delimited JSON. Each line is one complete JSON object terminated by `\n`
 
 The runtime ignores any other inbound JSON shape — it logs to stderr and continues waiting for a valid response.
 
+A `gate-response` with `confirmed: true` binds `apply: true` into the arguments of every primitive the walker dispatches after the gate, because a gate is what authorizes the writes that follow. It is bound as an argument, not a context key, so no extension payload built from the context carries it. A primitive with an `apply` argument therefore previews before the gate and applies after it, and `/{project}:prune`'s step 7 performs the reduction step 6 confirmed. `confirmed: false` ends the walk with a clean `complete`. Scenario [a-confirmed-gate-authorizes-the-writes-after-it](scenarios/a-confirmed-gate-authorizes-the-writes-after-it.md).
+
 ## Per-project file resolution
 
 The two files the runtime reads out of the per-project directory resolve through one ordered chain each, declared once in `runtime/src/schema/paths.rs` (`CONFIG_CHAIN`, `SESSION_CHAIN`) and walked by every resolver. Newest first:

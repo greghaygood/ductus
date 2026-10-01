@@ -27,6 +27,24 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
   reopens that spec and invalidates its review. The cross-spec-impact check
   is unchanged. Spec 051, scenario `a-pending-fold-never-holds-done`.
 
+### Fixed
+
+- **`ductus exec prune` writes what the operator confirmed.** A confirmed
+  gate now binds `apply: true` for the steps after it, so `/{project}:prune`'s
+  step 7 applies the reduction step 6 confirmed. Before, it previewed a
+  second time and the walk completed with exit 0 having written nothing. A
+  denied gate still ends the walk. Spec 022, scenario
+  `a-confirmed-gate-authorizes-the-writes-after-it`.
+- **`check-stuck` reads an unchecked box by the grammar every tasks parser
+  shares**, so a tab after the dash counts as it does in `read-tasks`, and a
+  `]` run into text is not a box. Spec 022.
+- **`write-analysis` keys `unexamined-by-reason` by the reason as written.**
+  Two reasons that flatten to one line are one entry with their counts
+  summed, rather than a duplicate key the next reader refuses. Spec 041.
+- **`prune-tasks --reset` lifts the feature's identity from a heading outside
+  fences and comments**, so a file whose only top-level heading is an example
+  in a fence is refused as malformed rather than reset under that line. Spec 041.
+
 ## [0.56.0] — 2026-10-01
 
 Each identified agent process — one with `DUCTUS_SESSION`, or Claude Code's
@@ -63,7 +81,9 @@ Each identified agent process — one with `DUCTUS_SESSION`, or Claude Code's
   calls it. Spec 062.
 - **`retarget-sessions`**: `/{project}:fold` re-targets, and
   `/{project}:consolidate` clears, every session that named the removed
-  spec. Each affected session is told at its next command. Spec 062.
+  spec. Each affected per-process session is told at its next command; the
+  shared default is changed without a notice, since every process without
+  an identity reads it, and the command's report names it. Spec 062.
 - **`prune-plan`** reports each `plan.md` section outside the design record,
   meaning the plan template's own `##` headings, compared case-insensitively.
   A heading in a fenced block or an HTML comment is not a section. Each

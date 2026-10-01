@@ -206,11 +206,14 @@ fn prune_tasks_preserves_crlf() {
     .unwrap();
 
     assert_crlf(&tasks, "prune-tasks");
+    // The reduction was written, so the endings checked above are the
+    // rewritten file's, not the untouched fixture's.
     let after = read(&tasks);
     assert!(
-        after.contains("## 2. Pending") || after.contains("Pending"),
-        "{after}"
+        !after.contains("## 1. Spent"),
+        "spent section kept: {after}"
     );
+    assert!(after.contains("## 2. Pending\r\n"), "{after}");
 }
 
 /// `--reset` rewrites the file down to its `# ` heading — which it lifts
@@ -244,6 +247,15 @@ fn prune_tasks_reset_preserves_crlf() {
     assert_crlf(&tasks, "prune-tasks --reset");
     let after = read(&tasks);
     assert!(after.contains("# 050 — Alpha Tasks"), "{after}");
+    // The reset was written: the task is gone and the template body is in.
+    assert!(
+        !after.contains("## 1. Spent"),
+        "spent section kept: {after}"
+    );
+    assert!(
+        after.contains("<!--"),
+        "no template guidance comment: {after}"
+    );
 }
 
 /// An append is the other half of the same rule: the existing content keeps

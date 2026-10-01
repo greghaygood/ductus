@@ -37,6 +37,13 @@
 //! normally — a step is never silently converted into a gate that drops
 //! its primitive or extension dispatch.
 //!
+//! A confirmed gate binds `apply: true` into the arguments of every primitive
+//! dispatched after it, because a gate is what authorizes the writes that
+//! follow. A primitive with an `apply` argument previews before the gate and
+//! writes after it, so the step after prune.md's gate performs the reduction
+//! the operator confirmed. The binding is an argument, never a context key,
+//! so no extension payload carries it. A denied gate ends the walk.
+//!
 //! At the end of the procedure the walker emits `complete`. Operational
 //! errors halt the walk and emit an `error` envelope before returning.
 //! Step ordering and message emission are deterministic given the same
@@ -71,14 +78,13 @@ use crate::schema::primitives::{
     CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
     DeriveDependenciesArgs, DeriveReferencesArgs, DeriveRoutingCandidatesArgs, DiffCrossSpecArgs,
     DiscoverRuleFilesArgs, EnforceManifestArgs, ExtractArchiveArgs, FetchArchiveArgs,
-    GateConfirmArgs, InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs,
-    MarkTaskArgs, MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs,
-    ProcessDecisionsArgs, ProcessWaiversArgs, PrunePlanArgs, PruneTasksArgs, ReadSpecArgs,
-    ReadTasksArgs, RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs,
-    ResolveConstitutionsArgs, ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs,
-    RetargetSessionsArgs, RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs,
-    TraverseDepsArgs, ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs,
-    WriteSessionArgs,
+    InvalidateReviewArgs, LabelCriteriaArgs, LintMarkdownArgs, MarkCriterionArgs, MarkTaskArgs,
+    MergeManagedBlockArgs, MergePermissionsArgs, MigrateSessionFileArgs, ProcessDecisionsArgs,
+    ProcessWaiversArgs, PrunePlanArgs, PruneTasksArgs, ReadSpecArgs, ReadTasksArgs,
+    RelocateAuditRecordsArgs, RemoveInboxItemArgs, ResolveAnchorArgs, ResolveConstitutionsArgs,
+    ResolveFeatureArgs, ResolveReferencesArgs, ResolveSessionArgs, RetargetSessionsArgs,
+    RetireFeatureArgs, RewriteSpecLinksArgs, RunGeneratorArgs, SetStatusArgs, TraverseDepsArgs,
+    ValidateFrontmatterArgs, WriteAnalysisArgs, WriteReviewArgs, WriteSessionArgs,
 };
 use crate::schema::procedure::{Procedure, Step, StepNumber};
 use crate::schema::protocol::{ErrorLocation, ProtocolMessage};
@@ -111,6 +117,10 @@ pub struct Walker<'a, R: BufRead, W: Write> {
     /// The rules `assessSpecQuality` steps ask about, loaded from
     /// `rule-files` at the walk's first such step; `None` until then.
     rules: Option<payload::LoadedRules>,
+    /// Whether a gate has been confirmed. Every primitive dispatched after it
+    /// is bound `apply: true` — in its arguments, never the context, so an
+    /// extension payload built from the context does not carry it.
+    gate_confirmed: bool,
 }
 
 /// Top-level outcome of [`Walker::run`].
@@ -154,6 +164,7 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             request_counter: 0,
             analyze_tally: analyze.then(analyze_tally::AnalyzeTally::new),
             rules: None,
+            gate_confirmed: false,
         }
     }
 
@@ -227,13 +238,21 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
         // An `/analyze` walk's record carries the tier counts its own
         // detection steps produced (spec 058, AC26); the walk has no host to
         // supply them.
-        let dispatched = match (&self.analyze_tally, name) {
-            (Some(tally), "write-analysis") => {
-                let mut bindings = self.context.clone();
+        let tally = match (&self.analyze_tally, name) {
+            (Some(tally), "write-analysis") => Some(tally),
+            _ => None,
+        };
+        let dispatched = if tally.is_some() || self.gate_confirmed {
+            let mut bindings = self.context.clone();
+            if let Some(tally) = tally {
                 tally.bind(&mut bindings);
-                dispatch_primitive(name, &bindings, &self.repo)
             }
-            _ => dispatch_primitive(name, &self.context, &self.repo),
+            if self.gate_confirmed {
+                bindings.insert("apply".into(), Value::Bool(true));
+            }
+            dispatch_primitive(name, &bindings, &self.repo)
+        } else {
+            dispatch_primitive(name, &self.context, &self.repo)
         };
         match dispatched {
             Ok(result) => {
@@ -681,6 +700,12 @@ impl<'a, R: BufRead, W: Write> Walker<'a, R, W> {
             None,
         )?;
         if confirmed {
+            // A gate exists to authorize the writes after it, so a confirmed
+            // one binds `apply` for every later primitive. Without it, a
+            // primitive that previews unless told to apply — `prune-tasks` at
+            // prune.md step 7 — would preview a second time, and the walk
+            // would complete having written nothing.
+            self.gate_confirmed = true;
             Ok(None)
         } else {
             // Denial is a clean exit per §partial-failure-semantics.
@@ -1080,20 +1105,6 @@ fn dispatch_primitive(
         "write-session" => call!(WriteSessionArgs, write_session),
         "resolve-session" => call!(ResolveSessionArgs, resolve_session),
         "retarget-sessions" => call!(RetargetSessionsArgs, retarget_sessions),
-        "gate-confirm" => {
-            // Unreachable from the walker: `handle_step` intercepts a
-            // `gate-confirm` primitive step and blocks via `handle_gate`
-            // (the step IS the gate). This arm remains so a direct
-            // dispatch by name still yields the prompt payload as a
-            // domain result instead of an unknown-primitive error.
-            let args: GateConfirmArgs =
-                serde_json::from_value(value).map_err(DispatchError::BadArgs)?;
-            let payload = primitives::gate_confirm::prompt_payload(
-                &args,
-                &primitives::gate_confirm::fresh_request_id(),
-            );
-            Ok(serde_json::to_value(payload).unwrap_or(Value::Null))
-        }
         other => Err(DispatchError::UnknownPrimitive(other.into())),
     }
 }
@@ -1241,7 +1252,12 @@ mod tests {
     #[test]
     fn dispatch_handles_every_registry_primitive() {
         let tmp = tempfile::tempdir().unwrap();
-        for name in crate::schema::registry::PRIMITIVE_REGISTRY {
+        // `gate-confirm` never reaches dispatch: `handle_step` intercepts its
+        // step and blocks in `handle_gate`, because the step is the gate.
+        for name in crate::schema::registry::PRIMITIVE_REGISTRY
+            .iter()
+            .filter(|name| **name != "gate-confirm")
+        {
             let result = dispatch_primitive(name, &Map::new(), tmp.path());
             assert!(
                 !matches!(result, Err(DispatchError::UnknownPrimitive(_))),

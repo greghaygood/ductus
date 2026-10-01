@@ -723,10 +723,7 @@ async fn the_cross_spec_impact_gate_reports_per_entry_via_mcp() {
     fs::create_dir_all(&dir).unwrap();
     fs::write(
         dir.join("spec.md"),
-        "---\nstatus: in-progress\ndependencies: []\ncross-spec-impact: [002-y]\n\
-         review:\n  last-run: 2026-09-12T00:00:00Z\n  reviewed-against: abc123\n  \
-         must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  \
-         blocking: false\n---\n\n# x\n",
+        "---\nstatus: in-progress\ndependencies: []\ncross-spec-impact: [002-y]\n---\n\n# x\n",
     )
     .unwrap();
     let sibling = tmp.path().join("specs/002-y");

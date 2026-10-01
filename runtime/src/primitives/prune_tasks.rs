@@ -485,10 +485,13 @@ fn reduce_reset(
     blocks: &[Block],
     tasks_path: &Path,
 ) -> Result<(String, Vec<PruneSection>, u32, u32)> {
+    // Outside fences and comments, as `segment` reads structure: a `# ` line
+    // in an example block is not the feature's identity.
+    let mut skip = SkipScanner::default();
     let h1 = blocks
         .iter()
         .flat_map(|b| b.lines.iter())
-        .find(|line| matches!(parse_atx_heading(line.as_str()), Some((1, _))))
+        .find(|line| !skip.skip(line) && matches!(parse_atx_heading(line.as_str()), Some((1, _))))
         .ok_or_else(|| PrimitiveError::MalformedTasks {
             path: tasks_path.to_path_buf(),
             reason: "no top-level (`#`) heading to preserve the feature identity".to_string(),
@@ -696,6 +699,19 @@ mod tests {
         let (_tmp, repo) = write_repo(tasks, Some("done"));
         let err = run(&args(true, false, true), &repo).unwrap_err();
         assert!(matches!(err, PrimitiveError::MalformedTasks { .. }));
+    }
+
+    /// A `# ` line inside a fence is an example, not the feature's identity,
+    /// so a file whose only H1 sits in one is still malformed for a reset.
+    #[test]
+    fn reset_ignores_an_h1_inside_a_fence() {
+        let tasks = "Tasks.\n\n```markdown\n# Example heading\n```\n\n## 1. X\n\n- [x] a\n";
+        let (_tmp, repo) = write_repo(tasks, Some("done"));
+        let err = run(&args(true, false, true), &repo).unwrap_err();
+        assert!(
+            matches!(err, PrimitiveError::MalformedTasks { .. }),
+            "{err}"
+        );
     }
 
     /// A corpus of features, each `(name, status, tasks)`; `None` tasks means
