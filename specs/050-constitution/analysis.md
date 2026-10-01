@@ -1,16 +1,16 @@
 ---
 spec: 050-constitution
-last-run: 2026-09-28T15:12:15Z
-analyzed-against: 73f4ebb35b488cc9b7050a7ff6ca11f96cef1a66
+last-run: 2026-10-01T21:11:05Z
+analyzed-against: d8baffd05bf6d35b3504877cc042c126dce984f6
 hard-fail: 0
 blocking-findings: 0
-advisory: 0
-unexamined: 1
+advisory: 1
+unexamined: 0
 analyzed-digest:
-  plan.md: 37db2a83547236253847c75d3fa3c9bcc3d9d860b6f722f5ed5865971fcd5415
-  review.md: cf2a523f26f98cd04919b1bde0b9b1dd5ae7019f3fee082f85bd64170257dab4
+  plan.md: 2cb780ceb2822ab6f7d4ec5c2bfae5b7621ece503b62cde670581bf0559b6ef8
+  review.md: 6f036f180b086fb87f68ad24be9c0435a870495fd347e471337860bd827301ca
   scenarios/a-canonical-source-is-pointed-at-not-copied.md: 6936b866607a842ece8ebfd749223d4f7d98637200e8db87d85772702589e98a
-  scenarios/a-declared-cross-spec-impact-gates-done.md: 17265775c8d619c2cad70f6ce7785c9734aaa3d08cf287785a6a91fde68ac981
+  scenarios/a-declared-cross-spec-impact-gates-done.md: b84dfb3cd3652dc116fbdd7dee60199185ae661a3f0aefb7ad14bc64a2c1d4cc
   scenarios/a-measurement-states-its-method-and-units.md: 4c250a480c11e9788058f1012b647daa14aba2036d4a3baa9d0c1ba3c5965b2a
   scenarios/a-partial-read-is-not-a-read.md: 8d6851e20f8a2e9f083434a37cbf39ab3bca533ec819a8a258197e4afb797b07
   scenarios/a-retired-feature-leaves-no-spec.md: eadf56734b7018bdf20fc4c6b03d274f46c36bba6ba65ec43975a099eaaa98bb
@@ -23,21 +23,25 @@ analyzed-digest:
   scenarios/report-outcomes-not-edits.md: caf13342d7fe0a5af4108024cf424ab921030c896f0743307cf5111be2e163ab
   spec.md: 79c6b9b0c83748023101d6246dd941fe2bffa6a191fbbcdb645a77fae3b0de68
   tasks.md: 60ef8aa3c350036e3191740c593718641751685d11249d15f536e844fae15993
-unexamined-by-reason:
-  ships-to-adopter: 1
 blocking: false
 dispositions:
   fixed: 0
   routed: 0
-  discarded: 0
+  discarded: 1
   undispositioned: 0
+decisions:
+  - key: plan-record — plan.md §Classification is outside the design record
+    outcome: discarded
+    reason: the section is 050's AC1 verdict table, one promotion verdict per AGENTS.md rule-bearing entry, which the promotion-coverage audit reads; it is deliberately part of this plan's design, the case analyze.md names a Classification for
+    decided-at: 2026-10-01T21:11:05Z
+    decided-by: andy@stone.dev
 ---
 
 # Analysis — 050-constitution
 
 ## Summary
 
-0 hard-fail, 0 blocking, 0 advisory; not blocking. 1 unexamined target(s). Dispositions: 0 fixed, 0 routed, 0 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 1 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 1 discarded, 0 undispositioned.
 
 ## Hard failures
 
@@ -49,11 +53,11 @@ dispositions:
 
 ## Advisory findings
 
-*None.*
+- plan-record — plan.md §Classification is outside the design record — `specs/050-constitution/plan.md` — **discarded**: the section is 050's AC1 verdict table, one promotion verdict per AGENTS.md rule-bearing entry, which the promotion-coverage audit reads; it is deliberately part of this plan's design, the case analyze.md names a Classification for
 
 ## Unexamined targets
 
-- ships-to-adopter: 1
+*None — every target was examined.*
 
 ## Fixed in this run
 
