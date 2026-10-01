@@ -135,12 +135,12 @@ The advisory half of this scenario — `/{project}:analyze` firing every section
 
 ### 17. Release
 
-`ductus-v0.56.0` is tagged at `62cc9490` and pushed, with `main` at the same commit; 022, 041, 048, 052 and 062 are `done`. What is left is the release's confirmation. Read every workflow run for `62cc9490` — `framework-checks`, `runtime`, `generators` and `runtime-release` (`gh api repos/stonean/ductus/actions/runs?head_sha=<full sha>` and each run's `/jobs`; `gh run view` has returned HTTP 502). A job with no verdict is unknown, not passed, and `release not found` is normal while `runtime-release` runs: its `release-assets` job creates the release, then `verify-published` and `verify-installer` run last. When all four conclude `success`, tick the last item below in its own commit and push `main`. If one fails, follow `AGENTS.md` §Workflow's release entries — never delete and re-tag a run still in progress, and a version published to crates.io cannot be republished, so a failure after `publish` is a patch release.
+Released: `ductus-v0.56.0` at `62cc9490`, with `framework-checks`, `runtime`, `generators` and `runtime-release` all concluding `success` (`verify-published` and `verify-installer` included) and the GitHub release carrying its 13 assets.
 
 - [x] The full local gate, as `AGENTS.md` §Workflow lists it
 - [x] `runtime/CHANGELOG.md` `### Added` and a minor bump across `version`, `runtime/Cargo.toml` and the changelog heading, in one commit
 - [x] `/{project}:review` and `/{project}:analyze` on this spec, then the completion gate to `done`
-- [ ] Tag `ductus-v<version>` in the same sitting and read every workflow run for that sha
+- [x] Tag `ductus-v<version>` in the same sitting and read every workflow run for that sha
 
 - **Done when**: 041 is `done`, the tag is pushed, and every workflow run for the release commit has concluded successfully.
 
