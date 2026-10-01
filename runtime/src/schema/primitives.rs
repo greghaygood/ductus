@@ -3909,36 +3909,21 @@ pub enum ReviewGateBlock {
     /// first avoids sending a contributor to review a design that is about
     /// to change (spec 046).
     ScenarioOpenQuestions,
-    /// The spec declares `folds-into` and the target is in this tree: it is a
-    /// branch-scoped staging spec whose content can be folded into its
-    /// upstream home here and has not been (spec 051).
-    ///
-    /// The same category as an unresolved scenario question, and ordered
-    /// beside it for the same reason: both say the spec carries an
-    /// undischarged obligation, which makes asking whether its review is
-    /// fresh beside the point. A target not in this tree does not block: the
-    /// fold cannot be done here, so the checks after this one decide, and
-    /// the fold stays owed on `check-unfolded-specs` and the pipeline view
-    /// (scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
-    PendingFold,
     /// The spec declares `cross-spec-impact` entries that are not yet
     /// discharged — the affected spec does not link back to this one — or
     /// that name no feature directory, or that name the declaring spec
     /// itself (spec 050).
     ///
-    /// The same category as [`Self::PendingFold`] and ordered beside it for
-    /// the same reason: both say the spec carries an obligation nobody has
-    /// discharged, which makes asking whether its review is fresh beside
-    /// the point.
+    /// Ordered ahead of the `review:` checks, beside the scenario questions:
+    /// the spec carries an obligation nobody has discharged, which makes
+    /// asking whether its review is fresh beside the point.
     ///
-    /// It shares that reasoning and nothing else. A fold has one target,
-    /// discharges by the key's absence, and asks only whether the target is
-    /// in this tree, passing when it is not; a cross-spec impact has a list,
-    /// discharges by the target's reciprocal link, necessarily reads it, and
-    /// blocks when it is missing. Partial state does not
-    /// exist for a fold and is the normal case here. The two are a shared
-    /// category in this enum, not shared code — see
-    /// `check_review_gate::cross_spec_impact_block`.
+    /// A declared `folds-into` has no variant here, and the contrast is the
+    /// reason this one blocks. A pending fold never holds `done` (spec 051
+    /// scenario `a-pending-fold-never-holds-done`): `check-unfolded-specs`
+    /// and the pipeline view carry the owed fold past the transition. Nothing
+    /// carries an undischarged impact past it but this gate, so a missing
+    /// target blocks too — see `check_review_gate::cross_spec_impact_block`.
     UndischargedCrossSpecImpact,
     /// The spec has no completed review: `review.md` is absent, or its
     /// `last-run` is missing or null.

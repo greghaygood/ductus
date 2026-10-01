@@ -8,19 +8,21 @@ section: "Follow-on scenarios"
 
 [050](../../050-constitution/spec.md)'s `a-declared-cross-spec-impact-gates-done` requires that a declared cross-spec obligation gate `done`, and that discharge be provable rather than asserted. This scenario is the runtime half: the frontmatter field, the gate check, and where each sits.
 
-The gate already holds one obligation of this category. `check_review_gate`'s `pending_fold_block` blocked `in-progress → done` whenever `folds-into` was present when this scenario was written (since narrowed to a target in this tree by [051](../../051-branch-scoped-spec-numbering/spec.md)'s scenario `a-fold-owed-to-another-tree-does-not-hold-done`), and its doc comment states the reasoning the new check inherits verbatim — *"a spec carrying an obligation nobody has discharged is not a candidate for `done`, so whether its review is fresh does not yet matter."* Both checks therefore sit ahead of the review and analyze record checks, for that one reason.
+The gate already holds one obligation of this category. `check_review_gate`'s `pending_fold_block` blocked `in-progress → done` whenever `folds-into` was present when this scenario was written (since narrowed to a target in this tree by [051](../../051-branch-scoped-spec-numbering/spec.md)'s scenario `a-fold-owed-to-another-tree-does-not-hold-done`), and its doc comment states the reasoning the new check inherits verbatim — *"a spec carrying an obligation nobody has discharged is not a candidate for `done`, so whether its review is fresh does not yet matter."* Both checks therefore sit ahead of the review and analyze record checks, for that one reason. **Superseded by [051](../../051-branch-scoped-spec-numbering/spec.md)'s scenario `a-pending-fold-never-holds-done`**: the fold check is gone, because a pending fold never holds `done`. This check is now the only obligation of its category the gate holds, and the reasoning above stands on its own.
 
 The resemblance stops at the reasoning, and the question of whether the two should share code has an answer rather than a preference.
 
 ## Behavior
 
-A spec declares affected specs in a `cross-spec-impact:` frontmatter key — a list of feature slugs. `check-review-gate` gains a check, ordered beside `pending_fold_block`, that blocks `in-progress → done` while any declared entry is undischarged, naming the undischarged entries in the message and pointing at the back-edge in the guidance.
+A spec declares affected specs in a `cross-spec-impact:` frontmatter key — a list of feature slugs. `check-review-gate` gains a check, ordered ahead of the review record (beside `pending_fold_block` until 051 removed it), that blocks `in-progress → done` while any declared entry is undischarged, naming the undischarged entries in the message and pointing at the back-edge in the guidance.
 
 **An entry is discharged when the named spec's body links back to the declaring spec.** The reciprocal link is the signpost §cross-spec-impact already requires, so the check proves the obligation was met rather than trusting that a key was removed honestly. Link parsing is the corpus's existing sibling-link machinery — the same reading `derive-dependencies` performs — so the check introduces no second parser.
 
 The result reports per-entry state, not a single boolean: `discharged`, `undischarged`, and `target-missing` for an entry naming no feature directory. `target-missing` is a finding rather than a silent pass — a declaration pointing nowhere is a typo the operator wants named, and treating it as discharged would let one letter disable the gate.
 
 ### It does not share logic with `folds-into`, and does not enhance it
+
+> **Moot since 051's `a-pending-fold-never-holds-done` removed the fold check.** The comparison below records why the two never shared code. Its contrast on an absent target now decides more than that: what carries an owed fold past `done` is why a fold never blocks at all, and the lack of anything that carries an undischarged impact is why this check does.
 
 Extracting a common helper was evaluated and rejected. The two diverge on every axis the code turns on:
 
@@ -36,7 +38,7 @@ Extracting a common helper was evaluated and rejected. The two diverge on every 
 
 Enhancing `folds-into` to carry this instead is rejected for a stronger reason than code shape: the two obligations point in opposite directions. A fold moves the **declaring** spec's own content into its home, and a branch-scoped spec is retired by fold-back whatever its status. A cross-spec impact requires a change to **another** spec's content, and discharging it leaves the declaring spec perfectly completable. Folding them together would make one key's discharge stand in for an obligation that points the other way.
 
-What they share is the gate's ordering rationale and their position in the check sequence. That is a category in `ReviewGateBlock`, expressed as a new variant beside `PendingFold` and a doc comment citing the same reasoning — not a shared function.
+What they share is the gate's ordering rationale and their position in the check sequence. That is a category in `ReviewGateBlock`, expressed as a new variant beside `PendingFold` and a doc comment citing the same reasoning — not a shared function. `PendingFold` has since been removed with the fold check.
 
 ## Edge Cases
 

@@ -634,12 +634,12 @@ records `blocking: true`. This is enforced as follows:
    its message texts are canonical in the pre-done gate step of
    `framework/commands/implement.md`, and only the two review checks are
    restated here. Ahead of them run whether the spec is already `done`, the
-   feature directory's markdown lint, unresolved scenario open questions, an
-   undischarged fold, and an undischarged cross-spec impact — any of which
-   halts before the review record is consulted. Behind them run the review
-   staleness check, the analyze checks, and — last — the two disposition
-   checks: a `review.md` or `analysis.md` with no `dispositions:` map, then a
-   record whose `undispositioned` is above zero. The two review checks read the
+   feature directory's markdown lint, unresolved scenario open questions, and
+   an undischarged cross-spec impact — any of which halts before the review
+   record is consulted. Behind them run the review staleness check, the
+   analyze checks, and — last — the two disposition checks: a `review.md`
+   or `analysis.md` with no `dispositions:` map, then a record whose
+   `undispositioned` is above zero. The two review checks read the
    record from `review.md`: a missing/null `last-run` — or **no `review.md` at
    all**, which is the never-run state — halts with
 

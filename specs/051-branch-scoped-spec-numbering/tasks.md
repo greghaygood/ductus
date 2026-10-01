@@ -242,6 +242,11 @@ Phase 1 (tasks 1–5) makes branch-scoped directories creatable and visible. Pha
 
 ## 27. Implement scenario: a-pending-fold-never-holds-done
 
-- [ ] Implement the behavior described in `scenarios/a-pending-fold-never-holds-done.md`
+- [x] Implement the behavior described in `scenarios/a-pending-fold-never-holds-done.md`
+- [x] `check-review-gate`: remove the fold check — `pending_fold_block`, `fold_target_resolves`, and `ReviewGateBlock::PendingFold` — and renumber the gate checks; test that a spec whose `folds-into` target is in this tree reaches the later checks and passes when they do
+- [x] `dashboard`: below `done`, a spec carrying `folds-into` shows its status's ordinary next action, and at `done` the fold; the outstanding-fold callout says to fold once `done`; test both
+- [x] The constitution's §spec-lifecycle (the `done` row and the branch-scoped paragraph) and §cross-spec-impact; this spec's AC35, §Fold-back on merge, Resolved Questions, plan, and the earlier scenario; `implement.md`, `fold.md`, `status.md`, `review.md`; `docs/slash-commands.md`; the `check-review-gate` MCP description and the gate, dashboard, and schema docs
+- [x] 022 and 050 reopened; 022's `data-model.md` and scenarios and 050's `a-declared-cross-spec-impact-gates-done` carry the change with links back to this spec; 050 joins this spec's `cross-spec-impact`
+- [x] `runtime/CHANGELOG.md` records the change under `[Unreleased]`
 
-- **Done when**: the scenario's described behavior is correctly implemented and tested.
+- **Done when**: a branch-scoped spec whose fold target is in this tree reaches `done` through the gate when every other check passes; `/{project}:status` shows the ordinary next action below `done` and the fold at `done`, with `(fold pending)` at every status; the constitution, this spec, the command sources, 022's and 050's records, and the tests agree; and `cargo test --release --locked`, `clippy -D warnings`, markdownlint, and `scripts/audit/run-all.sh` pass

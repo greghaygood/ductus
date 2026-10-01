@@ -185,9 +185,10 @@ mod tests {
         );
     }
 
-    /// A staging spec that reached `done` on a branch that could not see its
-    /// target still owes its fold, so it is reported, with its status (spec
-    /// 051 scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
+    /// A staging spec at `done` still owes its fold, so it is reported, with
+    /// its status. That is the ordinary state, not an exception: a pending
+    /// fold never holds `done`, and the fold is run after it (spec 051
+    /// scenario `a-pending-fold-never-holds-done`).
     #[test]
     fn a_done_staging_spec_is_reported_with_its_status() {
         let tmp = tempfile::tempdir().unwrap();

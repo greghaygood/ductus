@@ -5,9 +5,8 @@
 //! walked by hand on every completion attempt: first whether the spec is
 //! already `done`, then the feature directory's markdown lint (through the
 //! `lint-markdown` machinery, replacing the raw `npx markdownlint-cli2`
-//! invocation), then unresolved scenario open questions, then a `folds-into`
-//! fold this tree can perform, then an undischarged `cross-spec-impact`,
-//! then the review record in `review.md` and whether it is still current,
+//! invocation), then unresolved scenario open questions, then an
+//! undischarged `cross-spec-impact`, then the review record in `review.md` and whether it is still current,
 //! then the analyze record in `analysis.md` and whether it is still current,
 //! and last the two records' `dispositions:` maps — a record that predates
 //! them, then any undispositioned finding (spec 058). The first failing
@@ -116,26 +115,25 @@ pub(crate) fn run_with_lint(
         return Ok(blocked);
     }
 
-    // Gate check 3: the spec owes no fold this tree can perform.
-    if let Some(blocked) =
-        pending_fold_block(frontmatter.folds_into.as_deref(), repo, &root, &project)
-    {
-        return Ok(blocked);
-    }
+    // No check reads `folds-into`. A pending fold never holds `done`: the
+    // staging spec completes its own pipeline like any other, and fold-back
+    // consolidates its content upstream afterwards (spec 051 scenario
+    // `a-pending-fold-never-holds-done`). The owed fold is carried past
+    // `done` by `check-unfolded-specs` and `/{project}:status`'s
+    // `(fold pending)`, not by this gate.
 
-    // Gate check 4: every declared `cross-spec-impact` entry is discharged.
+    // Gate check 3: every declared `cross-spec-impact` entry is discharged.
     //
-    // Beside the fold check, and ahead of the `review:` block, for the reason
-    // the fold check states: a spec carrying an obligation nobody has
-    // discharged is not a candidate for `done`, so whether its review is
-    // fresh does not yet matter.
+    // Ahead of the `review:` block because a spec carrying an obligation
+    // nobody has discharged is not a candidate for `done`, so whether its
+    // review is fresh does not yet matter.
     let cross_spec =
         cross_spec_impact_states(&frontmatter.cross_spec_impact, &args.feature, repo, &root);
     if let Some(blocked) = cross_spec_impact_block(&cross_spec, &args.feature, &project) {
         return Ok(blocked);
     }
 
-    // Gate checks 5 and 6: the review record, read from `review.md` — the
+    // Gate checks 4 and 5: the review record, read from `review.md` — the
     // artifact that owns it (spec 057).
     //
     // Three inputs, not two. An absent artifact means no review ran; an
@@ -174,7 +172,7 @@ pub(crate) fn run_with_lint(
         });
     }
 
-    // Gate check 7: the recorded review still describes the current code.
+    // Gate check 6: the recorded review still describes the current code.
     // Computed once and reused by the passing verdict's notice below, for the
     // reason the analyze half is: the comparison reads and hashes files, so
     // doing it twice is real work for one answer.
@@ -184,7 +182,7 @@ pub(crate) fn run_with_lint(
         return Ok(stale);
     }
 
-    // Gate checks 8, 9 and 10: the analyze record in `analysis.md`. The
+    // Gate checks 7, 8 and 9: the analyze record in `analysis.md`. The
     // freshness it computes is handed back rather than recomputed for the
     // passing verdict's notice below — the comparison reads and hashes every
     // `.md` under the feature, so doing it twice is real work for one answer.
@@ -205,7 +203,7 @@ pub(crate) fn run_with_lint(
         Ok(freshness) => freshness,
     };
 
-    // Gate checks 11 and 12: the records' dispositions (spec 058). Last,
+    // Gate checks 10 and 11: the records' dispositions (spec 058). Last,
     // because every check above names a more upstream defect: a record that
     // is missing, failing, or stale has to be re-run before what it says about
     // its findings means anything.
@@ -240,7 +238,7 @@ pub(crate) fn run_with_lint(
     })
 }
 
-/// Gate checks 11 and 12 — the two records' `dispositions:` maps (spec 058).
+/// Gate checks 10 and 11 — the two records' `dispositions:` maps (spec 058).
 ///
 /// **A record without the map predates dispositions, and absence is not
 /// zero.** Before 058 a run's findings were captured to the inbox, which no
@@ -371,7 +369,7 @@ fn passing_notices(review: &RecordFreshness, analyze: &RecordFreshness) -> Optio
     }
 }
 
-/// Gate checks 8, 9 and 10 — the analyze record in `analysis.md`: a completed analysis,
+/// Gate checks 7, 8 and 9 — the analyze record in `analysis.md`: a completed analysis,
 /// whose findings do not hold the spec out of `done`, still describing the
 /// current artifacts.
 ///
@@ -715,69 +713,6 @@ fn already_done_block(status: &str, project: &str) -> Option<CheckReviewGateResu
     })
 }
 
-/// The pending-fold gate check: `Some(blocked)` when the spec declares a
-/// `folds-into` target that resolves in this tree, `None` when it declares
-/// none or its target is not here.
-///
-/// Ordered beside the scenario-open-questions check and ahead of the
-/// `review:` block because it is the same kind of claim: a spec carrying an
-/// obligation it could discharge here is not a candidate for `done`, so
-/// whether its review is fresh does not yet matter (spec 051 AC35).
-///
-/// **It blocks only when the fold can be done here** (spec 051 scenario
-/// `a-fold-owed-to-another-tree-does-not-hold-done`). A branch-scoped spec
-/// exists because upstream moved, so its target normally lives on a line of
-/// development this tree does not hold, and fold-back needs both specs in one
-/// tree. Blocking there held finished work `in-progress` for the life of the
-/// branch, with no exit but a hand edit. So an absent target passes this
-/// check and the checks after it decide. The fold stays owed and visible:
-/// `check-unfolded-specs` keeps reporting the spec, `/{project}:status`
-/// renders it `done (fold pending)`, and `retire-feature` enforces the
-/// target's existence at fold-back, in the first tree holding both.
-///
-/// Absence of the key is never a finding. A sequential spec has no fold
-/// target by definition, and removing the key by hand is the supported way
-/// to make a branch-scoped spec stand on its own.
-fn pending_fold_block(
-    folds_into: Option<&str>,
-    repo: &Path,
-    specs_root: &str,
-    project: &str,
-) -> Option<CheckReviewGateResult> {
-    let target = folds_into?;
-    if !fold_target_resolves(target, repo, specs_root) {
-        return None;
-    }
-    Some(CheckReviewGateResult {
-        passed: false,
-        blocked_by: Some(ReviewGateBlock::PendingFold),
-        message: Some(format!(
-            "blocked: spec folds into {target} and the fold has not happened — \
-             resolve it before completing"
-        )),
-        guidance: Some(format!(
-            "Run /{project}:fold to fold this spec into {target} and retire its \
-             directory: the target is in this tree, so the fold can be done here and \
-             is owed before done. A spec that should stand on its own instead is \
-             renamed to the sequential NNN- form with its folds-into key removed."
-        )),
-        violations: vec![],
-        cross_spec_impact: vec![],
-    })
-}
-
-/// Whether the fold target `target` resolves in this tree: it names a
-/// feature directory holding a `spec.md`. That is the test fold-back applies,
-/// since `retire-feature` and `rewrite-spec-links` refuse any other target,
-/// and the one behind `/{project}:status`'s "not in this tree". The name is
-/// screened through [`super::parse_feature_dir`] before it is joined to a
-/// path, as a `cross-spec-impact` entry is, so a hand-edited value cannot
-/// walk out of the spec root.
-fn fold_target_resolves(target: &str, repo: &Path, specs_root: &str) -> bool {
-    super::parse_feature_dir(target).is_some()
-        && repo.join(specs_root).join(target).join("spec.md").is_file()
-}
-
 /// Classify every `cross-spec-impact:` entry the declaring spec carries.
 ///
 /// An entry is **discharged** when the named spec links back to `feature` —
@@ -897,27 +832,18 @@ fn links_back(path: &Path, specs_root: &str, feature: &str, depth: usize) -> boo
 /// The cross-spec-impact gate check: `Some(blocked)` when any declared entry
 /// is not discharged, `None` when every entry is (including the empty case).
 ///
-/// Ordered beside [`pending_fold_block`] and ahead of the `review:` block for
-/// the reason that check states: a spec carrying an obligation nobody has
-/// discharged is not a candidate for `done`.
+/// Ordered ahead of the `review:` block because a spec carrying an obligation
+/// nobody has discharged is not a candidate for `done`, so whether its review
+/// is fresh does not yet matter.
 ///
-/// **It shares that reasoning and nothing else.** Extracting a helper common
-/// to both was evaluated and rejected. They diverge on every axis the code
-/// turns on — one target against a list, discharge by the key's absence
-/// against discharge by the target's reciprocal link, asking only whether the
-/// target is in this tree against reading it, an absent target that passes
-/// against one that blocks, and no partial state against partial state as the
-/// normal case. `pending_fold_block` is a few lines over an `Option<&str>`; a
-/// helper generalising it over a list-valued key whose discharge requires
-/// reading another spec from disk would be longer than both call sites and
-/// would have to carry the fold's absent-target rule as a parameter. That rule
-/// is load-bearing and the opposite of this check's: a fold target normally
-/// lives on the upstream branch before the merge, and the pipeline view and
-/// fold-back carry the owed fold past `done`, while nothing but this check
-/// carries an undischarged impact (spec 051 scenario
-/// `a-fold-owed-to-another-tree-does-not-hold-done`). Carrying this on
-/// `folds-into` instead is rejected more strongly still: the two obligations
-/// point in opposite directions — a fold moves the declaring spec's own
+/// **Nothing but this check carries an undischarged impact past `done`**, and
+/// that is why it blocks where a pending fold does not. A fold owed by a `done`
+/// staging spec stays reported by `check-unfolded-specs` and the pipeline
+/// view's `(fold pending)` until fold-back discharges it (spec 051 scenario
+/// `a-pending-fold-never-holds-done`); an impact has no such surface, so
+/// letting it through would let the obligation disappear the moment the spec
+/// closed. The two keys stay separate for the same reason they always were:
+/// they point in opposite directions — a fold moves the declaring spec's own
 /// content into its home, an impact asks for a change to another spec's.
 ///
 /// There is no `--fix`. Which section of the affected spec should carry the
@@ -1170,10 +1096,10 @@ mod tests {
         })
     }
 
-    /// A branch-scoped spec: reviewed, clean, and every other check would
-    /// pass — with its target in the tree, the fold is the only thing holding
-    /// it short of `done`.
-    const PENDING_FOLD: &str = "---\nstatus: in-progress\ndependencies: []\nfolds-into: 050-upstream\nreview:\n  last-run: 2026-07-10T00:00:00Z\n  reviewed-against: abc123\n  must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  blocking: false\nanalyze:\n  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc123\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 0\n  blocking: false\n---\n\n# 007 — Gate\n";
+    /// A branch-scoped spec, reviewed clean and analyzed clean, declaring the
+    /// upstream spec it folds into. Nothing in it holds `done`: the fold is
+    /// owed after the transition, not before it.
+    const DECLARES_FOLD: &str = "---\nstatus: in-progress\ndependencies: []\nfolds-into: 050-upstream\nreview:\n  last-run: 2026-07-10T00:00:00Z\n  reviewed-against: abc123\n  must-violations: 0\n  should-violations: 0\n  low-confidence: 0\n  blocking: false\nanalyze:\n  last-run: 2026-07-10T00:00:00Z\n  analyzed-against: abc123\n  hard-fail: 0\n  blocking-findings: 0\n  advisory: 2\n  unexamined: 0\n  blocking: false\n---\n\n# 007 — Gate\n";
 
     /// Reviewed clean and analyzed clean, declaring one cross-spec impact —
     /// the declaration is the only thing holding it short of `done`.
@@ -1475,57 +1401,37 @@ mod tests {
         );
     }
 
-    /// AC35: with its target in this tree the fold can be done here, so it is
-    /// the work owed before `done`.
+    /// A pending fold never holds `done`, wherever its target lives (spec 051
+    /// scenario `a-pending-fold-never-holds-done`). With the target in this
+    /// tree — the case the gate used to block, since the fold could be done
+    /// here — the spec passes when every other check does, exactly as it does
+    /// with the target on another line. The fold is owed after `done`.
     #[test]
-    fn a_fold_whose_target_is_in_this_tree_blocks_the_done_transition() {
+    fn a_pending_fold_never_holds_done_wherever_its_target_lives() {
         let tmp = tempdir().unwrap();
-        seed(tmp.path(), PENDING_FOLD);
-        seed_target(tmp.path(), "The upstream home.");
-
-        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
-
-        assert!(!result.passed);
-        assert_eq!(result.blocked_by, Some(ReviewGateBlock::PendingFold));
-        assert_eq!(
-            result.message.as_deref(),
-            Some(
-                "blocked: spec folds into 050-upstream and the fold has not happened — resolve it before completing"
-            )
-        );
-        let guidance = result.guidance.expect("the block carries guidance");
-        assert!(guidance.contains("/ductus:fold"), "{guidance}");
-        assert!(
-            guidance.contains("the target is in this tree"),
-            "{guidance}"
-        );
-    }
-
-    /// With its target on a line of development this tree does not hold, the
-    /// fold cannot be done here, so it does not hold `done`: the spec passes
-    /// the gate when everything else does, and still owes the fold (spec 051
-    /// scenario `a-fold-owed-to-another-tree-does-not-hold-done`).
-    #[test]
-    fn a_fold_whose_target_is_not_in_this_tree_does_not_hold_done() {
-        let tmp = tempdir().unwrap();
-        seed(tmp.path(), PENDING_FOLD);
-        // Nothing named `050-upstream` is anywhere in this corpus.
+        seed(tmp.path(), DECLARES_FOLD);
+        // Another line of development: nothing named `050-upstream` here.
         assert!(!tmp.path().join("specs/050-upstream").exists());
+        let elsewhere = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert!(elsewhere.passed, "{:?}", elsewhere.message);
+        assert_eq!(elsewhere.blocked_by, None);
 
-        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
-
-        assert!(result.passed, "{:?}", result.message);
-        assert_eq!(result.blocked_by, None);
+        // This tree: the fold could be done here, and still does not block.
+        seed_target(tmp.path(), "The upstream home.");
+        let here = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
+        assert!(here.passed, "{:?}", here.message);
+        assert_eq!(here.blocked_by, None);
     }
 
-    /// An absent target passes the fold check and nothing more: the checks
-    /// after it still decide, here a review recording a MUST violation.
+    /// The fold is not a pass either: a spec declaring one meets every other
+    /// check exactly as a spec without one does — here a review recording a
+    /// MUST violation, with the fold target in this tree.
     #[test]
-    fn with_the_target_absent_the_later_checks_decide() {
+    fn a_declared_fold_leaves_every_other_check_to_decide() {
         let tmp = tempdir().unwrap();
         seed(
             tmp.path(),
-            &PENDING_FOLD
+            &DECLARES_FOLD
                 .replacen("  must-violations: 0\n", "  must-violations: 1\n", 1)
                 .replacen(
                     "  blocking: false\nanalyze:",
@@ -1533,58 +1439,11 @@ mod tests {
                     1,
                 ),
         );
+        seed_target(tmp.path(), "The upstream home.");
 
         let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
 
         assert_eq!(result.blocked_by, Some(ReviewGateBlock::MustViolations));
-    }
-
-    /// A directory with no `spec.md` is not a home fold-back can land content
-    /// in, so a target naming one is not in this tree.
-    #[test]
-    fn a_target_directory_without_a_spec_does_not_block() {
-        let tmp = tempdir().unwrap();
-        seed(tmp.path(), PENDING_FOLD);
-        fs::create_dir_all(tmp.path().join("specs/050-upstream")).unwrap();
-
-        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
-
-        assert_eq!(result.blocked_by, None, "{:?}", result.message);
-    }
-
-    /// Ordering: an unresolved scenario question is the more upstream
-    /// defect and keeps the cell, so the fold block is not what a
-    /// contributor is sent to fix first.
-    #[test]
-    fn a_scenario_question_outranks_a_pending_fold() {
-        let tmp = tempdir().unwrap();
-        seed(tmp.path(), PENDING_FOLD);
-        seed_target(tmp.path(), "The upstream home.");
-        fs::create_dir_all(tmp.path().join("specs/007-gate/scenarios")).unwrap();
-        fs::write(
-            tmp.path().join("specs/007-gate/scenarios/a.md"),
-            "---\nsection: X\n---\n\n# A\n\n## Open Questions\n\n- Which way?\n",
-        )
-        .unwrap();
-
-        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
-
-        assert_eq!(
-            result.blocked_by,
-            Some(ReviewGateBlock::ScenarioOpenQuestions)
-        );
-    }
-
-    /// The converse, so the new check cannot be read as blocking every
-    /// spec: absence of the key is never a finding.
-    #[test]
-    fn a_spec_without_a_fold_target_is_untouched_by_the_check() {
-        let tmp = tempdir().unwrap();
-        seed(tmp.path(), REVIEWED_CLEAN);
-
-        let result = run_with_lint(&args(), tmp.path(), clean_lint).unwrap();
-
-        assert_ne!(result.blocked_by, Some(ReviewGateBlock::PendingFold));
     }
 
     /// The gap this block closes. A spec with a clean review and no analyze
@@ -1679,7 +1538,7 @@ mod tests {
         assert!(guidance.contains("Analyze-record freshness"), "{guidance}");
     }
 
-    // --- gate check 5: review staleness -------------------------------------
+    // --- gate check 6: review staleness -------------------------------------
 
     /// Init a repo, stage everything, commit; returns the commit sha.
     fn git_commit_all(repo: &Path, message: &str) -> String {

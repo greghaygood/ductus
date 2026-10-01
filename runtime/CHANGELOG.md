@@ -2,6 +2,31 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
+<!-- Keep this heading non-numeric while the work is in flight. /ductus:audit
+     Family 20 binds the repo-root `version` pin, runtime/Cargo.toml, and the
+     newest `## [X.Y.Z]` heading, and it matches only numeric headings — so an
+     `[Unreleased]` section is invisible to it and the previous release stays
+     newest. Rename it to its version in the same commit that bumps the pin. -->
+
+## [Unreleased]
+
+### Changed
+
+- **A pending fold never holds `done`.** `check-review-gate` no longer reads
+  `folds-into`: a branch-scoped spec reaches `done` through the same checks as
+  any other, wherever its fold target lives, and `/{project}:fold` runs after
+  it. The order is done first, then fold — `done` says the staging spec's own
+  work is finished, and fold-back is the upstream consolidation of its durable
+  content that follows. `blocked-by` no longer takes the value
+  `pending-fold`; host tooling matching it never matches, and nothing else in
+  the result changes. The owed fold stays visible: `dashboard` still
+  qualifies the row `(fold pending)` at every status and lists it in the
+  outstanding-fold callout, and `check-unfolded-specs` still reports it.
+  Below `done` the row's Next Action is now the ordinary one for its status,
+  and at `done` it is the fold. A fold into a `done` upstream spec still
+  reopens that spec and invalidates its review. The cross-spec-impact check
+  is unchanged. Spec 051, scenario `a-pending-fold-never-holds-done`.
+
 ## [0.56.0] — 2026-10-01
 
 Each identified agent process — one with `DUCTUS_SESSION`, or Claude Code's

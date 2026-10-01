@@ -27,10 +27,10 @@ dependencies: []
      the wrong spec, or removing it (and renaming the directory) when the team
      decides the spec should stand on its own. The named spec normally lives
      on the upstream branch and is absent from your working tree; that is
-     expected, not an error. While the key is present the spec carries
-     outstanding work: /{project}:status reports it, and it cannot reach
-     `done` while the target is in your tree — after the merge, target it and
-     fold it.
+     expected, not an error. While the key is present the spec still owes its
+     fold, and /{project}:status reports it at every status. The fold never
+     holds `done`: the spec reaches `done` like any other, and once it has and
+     the branch has merged, target it and fold it.
 
      Cross-service references: to reference a spec in another service (its own
      repo with its own ductus install), write a normal inline markdown link to

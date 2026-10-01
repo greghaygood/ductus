@@ -336,11 +336,11 @@ fn render_callouts(view: &View<'_>, project: &str) -> String {
             })
             .collect();
         lines.push(format!(
-            "{} spec(s) with an outstanding fold: {}. Run /{project}:fold on each; a \
-             branch-scoped spec is retired by fold-back, whatever its status. A target \
-             reported as not in this tree is the normal state before the merge — it lives \
-             on the upstream branch, and the fold waits for the tree that holds both — so \
-             correct it only when it is a typo.",
+            "{} spec(s) with an outstanding fold: {}. Run /{project}:fold on each once it \
+             is done; a fold never holds done, and fold-back retires the branch-scoped \
+             spec. A target reported as not in this tree is the normal state before the \
+             merge — it lives on the upstream branch, and the fold waits for the tree that \
+             holds both — so correct it only when it is a typo.",
             pending.len(),
             detail.join("; ")
         ));
@@ -485,19 +485,19 @@ fn next_action(spec: &DashboardSpec, project: &str) -> String {
     if spec.scenario_open_question_count >= 1 {
         return "clarify (scenario)".to_string();
     }
-    if let Some(target) = &spec.folds_into {
-        // A declared fold is outstanding work, so it owns the cell for every
-        // status — `done` included: a spec whose target is not in this tree
-        // reaches `done` and still owes the fold (spec 051 AC34, scenario
-        // `a-fold-owed-to-another-tree-does-not-hold-done`). It sits *below* the
-        // two overrides above rather than beside them because an open
-        // question is the more upstream defect: the content gets settled
-        // before it gets moved.
+    if let (Some(target), "done") = (&spec.folds_into, spec.status.as_str()) {
+        // Done first, then fold (spec 051 scenario
+        // `a-pending-fold-never-holds-done`). A staging spec completes its own
+        // pipeline like any other, so below `done` the status-driven match
+        // keeps the cell; at `done` the fold is what remains, and it takes
+        // the cell instead of "complete". It sits *below* the two overrides
+        // above because an open question is the more upstream defect: the
+        // content gets settled before it gets moved.
         let mut action = format!("/{project}:fold → {target}");
         if spec.fold_target_missing {
-            // Called out on the row itself, which is the only place an
-            // operator scanning the view would see it. A report, not a
-            // verdict — see `DashboardSpec::fold_target_missing`.
+            // Called out on the row the fold is offered from, as well as in
+            // the outstanding-fold callout. A report, not a verdict — see
+            // `DashboardSpec::fold_target_missing`.
             action.push_str(" (target not in this tree)");
         }
         return action;
@@ -513,13 +513,14 @@ fn next_action(spec: &DashboardSpec, project: &str) -> String {
 
 /// The Status cell. A spec declaring `folds-into` is qualified as carrying
 /// a pending fold, so the view never reports it as simply `done` — the fold
-/// is work the spec still owes, whatever its status, until fold-back
-/// retires it (spec 051 AC34).
+/// is owed whatever its status, until fold-back retires it (spec 051 AC34).
+/// It never holds the spec short of `done`: the fold is run after it.
 ///
 /// The frontmatter value is kept alongside the qualification rather than
 /// replaced by it: the view's job is to show where a spec sits, and
 /// `in-progress` and `done` are different situations for the operator even
-/// though both still owe the fold.
+/// though both still owe the fold — the first has its own pipeline to
+/// finish, the second has only the fold left.
 fn status_cell(spec: &DashboardSpec) -> String {
     if spec.folds_into.is_some() {
         return format!("{} (fold pending)", spec.status);
@@ -1092,9 +1093,9 @@ mod tests {
     }
 
     /// AC34: a spec declaring `folds-into` is reported as carrying an
-    /// outstanding fold, and the row's Next Action is the fold rather than
-    /// the status-driven action — `done` included, since a spec at `done`
-    /// still owes the fold until fold-back retires it.
+    /// outstanding fold, and at `done` the row's Next Action is the fold
+    /// rather than "complete", since a spec at `done` still owes the fold
+    /// until fold-back retires it.
     #[test]
     fn a_declared_fold_is_never_reported_as_done() {
         let tmp = TempDir::new().unwrap();
@@ -1133,10 +1134,44 @@ mod tests {
         assert!(!upstream.contains("fold pending"), "{upstream}");
     }
 
-    /// A target absent from this tree is called out on the same row. It is
-    /// a report, not a verdict: before the merge the target normally lives
-    /// on the upstream branch, and this view cannot tell which tree it is
-    /// looking at.
+    /// Done first, then fold (spec 051 scenario
+    /// `a-pending-fold-never-holds-done`). Below `done` a staging spec shows
+    /// the ordinary next action for its status, even with its target in this
+    /// tree, and still carries the `(fold pending)` qualification.
+    #[test]
+    fn below_done_a_declared_fold_leaves_the_ordinary_next_action() {
+        let tmp = TempDir::new().unwrap();
+        pin_project(tmp.path(), "");
+        write_spec(
+            tmp.path(),
+            "050-upstream",
+            "status: done\ndependencies: []\n",
+            "",
+        );
+        for (slug, status, action) in [
+            ("1234.1-drafted", "draft", "/ductus:clarify"),
+            ("1234.2-clarified", "clarified", "/ductus:plan"),
+            ("1234.3-planned", "planned", "/ductus:implement"),
+            ("1234.4-underway", "in-progress", "/ductus:implement"),
+        ] {
+            write_spec(
+                tmp.path(),
+                slug,
+                &format!("status: {status}\ndependencies: []\nfolds-into: 050-upstream\n"),
+                "",
+            );
+            let result = run(&DashboardArgs::default(), tmp.path()).unwrap();
+            let row = row_for(&result.rendered_markdown, slug);
+            assert!(row.contains(&format!("{status} (fold pending)")), "{row}");
+            assert!(row.contains(action), "{row}");
+            assert!(!row.contains("/ductus:fold"), "{row}");
+        }
+    }
+
+    /// A target absent from this tree is called out on the row the fold is
+    /// offered from. It is a report, not a verdict: before the merge the
+    /// target normally lives on the upstream branch, and this view cannot
+    /// tell which tree it is looking at.
     #[test]
     fn an_unresolvable_fold_target_is_called_out_on_the_row() {
         let tmp = TempDir::new().unwrap();
@@ -1144,7 +1179,7 @@ mod tests {
         write_spec(
             tmp.path(),
             "1234.1-staged",
-            "status: in-progress\ndependencies: []\nfolds-into: 099-elsewhere\n",
+            "status: done\ndependencies: []\nfolds-into: 099-elsewhere\n",
             "",
         );
 
@@ -1233,8 +1268,8 @@ mod tests {
     }
 
     /// An unresolved scenario question is the more upstream defect, so it
-    /// keeps the Next Action cell — the content gets settled before it gets
-    /// moved.
+    /// keeps the Next Action cell even at `done`, where the fold would
+    /// otherwise take it — the content gets settled before it gets moved.
     #[test]
     fn a_scenario_question_outranks_a_pending_fold_in_the_next_action() {
         let tmp = TempDir::new().unwrap();
@@ -1242,7 +1277,7 @@ mod tests {
         write_spec(
             tmp.path(),
             "1234.1-staged",
-            "status: in-progress\ndependencies: []\nfolds-into: 050-upstream\n",
+            "status: done\ndependencies: []\nfolds-into: 050-upstream\n",
             "",
         );
         let scenarios = tmp.path().join("specs/1234.1-staged/scenarios");
@@ -1257,6 +1292,7 @@ mod tests {
 
         let row = row_for(&result.rendered_markdown, "1234.1-staged");
         assert!(row.contains("clarify (scenario)"), "{row}");
+        assert!(!row.contains("/ductus:fold"), "{row}");
         // The fold is still reported — it is outstanding either way.
         assert!(row.contains("fold pending"), "{row}");
     }

@@ -26,7 +26,7 @@ The outcome is **not** `passed: true`. A gate that says "passed" for a spec it d
 
 - **A `done` spec being deliberately re-examined.** `/{project}:review` and `/{project}:analyze` both accept `done` specs and are unaffected — neither goes through this gate. Only the transition path short-circuits.
 - **A spec at `draft`, `clarified`, or `planned`.** Unchanged: the gate runs its checks as today. It is not this check's job to police whether the *forward* path was followed, only to recognize a transition that has already happened.
-- **A `folds-into` spec at `done`.** Reachable when its target is not in this tree: the pending-fold check blocks only a fold this tree can perform ([051](../../051-branch-scoped-spec-numbering/spec.md)'s scenario `a-fold-owed-to-another-tree-does-not-hold-done`). When such a spec later sits in a tree that holds its target, the done-state outcome reports it as done and the fold check does not run; `check-unfolded-specs` and the pipeline view are what surface the owed fold, and it is not this gate's subject.
+- **A `folds-into` spec at `done`.** The ordinary case: a pending fold never holds `done`, wherever its target lives ([051](../../051-branch-scoped-spec-numbering/spec.md)'s scenario `a-pending-fold-never-holds-done`), so a staging spec reaches `done` and is folded afterwards. Re-running the gate on it reports it as done like any other spec; `check-unfolded-specs` and the pipeline view are what surface the owed fold, and it is not this gate's subject.
 
 ## Open Questions
 
