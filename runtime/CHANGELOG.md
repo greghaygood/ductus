@@ -2,13 +2,17 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
-<!-- Keep this heading non-numeric while the work is in flight. /ductus:audit
-     Family 20 binds the repo-root `version` pin, runtime/Cargo.toml, and the
-     newest `## [X.Y.Z]` heading, and it matches only numeric headings — so an
-     `[Unreleased]` section is invisible to it and the previous release stays
-     newest. Rename it to its version in the same commit that bumps the pin. -->
+## [0.57.0] — 2026-10-02
 
-## [Unreleased]
+A branch-scoped spec now reaches `done` through the same checks as any other,
+whatever its pending fold, so `check-review-gate`'s `blocked-by` no longer
+takes the value `pending-fold` (spec 051). `ductus exec prune` writes the
+reduction the operator confirmed rather than previewing it a second time
+(spec 022). Three smaller fixes: `check-stuck` counts an unchecked box by the
+grammar every tasks parser shares (spec 022), `write-analysis` no longer
+writes a duplicate `unexamined-by-reason` key (spec 041), and `prune-tasks
+--reset` takes the feature's identity only from a heading outside fences and
+comments (spec 041).
 
 ### Changed
 
