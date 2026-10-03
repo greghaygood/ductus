@@ -815,6 +815,8 @@ The steps below describe the **`claude-style`** layout. For an agent whose regis
 
 For an agent whose `layout` is **`opencode`**, apply **### OpenCode layout** below in place of **### Slash commands** and **### Slash command cleanup**. OpenCode's installer is a **verbatim markdown file** (no skill wrapper), so the `ductus` self-install, **Self-update check**, **Post-Write Integrity Check**, and **Placeholder Substitution** follow the **`claude-style`** path — with the command directory `command/` (singular) and `{cli-config-dir}` resolving to `.opencode`.
 
+For an agent whose `layout` is **`pi`**, apply **### Pi layout** below in place of **### Slash commands** and **### Slash command cleanup**. `{config_dir}` resolves to `.pi`; Pi discovers prompt templates under `{config_dir}/prompts/` — flat, non-recursive, the filename (minus `.md`) is the command name. The `ductus` self-install, **Self-update check**, **Post-Write Integrity Check**, and **Placeholder Substitution** each carry their own `layout: pi` branch in their own sections.
+
 ### Slash commands (strategy: update)
 
 Fetch each command template and copy it into `{config_dir}/commands/{project}/`. In each copied file, replace `{project}` with the user-provided project name and `{cli-config-dir}` with `{config_dir}`.
