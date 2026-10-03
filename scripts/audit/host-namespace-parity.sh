@@ -10,7 +10,7 @@
 # next-action string ("Run /{project}:target …") is built from that value.
 # The slash commands themselves live in `{cli-config-dir}/commands/<ns>/`
 # (or `command/<ns>/` for opencode's singular layout, or the flat
-# `{config_dir}/prompts/{project}-*.md` prompt templates for pi, spec 058).
+# `{config_dir}/prompts/{project}-*.md` prompt templates for pi, spec 063).
 #
 # Nothing compared the two. A repo whose `[host]` block is missing — or
 # whose `project` disagrees with the installed directory — renders
@@ -180,7 +180,7 @@ for cli_dir in "${CLI_DIRS[@]}"; do
     done
   done
   # Third layout: pi's flat project-hyphenated prompt templates
-  # (`{config_dir}/prompts/{project}-{name}.md`, spec 058). There is no
+  # (`{config_dir}/prompts/{project}-{name}.md`, spec 063). There is no
   # namespace directory — the `{project}-` prefix of the flat filenames IS
   # the namespace. A `{project}-*.md` file (or the `ductus` self-install's
   # `{project}.md`… which is actually `ductus.md`, the one un-hyphenated

@@ -1,5 +1,5 @@
 ---
-spec: 059-configurable-source-repository
+spec: 064-configurable-source-repository
 last-run: 2026-09-23T14:21:06Z
 reviewed-against: 65c06ef7bc6bed6b65279379c668a05d4b8dabd3
 diff-base: 65c06ef7bc6bed6b65279379c668a05d4b8dabd3
@@ -14,7 +14,7 @@ reviewed-digest: {}
 blocking: false
 ---
 
-# Review — 059-configurable-source-repository
+# Review — 064-configurable-source-repository
 
 ## Summary
 

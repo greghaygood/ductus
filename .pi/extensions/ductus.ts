@@ -22,7 +22,7 @@
  * session start. No markdown-only fallback — a wired host that lost its
  * binary must stop, not degrade (§runtime-boundary).
  *
- * spec 058 (pi host support). See framework/bootstrap/ductus.md §MCP
+ * spec 063 (pi host support). See framework/bootstrap/ductus.md §MCP
  * registration.
  */
 

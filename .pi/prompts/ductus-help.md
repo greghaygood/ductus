@@ -52,7 +52,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | `/ductus:plan` | clarified → planned | Create a technical plan and task breakdown for a clarified spec. |
 | `/ductus:implement` | planned → in-progress → done | Execute implementation tasks for the targeted feature. |
 | `/ductus:review` | blocks `done` (MUST violations) | Audit code against rules — security, reuse, quality, efficiency, simplicity. Writes review.md; blocks done on MUST violations. |
-| `/ductus:analyze` | — | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Never modifies an artifact it audits; records the run and its findings, and --fix reverts a done spec drifted by review state or unresolved scenario questions. |
+| `/ductus:analyze` | — | Audit artifacts against each other — spec, plan, tasks, scenarios, frontmatter, dependencies, rule IDs. Detection never modifies an artifact it audits; each live finding is then fixed, routed, or discarded with confirmation, the run is recorded, and --fix reverts a done spec drifted by review state, unresolved scenario questions, or undispositioned findings. |
 
 <!-- generated:commands-pipeline:end -->
 
@@ -63,7 +63,7 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 | Command | Description |
 | --- | --- |
 | `/ductus:amend` | Add a question or a scenario to the targeted spec (classifier-driven). |
-| `/ductus:prune` | Prune a feature's tasks.md — drop spent task sections, or reset to template state. |
+| `/ductus:prune` | Prune a feature's spec directory — drop spent task sections or reset tasks.md, and move plan sections outside the design record home before removing them. |
 | `/ductus:fold` | Fold a branch-scoped spec into its upstream home and retire the staging directory. |
 | `/ductus:consolidate` | Merge a spec into another and remove its directory, re-pointing every inbound pointer first. |
 
@@ -117,12 +117,12 @@ Each feature lives in `specs/NNN-feature-name/` and progresses through these sta
 
 ### Key Concepts
 
-- **Session target** — The feature you're currently working on, stored in `.ductus/session.toml`. Most commands operate on the target by default.
+- **Session target** — The feature you're currently working on. Most commands operate on the target by default. Each agent process launched with a session identity (`DUCTUS_SESSION`, or on Claude Code the session id it passes to its tools) keeps its own target, so several agents can share one working tree; `.ductus/session.toml` holds the shared default.
 - **Dependencies** — Features declare dependencies in their spec. A feature is blocked until its dependencies reach `clarified` or later.
-- **Artifacts** — Each feature directory can contain `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, and a `scenarios/` subdirectory.
+- **Artifacts** — Each feature directory can contain `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, and a `scenarios/` subdirectory, plus the `review.md` and `analysis.md` records that `/ductus:review` and `/ductus:analyze` write.
 - **Scenarios** — A scenario is a spec at a lower level of abstraction. Scenarios live in `specs/NNN-feature/scenarios/slug.md` and capture bugs, edge cases, and detailed behavior. Each scenario gets a linked task in `tasks.md`.
 - **Bug decision tree** — When a bug is reported, the first matching condition decides the route: (1) no rule covers the cross-cutting concern → promote it to a rule, (2) no spec exists → write the spec first, (3) spec is ambiguous → fix the spec, (4) spec is clear → add a scenario.
-- **Inbox** — `specs/inbox.md` is a temporary inbox for known issues. Items are recorded with `/ductus:log` and groomed into specs or scenarios with `/ductus:groom`.
+- **Inbox** — `specs/inbox.md` is the place for todos you capture by hand. Items are recorded with `/ductus:log` and groomed with `/ductus:groom` into a rule, a spec, a scenario, a chore done in the pass, or a discard. Nothing a pipeline run finds lands there: `/ductus:review`, `/ductus:analyze`, and `/ductus:implement` fix, route, or discard their own findings. `/ductus:status` shows how many items are outstanding.
 - **Finish before moving on** — Prefer completing a feature through the full pipeline before starting the next. Depth-first keeps context focused.
 
 ---

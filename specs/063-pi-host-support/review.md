@@ -1,5 +1,5 @@
 ---
-spec: 058-pi-host-support
+spec: 063-pi-host-support
 last-run: 2026-09-22T04:13:57Z
 reviewed-against: e7b0197938d8fff9798853dcf436bb4f0a6ca93e
 diff-base: 8c37637a82aa12a0eaf1955e12f47b8d46d689c0
@@ -14,7 +14,7 @@ reviewed-digest: {}
 blocking: false
 ---
 
-# Review — 058-pi-host-support
+# Review — 063-pi-host-support
 
 ## Summary
 

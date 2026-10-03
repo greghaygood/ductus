@@ -1,4 +1,4 @@
-# 059 — Configurable Source Repository Tasks
+# 064 — Configurable Source Repository Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
@@ -43,4 +43,4 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] `/{project}:analyze` (check-artifacts clean; dependencies current)
 - [x] Transition to `done`
 
-- **Done when**: the spec is `done` with current review and analyze records, and 059's ACs are verified against the shipped text.
+- **Done when**: the spec is `done` with current review and analyze records, and 064's ACs are verified against the shipped text.

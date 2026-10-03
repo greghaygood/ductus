@@ -65,7 +65,7 @@ pub fn run(args: &CheckCorpusLinksArgs, repo: &Path) -> Result<CheckCorpusLinksR
     //
     // The exclusion is a *set*, not the session's single directory: this
     // repo commits its dogfooded `.claude/commands/` regardless of which
-    // agent contributed the session identity (spec 058 moved this repo's
+    // agent contributed the session identity (spec 063 moved this repo's
     // dogfood identity to pi, which would otherwise un-exclude the committed
     // Claude copy and report its broken-by-construction links on every run).
     // The session dir is first; the committed `.claude/` tree is added when

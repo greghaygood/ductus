@@ -8,7 +8,7 @@
 # removing a tool in runtime-tools.txt flows through to every file on
 # the next commit via the pre-commit hook.
 #
-# Pi (058) is excluded by name from this generator: Pi has no
+# Pi (063) is excluded by name from this generator: Pi has no
 # MCP-permission shape — its tools arrive through the
 # `.pi/extensions/ductus.ts` extension bridge (which owns the
 # `ductus__<name>` naming), and Pi has no permission-gating settings at

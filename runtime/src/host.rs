@@ -23,7 +23,7 @@
 //! [`Host::command_file_candidates`], which covers the three flat-namespaced
 //! layouts: `claude-style`'s `commands/` (Claude, Auggie), `opencode`'s
 //! singular `command/`, and `pi`'s flat project-hyphenated `prompts/`
-//! (spec 058 — `.pi/prompts/{project}-{name}.md`).
+//! (spec 063 — `.pi/prompts/{project}-{name}.md`).
 
 use std::path::Path;
 
@@ -146,7 +146,7 @@ impl Host {
     /// - `claude-style` (Claude Code, Auggie) — `{dir}/commands/{project}/<name>.md`
     /// - `opencode` — `{dir}/command/{project}/<name>.md` (singular `command/`)
     /// - `pi` — `{dir}/prompts/{project}-<name>.md` (flat project-hyphenated
-    ///   prompt templates; spec 058)
+    ///   prompt templates; spec 063)
     ///
     /// Each adopter installs into exactly one of these (selected by the
     /// agent's registry `layout`), and the directory names are agent-specific
@@ -156,7 +156,7 @@ impl Host {
     /// agent wrote the file. The plural form is tried first, then the
     /// singular, so existing claude-style and opencode adopters resolve
     /// exactly as before; the pi shape is appended last, keeping both
-    /// pre-existing candidates' relative order untouched (spec 058).
+    /// pre-existing candidates' relative order untouched (spec 063).
     #[must_use]
     pub fn command_file_candidates(&self, command_name: &str) -> Vec<String> {
         let mut candidates = ["commands", "command"]

@@ -1,5 +1,5 @@
 ---
-spec: 058-pi-host-support
+spec: 063-pi-host-support
 last-run: 2026-09-22T04:15:56Z
 analyzed-against: 2ec4bd71059ef00cf9f9975cd982647edb9fc852
 hard-fail: 0
@@ -17,7 +17,7 @@ unexamined-by-reason:
 blocking: false
 ---
 
-# Analysis — 058-pi-host-support
+# Analysis — 063-pi-host-support
 
 ## Summary
 

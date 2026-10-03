@@ -4,7 +4,7 @@ section: "Per-project file resolution"
 
 # The-pi-command-candidate
 
-The pi host support feature ([058](../../058-pi-host-support/spec.md), 058) adds a fifth agent layout. Its command files are pi prompt templates: flat, non-recursive, installed at `.pi/prompts/{project}-{name}.md` — a third shape alongside the two directory-shaped layouts `Host::command_file_candidates` already resolves. This scenario records the third candidate in the runtime's command-resolution contract.
+The pi host support feature ([063](../../063-pi-host-support/spec.md), 063) adds a fifth agent layout. Its command files are pi prompt templates: flat, non-recursive, installed at `.pi/prompts/{project}-{name}.md` — a third shape alongside the two directory-shaped layouts `Host::command_file_candidates` already resolves. This scenario records the third candidate in the runtime's command-resolution contract.
 
 ## Behavior
 

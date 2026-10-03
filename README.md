@@ -180,7 +180,6 @@ To start from another source, add `--ref` beside the agent argument — `sh -s -
 
 The same bootstrap supports every agent, so re-run `/ductus --add-agent` from any adopted agent later to add others. `/ductus` acquires the runtime and wires it in the same run — automatically for Claude, OpenCode, and Pi (the first two keep MCP config in a committed repo file, and Pi's bridge is a project-local extension file), or by surfacing a one-time registration step for Auggie and Antigravity (see [Registering the runtime](docs/runtime.md#registering-the-runtime)).
 
-
 ## Brownfield adoption
 
 You don't need to clone `ductus` or rewrite history to adopt it. Install the command, run `/ductus`, then let specs accrete naturally:

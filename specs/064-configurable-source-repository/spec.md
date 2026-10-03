@@ -4,7 +4,7 @@ dependencies: []
 next-criterion: 9
 ---
 
-# 059 — Configurable Source Repository
+# 064 — Configurable Source Repository
 
 Make the repository the `ductus` bootstrap fetches from **configurable**, so the
 framework can be adopted, developed, and tested from a fork — not only from the
@@ -38,7 +38,7 @@ rather than merely absent."* The fetch sites never caught up with the audit.
   runtime release download, and (4) the framework archive fetch — resolve their
   repository component from the `DUCTUS_REPO` environment variable, defaulting to
   `stonean/ductus` when the variable is unset or empty. With the default, every
-  fetch URL renders byte-identically to the pre-059 text; the audits stay green
+  fetch URL renders byte-identically to the pre-064 text; the audits stay green
   because they grep the committed text, whose defaults still spell the canonical
   repository.
 - **All four sites use the same value, consistently.** A value that names one
@@ -82,14 +82,14 @@ rather than merely absent."* The fetch sites never caught up with the audit.
 
 ## Acceptance Criteria
 
-- [ ] AC1: `install.sh` fetches the bootstrap from `raw.githubusercontent.com/$DUCTUS_REPO/main/…`, defaulting to `stonean/ductus` when `DUCTUS_REPO` is unset or empty, and the variable's semantics are documented in its header
-- [ ] AC2: The version-pin fetch (`ductus.md` §Pre-flight / Runtime acquisition) resolves the repository from `$DUCTUS_REPO`, default `stonean/ductus`
-- [ ] AC3: The runtime release download fetches `…/$DUCTUS_REPO/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz`, default `stonean/ductus`, keeping the `{pin}` / `{triple}` placeholders intact
-- [ ] AC4: The framework archive fetch (`ductus.md` §File Fetching) uses `$DUCTUS_REPO`'s codeload URL with the same default
-- [ ] AC5: All four sites use a single variable with a single default — no site hardcodes a different repository
-- [ ] AC6: `self-url-resolution.sh` still derives the canonical slug from the archive URL (default text unchanged), passes on the default tree, and reports no footing loss
-- [ ] AC7: The staleness/self-update fetch (which compares the installed bootstrap against upstream) resolves the same `$DUCTUS_REPO`, so a fork adoption sees its own upstream rather than the canonical one
-- [ ] AC8: `ductus.md` documents `$DUCTUS_REPO` in its pre-flight / fetch sections and in §Project Configuration's environment-notes (as appropriate), and `govern.md` remains byte-identical to `ductus.md`
+- [x] AC1: `install.sh` fetches the bootstrap from `raw.githubusercontent.com/$DUCTUS_REPO/main/…`, defaulting to `stonean/ductus` when `DUCTUS_REPO` is unset or empty, and the variable's semantics are documented in its header
+- [x] AC2: The version-pin fetch (`ductus.md` §Pre-flight / Runtime acquisition) resolves the repository from `$DUCTUS_REPO`, default `stonean/ductus`
+- [x] AC3: The runtime release download fetches `…/$DUCTUS_REPO/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz`, default `stonean/ductus`, keeping the `{pin}` / `{triple}` placeholders intact
+- [x] AC4: The framework archive fetch (`ductus.md` §File Fetching) uses `$DUCTUS_REPO`'s codeload URL with the same default
+- [x] AC5: All four sites use a single variable with a single default — no site hardcodes a different repository
+- [x] AC6: `self-url-resolution.sh` still derives the canonical slug from the archive URL (default text unchanged), passes on the default tree, and reports no footing loss
+- [x] AC7: The staleness/self-update fetch (which compares the installed bootstrap against upstream) resolves the same `$DUCTUS_REPO`, so a fork adoption sees its own upstream rather than the canonical one
+- [x] AC8: `ductus.md` documents `$DUCTUS_REPO` in its pre-flight / fetch sections and in §Project Configuration's environment-notes (as appropriate), and `govern.md` remains byte-identical to `ductus.md`
 
 ## Resolved Questions
 

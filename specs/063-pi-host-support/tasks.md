@@ -1,4 +1,4 @@
-# 058 — Pi Host Support Tasks
+# 063 — Pi Host Support Tasks
 
 Tasks derived from the [plan](plan.md). Complete in order.
 
@@ -15,7 +15,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 ## 2. Open the 022 back-edge and record the candidate
 
 - [x] `set-status` 022 `done → in-progress`
-- [x] Create `specs/022-deterministic-runtime/scenarios/the-pi-command-candidate.md` (via `create-scenario`), back-linking 058 per §cross-spec-impact, stating the third candidate shape and the append-last order rule
+- [x] Create `specs/022-deterministic-runtime/scenarios/the-pi-command-candidate.md` (via `create-scenario`), back-linking 063 per §cross-spec-impact, stating the third candidate shape and the append-last order rule
 - [x] Append the matching task to 022's `tasks.md` (scenario→task mapping family stays clean)
 - [x] 022's `data-model.md`: record the third candidate shape in the command-resolution contract
 
@@ -103,10 +103,10 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - **Done when**: plan §D9 carries the recorded result with no unresolved deviation — AC14's evidence.
 
-## 12. Reviews and analysis: 022 first, then 058
+## 12. Reviews and analysis: 022 first, then 063
 
 - [x] 022: `/{project}:review` (five passes over its changed-since window; the standing truthful-`examined` disposition if the window is too large) and `/{project}:analyze`; all task blocks checked; `done` transition
-- [x] 058: every AC verified against the tree (AC14 via §D9's record), `/{project}:review` and `/{project}:analyze`; `done` transition
+- [x] 063: every AC verified against the tree (AC14 via §D9's record), `/{project}:review` and `/{project}:analyze`; `done` transition
 
 - **Done when**: both specs are `done` with current, non-blocking reviews and current analyses, and `check-review-gate` passes for both.
 
@@ -114,7 +114,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] Bump all three version sites to `0.53.0` (root `version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md` with the entry: "pi host: `Host::command_file_candidates` gains the `.pi/prompts/{project}-{name}.md` candidate" + the pi layout summary)
 - [x] One `cargo build --release --offline` to refresh `Cargo.lock`, then confirm `--locked` succeeds
-- [x] Commit the version bump; `/{project}:review` 058 at that HEAD (the review covers the release commit); commit the review
+- [x] Commit the version bump; `/{project}:review` 063 at that HEAD (the review covers the release commit); commit the review
 - [x] `scripts/audit/run-all.sh` **after** the commit; on green, `git tag ductus-v0.53.0` at the release commit and push the tag
 - [ ] Watch the run: `gh run list --json workflowName,status,conclusion,headSha` for the sha; `in_progress` + `release not found` is wait, not outage; a `failure` conclusion is the outage (read the failed job, never delete-and-re-tag an in-flight run)
 
