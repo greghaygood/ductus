@@ -18,9 +18,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. The decided rule
 
-- [ ] Read `analysis.md`'s `decisions:` through `decisions::read_decisions`; set `decisions` to `absent`, `read` or `unreadable`, never failing on an unreadable list, and add the notice when it is unreadable.
-- [ ] Parse each `artifact-size` key under the message format; mark a subject decided by a stored discard for the same path at a page count greater than or equal to its own, and carry that key as `decision-key`.
-- [ ] Unit tests: a discard at the same page count decides; at a higher recorded count decides; at a lower recorded count does not (AC10); a routed decision, another path's discard, and an unparseable key never decide; an unreadable list leaves every subject undecided with the notice and no error.
+- [x] Read `analysis.md`'s `decisions:` through `decisions::read_decisions`; set `decisions` to `absent`, `read` or `unreadable`, never failing on an unreadable list, and add the notice when it is unreadable.
+- [x] Parse each `artifact-size` key under the message format; mark a subject decided by a stored discard for the same path at a page count greater than or equal to its own, and carry that key as `decision-key`.
+- [x] Unit tests: a discard at the same page count decides; at a higher recorded count decides; at a lower recorded count does not (AC10); a routed decision, another path's discard, and an unparseable key never decide; an unreadable list leaves every subject undecided with the notice and no error.
 - **Done when**: the decided-rule tests pass, including the growth-into-another-page case.
 
 ## 4. Register the primitive

@@ -21,8 +21,12 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::primitives::decisions::{RawDecision, read_decisions};
 use crate::primitives::prune_tasks::read_status;
-use crate::primitives::{PrimitiveError, Result, read_text, rel_path, scenario_name_cmp};
+use crate::primitives::{
+    ANALYSIS_RECORD_FILE, PrimitiveError, Result, flatten_line, read_text, rel_path,
+    scenario_name_cmp,
+};
 use crate::schema::paths;
 use crate::schema::primitives::{
     ArtifactFix, ArtifactKind, CheckArtifactSizeArgs, CheckArtifactSizeResult, DecisionsState,
@@ -111,6 +115,7 @@ pub fn run(args: &CheckArtifactSizeArgs, repo: &Path) -> Result<CheckArtifactSiz
 
     let mut notices = Vec::new();
     notices.extend(threshold_notice);
+    let decisions = decide(&feature_dir, repo, &mut oversized, &mut notices);
     Ok(CheckArtifactSizeResult {
         feature: args.feature.clone(),
         status,
@@ -118,10 +123,83 @@ pub fn run(args: &CheckArtifactSizeArgs, repo: &Path) -> Result<CheckArtifactSiz
         examined,
         oversized,
         skipped,
-        decisions: DecisionsState::Absent,
+        decisions,
         notices,
         path: rel_path(&feature_dir.join("spec.md"), repo),
     })
+}
+
+/// Mark each oversized artifact a stored discard still covers, and say
+/// whether the stored decisions could be read.
+///
+/// `/{project}:analyze` matches a finding to a stored decision by judgment,
+/// because most findings are worded by the host and drift. That cannot hold
+/// the spec's numeric rule — a discard holds until its file grows into
+/// another read page (spec 063, AC10) — so this primitive decides it, as
+/// `prune-plan` marks a plan section `decided`, and hands `/{project}:analyze`
+/// the stored key to fire.
+///
+/// Unlike `prune-plan`, a list that cannot be read is not an error.
+/// `/{project}:clarify` and `/{project}:plan` invoke this too, and must not
+/// fail on a defect in a record they do not own. Nothing is decided then, and
+/// a notice says why, so a reader never takes undecided for checked.
+fn decide(
+    feature_dir: &Path,
+    repo: &Path,
+    oversized: &mut [OversizedArtifact],
+    notices: &mut Vec<String>,
+) -> DecisionsState {
+    let record = feature_dir.join(ANALYSIS_RECORD_FILE);
+    if !record.is_file() {
+        return DecisionsState::Absent;
+    }
+    let stored = match read_decisions(feature_dir, ANALYSIS_RECORD_FILE) {
+        Ok(stored) => stored,
+        Err(err) => {
+            notices.push(format!(
+                "the stored decisions in `{}` could not be read ({err}); no oversized \
+                 artifact is treated as already discarded",
+                rel_path(&record, repo)
+            ));
+            return DecisionsState::Unreadable;
+        }
+    };
+    for artifact in oversized.iter_mut() {
+        artifact.decision_key = stored
+            .iter()
+            .find_map(|decision| covering_key(decision, &artifact.path, artifact.pages));
+        artifact.decided = artifact.decision_key.is_some();
+    }
+    DecisionsState::Read
+}
+
+/// `decision`'s key when it is a discard of `path` recorded at a read-page
+/// count of at least `pages`. A routed decision never covers a size: only a
+/// discard records that the operator accepted it.
+fn covering_key(decision: &RawDecision, path: &str, pages: u64) -> Option<String> {
+    if decision.outcome.as_deref().map(str::trim) != Some("discarded") {
+        return None;
+    }
+    let key = decision.key.as_deref()?;
+    let (recorded_path, recorded_pages) = parse_key(&flatten_line(key))?;
+    (recorded_path == path && recorded_pages >= pages).then(|| key.to_string())
+}
+
+/// The path and read-page count a stored `artifact-size` key records, or
+/// `None` for any other family or any key that does not parse under
+/// [`finding_message`]'s format — an unparseable key is never matched.
+fn parse_key(key: &str) -> Option<(String, u64)> {
+    let (family, message) = key.split_once(" — ")?;
+    if family.trim() != FAMILY {
+        return None;
+    }
+    let (path, rest) = message.strip_prefix('`')?.split_once("` is ")?;
+    let (bytes, rest) = rest.split_once(" bytes, ")?;
+    let (pages, rest) = rest.split_once(" read pages at the ")?;
+    let threshold = rest.strip_suffix("-byte read size")?;
+    bytes.parse::<u64>().ok()?;
+    threshold.parse::<u64>().ok()?;
+    Some((path.to_string(), pages.parse().ok()?))
 }
 
 /// Every subject that exists, in subject order. A missing fixed subject is
@@ -812,6 +890,177 @@ mod tests {
             "`specs/001-a/plan.md` is 250 bytes, over the 100-byte read size (3 read pages)"
         ));
         assert!(!plan.decided && plan.decision_key.is_none());
+    }
+
+    /// The key `/{project}:analyze` stores for an `artifact-size` finding on
+    /// `path`, built through the writer's own key function.
+    fn stored_key(path: &str, bytes: u64, pages: u64, threshold: u64) -> String {
+        crate::primitives::write_analysis::finding_key_of(
+            FAMILY,
+            &finding_message(path, bytes, pages, threshold),
+        )
+    }
+
+    /// Write `analysis.md` storing `decisions` as (key, outcome) pairs.
+    fn record(tmp: &TempDir, decisions: &[(&str, &str)]) {
+        use std::fmt::Write as _;
+        let mut body = String::from("---\nspec: 001-a\ndecisions:\n");
+        for (key, outcome) in decisions {
+            let companion = if *outcome == "routed" {
+                "target: specs/001-a/tasks.md"
+            } else {
+                "reason: accepted"
+            };
+            write!(
+                body,
+                "  - key: {key:?}\n    outcome: {outcome}\n    {companion}\n    \
+                 decided-at: 2026-10-04T00:00:00Z\n    decided-by: a@b.c\n"
+            )
+            .unwrap();
+        }
+        body.push_str("---\n\n# Analysis\n");
+        std::fs::write(tmp.path().join("specs/001-a/analysis.md"), body).unwrap();
+    }
+
+    const PLAN: &str = "specs/001-a/plan.md";
+
+    /// A 250-byte plan: three read pages at the 100-byte threshold.
+    fn three_page_plan() -> TempDir {
+        sized("in-progress", &[("plan.md", 250)])
+    }
+
+    #[test]
+    fn no_record_decides_nothing() {
+        let result = check(&three_page_plan()).unwrap();
+        assert_eq!(result.decisions, DecisionsState::Absent);
+        assert!(!result.oversized[0].decided);
+    }
+
+    #[test]
+    fn a_record_with_no_decisions_is_read_and_decides_nothing() {
+        let tmp = three_page_plan();
+        std::fs::write(
+            tmp.path().join("specs/001-a/analysis.md"),
+            "---\nspec: 001-a\n---\n\n# Analysis\n",
+        )
+        .unwrap();
+        let result = check(&tmp).unwrap();
+        assert_eq!(result.decisions, DecisionsState::Read);
+        assert!(!result.oversized[0].decided);
+    }
+
+    #[test]
+    fn a_discard_at_the_same_page_count_decides() {
+        let tmp = three_page_plan();
+        let key = stored_key(PLAN, 240, 3, 100);
+        record(&tmp, &[(&key, "discarded")]);
+        let result = check(&tmp).unwrap();
+        assert_eq!(result.decisions, DecisionsState::Read);
+        let plan = &result.oversized[0];
+        assert!(plan.decided);
+        // The stored key, not today's message: the bytes have changed, and the
+        // key is what process-decisions matches.
+        assert_eq!(plan.decision_key.as_deref(), Some(key.as_str()));
+        assert_ne!(key, stored_key(PLAN, 250, 3, 100));
+    }
+
+    #[test]
+    fn a_discard_at_a_higher_page_count_decides() {
+        let tmp = three_page_plan();
+        record(&tmp, &[(&stored_key(PLAN, 380, 4, 100), "discarded")]);
+        assert!(check(&tmp).unwrap().oversized[0].decided);
+    }
+
+    #[test]
+    fn growth_into_another_page_fires_again() {
+        let tmp = three_page_plan();
+        record(&tmp, &[(&stored_key(PLAN, 190, 2, 100), "discarded")]);
+        let plan = &check(&tmp).unwrap().oversized[0];
+        assert!(!plan.decided);
+        assert!(plan.decision_key.is_none());
+    }
+
+    #[test]
+    fn a_threshold_change_is_judged_by_the_recount() {
+        // Discarded at three pages of 100 bytes.
+        let key = stored_key(PLAN, 250, 3, 100);
+        // At 200 bytes the plan is two pages: still covered.
+        let tmp = repo(Some("[artifacts]\nread-size-bytes = 200\n"));
+        std::fs::write(tmp.path().join(PLAN), "x".repeat(250)).unwrap();
+        record(&tmp, &[(&key, "discarded")]);
+        assert!(check(&tmp).unwrap().oversized[0].decided);
+        // At 50 bytes it is five pages: it fires again.
+        let tmp = repo(Some("[artifacts]\nread-size-bytes = 50\n"));
+        std::fs::write(tmp.path().join(PLAN), "x".repeat(250)).unwrap();
+        record(&tmp, &[(&key, "discarded")]);
+        assert!(!check(&tmp).unwrap().oversized[0].decided);
+    }
+
+    #[test]
+    fn only_a_discard_of_the_same_path_decides() {
+        let tmp = three_page_plan();
+        record(
+            &tmp,
+            &[
+                (&stored_key(PLAN, 250, 3, 100), "routed"),
+                (
+                    &stored_key("specs/001-a/tasks.md", 250, 3, 100),
+                    "discarded",
+                ),
+                (
+                    "artifact-size — `specs/001-a/plan.md` is too big",
+                    "discarded",
+                ),
+                (
+                    "plan-record — `specs/001-a/plan.md` is 250 bytes, 3 read pages at the \
+                     100-byte read size",
+                    "discarded",
+                ),
+            ],
+        );
+        let result = check(&tmp).unwrap();
+        assert_eq!(result.decisions, DecisionsState::Read);
+        assert!(!result.oversized[0].decided);
+    }
+
+    #[test]
+    fn the_first_covering_discard_supplies_the_key() {
+        let tmp = three_page_plan();
+        let first = stored_key(PLAN, 260, 3, 100);
+        let second = stored_key(PLAN, 380, 4, 100);
+        record(&tmp, &[(&first, "discarded"), (&second, "discarded")]);
+        let plan = &check(&tmp).unwrap().oversized[0];
+        assert_eq!(plan.decision_key.as_deref(), Some(first.as_str()));
+    }
+
+    #[test]
+    fn an_unreadable_record_decides_nothing_and_says_so() {
+        let tmp = three_page_plan();
+        std::fs::write(
+            tmp.path().join("specs/001-a/analysis.md"),
+            "---\ndecisions: {not: a-list}\n---\n",
+        )
+        .unwrap();
+        let result = check(&tmp).unwrap();
+        assert_eq!(result.decisions, DecisionsState::Unreadable);
+        assert!(!result.oversized[0].decided);
+        assert_eq!(result.notices.len(), 1);
+        assert!(
+            result.notices[0].contains("specs/001-a/analysis.md"),
+            "{}",
+            result.notices[0]
+        );
+    }
+
+    #[test]
+    fn a_key_parses_back_to_its_path_and_pages() {
+        let key = stored_key("specs/a b/plan.md", 123_456, 3, 50_000);
+        assert_eq!(parse_key(&key), Some(("specs/a b/plan.md".to_string(), 3)));
+        assert_eq!(parse_key("artifact-size — not the format"), None);
+        assert_eq!(
+            parse_key("artifact-size — `p` is many bytes, 3 read pages at the 100-byte read size"),
+            None
+        );
     }
 
     #[test]
