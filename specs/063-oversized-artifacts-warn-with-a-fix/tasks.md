@@ -11,9 +11,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 2. Measurement, fixes, and the warning
 
-- [ ] Enumerate the subjects in the data model's order; skip a missing subject with no entry; list one that exists but cannot be opened under `skipped` as `artifact-unreadable`; measure the rest by metadata length; compute `pages` and report those with two or more.
-- [ ] Compute `fixes` per kind and, on a `done` spec only, each fix's `on-done`; render `warning` and `message` in the data model's formats, with command names as `/{project}:…`.
-- [ ] Unit tests: `research.md`, `review.md`, `analysis.md` and an unknown file are never examined, whatever their size (AC3); a missing `plan.md` produces no entry (AC15); an unreadable subject is skipped, never clean (AC11); a CRLF file is measured as its bytes on disk, a file at the threshold is not reported and one byte over is (AC16); each kind's fixes match the spec's table (AC6); `on-done` is absent below `done` and `never`/`always`/`if-claim-changes` at `done` (AC8); no warning names a split command (AC9); every warning says *may* and none says *will* (AC14).
+- [x] Enumerate the subjects in the data model's order; skip a missing subject with no entry; list one that exists but cannot be opened under `skipped` as `artifact-unreadable`; measure the rest by metadata length; compute `pages` and report those with two or more.
+- [x] Compute `fixes` per kind and, on a `done` spec only, each fix's `on-done`; render `warning` and `message` in the data model's formats, with command names as `/{project}:…`.
+- [x] Unit tests: `research.md`, `review.md`, `analysis.md` and an unknown file are never examined, whatever their size (AC3); a missing `plan.md` produces no entry (AC15); an unreadable subject is skipped, never clean (AC11); a CRLF file is measured as its bytes on disk, a file at the threshold is not reported and one byte over is (AC16); each kind's fixes match the spec's table (AC6); `on-done` is absent below `done` and `never`/`always`/`if-claim-changes` at `done` (AC8); no warning names a split command (AC9); every warning says *may* and none says *will* (AC14).
 - **Done when**: the measurement and rendering tests pass.
 
 ## 3. The decided rule
