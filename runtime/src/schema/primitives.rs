@@ -4467,6 +4467,177 @@ pub struct CheckArtifactsResult {
     pub path: String,
 }
 
+// -- check-artifact-size -------------------------------------------------------
+
+/// Args for `check-artifact-size`. Measures one feature's spec artifacts
+/// against the configured read size and reports each an agent may not read in
+/// one call. Read-only. See
+/// `specs/063-oversized-artifacts-warn-with-a-fix/data-model.md`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::Args)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckArtifactSizeArgs {
+    /// Feature directory name under the configured spec root.
+    #[arg(long)]
+    pub feature: String,
+}
+
+/// Where the threshold a check ran at came from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum ThresholdSource {
+    /// `[artifacts] read-size-bytes` is unset, or there is no config file.
+    Default,
+    /// A positive integer was read from the config file and used.
+    Config,
+    /// The config file sets something other than a positive integer. The
+    /// default was used, and a notice names the rejected value.
+    Invalid,
+}
+
+/// The threshold a check ran at.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ReadSizeThreshold {
+    /// Bytes: the configured value, or the 50,000-byte default.
+    pub bytes: u64,
+    /// Where `bytes` came from.
+    pub source: ThresholdSource,
+    /// The rejected value as written in the config file. Present exactly when
+    /// `source` is `invalid`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rejected: Option<String>,
+}
+
+/// The kind of spec artifact a subject is, which decides its fixes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum ArtifactKind {
+    /// `spec.md`.
+    Spec,
+    /// `plan.md`.
+    Plan,
+    /// `tasks.md`.
+    Tasks,
+    /// `data-model.md`.
+    DataModel,
+    /// A `*.md` directly under `scenarios/`.
+    Scenario,
+}
+
+/// A fix for an oversized artifact.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum FixKind {
+    /// Prune the spent sections of `tasks.md`.
+    Prune,
+    /// Split the spec, by hand: no command splits one.
+    Split,
+    /// Trim the file.
+    Trim,
+    /// Promote the scenario to its own spec.
+    Promote,
+}
+
+/// What a fix does to a `done` spec, by the test §spec-lifecycle applies to
+/// every edit under a spec.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum OnDone {
+    /// Never reopens it: pruning `tasks.md`.
+    Never,
+    /// Always reopens it: splitting the spec and promoting a scenario each
+    /// remove requirements from what it asserts.
+    Always,
+    /// Reopens it unless the edit changes no claim: trimming.
+    IfClaimChanges,
+}
+
+/// One fix an oversized artifact's warning names.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct ArtifactFix {
+    /// Which fix.
+    pub fix: FixKind,
+    /// The fix as the warning words it.
+    pub text: String,
+    /// What the fix does to a `done` spec. Present only when the spec is
+    /// `done`; absent means not computed, never `never`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub on_done: Option<OnDone>,
+}
+
+/// One subject artifact over the threshold.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct OversizedArtifact {
+    /// Repo-relative path of the artifact.
+    pub path: String,
+    /// What kind of artifact it is.
+    pub kind: ArtifactKind,
+    /// Its length on disk, in bytes.
+    pub bytes: u64,
+    /// Its read-page count: `bytes` over the threshold, rounded up. At least
+    /// 2 for every oversized artifact.
+    pub pages: u64,
+    /// The fixes for its kind, in the spec's order. Never a discard: only
+    /// `/{project}:analyze` can record one, and it offers it itself.
+    pub fixes: Vec<ArtifactFix>,
+    /// The one-line warning the commands print as given.
+    pub warning: String,
+    /// The `artifact-size` finding message `/{project}:analyze` records.
+    pub message: String,
+    /// A stored discard still covers this artifact: one recorded for the same
+    /// path at a read-page count at least this one's.
+    pub decided: bool,
+    /// The stored discard's key. Present exactly when `decided` is `true`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decision_key: Option<String>,
+}
+
+/// Whether `analysis.md`'s stored decisions were read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum DecisionsState {
+    /// There is no `analysis.md`.
+    Absent,
+    /// The list was read; it is empty when the record stores no decisions.
+    Read,
+    /// The list could not be read or did not parse. Nothing is decided, and
+    /// a notice says so; the check does not fail.
+    Unreadable,
+}
+
+/// Result for `check-artifact-size`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub struct CheckArtifactSizeResult {
+    /// Feature directory name echoed from the args.
+    pub feature: String,
+    /// The spec's frontmatter `status`, which each fix's `on-done` is
+    /// computed against.
+    pub status: String,
+    /// The threshold the check ran at.
+    pub threshold: ReadSizeThreshold,
+    /// Subjects that exist and were measured.
+    pub examined: u32,
+    /// Subjects over the threshold, in subject order. Empty means none over
+    /// it among the `examined`; it says nothing about the `skipped`.
+    pub oversized: Vec<OversizedArtifact>,
+    /// Subjects that exist but could not be measured: family
+    /// `artifact-size`, reason `artifact-unreadable`. A subject that does not
+    /// exist is never listed.
+    #[serde(default)]
+    pub skipped: Vec<SkippedTarget>,
+    /// Whether the stored decisions behind `decided` were read.
+    pub decisions: DecisionsState,
+    /// Notices every caller shows: an invalid threshold, unreadable stored
+    /// decisions.
+    #[serde(default)]
+    pub notices: Vec<String>,
+    /// Repo-relative path to the spec file.
+    pub path: String,
+}
+
 // -- derive-routing-candidates -------------------------------------------------
 
 /// Args for `derive-routing-candidates`. Derives the homes new work could
@@ -5156,6 +5327,10 @@ mod tests {
         SkippedFeature, SpecSection, Subtask, Task, TraverseDepsArgs, TraverseDepsResult,
         ValidateFrontmatterArgs, ValidateFrontmatterResult, WriteSessionArgs, WriteSessionResult,
     };
+    use super::{
+        ArtifactFix, ArtifactKind, CheckArtifactSizeArgs, CheckArtifactSizeResult, DecisionsState,
+        FixKind, OnDone, OversizedArtifact, ReadSizeThreshold, SkippedTarget, ThresholdSource,
+    };
 
     fn round_trip<T>(value: &T) -> T
     where
@@ -5512,6 +5687,95 @@ mod tests {
         assert_eq!(value["features"][0]["status"], "done");
         assert_eq!(value["skipped"][0]["reason"], "no-plan-file");
         assert_eq!(round_trip(&walked), walked);
+    }
+
+    #[test]
+    fn check_artifact_size_round_trip() {
+        let args = CheckArtifactSizeArgs {
+            feature: "063-oversized-artifacts-warn-with-a-fix".into(),
+        };
+        assert_eq!(round_trip(&args), args);
+
+        let result = CheckArtifactSizeResult {
+            feature: "063-oversized-artifacts-warn-with-a-fix".into(),
+            status: "done".into(),
+            threshold: ReadSizeThreshold {
+                bytes: 50_000,
+                source: ThresholdSource::Invalid,
+                rejected: Some("\"50kb\"".into()),
+            },
+            examined: 4,
+            oversized: vec![OversizedArtifact {
+                path: "specs/063/data-model.md".into(),
+                kind: ArtifactKind::DataModel,
+                bytes: 120_000,
+                pages: 3,
+                fixes: vec![ArtifactFix {
+                    fix: FixKind::Trim,
+                    text: "trim it".into(),
+                    on_done: Some(OnDone::IfClaimChanges),
+                }],
+                warning: "w".into(),
+                message: "m".into(),
+                decided: true,
+                decision_key: Some("artifact-size — m".into()),
+            }],
+            skipped: vec![SkippedTarget {
+                family: "artifact-size".into(),
+                reason: "artifact-unreadable".into(),
+                path: "specs/063/plan.md".into(),
+            }],
+            decisions: DecisionsState::Read,
+            notices: vec!["n".into()],
+            path: "specs/063/spec.md".into(),
+        };
+        let value: serde_json::Value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["threshold"]["source"], "invalid");
+        assert_eq!(value["oversized"][0]["kind"], "data-model");
+        assert_eq!(
+            value["oversized"][0]["fixes"][0]["on-done"],
+            "if-claim-changes"
+        );
+        assert_eq!(value["oversized"][0]["decision-key"], "artifact-size — m");
+        assert_eq!(value["decisions"], "read");
+        assert_eq!(round_trip(&result), result);
+
+        // Not computed is absent: a valid threshold has no `rejected`, a fix
+        // below `done` has no `on-done`, an undecided artifact no key.
+        let below = CheckArtifactSizeResult {
+            threshold: ReadSizeThreshold {
+                bytes: 50_000,
+                source: ThresholdSource::Default,
+                rejected: None,
+            },
+            oversized: vec![OversizedArtifact {
+                fixes: vec![ArtifactFix {
+                    fix: FixKind::Split,
+                    text: "split it".into(),
+                    on_done: None,
+                }],
+                decided: false,
+                decision_key: None,
+                ..result.oversized[0].clone()
+            }],
+            ..result.clone()
+        };
+        let value: serde_json::Value = serde_json::to_value(&below).unwrap();
+        assert!(
+            !value["threshold"]
+                .as_object()
+                .unwrap()
+                .contains_key("rejected")
+        );
+        let artifact = value["oversized"][0].as_object().unwrap();
+        assert!(!artifact.contains_key("decision-key"));
+        assert!(
+            !value["oversized"][0]["fixes"][0]
+                .as_object()
+                .unwrap()
+                .contains_key("on-done")
+        );
+        assert_eq!(round_trip(&below), below);
     }
 
     #[test]

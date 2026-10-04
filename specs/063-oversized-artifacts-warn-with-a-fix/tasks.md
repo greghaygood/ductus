@@ -4,9 +4,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 1. Schema types and threshold resolution
 
-- [ ] Add `CheckArtifactSizeArgs`, `CheckArtifactSizeResult`, `ReadSizeThreshold`, `ThresholdSource`, `OversizedArtifact`, `ArtifactKind`, `ArtifactFix`, `FixKind`, `OnDone` and `DecisionsState` to `runtime/src/schema/primitives.rs` per [data-model.md](data-model.md), with a serde round-trip test.
-- [ ] Create `runtime/src/primitives/check_artifact_size.rs` with the threshold resolution: `[artifacts] read-size-bytes` through `paths::resolve_config`, held as a raw value; `default` when unset or the file is absent, `config` for a positive integer, `invalid` with `rejected` and a notice for anything else; a config file that does not parse is `PrimitiveError::Toml`.
-- [ ] Unit tests for each source: unset, absent file, valid value, and each invalid shape (string, float, zero, negative, array), plus the unparseable-file error.
+- [x] Add `CheckArtifactSizeArgs`, `CheckArtifactSizeResult`, `ReadSizeThreshold`, `ThresholdSource`, `OversizedArtifact`, `ArtifactKind`, `ArtifactFix`, `FixKind`, `OnDone` and `DecisionsState` to `runtime/src/schema/primitives.rs` per [data-model.md](data-model.md), with a serde round-trip test.
+- [x] Create `runtime/src/primitives/check_artifact_size.rs` with the threshold resolution: `[artifacts] read-size-bytes` through `paths::resolve_config`, held as a raw value; `default` when unset or the file is absent, `config` for a positive integer, `invalid` with `rejected` and a notice for anything else; a config file that does not parse is `PrimitiveError::Toml`.
+- [x] Unit tests for each source: unset, absent file, valid value, and each invalid shape (string, float, zero, negative, array), plus the unparseable-file error.
 - **Done when**: the threshold tests pass and an invalid value yields the 50,000-byte default with a notice naming the rejected value (AC4, AC5).
 
 ## 2. Measurement, fixes, and the warning
@@ -18,9 +18,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 3. The decided rule
 
-- [ ] Read `analysis.md`'s `decisions:` through `decisions::read_decisions`; set `decisions` to `absent`, `read` or `unparseable`, never failing on an unparseable list, and add the notice when it is unparseable.
+- [ ] Read `analysis.md`'s `decisions:` through `decisions::read_decisions`; set `decisions` to `absent`, `read` or `unreadable`, never failing on an unreadable list, and add the notice when it is unreadable.
 - [ ] Parse each `artifact-size` key under the message format; mark a subject decided by a stored discard for the same path at a page count greater than or equal to its own, and carry that key as `decision-key`.
-- [ ] Unit tests: a discard at the same page count decides; at a higher recorded count decides; at a lower recorded count does not (AC10); a routed decision, another path's discard, and an unparseable key never decide; an unparseable list leaves every subject undecided with the notice and no error.
+- [ ] Unit tests: a discard at the same page count decides; at a higher recorded count decides; at a lower recorded count does not (AC10); a routed decision, another path's discard, and an unparseable key never decide; an unreadable list leaves every subject undecided with the notice and no error.
 - **Done when**: the decided-rule tests pass, including the growth-into-another-page case.
 
 ## 4. Register the primitive

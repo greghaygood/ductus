@@ -73,7 +73,7 @@ Fixes by kind: `tasks` → `prune`, then `split` and `trim` as the fixes that ap
 
 ## `DecisionsState`
 
-`absent` (no `analysis.md`, or no `decisions:` list in it), `read`, or `unparseable` (the list does not parse; nothing is decided, and a notice says so). The primitive never fails on an unparseable list.
+`absent` (no `analysis.md`), `read` (the list was read, and is empty when the record stores no decisions), or `unreadable` (the list could not be read or does not parse; nothing is decided, and a notice says so). The primitive never fails on an unreadable list.
 
 ## The `artifact-size` finding
 
