@@ -2,13 +2,13 @@
 
 All notable changes to the `ductus` deterministic runtime are recorded here. The runtime ships in lockstep with the framework per [§runtime-boundary](../framework/constitution.md#runtime-boundary); release tags use the `ductus-v<MAJOR>.<MINOR>.<PATCH>` scheme (was `gvrn-v*` before 0.28.0, and `runtime-v*` before 0.2.0 — see those entries below). Entries below 0.28.0 name the runtime `gvrn` because that is what was published under those tags.
 
-<!-- Keep this heading non-numeric while the work is in flight. /ductus:audit
-     Family 20 binds the repo-root `version` pin, runtime/Cargo.toml, and the
-     newest `## [X.Y.Z]` heading, and it matches only numeric headings — so an
-     `[Unreleased]` section is invisible to it and the previous release stays
-     newest. Rename it to its version in the same commit that bumps the pin. -->
+## [0.58.0] — 2026-10-04
 
-## [Unreleased]
+The pipeline now warns when a spec artifact is larger than an agent may read
+in one call, and names the fix for it (spec 063). A new primitive and a new
+`[artifacts]` configuration key carry it, and three commands gain a step, which
+renumbers the steps after it and two `ductus exec` gate names — hence a minor
+bump.
 
 ### Added
 
