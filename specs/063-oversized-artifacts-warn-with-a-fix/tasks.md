@@ -65,3 +65,12 @@ Task 5's step-number sync rewrote 058's scenario `only-unreadable-targets-retain
 
 - [x] Run the whole surface AGENTS.md's local-gate entry lists: markdownlint, the six lint scripts, the script tests, shellcheck, the generators and both derive commands with no drift, `scripts/audit/run-all.sh`, and `cargo fmt --check`, `clippy -D warnings`, `cargo test --release --locked` and `cargo audit` under `runtime/`.
 - **Done when**: every check in the surface passes against the committed tree.
+
+## 10. A scenario listing that drops an entry is not clean
+
+`/ductus:review` found a `QUAL-CLAIM-001` gap in `check-artifact-size`'s scenario enumeration: an entry the `scenarios/` listing returned as an error, and a `*.md` whose name is not valid UTF-8, were both dropped without a trace, so the result read as fully examined while a scenario went unmeasured (AC11).
+
+- [x] Record the `scenarios/` directory as skipped (`artifact-unreadable`) when any entry of its listing cannot be read, as an unlistable directory already is.
+- [x] Measure a `*.md` whose name is not valid UTF-8 like any other scenario, reporting its path lossily, rather than dropping it.
+- [x] Unit tests for both, built so each fails when its handling is removed.
+- **Done when**: the tests pass and fail under the mutation that removes each behavior.

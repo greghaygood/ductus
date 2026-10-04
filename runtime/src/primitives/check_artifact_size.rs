@@ -19,6 +19,7 @@
 //!
 //! **Read-only.** Nothing is written in any mode.
 
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
 use crate::primitives::decisions::{RawDecision, read_decisions};
@@ -225,23 +226,58 @@ fn subjects(
         skip(skipped, rel_path(&scenarios, repo));
         return found;
     };
-    let mut names: Vec<String> = entries
-        .filter_map(std::result::Result::ok)
-        .filter_map(|entry| entry.file_name().into_string().ok())
-        .filter(|name| {
-            Path::new(name)
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-        })
-        .filter(|name| !scenarios.join(name).is_dir())
-        .collect();
-    names.sort_by(|a, b| scenario_name_cmp(a, b));
+    let names = scenario_names(
+        entries.map(|entry| entry.map(|entry| entry.file_name())),
+        |name| scenarios.join(name).is_dir(),
+        &rel_path(&scenarios, repo),
+        skipped,
+    );
     found.extend(
         names
             .into_iter()
             .map(|name| (scenarios.join(name), ArtifactKind::Scenario)),
     );
     found
+}
+
+/// The scenario names in one listing of `scenarios/` (`listing`), in the
+/// shared scenario ordering: each `*.md` that is not a directory.
+///
+/// Nothing in the listing is dropped without a trace (`QUAL-CLAIM-001`). An
+/// entry the listing returned as an error leaves the directory not fully
+/// listed, so the directory is recorded skipped, once, as an unlistable one
+/// is. A name that is not valid UTF-8 is kept and measured like any other,
+/// its path reported lossily: dropping it, as the shared scenario lister
+/// does, would leave a scenario unmeasured under a result that reads as fully
+/// examined.
+fn scenario_names(
+    entries: impl IntoIterator<Item = std::io::Result<OsString>>,
+    is_dir: impl Fn(&OsStr) -> bool,
+    listing: &str,
+    skipped: &mut Vec<SkippedTarget>,
+) -> Vec<OsString> {
+    let mut names = Vec::new();
+    let mut complete = true;
+    for entry in entries {
+        let Ok(name) = entry else {
+            complete = false;
+            continue;
+        };
+        let markdown = Path::new(&name)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"));
+        if markdown && !is_dir(&name) {
+            names.push(name);
+        }
+    }
+    if !complete {
+        skip(skipped, listing.to_string());
+    }
+    // The raw bytes break a tie only lossy names can produce.
+    names.sort_by(|a, b| {
+        scenario_name_cmp(&a.to_string_lossy(), &b.to_string_lossy()).then_with(|| a.cmp(b))
+    });
+    names
 }
 
 /// A subject's length on disk, or `None` after recording it skipped when it
@@ -676,6 +712,68 @@ mod tests {
         assert_eq!(result.skipped.len(), 1);
         assert_eq!(result.skipped[0].path, "specs/001-a/scenarios");
         assert!(result.oversized.is_empty());
+    }
+
+    #[test]
+    fn a_listing_entry_that_cannot_be_read_skips_the_directory_once() {
+        let mut skipped = Vec::new();
+        let names = scenario_names(
+            [
+                Ok(OsString::from("b.md")),
+                Err(std::io::Error::other("readdir failed")),
+                Ok(OsString::from("a.md")),
+                Err(std::io::Error::other("readdir failed again")),
+            ],
+            |_| false,
+            "specs/001-a/scenarios",
+            &mut skipped,
+        );
+        // What the listing did return is still measured.
+        assert_eq!(names, ["a.md", "b.md"]);
+        let skipped: Vec<(&str, &str, &str)> = skipped
+            .iter()
+            .map(|s| (s.family.as_str(), s.reason.as_str(), s.path.as_str()))
+            .collect();
+        assert_eq!(
+            skipped,
+            [(
+                "artifact-size",
+                "artifact-unreadable",
+                "specs/001-a/scenarios"
+            )]
+        );
+    }
+
+    #[test]
+    fn a_complete_listing_skips_nothing() {
+        let mut skipped = Vec::new();
+        let names = scenario_names(
+            ["c.txt", "dir.md", "B.md", "a.MD"].map(|n| Ok(OsString::from(n))),
+            |name| name == "dir.md",
+            "specs/001-a/scenarios",
+            &mut skipped,
+        );
+        assert_eq!(names, ["a.MD", "B.md"]);
+        assert!(skipped.is_empty(), "{skipped:?}");
+    }
+
+    /// A name that is not valid UTF-8 is a scenario like any other. APFS
+    /// refuses such a name, so the listing is built in memory rather than on
+    /// disk, which keeps the test running on every Unix host.
+    #[cfg(unix)]
+    #[test]
+    fn a_name_that_is_not_utf8_is_kept_not_dropped() {
+        use std::os::unix::ffi::OsStrExt;
+        let raw = OsStr::from_bytes(b"\xff.md").to_os_string();
+        let mut skipped = Vec::new();
+        let names = scenario_names(
+            [Ok(raw.clone()), Ok(OsString::from("a.md"))],
+            |_| false,
+            "specs/001-a/scenarios",
+            &mut skipped,
+        );
+        assert_eq!(names, [OsString::from("a.md"), raw]);
+        assert!(skipped.is_empty(), "{skipped:?}");
     }
 
     #[test]
