@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 029-bootstrap-runtime-autowire, 031-agent-mcp-wiring, 056-bootstrap-archive-boundary-split]
 next-criterion: 17
 ---
@@ -75,7 +75,7 @@ machinery the other four agents use, with the one new mechanism none of them nee
    the single source of truth for tool names and schemas.
 3. `ductus exec` works unchanged from Pi's shell tool: it dispatches primitives
    in-process and never touches the host's tool registry, so the exec path is free
-   parity once command-file resolution knows Pi's shape (§D4).
+   parity once command-file resolution knows Pi's shape (D4).
 4. Gates, session state, constitution, rules, and migrations behave identically — they
    are runtime plus file work, host-agnostic.
 
@@ -191,7 +191,7 @@ mechanism; nothing in the pipeline depends on either.
 - [x] AC1: `install.sh` carries a `pi` arm that writes `.pi/prompts/ductus.md` verbatim, writes **no** settings file (stated in-arm), and the unknown-agent error line names `pi`
 - [x] AC2: The Agent Registry row `pi` / `Pi` / `.pi` / layout `pi` is present, with an empty `settings_template` (no permission-gating surface) and a `rules_file_note` stating Pi reads `AGENTS.md` natively
 - [x] AC3: The §Derived values table carries a `pi` column: command/skill path `.pi/prompts/{project}-<name>.md`, invocation `/{project}-<name>`, `ductus` install path `.pi/prompts/ductus.md`, settings file `.pi/settings.json` (Permission Setup a documented no-op), native rules file `AGENTS.md`, slash-command cleanup glob `{project}-*.md` in `.pi/prompts`
-- [x] AC4: The §MCP registration table carries the `pi` row — target `.pi/extensions/ductus.ts` (the bridge from the staging archive), scope `project-local` (gitignored), mechanism `write-file` — and the State-B / MCP-wiring prose branches on Pi without writing any MCP config file
+- [x] AC4: The MCP registration table carries the `pi` row — target `.pi/extensions/ductus.ts` (the bridge from the staging archive), scope `project-local` (gitignored), mechanism `write-file` — and the State-B / MCP-wiring prose branches on Pi without writing any MCP config file
 - [x] AC5: The bootstrap's Pi-layout scaffolding section installs the sixteen command rows plus the configure row verbatim to `.pi/prompts/{project}-<name>.md` (with `{project}` / `{cli-config-dir}` substitution), installs `framework/bootstrap/pi/ductus-bridge.ts` to `.pi/extensions/ductus.ts` with no substitution, adds `.pi/` to the framework-managed `.gitignore` block, and the completion message carries the Pi trust reminder
 - [x] AC6: `framework/bootstrap/pi/ductus-bridge.ts` exists with zero npm dependencies: lazy spawn of `.ductus/bin/ductus mcp`, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `tools/list` / `tools/call`), `pi.registerTool` for every server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through, respawn on exit, and a missing-pointer/binary error envelope that names the file and points at `/ductus` (no markdown fallback)
 - [x] AC7: `framework/bootstrap/configure/pi.md` verifies `.pi/extensions/ductus.ts` against the upstream bridge source (overwrite on divergence) and reports the no-permission-settings and trust facts; `gen-configure-mcp.sh`'s header names the Pi exclusion
