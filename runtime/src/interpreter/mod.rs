@@ -1634,7 +1634,7 @@ mod tests {
             steps: vec![
                 step(2, "validate-frontmatter"),
                 step(8, "check-artifacts"),
-                step(20, "write-analysis"),
+                step(21, "write-analysis"),
             ],
         };
         let mut context = Map::new();
@@ -1660,6 +1660,60 @@ mod tests {
         assert!(analysis.contains("\nblocking-findings: 2\n"), "{analysis}");
         assert!(analysis.contains("\nblocking: true\n"), "{analysis}");
         assert!(analysis.contains("  undispositioned: 2\n"), "{analysis}");
+    }
+
+    /// An exec `/analyze` records an oversized artifact step 17 found as an
+    /// advisory finding, undispositioned (spec 063, AC1): the walker binds
+    /// the feature from the session and counts the result.
+    #[test]
+    fn an_exec_analyze_records_an_oversized_artifact_as_advisory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("specs/001-x");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("spec.md"),
+            "---\nstatus: clarified\ndependencies: []\n---\n\n# x\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/config.toml"),
+            "[artifacts]\nread-size-bytes = 100\n",
+        )
+        .unwrap();
+        std::fs::write(dir.join("plan.md"), "x".repeat(250)).unwrap();
+        let step = |n: u32, name: &str| Step::Primitive {
+            number: StepNumber(vec![n]),
+            name: name.into(),
+            prose: String::new(),
+            location: loc(),
+        };
+        let procedure = Procedure {
+            command: "analyze".into(),
+            steps: vec![step(17, "check-artifact-size"), step(21, "write-analysis")],
+        };
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-x".into()));
+        context.insert("path".into(), Value::String("specs/001-x".into()));
+        context.insert(
+            "analyzed-at".into(),
+            Value::String("2026-10-04T00:00:00Z".into()),
+        );
+        context.insert("analyzed-against".into(), Value::String("abc1234".into()));
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &procedure,
+            tmp.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete);
+        let analysis = std::fs::read_to_string(dir.join("analysis.md")).unwrap();
+        assert!(analysis.contains("\nadvisory: 1\n"), "{analysis}");
+        assert!(analysis.contains("\nblocking: false\n"), "{analysis}");
+        assert!(analysis.contains("  undispositioned: 1\n"), "{analysis}");
     }
 
     /// A tempdir holding a `clarified` spec at `specs/001-x/spec.md` and, when

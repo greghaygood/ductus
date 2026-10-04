@@ -12,5 +12,6 @@
 {"type":"progress","message":"received llm-response for `assessSpecQuality`","step":"11"}
 {"type":"progress","message":"no SHOULD-tier rule loaded to assess","step":"12"}
 {"type":"progress","message":"dispatching primitive `prune-plan`","step":"16","primitive":"prune-plan"}
-{"type":"progress","message":"dispatching primitive `write-analysis`","step":"20","primitive":"write-analysis"}
+{"type":"progress","message":"dispatching primitive `check-artifact-size`","step":"17","primitive":"check-artifact-size"}
+{"type":"progress","message":"dispatching primitive `write-analysis`","step":"21","primitive":"write-analysis"}
 {"type":"complete","result":{},"runtime-version":"{{runtime-version}}"}

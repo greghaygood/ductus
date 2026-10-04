@@ -31,11 +31,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 5. `/analyze`: the `artifact-size` family
 
-- [ ] Add step 17 to `framework/commands/analyze.md` invoking `check-artifact-size` and recording each oversized subject as an advisory `artifact-size` finding, a skipped subject as unexamined, and a decided subject under its `decision-key`; say that the discard is the further fix offered (AC1, AC7). Include the markdown-only text (AC12).
-- [ ] Renumber steps 17–21 to 18–22 and every reference to them in the file; state at the stored-decisions step that an `artifact-size` finding fires its `decision-key` when decided.
-- [ ] Add an **Artifact size** section to the markdown-only reference and the family to its per-check severity assignment as advisory for good.
-- [ ] Count the step in `runtime/src/interpreter/analyze_tally.rs` (undecided and decided oversized subjects advisory, skipped ones unexamined under `artifact-unreadable`), update its step-number comments, add walker coverage, and re-bless `runtime/tests/golden/analyze-basic.jsonl`.
-- [ ] Sync the moved step numbers in `specs/058-findings-route-at-discovery/scenarios/only-unreadable-targets-retain-decisions.md` (step 17 → 18, twice) and `specs/058-findings-route-at-discovery/plan.md` (step 20 → 21), leaving 058 `done`.
+- [x] Add step 17 to `framework/commands/analyze.md` invoking `check-artifact-size` and recording each oversized subject as an advisory `artifact-size` finding, a skipped subject as unexamined, and a decided subject under its `decision-key`; say that the discard is the further fix offered (AC1, AC7). Include the markdown-only text (AC12).
+- [x] Renumber steps 17–21 to 18–22 and every reference to them in the file; state at the stored-decisions step that an `artifact-size` finding fires its `decision-key` when decided.
+- [x] Add an **Artifact size** section to the markdown-only reference and the family to its per-check severity assignment as advisory for good.
+- [x] Count the step in `runtime/src/interpreter/analyze_tally.rs` (undecided and decided oversized subjects advisory, skipped ones unexamined under `artifact-unreadable`), update its step-number comments, add walker coverage, and re-bless `runtime/tests/golden/analyze-basic.jsonl`.
+- [x] Sync the moved step numbers in `specs/058-findings-route-at-discovery/scenarios/only-unreadable-targets-retain-decisions.md` (step 17 → 18, twice) and `specs/058-findings-route-at-discovery/plan.md` (step 20 → 21), leaving 058 `done`.
 - **Done when**: `scripts/lint-procedure-parseability.sh`, the step-reference audit family, the walker tests and the analyze golden pass, and an oversized fixture subject appears as an advisory `artifact-size` finding.
 
 ## 6. `/clarify` and `/plan`: the warning, and code out of plans

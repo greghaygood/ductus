@@ -146,13 +146,20 @@ impl AnalyzeTally {
             "check-unfolded-specs" => self.advisory += count("unfolded"),
             // Step 16: on a spec at `planned` or later, every plan section
             // outside the design record is advisory, decided or not. Exec
-            // matches no stored decision (step 17 is a host step), so a
+            // matches no stored decision (step 18 is a host step), so a
             // decided section is counted live here, as every finding is.
             "prune-plan" => {
                 let status = result.get("status").and_then(Value::as_str);
                 if status.is_some_and(|status| COMPATIBLE_STATUSES.contains(&status)) {
                     self.advisory += count("sections");
                 }
+            }
+            // Step 17: every oversized artifact is advisory at every status,
+            // decided or not, for the reason step 16's are; a subject the size
+            // check could not measure is unexamined, never clean.
+            "check-artifact-size" => {
+                self.advisory += count("oversized");
+                self.record_unexamined("artifact-unreadable", count("skipped"));
             }
             _ => {}
         }
@@ -383,6 +390,31 @@ mod tests {
             &Map::new(),
         );
         assert_eq!(bound(&clarified)["advisory"], 0);
+    }
+
+    /// Step 17 counts every oversized artifact as advisory at every status,
+    /// decided ones included, and a subject it could not measure as
+    /// unexamined under `artifact-unreadable`.
+    #[test]
+    fn oversized_artifacts_are_advisory_and_unmeasured_ones_unexamined() {
+        let mut tally = AnalyzeTally::new();
+        tally.record_primitive(
+            "check-artifact-size",
+            &json!({
+                "status": "draft",
+                "oversized": [{ "decided": true }, { "decided": false }],
+                "skipped": [{ "family": "artifact-size", "reason": "artifact-unreadable", "path": "p" }],
+            }),
+            &Map::new(),
+        );
+        let bindings = bound(&tally);
+        assert_eq!(bindings["advisory"], 2);
+        assert_eq!(bindings["blocking-findings"], 0);
+        let unexamined = bindings["unexamined-by-reason"].as_array().unwrap();
+        assert!(
+            unexamined.contains(&json!(["artifact-unreadable", 1])),
+            "{unexamined:?}"
+        );
     }
 
     /// Steps 13–15 are host prose the walker never runs, so a walk that
