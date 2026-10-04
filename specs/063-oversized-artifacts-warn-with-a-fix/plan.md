@@ -87,7 +87,7 @@ Each new step says what the host does without the runtime (AC12): measure each s
 
 ### `/plan` stops placing code in plans
 
-`framework/commands/plan.md` currently says "Code snippets, function signatures, and package paths belong here" in its Technical Decisions guidance (Create the plan, step 2). It is replaced with guidance that a decision states the decision and its rationale and names the code it concerns by path, citing `path:line`, rather than reproducing it, because a sketch goes stale as soon as the code lands and regrows a trimmed plan (AC13). The plan template carries no code guidance of its own (`framework/templates/spec/plan.md`), so it is unchanged.
+`framework/commands/plan.md`'s Technical Decisions guidance (Create the plan, step 2) has a decision name the code it concerns by path, citing `path:line`, rather than reproducing it, because a sketch goes stale as soon as the code lands and regrows a trimmed plan (AC13). It no longer says that code snippets, function signatures, and package paths belong in the plan. The plan template carries no code guidance of its own (`framework/templates/spec/plan.md`), so it is unchanged.
 
 ### Documentation
 

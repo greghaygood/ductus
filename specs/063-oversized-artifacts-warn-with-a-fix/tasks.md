@@ -40,11 +40,11 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 6. `/clarify` and `/plan`: the warning, and code out of plans
 
-- [ ] Add step 10 to `framework/commands/clarify.md` after `label-criteria`, printing each warning and the threshold notice and stating that it never blocks the transition; renumber steps 10–13 to 11–14 and every reference to them (the feature-walk range and the scenario-targeted step list included).
-- [ ] Add step 8 to `framework/commands/plan.md` after the task breakdown, likewise; renumber steps 8–10 to 9–11 and every reference to them; list the size check as advisory in the **Validation gate** reference beside markdownlint.
-- [ ] Give each new step the markdown-only text: measure with the host's file tools, and list a subject whose size cannot be reported as not examined (AC12).
-- [ ] Replace the Technical Decisions guidance in `framework/commands/plan.md` that code snippets, function signatures, and package paths belong in the plan with guidance to state the decision and its rationale and name the code by `path:line` (AC13).
-- [ ] Add walker coverage for both steps and re-bless `runtime/tests/golden/plan-basic.jsonl`.
+- [x] Add step 10 to `framework/commands/clarify.md` after `label-criteria`, printing each warning and the threshold notice and stating that it never blocks the transition; renumber steps 10–13 to 11–14 and every reference to them (the feature-walk range and the scenario-targeted step list included).
+- [x] Add step 8 to `framework/commands/plan.md` after the task breakdown, likewise; renumber steps 8–10 to 9–11 and every reference to them; list the size check as advisory in the **Validation gate** reference beside markdownlint.
+- [x] Give each new step the markdown-only text: measure with the host's file tools, and list a subject whose size cannot be reported as not examined (AC12).
+- [x] Replace the Technical Decisions guidance in `framework/commands/plan.md` that code snippets, function signatures, and package paths belong in the plan with guidance to state the decision and its rationale and name the code by `path:line` (AC13).
+- [x] Add walker coverage for both steps and re-bless `runtime/tests/golden/plan-basic.jsonl`.
 - **Done when**: both commands parse, the step-reference audit family passes, the walker tests and the plan golden pass, and an oversized fixture subject produces a warning in both commands without blocking either transition (AC2).
 
 ## 7. Documentation
@@ -54,7 +54,14 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [ ] Add the change to `runtime/CHANGELOG.md`'s `[Unreleased]` section.
 - **Done when**: the transitional-bootstrap parity audit family passes and the three documentation sites state the default, the unit, and the absence of an off switch.
 
-## 8. Full local gate
+## 8. Re-review 058 so its record covers the synced scenario
+
+Task 5's step-number sync rewrote 058's scenario `only-unreadable-targets-retain-decisions` (step 17 → 18). That is a content change to a durable contract, and not a sweep Family 19 excuses — its exemption counts a token pair only across files whose whole diff is a pure substitution, and `analyze.md`'s is not — so 058's review reads stale and `scripts/audit/run-all.sh` fails until 058 is reviewed again. 058 stays `done`; `/{project}:review` runs against a `done` spec.
+
+- [ ] Run `/ductus:review` against `058-findings-route-at-discovery`, dispositioning whatever it finds.
+- **Done when**: `scripts/audit/review-freshness.sh` reports no stale review for 058.
+
+## 9. Full local gate
 
 - [ ] Run the whole surface AGENTS.md's local-gate entry lists: markdownlint, the six lint scripts, the script tests, shellcheck, the generators and both derive commands with no drift, `scripts/audit/run-all.sh`, and `cargo fmt --check`, `clippy -D warnings`, `cargo test --release --locked` and `cargo audit` under `runtime/`.
 - **Done when**: every check in the surface passes against the committed tree.

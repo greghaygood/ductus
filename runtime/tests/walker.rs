@@ -976,3 +976,97 @@ fn prune_command_applies_after_a_confirmed_gate() {
         "the pending section survives whole:\n{after}"
     );
 }
+
+/// The size check spec 063 adds to `/clarify` and `/plan` sits where the plan
+/// puts it — after the spec's answers and the plan's tasks are written, ahead
+/// of each command's gate — and an oversized artifact never halts either
+/// walk: the step after it still dispatches, so the transition is not
+/// blocked (AC2).
+#[test]
+fn clarify_and_plan_size_checks_warn_without_halting_the_walk() {
+    let commands = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("runtime/.. exists")
+        .join("framework/commands");
+    let name_at = |steps: &[Step], n: u32| -> String {
+        steps
+            .iter()
+            .find_map(|s| match s {
+                Step::Primitive { number, name, .. } if number.0 == vec![n] => Some(name.clone()),
+                _ => None,
+            })
+            .unwrap_or_default()
+    };
+    // (command, size step, the primitive step before it, the step after it)
+    for (command, size_step, before, after) in [
+        ("clarify", 10, (9, "label-criteria"), (13, "set-status")),
+        ("plan", 8, (3, "create-plan-artifacts"), (9, "gate-confirm")),
+    ] {
+        let source = std::fs::read_to_string(commands.join(format!("{command}.md"))).unwrap();
+        let procedure = ductus::parser::parse(&source, command).expect("command parses");
+        assert_eq!(
+            name_at(&procedure.steps, size_step),
+            "check-artifact-size",
+            "{command}.md step {size_step}"
+        );
+        assert_eq!(name_at(&procedure.steps, before.0), before.1, "{command}");
+        assert_eq!(name_at(&procedure.steps, after.0), after.1, "{command}");
+
+        // Walk the parsed size step, then a read-only step, over a spec whose
+        // plan is three read pages at a 100-byte threshold.
+        let tmp = tempfile::tempdir().unwrap();
+        let feature_dir = tmp.path().join("specs/001-basic");
+        std::fs::create_dir_all(&feature_dir).unwrap();
+        std::fs::write(
+            feature_dir.join("spec.md"),
+            "---\nstatus: draft\ndependencies: []\n---\n\n# 001\n",
+        )
+        .unwrap();
+        std::fs::write(feature_dir.join("plan.md"), "x".repeat(250)).unwrap();
+        std::fs::create_dir_all(tmp.path().join(".ductus")).unwrap();
+        std::fs::write(
+            tmp.path().join(".ductus/config.toml"),
+            "[artifacts]\nread-size-bytes = 100\n",
+        )
+        .unwrap();
+        let size = procedure
+            .steps
+            .iter()
+            .find(|s| matches!(s, Step::Primitive { name, .. } if name == "check-artifact-size"))
+            .unwrap()
+            .clone();
+        let next = Step::Primitive {
+            number: StepNumber(vec![size_step + 1]),
+            name: "read-spec".into(),
+            prose: String::new(),
+            location: loc(),
+        };
+        let walk = Procedure {
+            command: command.into(),
+            steps: vec![size, next],
+        };
+        let mut context = Map::new();
+        context.insert("feature".into(), Value::String("001-basic".into()));
+        let mut reader = Cursor::new(String::new());
+        let mut writer: Vec<u8> = Vec::new();
+        let mut walker = Walker::new(
+            &walk,
+            tmp.path().to_path_buf(),
+            context,
+            &mut reader,
+            &mut writer,
+        );
+        assert_eq!(walker.run().unwrap(), WalkOutcome::Complete, "{command}");
+        let primitives: Vec<String> = std::str::from_utf8(&writer)
+            .unwrap()
+            .lines()
+            .map(|l| serde_json::from_str::<Value>(l).unwrap())
+            .filter_map(|v| v["primitive"].as_str().map(str::to_string))
+            .collect();
+        assert_eq!(
+            primitives,
+            ["check-artifact-size", "read-spec"],
+            "{command}"
+        );
+    }
+}
