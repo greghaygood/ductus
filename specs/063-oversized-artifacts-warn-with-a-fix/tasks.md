@@ -63,5 +63,5 @@ Task 5's step-number sync rewrote 058's scenario `only-unreadable-targets-retain
 
 ## 9. Full local gate
 
-- [ ] Run the whole surface AGENTS.md's local-gate entry lists: markdownlint, the six lint scripts, the script tests, shellcheck, the generators and both derive commands with no drift, `scripts/audit/run-all.sh`, and `cargo fmt --check`, `clippy -D warnings`, `cargo test --release --locked` and `cargo audit` under `runtime/`.
+- [x] Run the whole surface AGENTS.md's local-gate entry lists: markdownlint, the six lint scripts, the script tests, shellcheck, the generators and both derive commands with no drift, `scripts/audit/run-all.sh`, and `cargo fmt --check`, `clippy -D warnings`, `cargo test --release --locked` and `cargo audit` under `runtime/`.
 - **Done when**: every check in the surface passes against the committed tree.
