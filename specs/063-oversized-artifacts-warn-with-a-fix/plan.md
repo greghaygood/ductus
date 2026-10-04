@@ -22,7 +22,7 @@ A subject that does not exist is skipped with no entry (AC15): at `draft` a miss
 
 ### Size is the file's length on disk
 
-The size is the file's metadata length after the open succeeds, with no read of its content and no normalization (AC16). That is the number of bytes an agent's reader receives, CRLF and multi-byte characters included, and it costs one stat per file rather than a read of a 117 KB data model.
+The size is the file's metadata length after the open succeeds, with no read of its content and no normalization (AC16). That is the number of bytes an agent's reader receives, CRLF and multi-byte characters included, and it costs one stat per file rather than a read of a data model as large as 022's `specs/022-deterministic-runtime/data-model.md`, 117,747 bytes on 2026-10-04.
 
 ### Read-page count and the reporting line
 
