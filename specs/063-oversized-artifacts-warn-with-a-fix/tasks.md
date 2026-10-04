@@ -49,9 +49,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 ## 7. Documentation
 
-- [ ] Add a `[artifacts]` bullet to `README.md`'s Configuration list and a commented `[artifacts]` block to `framework/bootstrap/ductus.md` §Project Configuration and its twin `framework/bootstrap/govern.md`, each stating the 50,000-byte default, that the value is a whole number of bytes, and that it cannot switch the check off (AC17).
-- [ ] Add the `artifact-size` family to `docs/analyze.md`.
-- [ ] Add the change to `runtime/CHANGELOG.md`'s `[Unreleased]` section.
+- [x] Add a `[artifacts]` bullet to `README.md`'s Configuration list and a commented `[artifacts]` block to `framework/bootstrap/ductus.md` §Project Configuration and its twin `framework/bootstrap/govern.md`, each stating the 50,000-byte default, that the value is a whole number of bytes, and that it cannot switch the check off (AC17).
+- [x] Add the `artifact-size` family to `docs/analyze.md`.
+- [x] Add the change to `runtime/CHANGELOG.md`'s `[Unreleased]` section.
 - **Done when**: the transitional-bootstrap parity audit family passes and the three documentation sites state the default, the unit, and the absence of an off switch.
 
 ## 8. Re-review 058 so its record covers the synced scenario

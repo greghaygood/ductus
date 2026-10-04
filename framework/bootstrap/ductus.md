@@ -622,6 +622,19 @@ files = [
 # /ductus; do not edit by hand.
 last_applied = "rule-files-relocate"
 
+# Consumed by /ductus:clarify, /ductus:plan and /ductus:analyze (spec 063),
+# through the check-artifact-size primitive. The size, in bytes, above which a
+# spec artifact (spec.md, plan.md, tasks.md, data-model.md, each scenario) may
+# not be read in one call by an agent's file reader; each command warns on
+# every artifact over it and names the fixes. A whole number of bytes, at
+# least 1; unset means 50000. Raise it for a host with a larger read cap, lower
+# it for a smaller one or for token-dense artifacts. Any other value is
+# reported and the default used. There is no value that switches the warning
+# off. Listed here for schema reference; uncomment and edit to use.
+#
+# [artifacts]
+# read-size-bytes = 50000
+
 # Consumed by /ductus:review (not /ductus itself). Excludes rule files from
 # /ductus:review's selection regardless of stack detection. The `reason` field
 # is mandatory (trimmed length ≥ 16 Unicode codepoints) and is the audit
