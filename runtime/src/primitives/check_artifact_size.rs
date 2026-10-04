@@ -325,9 +325,9 @@ pub(crate) fn finding_message(path: &str, bytes: u64, pages: u64, threshold: u64
 /// steps and only commands that exist.
 macro_rules! split_route {
     () => {
-        "split the spec when a slice can reach done on its own, by hand: create the new \
-         spec with /{project}:specify, move the content into it, and link it from this one \
-         (no command splits a spec)"
+        "split the spec by hand, since no command splits one, when a slice can reach done \
+         on its own: create the new spec with /{project}:specify, move the content into it, \
+         and link it from this one"
     };
 }
 

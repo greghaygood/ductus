@@ -36,17 +36,17 @@ use crate::primitives;
 use crate::primitives::gate_confirm::GatePromptPayload;
 use crate::schema::primitives::{
     AppendInboxArgs, AppendInboxResult, AppendQuestionArgs, AppendQuestionResult, AppendTaskArgs,
-    AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckArtifactsArgs,
-    CheckArtifactsResult, CheckCommandFlagsArgs, CheckCommandFlagsResult, CheckCorpusLinksArgs,
-    CheckCorpusLinksResult, CheckOrphanedReferencesArgs, CheckOrphanedReferencesResult,
-    CheckPromotionCoverageArgs, CheckPromotionCoverageResult, CheckReviewGateArgs,
-    CheckReviewGateResult, CheckRuleIdsArgs, CheckRuleIdsResult, CheckStepReferencesArgs,
-    CheckStepReferencesResult, CheckStuckArgs, CheckStuckResult, CheckUnfoldedSpecsArgs,
-    CheckUnfoldedSpecsResult, CheckboxToggleResult, ComputeReviewScopeArgs,
-    ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult, CreatePlanArtifactsArgs,
-    CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult, DashboardArgs,
-    DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult, DeriveDependenciesArgs,
-    DeriveDependenciesResult, DeriveReferencesArgs, DeriveReferencesResult,
+    AppendTaskResult, ApplyManifestArgs, ApplyManifestResult, CheckArtifactSizeArgs,
+    CheckArtifactSizeResult, CheckArtifactsArgs, CheckArtifactsResult, CheckCommandFlagsArgs,
+    CheckCommandFlagsResult, CheckCorpusLinksArgs, CheckCorpusLinksResult,
+    CheckOrphanedReferencesArgs, CheckOrphanedReferencesResult, CheckPromotionCoverageArgs,
+    CheckPromotionCoverageResult, CheckReviewGateArgs, CheckReviewGateResult, CheckRuleIdsArgs,
+    CheckRuleIdsResult, CheckStepReferencesArgs, CheckStepReferencesResult, CheckStuckArgs,
+    CheckStuckResult, CheckUnfoldedSpecsArgs, CheckUnfoldedSpecsResult, CheckboxToggleResult,
+    ComputeReviewScopeArgs, ComputeReviewScopeResult, CreateFeatureArgs, CreateFeatureResult,
+    CreatePlanArtifactsArgs, CreatePlanArtifactsResult, CreateScenarioArgs, CreateScenarioResult,
+    DashboardArgs, DashboardResult, DeriveBoundaryArgs, DeriveBoundaryResult,
+    DeriveDependenciesArgs, DeriveDependenciesResult, DeriveReferencesArgs, DeriveReferencesResult,
     DeriveRoutingCandidatesArgs, DeriveRoutingCandidatesResult, DiffCrossSpecArgs,
     DiffCrossSpecResult, DiscoverRuleFilesArgs, DiscoverRuleFilesResult, EnforceManifestArgs,
     EnforceManifestResult, ExtractArchiveArgs, ExtractArchiveResult, FetchArchiveArgs,
@@ -900,6 +900,19 @@ impl GovRuntimeServer {
         params: Parameters<CheckArtifactsArgs>,
     ) -> Result<Json<CheckArtifactsResult>, String> {
         primitives::check_artifacts::run(&params.0, self.repo())
+            .map(Json)
+            .map_err(|e| e.to_string())
+    }
+
+    #[tool(
+        name = "check-artifact-size",
+        description = "Measure a feature's spec artifacts (spec.md, plan.md, tasks.md, data-model.md, and each scenario — never research.md, review.md or analysis.md) by their length on disk against the configured read size, `[artifacts] read-size-bytes` in .ductus/config.toml (default 50000; an invalid value runs at the default with a notice). Each artifact over it is reported with its size, read-page count, the fixes for its kind and, on a done spec, whether each reopens it, a warning saying it may not be read in one call, the artifact-size finding message /{project}:analyze records, and whether a stored discard in analysis.md still covers it (a discard of the same path at a read-page count at least this one's), with that discard's key. A missing artifact is not reported; one that cannot be opened is listed in `skipped`, never as clean. Read-only. Used by /{project}:clarify, /{project}:plan and /{project}:analyze (spec 063)."
+    )]
+    async fn check_artifact_size(
+        &self,
+        params: Parameters<CheckArtifactSizeArgs>,
+    ) -> Result<Json<CheckArtifactSizeResult>, String> {
+        primitives::check_artifact_size::run(&params.0, self.repo())
             .map(Json)
             .map_err(|e| e.to_string())
     }

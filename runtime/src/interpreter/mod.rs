@@ -71,8 +71,8 @@ use crate::schema::extensions::{
     self, AssessSpecQualityRule, PerformReviewResponse, ValidationError, WriteCodeResponse,
 };
 use crate::schema::primitives::{
-    AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
-    CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
+    AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactSizeArgs,
+    CheckArtifactsArgs, CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
     CheckPromotionCoverageArgs, CheckReviewGateArgs, CheckRuleIdsArgs, CheckStepReferencesArgs,
     CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
     CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
@@ -1099,6 +1099,7 @@ fn dispatch_primitive(
             call!(DeriveReferencesArgs, derive_references)
         }
         "check-artifacts" => call!(CheckArtifactsArgs, check_artifacts),
+        "check-artifact-size" => call!(CheckArtifactSizeArgs, check_artifact_size),
         "prune-tasks" => call!(PruneTasksArgs, prune_tasks),
         "prune-plan" => call!(PrunePlanArgs, prune_plan),
         "dashboard" => call!(DashboardArgs, dashboard),
