@@ -82,23 +82,23 @@ These gaps remain after a warning, and each is its own change:
 
 ## Acceptance Criteria
 
-- [ ] AC1: `/analyze` reports an advisory finding for each subject artifact (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, each scenario) larger than the threshold, naming the file, its size in bytes, the threshold, and its read-page count.
-- [ ] AC2: `/clarify` and `/plan`'s readiness check report the same over-threshold subjects as a warning, and neither blocks its transition on it.
-- [ ] AC3: `research.md`, `review.md` and `analysis.md` are never reported, whatever their size.
-- [ ] AC4: With no threshold configured, the threshold is 50,000 bytes; a threshold set in `.ductus/config.toml` replaces it.
-- [ ] AC5: An invalid configured threshold is reported, and the check runs at the 50,000-byte default and says so; the default never replaces a project's setting silently.
-- [ ] AC6: Each warning names the fixes for its artifact kind from the table in [The warning names a fix](#the-warning-names-a-fix).
-- [ ] AC7: A discard is offered in `/analyze` only.
-- [ ] AC8: On a `done` spec, the warning says that splitting the spec and promoting a scenario reopen it, that trimming reopens it unless the trim changes no claim, and that pruning `tasks.md` and a discard do not.
-- [ ] AC9: A warning that recommends a split describes the manual route and names no command that does not exist.
-- [ ] AC10: A discarded finding fires again once its file grows into a higher read-page count than the one recorded with the discard, and not before.
-- [ ] AC11: A subject that cannot be read is reported as not examined.
-- [ ] AC12: On the markdown-only path, a subject whose size the host's file tools cannot report is reported as not examined.
-- [ ] AC13: `/plan`'s guidance no longer tells the agent that code snippets belong in the plan.
-- [ ] AC14: A warning says its file *may* not be read in one call and never claims the file *will* be truncated.
-- [ ] AC15: A subject artifact that does not exist is neither reported nor counted as not examined.
-- [ ] AC16: A subject's size is its byte count on disk, and a file exactly at the threshold is not reported.
-- [ ] AC17: The threshold setting is documented in `README.md`'s Configuration section and in `framework/bootstrap/ductus.md` §Project Configuration, each stating its default of 50,000 bytes, that its value is a whole number of bytes, and that it cannot switch the check off.
+- [x] AC1: `/analyze` reports an advisory finding for each subject artifact (`spec.md`, `plan.md`, `tasks.md`, `data-model.md`, each scenario) larger than the threshold, naming the file, its size in bytes, the threshold, and its read-page count.
+- [x] AC2: `/clarify` and `/plan`'s readiness check report the same over-threshold subjects as a warning, and neither blocks its transition on it.
+- [x] AC3: `research.md`, `review.md` and `analysis.md` are never reported, whatever their size.
+- [x] AC4: With no threshold configured, the threshold is 50,000 bytes; a threshold set in `.ductus/config.toml` replaces it.
+- [x] AC5: An invalid configured threshold is reported, and the check runs at the 50,000-byte default and says so; the default never replaces a project's setting silently.
+- [x] AC6: Each warning names the fixes for its artifact kind from the table in [The warning names a fix](#the-warning-names-a-fix).
+- [x] AC7: A discard is offered in `/analyze` only.
+- [x] AC8: On a `done` spec, the warning says that splitting the spec and promoting a scenario reopen it, that trimming reopens it unless the trim changes no claim, and that pruning `tasks.md` and a discard do not.
+- [x] AC9: A warning that recommends a split describes the manual route and names no command that does not exist.
+- [x] AC10: A discarded finding fires again once its file grows into a higher read-page count than the one recorded with the discard, and not before.
+- [x] AC11: A subject that cannot be read is reported as not examined.
+- [x] AC12: On the markdown-only path, a subject whose size the host's file tools cannot report is reported as not examined.
+- [x] AC13: `/plan`'s guidance no longer tells the agent that code snippets belong in the plan.
+- [x] AC14: A warning says its file *may* not be read in one call and never claims the file *will* be truncated.
+- [x] AC15: A subject artifact that does not exist is neither reported nor counted as not examined.
+- [x] AC16: A subject's size is its byte count on disk, and a file exactly at the threshold is not reported.
+- [x] AC17: The threshold setting is documented in `README.md`'s Configuration section and in `framework/bootstrap/ductus.md` §Project Configuration, each stating its default of 50,000 bytes, that its value is a whole number of bytes, and that it cannot switch the check off.
 
 ## Applicable Rules
 
