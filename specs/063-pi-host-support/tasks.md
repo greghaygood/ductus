@@ -119,3 +119,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [ ] Watch the run: `gh run list --json workflowName,status,conclusion,headSha` for the sha; `in_progress` + `release not found` is wait, not outage; a `failure` conclusion is the outage (read the failed job, never delete-and-re-tag an in-flight run)
 
 - **Done when**: `ductus-v0.53.0` is a published release (assets + crates.io), the three version sites agree, and every workflow row for the sha is read and green.
+
+## 14. Implement scenario: pi-layout-is-dispatched
+
+- [x] Implement the behavior described in `scenarios/pi-layout-is-dispatched.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
