@@ -58,7 +58,7 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 Task 5's step-number sync rewrote 058's scenario `only-unreadable-targets-retain-decisions` (step 17 → 18). That is a content change to a durable contract, and not a sweep Family 19 excuses — its exemption counts a token pair only across files whose whole diff is a pure substitution, and `analyze.md`'s is not — so 058's review reads stale and `scripts/audit/run-all.sh` fails until 058 is reviewed again. 058 stays `done`; `/{project}:review` runs against a `done` spec.
 
-- [ ] Run `/ductus:review` against `058-findings-route-at-discovery`, dispositioning whatever it finds.
+- [x] Run `/ductus:review` against `058-findings-route-at-discovery`, dispositioning whatever it finds.
 - **Done when**: `scripts/audit/review-freshness.sh` reports no stale review for 058.
 
 ## 9. Full local gate
