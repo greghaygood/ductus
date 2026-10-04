@@ -74,3 +74,11 @@ Task 5's step-number sync rewrote 058's scenario `only-unreadable-targets-retain
 - [x] Measure a `*.md` whose name is not valid UTF-8 like any other scenario, reporting its path lossily, rather than dropping it.
 - [x] Unit tests for both, built so each fails when its handling is removed.
 - **Done when**: the tests pass and fail under the mutation that removes each behavior.
+
+## 11. Name the threshold's bounds
+
+`/ductus:analyze`'s rule assessment found `CFG-CONST-004` unmet: the threshold's valid range has a minimum, a whole number of bytes of at least 1 ([data-model.md](data-model.md)), which `check-artifact-size` checked as a bare `bytes > 0` and the plan committed to no named constant for. `CFG-CONST-003` asks the same of the default, which the plan did not name either. The review of c38053d7 missed the code half.
+
+- [x] Add `MIN_READ_SIZE_BYTES` beside `DEFAULT_READ_SIZE_BYTES` in `runtime/src/primitives/check_artifact_size.rs` and check the configured value against it.
+- [x] Name both constants in the plan's threshold decision.
+- **Done when**: the threshold tests pass and fail when the minimum moves above 1.

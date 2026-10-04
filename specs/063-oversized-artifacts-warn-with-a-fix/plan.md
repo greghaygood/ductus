@@ -30,7 +30,7 @@ The read-page count is the size divided by the threshold, rounded up, with a flo
 
 ### The threshold: `[artifacts] read-size-bytes`
 
-The threshold is read from a new `[artifacts]` section of `.ductus/config.toml`, key `read-size-bytes`, default 50,000 (AC4). The section is named for what it governs, spec artifacts, rather than for one command, because three commands read it; the unit is in the key name because the value is a bare integer.
+The threshold is read from a new `[artifacts]` section of `.ductus/config.toml`, key `read-size-bytes`, default 50,000 (AC4). The section is named for what it governs, spec artifacts, rather than for one command, because three commands read it; the unit is in the key name because the value is a bare integer. The default and the valid range's one bound are named constants side by side in the primitive, `DEFAULT_READ_SIZE_BYTES` (50,000) and `MIN_READ_SIZE_BYTES` (1), so the range is stated once (`CFG-CONST-003`, `CFG-CONST-004`). There is no maximum: a host's read cap has no known ceiling.
 
 The file is located through `paths::resolve_config` (`runtime/src/schema/paths.rs`), the same newest-wins ladder (`.ductus/` → `.govern/` → legacy root) every config reader uses, and the key is held as a raw `toml::Value` so a wrong type is reported rather than failing the parse, as `discover-rule-files` does for `[rules] surfaces` (`runtime/src/primitives/discover_rule_files.rs`, `load_ductus_toml` and `RulesSection`). The result names the threshold's source:
 

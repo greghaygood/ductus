@@ -59,6 +59,10 @@ const FIXED_SUBJECTS: [(&str, ArtifactKind); 4] = [
 /// Resolved Questions).
 pub(crate) const DEFAULT_READ_SIZE_BYTES: u64 = 50_000;
 
+/// The smallest threshold a project may set. A threshold is a byte count every
+/// read-page count is divided by, so zero is not one; there is no maximum.
+const MIN_READ_SIZE_BYTES: u64 = 1;
+
 /// The config section and key the threshold is read from.
 const SECTION: &str = "artifacts";
 const KEY: &str = "read-size-bytes";
@@ -456,7 +460,7 @@ fn resolve_threshold(repo: &Path) -> Result<(ReadSizeThreshold, Option<String>)>
             Some(value) => {
                 if let toml::Value::Integer(bytes) = value
                     && let Ok(bytes) = u64::try_from(*bytes)
-                    && bytes > 0
+                    && bytes >= MIN_READ_SIZE_BYTES
                 {
                     return Ok((
                         ReadSizeThreshold {
