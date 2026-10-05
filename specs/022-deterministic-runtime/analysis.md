@@ -1,15 +1,15 @@
 ---
 spec: 022-deterministic-runtime
-last-run: 2026-10-01T22:08:36Z
-analyzed-against: 7f1688a2cbbe12b68d8e541b6f5fe3f029c6e214
+last-run: 2026-10-05T22:26:57Z
+analyzed-against: 5f84225e625857ca9030fd8218e027b1a2ac404f
 hard-fail: 0
 blocking-findings: 0
 advisory: 9
-unexamined: 2
+unexamined: 0
 analyzed-digest:
-  data-model.md: 897814e43c7183efa578f6d819ccfc8ddcd71a108564a3a65039c33c787aecda
+  data-model.md: c1a58bee51b2b11aea94b067c021258d0d66c7e3e960752cdf090050a01df8c0
   plan.md: 549a28e4de11de67d4a5fd75dd244f393987d9ef2d417bd86351fa948f07dfa9
-  review.md: 0fa57218626cebfbd12412141fea12e489b96eb073c6cd97936d99aa2c0c4559
+  review.md: 2b45f071d2e88254fa1b5e6146376e4c23faca41155318351fd818dcf70f461f
   scenarios/a-confirmed-gate-authorizes-the-writes-after-it.md: d092f9d4f59c67c575cc59039a6e0fdf162546969de2820e747b609d7a3d43c7
   scenarios/a-done-spec-has-no-transition-to-gate.md: 2041c659a2dbee3e17a05a702a11c9b1f59d30ce68acc19f616889696b66da2b
   scenarios/a-review-states-what-it-read.md: dd3d5e366e77ef782a9bcb90388b5bcfb5d4eb45176663d8138b18d41f5ff400
@@ -24,6 +24,7 @@ analyzed-digest:
   scenarios/apply-manifest-substitution-contract.md: dfb59f607b4ac27dec233dca8c71742dbc2f139c98794829fad2cdfb8598d733
   scenarios/apply-manifest.md: e3f792134cfab148287877137d76f68879583d969b03e9dadcf7eb26df6dba20
   scenarios/archive-network-hardening.md: 127616981fb074c9e21ef54b4f58d74413f1fdc31af349529601b8dbc096a512
+  scenarios/argument-hint-needs-a-token.md: 2723dd354fa6c9d98403a199daf3a150f866d1ec4a4ebb702dd9df00a7d2b4cb
   scenarios/ask-consolidation.md: 5e79770b6fed76e68f42c52a0aaeeb88d2c64bc9bbd7d4b6fa13aece937b298b
   scenarios/block-element-scanner.md: 5a9512b307d28410b18d35199f01f7ceb1a7d250e8614cedb661d4104f7effdd
   scenarios/check-artifacts-skipped-targets.md: 4713c3cc6ada06504d74ed9a4a29fef3db3bb0e7a12b67bad2c4793699880d39
@@ -105,6 +106,7 @@ analyzed-digest:
   scenarios/the-constitutions-registry-validates-its-values.md: 91d822062ae0e0d10a9796c7072a7cd03186283ba2aa7657b12a696f705bd2c2
   scenarios/the-cross-spec-impact-gate.md: 874fd2fbefdc6d39f38b8d136f921efc20a99968841d837ad2c91db7c7aa3799
   scenarios/the-inbox-row.md: f29a57dc733dfbaa62b54a94ca7486cb7fbc2c93d4a4e6ded07ab8714483ae04
+  scenarios/the-pi-command-candidate.md: 9135af384c756c750709e8a23f2d4b86eec8b4286f100d2a8800d493f8a3466b
   scenarios/the-promotion-coverage-line.md: 151e741fad3c4f953d85e14d3183fed27ef08bcce0cbd9b42ed7bc89e22fba29
   scenarios/traverse-deps-cycle-check.md: 76e9cb231afc1af9b9c4827a220efe8e33889028d16430a43e9e46d2d07be022
   scenarios/unchecked-done-when-clause-tally.md: d4ec04b41d2ddc3b7a656313cc45fa735eab43b2333c219b79cac10d5a60c88f
@@ -118,9 +120,7 @@ analyzed-digest:
   scenarios/writecode-payload-bundling.md: 5c343929c3a42ac4406a02c173b6979231127b9583aabae171fee1f747d5084b
   scenarios/writecode-payload-canonicalize-paths.md: 61fc0c5dffd7d22ffd6e413e1c4f98adc1869f3fef7357340021d49b964a4a7c
   spec.md: ea12fb92d001ec16fd2b816f33a4b890fc1d660c36e436ac5eee39f9f41645e0
-  tasks.md: f45931ccc4ef82b32c5ef09a0c379b9b02947a85fd1a2a8736610f46c958ea06
-unexamined-by-reason:
-  not-a-live-claim: 2
+  tasks.md: f7577828081a05ca23c7552655fae1249e8f82d91c893fc53b78ab8af2f2bb43
 blocking: false
 dispositions:
   fixed: 0
@@ -179,7 +179,7 @@ decisions:
 
 ## Summary
 
-0 hard-fail, 0 blocking, 9 advisory; not blocking. 2 unexamined target(s). Dispositions: 0 fixed, 0 routed, 9 discarded, 0 undispositioned.
+0 hard-fail, 0 blocking, 9 advisory; not blocking. 0 unexamined target(s). Dispositions: 0 fixed, 0 routed, 9 discarded, 0 undispositioned. Each of the 9 was matched to its stored decision and needs no further action.
 
 ## Hard failures
 
@@ -203,7 +203,7 @@ decisions:
 
 ## Unexamined targets
 
-- not-a-live-claim: 2
+*None — every target was examined.*
 
 ## Fixed in this run
 
