@@ -4,7 +4,7 @@ dependencies: []
 next-criterion: 9
 ---
 
-# 064 — Configurable Source Repository
+# 065 — Configurable Source Repository
 
 Make the repository the `ductus` bootstrap fetches from **configurable**, so the
 framework can be adopted, developed, and tested from a fork — not only from the
@@ -38,7 +38,7 @@ rather than merely absent."* The fetch sites never caught up with the audit.
   runtime release download, and (4) the framework archive fetch — resolve their
   repository component from the `DUCTUS_REPO` environment variable, defaulting to
   `stonean/ductus` when the variable is unset or empty. With the default, every
-  fetch URL renders byte-identically to the pre-064 text; the audits stay green
+  fetch URL renders byte-identically to the pre-065 text; the audits stay green
   because they grep the committed text, whose defaults still spell the canonical
   repository.
 - **All four sites use the same value, consistently.** A value that names one

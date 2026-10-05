@@ -1,5 +1,5 @@
 ---
-spec: 063-pi-host-support
+spec: 064-pi-host-support
 last-run: 2026-10-04T18:35:00Z
 analyzed-against: ad476381c1966403ebaac595b09beaca8e910fdd
 hard-fail: 0
@@ -20,7 +20,7 @@ dispositions:
   undispositioned: 0
 ---
 
-# Analysis — 063-pi-host-support
+# Analysis — 064-pi-host-support
 
 ## Summary
 

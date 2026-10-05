@@ -1,5 +1,5 @@
 ---
-spec: 064-configurable-source-repository
+spec: 065-configurable-source-repository
 last-run: 2026-09-23T14:22:17Z
 analyzed-against: 65c06ef7bc6bed6b65279379c668a05d4b8dabd3
 hard-fail: 0
@@ -15,7 +15,7 @@ analyzed-digest:
 blocking: false
 ---
 
-# Analysis — 064-configurable-source-repository
+# Analysis — 065-configurable-source-repository
 
 ## Summary
 

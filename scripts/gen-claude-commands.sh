@@ -38,7 +38,7 @@ DEST="$ROOT/.claude/commands/ductus"
 PROJECT="ductus"
 CONFIG_DIR=".claude"
 
-# Pi pass (spec 063): the same command set as flat project-hyphenated
+# Pi pass (spec 064): the same command set as flat project-hyphenated
 # prompt templates under .pi/prompts/, plus the verbatim bridge extension.
 # Discovery is flat and filename-keyed, so the `{project}-{name}` prefix is
 # what keeps the shared prompts/ directory collision-free.
@@ -139,7 +139,7 @@ if [ "$check_mode" -eq 1 ]; then
   # `{project}-*.md` namespace that no longer have a source. Foreign prompt
   # templates (outside the `{project}-` namespace) are never touched: the
   # flat directory is shared, and the default `*.md` glob would delete the
-  # adopter's own files (spec 063 D1).
+  # adopter's own files (spec 064 D1).
   if [ -d "$PI_DEST" ]; then
     for existing in "$PI_DEST"/"$PI_PROJECT"-*.md; do
       [ -f "$existing" ] || continue

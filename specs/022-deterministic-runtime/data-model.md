@@ -143,7 +143,7 @@ Older tiers are never removed by a primitive — the bootstrap migration is the 
 
 1. `{cli-config-dir}/commands/{project}/{command_name}.md` — `claude-style` (Claude Code, Auggie), tried first;
 2. `{cli-config-dir}/command/{project}/{command_name}.md` — `opencode` (singular `command/`);
-3. `{cli-config-dir}/prompts/{project}-{command_name}.md` — `pi` (flat project-hyphenated prompt templates, [063](../063-pi-host-support/spec.md)), **appended last**.
+3. `{cli-config-dir}/prompts/{project}-{command_name}.md` — `pi` (flat project-hyphenated prompt templates, [064](../064-pi-host-support/spec.md)), **appended last**.
 
 Each adopter installs into exactly one layout, selected by the agent's registry `layout`; the `cli-config-dir` recorded in the gitignored session file is the real selector, and the candidate order is belt-and-braces — walking all three lets the runtime resolve any supported layout without knowing which agent wrote the file. The two pre-existing candidates keep their relative order exactly, so every pre-pi adopter resolves identically. Both resolution callsites (`main::run_exec`, `interpreter::payload::locate_command_file`) consume the candidate list unchanged. See the [`the-pi-command-candidate`](scenarios/the-pi-command-candidate.md) scenario.
 

@@ -4,7 +4,7 @@ dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravit
 next-criterion: 17
 ---
 
-# 063 — Pi Host Support
+# 064 — Pi Host Support
 
 Add **Pi** (`pi`, the `@earendil-works/pi-coding-agent` terminal coding agent) as the
 fifth agent `ductus` scaffolds into, alongside Claude Code, Auggie, Antigravity, and

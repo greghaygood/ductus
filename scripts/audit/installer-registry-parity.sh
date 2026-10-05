@@ -241,7 +241,7 @@ if [ -n "$seed_drift" ]; then
 fi
 
 # Direction 3b: Pi's parity is the *absence* of a seed. Pi has no
-# permission-gating settings (spec 063 §Verified Pi Layout), so the
+# permission-gating settings (spec 064 §Verified Pi Layout), so the
 # install.sh pi arm must write no settings file, and the registry row's
 # settings_template must stay the empty object. Asserted directly rather
 # than through the python seed-compare above — an empty `{}` would compare

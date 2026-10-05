@@ -1,6 +1,6 @@
-# 063 — Pi Host Support Plan
+# 064 — Pi Host Support Plan
 
-Implements [063 — Pi Host Support](spec.md).
+Implements [064 — Pi Host Support](spec.md).
 
 ## Overview
 
@@ -96,10 +96,10 @@ no new primitive, no schema change, the MCP server is byte-identical. The
 (doc sync, no behavior).
 
 Record routing (standing AGENTS.md rule): the primitive-level change lands as a
-scenario under 022 back-linking 063 per §cross-spec-impact, with 022's
+scenario under 022 back-linking 064 per §cross-spec-impact, with 022's
 `data-model.md` recording the candidate in the command-resolution contract; 022
-takes the `done → in-progress` back-edge and 063 cannot reach `done` before the
-022 scenario does. 063's AC8/AC9 verify against the shipped behavior.
+takes the `done → in-progress` back-edge and 064 cannot reach `done` before the
+022 scenario does. 064's AC8/AC9 verify against the shipped behavior.
 
 ### D4 — `configure/pi.md`: verify-and-repair
 
@@ -182,8 +182,8 @@ blocks; pi has none) — stated, not silent, per the check-that-cannot-run rule.
 
 ### D8 — 022 back-edge and release sequencing
 
-022 reopens (`done → in-progress`) before any 063 runtime work; the scenario
-(`the-pi-command-candidate` slug, or as plan lands it) back-links 063; 022's
+022 reopens (`done → in-progress`) before any 064 runtime work; the scenario
+(`the-pi-command-candidate` slug, or as plan lands it) back-links 064; 022's
 `data-model.md` records the third candidate shape; a matching task lands in 022's
 `tasks.md`. 022's review/analyze refresh follows its standing disposition
 (`compute-review-scope` decides the window; a truthful small-`examined` record with
@@ -241,7 +241,7 @@ round-trips against `runtime/target/release/ductus`, and `ductus exec` resolves 
 | `docs/slash-commands.md` | Modify (if claims agent shapes) | Pi in any agent enumeration |
 | `.gitignore` | Modify | Dogfooded `.pi/*` + negations |
 | `.pi/prompts/ductus-*.md`, `.pi/extensions/ductus.ts` | Create (generated) | Dogfooded pi surface, committed |
-| `specs/022-deterministic-runtime/scenarios/the-pi-command-candidate.md` | Create | 022 scenario, back-linking 063 |
+| `specs/022-deterministic-runtime/scenarios/the-pi-command-candidate.md` | Create | 022 scenario, back-linking 064 |
 | `specs/022-deterministic-runtime/{spec.md, data-model.md, tasks.md}` | Modify | Back-edge, candidate recording, matching task |
 | `version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md` | Modify | `0.53.0` release |
 
@@ -274,7 +274,7 @@ round-trips against `runtime/target/release/ductus`, and `ductus exec` resolves 
 - **No `cross-spec-impact:` on 012/028/029/031/032** — the registry *consumes* the
   new row; layout branches are additive; State-B wiring branches on the existing
   `mechanism` vocabulary. 032's provenance citation stays blockquoted so no
-  dependency edge is induced (it is a citation, not a dependency — 063 does not build
+  dependency edge is induced (it is a citation, not a dependency — 064 does not build
   on opencode's behavior). The one modified spec is 022 (D3), which is the
   back-link partner.
 - **Known limitation — no permission gating in Pi.** Irreducible host property, not a

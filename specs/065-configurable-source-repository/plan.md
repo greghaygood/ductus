@@ -1,6 +1,6 @@
-# 064 — Configurable Source Repository Plan
+# 065 — Configurable Source Repository Plan
 
-Implements [064 — Configurable Source Repository](spec.md).
+Implements [065 — Configurable Source Repository](spec.md).
 
 ## Overview
 
@@ -63,7 +63,7 @@ Ships live-on-main with the next push.
 | `install.sh` | Modify | Bootstrap fetch reads `$DUCTUS_REPO` (default stonean/ductus); header documents it |
 | `framework/bootstrap/ductus.md` | Modify | Version-pin fetch, release download, framework archive fetch, self-update fetch render `$DUCTUS_REPO`; pre-flight/fetch sections document it |
 | `framework/bootstrap/govern.md` | Modify | Byte-identical mirror of ductus.md (Family 21) |
-| `specs/064-configurable-source-repository/{plan.md, tasks.md, spec.md}` | Modify | This spec |
+| `specs/065-configurable-source-repository/{plan.md, tasks.md, spec.md}` | Modify | This spec |
 
 ## Trade-offs
 
