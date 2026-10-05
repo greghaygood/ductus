@@ -4881,6 +4881,14 @@ pub struct CheckCommandFlagsArgs {}
 pub struct CommandFlagFinding {
     /// Repo-relative path of the command source.
     pub command: String,
+    /// Which direction of the contract this finding is about. `flag-unsurfaced`
+    /// is direction 1 — a `Flags` table flag the hint omits, or a `Flags`
+    /// table with no hint at all; `hint-unreachable` is direction 3 — a
+    /// declared hint with no substitution token in the body, so the host
+    /// discards the argument. The two render different fixes, so a consumer
+    /// must be able to tell them apart without reading `reason` prose.
+    #[serde(default)]
+    pub direction: String,
     /// The flag the table documents, e.g. `--since`. Empty for the
     /// whole-file case — a Flags table with no `argument-hint` at all — which
     /// names no single flag because every one of them is unsurfaced.
@@ -4922,6 +4930,12 @@ pub struct CheckCommandFlagsResult {
     /// `examined`, since a command with no table cannot produce a finding.
     #[serde(default)]
     pub with_flags_table: Vec<String>,
+    /// The subset of `examined` that declares an `argument-hint:` — the
+    /// subject of the token direction. A command with no hint has no
+    /// interface to be unreachable, so it cannot produce that finding; a
+    /// clean result quantifies the direction from this, not from `examined`.
+    #[serde(default)]
+    pub with_argument_hint: Vec<String>,
     /// Command sources that could not be read.
     #[serde(default)]
     pub skipped: Vec<CommandFlagSkip>,
