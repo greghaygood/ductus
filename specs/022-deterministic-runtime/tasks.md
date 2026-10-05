@@ -573,6 +573,6 @@ Implements `scenarios/anchor-reference-kinds.md`. `resolve-anchor` treated every
 
 ## 130. Extend check-command-flags with the argument-hint token direction
 
-- [ ] Implement the behavior described in `scenarios/argument-hint-needs-a-token.md`
+- [x] Implement the behavior described in `scenarios/argument-hint-needs-a-token.md`
 
 - **Done when**: check-command-flags reports a declared argument-hint whose body holds no substitution token; target/link/prune carry the token; and Family 30 is green with the new denominator on stderr.
