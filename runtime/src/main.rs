@@ -10,8 +10,8 @@ use std::io;
 use ductus::mcp::server::GovRuntimeServer;
 use ductus::primitives;
 use ductus::schema::primitives::{
-    AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactsArgs,
-    CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
+    AppendInboxArgs, AppendQuestionArgs, AppendTaskArgs, ApplyManifestArgs, CheckArtifactSizeArgs,
+    CheckArtifactsArgs, CheckCommandFlagsArgs, CheckCorpusLinksArgs, CheckOrphanedReferencesArgs,
     CheckPromotionCoverageArgs, CheckReviewGateArgs, CheckRuleIdsArgs, CheckStepReferencesArgs,
     CheckStuckArgs, CheckUnfoldedSpecsArgs, ComputeReviewScopeArgs, CreateFeatureArgs,
     CreatePlanArtifactsArgs, CreateScenarioArgs, DashboardArgs, DeriveBoundaryArgs,
@@ -170,6 +170,8 @@ enum Command {
     DeriveReferences(DeriveReferencesArgs),
     /// Run /ductus:analyze's residual deterministic artifact-check families for a feature.
     CheckArtifacts(CheckArtifactsArgs),
+    /// Measure a feature's spec artifacts against the configured read size; report each over it.
+    CheckArtifactSize(CheckArtifactSizeArgs),
     /// Reduce a feature's tasks.md — drop spent task sections or reset to template state.
     PruneTasks(PruneTasksArgs),
     /// Report a feature's plan.md sections outside the design record; remove the listed ones.
@@ -849,6 +851,9 @@ fn main() -> ExitCode {
         }
         Command::CheckArtifacts(args) => {
             emit_result(primitives::check_artifacts::run(&args, &repo))
+        }
+        Command::CheckArtifactSize(args) => {
+            emit_result(primitives::check_artifact_size::run(&args, &repo))
         }
         Command::PruneTasks(args) => emit_result(primitives::prune_tasks::run(&args, &repo)),
         Command::PrunePlan(args) => emit_result(primitives::prune_plan::run(&args, &repo)),

@@ -78,6 +78,7 @@ pub const PRIMITIVE_REGISTRY: &[&str] = &[
     "append-inbox",
     "remove-inbox-item",
     "check-artifacts",
+    "check-artifact-size",
     "derive-routing-candidates",
     "check-corpus-links",
     "check-orphaned-references",

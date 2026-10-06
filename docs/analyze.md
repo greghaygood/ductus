@@ -28,6 +28,7 @@ Flags: `--all` scans every feature under the spec root (project-level checks sti
 | Artifact completeness | Blocking | `plan.md` / `tasks.md` present at `planned` and later |
 | Plan and task consistency | Blocking | Plan cites the spec and lists decisions and files; tasks are numbered and carry done-when conditions |
 | Plan record | Advisory | Each `plan.md` section outside the design record — the plan template's own `##` sections — on a spec at `planned` or later, reported even when a stored discard decides it, so the discard is matched rather than expired; `/prune` moves such a section's durable pieces home and removes it |
+| Artifact size | Advisory | Each of `spec.md`, `plan.md`, `tasks.md`, `data-model.md` and every scenario larger than `.ductus/config.toml` `[artifacts] read-size-bytes` (50,000 bytes by default), which an agent may not read in one call; the finding names the fixes for its kind and, on a `done` spec, which reopen it, and a stored discard holds until the file grows into another read page |
 | Rule integrity and citations | Blocking / advisory | Cited rule IDs resolve; deprecated citations and non-firing `## Applicable Rules` entries are advisory |
 | Review state drift | Blocking | A `done` spec whose `review.md` record is missing a run or reports `blocking: true` |
 | Analyze state drift | Blocking | A `done` spec whose `analysis.md`, as this run writes it, reports `blocking: true` |
@@ -42,7 +43,7 @@ Flags: `--all` scans every feature under the spec root (project-level checks sti
 | Project-level consistency | Advisory | Generator drift, anchor resolution, command frontmatter, orphaned references, un-folded branch specs |
 | Unexamined targets | Informational | Every target a family could not examine — see [Unexamined](#unexamined) |
 
-Advisory families introduced with a **published promotion criterion** (grounding, Applicable-Rules citations, both decision-drift checks) stay advisory until that criterion is met; the criteria live with each check in `framework/commands/analyze.md`. The plan record carries none and stays advisory: its heading set is a detector, not a verdict, so a design section under another heading fires too, and one stored discard with its reason settles it.
+Advisory families introduced with a **published promotion criterion** (grounding, Applicable-Rules citations, both decision-drift checks) stay advisory until that criterion is met; the criteria live with each check in `framework/commands/analyze.md`. The plan record carries none and stays advisory: its heading set is a detector, not a verdict, so a design section under another heading fires too, and one stored discard with its reason settles it. Artifact size carries none either and stays advisory for the same kind of reason: bytes are a heuristic about a host's read cap the check cannot see.
 
 ## Severity tiers
 

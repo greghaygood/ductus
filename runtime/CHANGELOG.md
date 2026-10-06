@@ -8,6 +8,42 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
 
 - **Pi host (spec 064): `Host::command_file_candidates` gains the pi prompt-template shape `.pi/prompts/{project}-{name}.md`, appended last.** The runtime now resolves installed slash-command files for Pi — the fifth supported agent — whose commands are flat project-hyphenated prompt templates rather than the two directory-shaped layouts (`commands/{project}/` for claude-style, `command/{project}/` for opencode). The two pre-existing candidates keep their relative order, so every pre-pi adopter resolves identically; the `cli-config-dir` in the gitignored session file remains the real selector. The pi layout's tool surface is a zero-dependency extension bridge (`.pi/extensions/ductus.ts`) wrapping this runtime's MCP server over stdio; the MCP server itself is byte-identical — no new primitive, no schema change.
 
+## [0.58.0] — 2026-10-04
+
+The pipeline now warns when a spec artifact is larger than an agent may read
+in one call, and names the fix for it (spec 063). A new primitive and a new
+`[artifacts]` configuration key carry it, and three commands gain a step, which
+renumbers the steps after it and two `ductus exec` gate names — hence a minor
+bump.
+
+### Added
+
+- **Oversized spec artifacts warn with a fix.** A new primitive,
+  `check-artifact-size`, measures a feature's `spec.md`, `plan.md`,
+  `tasks.md`, `data-model.md` and scenarios by their length on disk against
+  `.ductus/config.toml` `[artifacts] read-size-bytes`, 50,000 bytes when
+  unset; any value but a positive whole number is reported and the default
+  used, and no value switches the check off. Each artifact over it gets a
+  warning that an agent may not read it in one call, with the fixes for its
+  kind — prune, split, trim, promote — and, on a `done` spec, which of them
+  reopen it. `/{project}:clarify` and `/{project}:plan` print the warnings and
+  never block on them. `/{project}:analyze` records each as an advisory
+  finding in the new `artifact-size` family, and a stored discard holds until
+  the file grows into another read page. A `done` spec with an artifact over
+  the threshold gets that finding on its next `/{project}:analyze`, where it
+  needs a decision like any other advisory finding. Spec 063.
+
+### Changed
+
+- **New steps renumber three commands.** `/{project}:analyze` steps 17–21 are
+  now 18–22, and its detection range is steps 1–17; `/{project}:clarify`
+  steps 10–13 are now 11–14; `/{project}:plan` steps 8–10 are now 9–11. Under
+  `ductus exec` the gate names follow the step: `/{project}:clarify`'s gate is
+  `step-12` and `/{project}:plan`'s is `step-9`. Spec 063.
+- **`/{project}:plan` no longer puts code in plans.** Its Technical Decisions
+  guidance has a decision name its code by `path:line` rather than reproduce
+  it, so a plan trimmed to stay readable does not regrow. Spec 063.
+
 ## [0.57.0] — 2026-10-02
 
 A branch-scoped spec now reaches `done` through the same checks as any other,
