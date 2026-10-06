@@ -1,6 +1,6 @@
 ---
-status: done
-dependencies: []
+status: in-progress
+dependencies: [061-updates-track-the-latest-release-tag]
 next-criterion: 9
 ---
 
@@ -15,10 +15,11 @@ byte-identical to today.
 
 ## Motivation
 
-`ductus` is live-on-main: `/ductus` and `install.sh` fetch the bootstrap, the
-framework archive, the version pin, and the runtime release asset from the
-canonical repository, spelled as a hardcoded `stonean/ductus` across four fetch
-sites. That made the framework **unforkable**: a contributor checking out their
+`/ductus` and `install.sh` fetch the bootstrap, the framework archive, the
+version pin, and the runtime release asset from the canonical repository — at
+the latest release by default since
+[061](../061-updates-track-the-latest-release-tag/spec.md) — spelled as a
+hardcoded `stonean/ductus` across four fetch sites. That made the framework **unforkable**: a contributor checking out their
 own fork (to test a change before proposing it upstream, or to adopt a private
 variant) could not run `/ductus` from it, because every fetch resolved to the
 canonical origin regardless of where the invoking files physically came from.
@@ -78,11 +79,13 @@ rather than merely absent."* The fetch sites never caught up with the audit.
   with a canonical archive.
 - **No runtime change.** The parameterization lives in `install.sh` and the
   bootstrap's markdown fetch instructions (which the host executes), not in the
-  Rust runtime, so this ships live-on-main without a release tag.
+  Rust runtime. Like any framework-only change it reaches a default-source
+  adopter at the next `ductus-v*` release (061); a project on `--ref=main` sees
+  it on commit.
 
 ## Acceptance Criteria
 
-- [x] AC1: `install.sh` fetches the bootstrap from `raw.githubusercontent.com/$DUCTUS_REPO/main/…`, defaulting to `stonean/ductus` when `DUCTUS_REPO` is unset or empty, and the variable's semantics are documented in its header
+- [x] AC1: `install.sh` fetches the bootstrap from `raw.githubusercontent.com/$DUCTUS_REPO/{ref}/…`, at the ref the installer resolved (the latest release by default), defaulting to `stonean/ductus` when `DUCTUS_REPO` is unset or empty, and the variable's semantics are documented in its header
 - [x] AC2: The version-pin fetch (`ductus.md` §Pre-flight / Runtime acquisition) resolves the repository from `$DUCTUS_REPO`, default `stonean/ductus`
 - [x] AC3: The runtime release download fetches `…/$DUCTUS_REPO/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz`, default `stonean/ductus`, keeping the `{pin}` / `{triple}` placeholders intact
 - [x] AC4: The framework archive fetch (`ductus.md` §File Fetching) uses `$DUCTUS_REPO`'s codeload URL with the same default

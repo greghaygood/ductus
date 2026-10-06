@@ -44,3 +44,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Transition to `done`
 
 - **Done when**: the spec is `done` with current review and analyze records, and 065's ACs are verified against the shipped text.
+
+## 6. Implement scenario: [a-non-canonical-origin-is-announced](scenarios/a-non-canonical-origin-is-announced.md)
+
+- [x] Implement the behavior described in `scenarios/a-non-canonical-origin-is-announced.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
