@@ -48,16 +48,18 @@ system prompt and prompt-matched. Each is a deviation from the command-file cont
 `framework/bootstrap/pi/ductus-bridge.ts` (new file, no substitutions — installed
 byte-identical to `.pi/extensions/ductus.ts`) is a Pi extension that:
 
-- lazily spawns `.ductus/bin/ductus mcp` (resolved relative to the working tree; the
-  pointer `/ductus` already materializes) on first tool call, keeps it alive, and
-  respawns on exit;
-- speaks MCP-over-stdio as newline-delimited JSON-RPC 2.0 with exactly three method
-  families: `initialize` (protocol handshake, `clientInfo`), `tools/list`, and
-  `tools/call` — no npm dependency;
+- spawns `.ductus/bin/ductus mcp` (resolved relative to the working tree; the
+  pointer `/ductus` already materializes) when it loads, keeps it alive, and
+  respawns it on the first call after it exits;
+- speaks MCP-over-stdio as newline-delimited JSON-RPC 2.0: `initialize` (protocol
+  handshake, `clientInfo`) and the `notifications/initialized` notification once per
+  child, then `tools/list` and `tools/call` — no npm dependency;
 - registers every tool the server lists via `pi.registerTool` under `ductus__<name>`
   with the server's own `inputSchema` passed through;
-- on a missing pointer or binary, returns an error envelope naming the missing file
-  and pointing at `/ductus` (re-acquisition), with a one-time load-time notice. No
+- when the runtime cannot start at load, registers no tools and shows a
+  session-start notice naming the pointer and pointing at `/ductus`
+  (re-acquisition); when it fails mid-session, returns an error envelope saying the
+  same ([the-bridge-fails-loudly-and-recovers](scenarios/the-bridge-fails-loudly-and-recovers.md)). No
   markdown fallback (spec §Compatibility Contract, deviation list;
   §runtime-boundary principle 3).
 
@@ -269,8 +271,10 @@ round-trips against `runtime/target/release/ductus`, and `ductus exec` resolves 
 - **Verify/repair `configure/pi.md` over a no-op** — the bridge file gets a repair
   path between full `/ductus` runs, and the trust/permission facts have a home in the
   per-agent command set (D4).
-- **Lazy bridge spawn over eager** — no process cost for pi sessions that never touch
-  the pipeline; respawn-on-exit self-heals (D2).
+- **Spawn at load, not lazily** — recorded first as "lazy spawn over eager", which
+  the bridge never was: the tool list comes from the runtime, so registration has to
+  start it, and a lazily started bridge would register nothing. A respawn on the
+  first call after an exit is what self-heals (D2; corrected 2026-10-05).
 - **No `cross-spec-impact:` on 012/028/029/031/032** — the registry *consumes* the
   new row; layout branches are additive; State-B wiring branches on the existing
   `mechanism` vocabulary. 032's provenance citation stays blockquoted so no
