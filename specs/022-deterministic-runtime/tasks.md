@@ -9,12 +9,23 @@ Tasks derived from the [plan](plan.md). Complete in order. Each task is small en
 - [x] Extend the command_file_candidates_cover_both_layouts_plural_first test to the third element and add the .pi session-fixture test (the flat project-hyphenated form resolves last)
 - [x] Sync the config-dir enumerations in the write-session doc comment and the check-corpus-links generated-copies comment to include .pi
 - [x] Record the three-shape resolution order in 022's data-model.md under Per-project file resolution
-- [x] Bump the repo-root version, runtime/Cargo.toml and runtime/CHANGELOG.md together with the 064 release, then tag ductus-v<version> in the same sitting
 
-- **Done when**: the third candidate resolves last with the pre-existing two in order, both pinned by tests, the enumerations and data-model carry the shape, and the release is cut only after 022 returns to done
+- **Done when**: the third candidate resolves last with the pre-existing two in order, both pinned by tests, and the enumerations and data-model carry the shape. The release that ships it is 064's task 13, cut only after 022 returns to done.
 
 ## 130. Extend check-command-flags with the argument-hint token direction
 
 - [x] Implement the behavior described in `scenarios/argument-hint-needs-a-token.md`
 
 - **Done when**: check-command-flags reports a declared argument-hint whose body holds no substitution token; target/link/prune carry the token; and Family 30 is green with the new denominator on stderr.
+
+## 131. Implement scenario: [every-agents-generated-copies-are-excluded](scenarios/every-agents-generated-copies-are-excluded.md)
+
+- [x] Implement the behavior described in `scenarios/every-agents-generated-copies-are-excluded.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 132. Implement scenario: [a-multi-number-renumber-is-one-rewrite](scenarios/a-multi-number-renumber-is-one-rewrite.md)
+
+- [x] Implement the behavior described in `scenarios/a-multi-number-renumber-is-one-rewrite.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
