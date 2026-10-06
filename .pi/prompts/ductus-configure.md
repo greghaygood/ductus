@@ -8,7 +8,7 @@ Verify and, when drifted, repair the Pi extension bridge that exposes the `ductu
 
 ## Scope Boundaries
 
-- Read `.pi/prompts/` only to confirm trust is granted (`/ductus` scaffolds there); read and write only `.pi/extensions/ductus.ts`. Do NOT modify any other file.
+- Read `.pi/prompts/` only to confirm trust is granted (`/ductus` scaffolds there), and `.ductus/config.toml` only for its `[source] ref`; read and write only `.pi/extensions/ductus.ts`. Do NOT modify any other file.
 - The bridge file — the copy of `framework/bootstrap/pi/ductus-bridge.ts` installed by `/ductus` at State-B wire time — is the single persistent artifact this agent's runtime access depends on. A pip-installed adopter's checkout gets the bridge from `/ductus`; this command repairs it between runs.
 - Do NOT scan source code, specs, or git history. This command manages the bridge file and reports the permission/trust facts; it does not manage session state.
 - Reference: no constitution sections apply — this command operates on agent-specific wiring state, not `ductus` artifacts.
@@ -19,7 +19,13 @@ Verify and, when drifted, repair the Pi extension bridge that exposes the `ductu
 
 ## Verify-and-repair
 
-1. **Locate the canonical source.** Fetch `framework/bootstrap/pi/ductus-bridge.ts` from the `ductus` repository (the `{tempdir}` a running `/ductus` places the archive, or `https://raw.githubusercontent.com/stonean/ductus/main/framework/bootstrap/pi/ductus-bridge.ts`). Live-on-main: the installed bridge is compared against current `main`, the same policy the bootstrap's self-update check applies to installed `ductus` files.
+1. **Locate the canonical source.** The bridge this project should have is the one its framework source ships, so name the source exactly as `/ductus` does (`.pi/prompts/ductus.md` §Source resolution): `.ductus/config.toml` `[source] ref` when it is set (`main` or a `ductus-v<MAJOR>.<MINOR>.<PATCH>` tag), else the latest release — the tag in the `Location` header of `curl -sSI https://github.com/${DUCTUS_REPO:-stonean/ductus}/releases/latest`. Fetch the bridge at that ref into a fresh `{tempdir}` (`mktemp -d`):
+
+   ```text
+   curl -fsSL "https://raw.githubusercontent.com/${DUCTUS_REPO:-stonean/ductus}/{ref}/framework/bootstrap/pi/ductus-bridge.ts" -o {tempdir}/ductus-bridge.ts
+   ```
+
+   Comparing against any other ref — `main` for a project on a release — would have this command and `/ductus` overwrite each other's bridge on every run.
 
 2. **Compare bytes.** Read the installed `.pi/extensions/ductus.ts` and diff against the canonical source. When they are identical, proceed to step 4 — the bridge is current.
 
