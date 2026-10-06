@@ -191,6 +191,10 @@ Settle the run's one source before anything fetches from it. **One run, one sour
 
 1. **Read the inputs.** Collect every `--ref` in `$ARGUMENTS` (§Inputs). Read the **active config file** (§Project Configuration) once, for its `[source] ref`, its `[migrations] last_applied`, and the `[runtime] path` that **Runtime acquisition** Branch 1 reads. A malformed config file aborts here under §Project Configuration's existing rule, since this is now the first step to read it.
 
+   Read `DUCTUS_REPO` too, which every fetch below names as `${DUCTUS_REPO:-stonean/ductus}` (spec 065), with `awk 'BEGIN { print ENVIRON["DUCTUS_REPO"] }'`, a command every agent's **Permission Setup** seed already allows. When it is set, non-empty, and not `stonean/ductus`, print this before anything is fetched, so that a variable left set in a shell profile cannot silently change where the runtime binary comes from:
+
+   > `Source repository: {value} (from DUCTUS_REPO), not the canonical stonean/ductus. Every fetch this run, the runtime binary included, comes from it.`
+
 2. **Check the grammar.** An accepted value is exactly `latest`, `main`, or `ductus-v<MAJOR>.<MINOR>.<PATCH>` — digits only, no pre-release or build suffix, which is the form every release tag carries.
    - `--ref` given more than once halts, naming every value given. Picking one would decide silently between two stated intents.
 
