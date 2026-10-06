@@ -250,11 +250,12 @@ fi
 # in the family, per the check-that-cannot-run rule.
 pi_seed_findings=0
 if grep -nE "^[[:space:]]*pi\)" "$INSTALLER" >/dev/null; then
-  # The pi arm must not contain a `cat > … <<'JSON'` settings write.
+  # The pi arm — from `pi)` to its `;;` — must not contain a `cat > … <<'JSON'`
+  # settings write.
   if awk '
     /^[[:space:]]*pi\)/ { inpi = 1 }
     inpi && /cat > .*settings/ { print; exit }
-    /^[[:space:]]*\)/ && inpi { inpi = 0 }
+    inpi && /;;/ { exit }
   ' "$INSTALLER" | grep -q .; then
     emit "$INSTALLER (pi arm)" "pi arm seeds a settings file, but Pi has no permission-gating settings to seed" \
       "remove the heredoc from the pi arm of $INSTALLER"

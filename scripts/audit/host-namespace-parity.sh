@@ -162,6 +162,14 @@ assert_contract "$ROOT/runtime/src/schema/paths.rs" '.ductus/config.toml' \
 
 # --- 17b/17c: compare against the installed namespaces ----------------------
 
+# The command names a pi prompt template can end in: every command source
+# plus the per-agent configure command.
+COMMAND_NAMES=(configure)
+for src in "$ROOT"/framework/commands/*.md; do
+  COMMAND_NAMES+=("$(basename "$src" .md)")
+done
+
+
 for cli_dir in "${CLI_DIRS[@]}"; do
   [ -d "$cli_dir" ] || continue
 
@@ -179,19 +187,20 @@ for cli_dir in "${CLI_DIRS[@]}"; do
       installed+=("$(basename "$ns_path")")
     done
   done
-  # Third layout: pi's flat project-hyphenated prompt templates
-  # (`{config_dir}/prompts/{project}-{name}.md`, spec 064). There is no
-  # namespace directory — the `{project}-` prefix of the flat filenames IS
-  # the namespace. A `{project}-*.md` file (or the `ductus` self-install's
-  # `{project}.md`… which is actually `ductus.md`, the one un-hyphenated
-  # install) counts as the namespace being installed.
+  # Third layout: pi's flat prompt templates, `{config_dir}/prompts/{ns}-{name}.md`
+  # (spec 064). There is no namespace directory, and a namespace may itself
+  # contain hyphens, so the namespace is whatever precedes `-{name}` for a
+  # known command name — whether or not it matches, since a mismatch is what
+  # this family reports. The `ductus.md` self-install and an adopter's own
+  # templates end in no command name and name no namespace.
   for prompt_file in "$cli_dir/prompts/"*.md; do
     [ -f "$prompt_file" ] || continue
     base="$(basename "$prompt_file" .md)"
-    case "$base" in
-      "$project"-*) installed+=("$project") ;;
-      "$project")    installed+=("$project") ;;
-    esac
+    for name in "${COMMAND_NAMES[@]}"; do
+      case "$base" in
+        *-"$name") installed+=("${base%-"$name"}"); break ;;
+      esac
+    done
   done
 
   # Nothing installed under this agent dir — nothing to compare.
