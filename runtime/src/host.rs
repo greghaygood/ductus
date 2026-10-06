@@ -42,6 +42,14 @@ const DEFAULT_CLI_CONFIG_DIR: &str = ".claude";
 /// basename; this constant only fires on the degenerate path shape.
 const FALLBACK_PROJECT: &str = "ductus";
 
+/// The `config_dir` of every agent in the bootstrap's Agent Registry
+/// (`framework/bootstrap/ductus.md` §Agent Registry). A repository can commit
+/// more than one agent's generated command copies — this one commits Claude's
+/// and Pi's — so a check that skips generated copies skips every agent's, not
+/// only the session's. `agent_config_dirs_match_the_registry` holds this list
+/// to the registry.
+pub const AGENT_CONFIG_DIRS: &[&str] = &[".claude", ".augment", ".agents", ".opencode", ".pi"];
+
 /// Resolved host config — the values both command-resolution callsites
 /// need at lookup time. `cli_config_dir` is the host's per-user
 /// config-dir name (e.g., `.claude` for Claude Code, `.augment` for
@@ -218,6 +226,31 @@ mod tests {
 
     fn tmp_repo(name: &str) -> TempDir {
         tempfile::Builder::new().prefix(name).tempdir().unwrap()
+    }
+
+    #[test]
+    fn agent_config_dirs_match_the_registry() {
+        let bootstrap = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../framework/bootstrap/ductus.md"),
+        )
+        .unwrap();
+        let registry = bootstrap
+            .split("\n## Agent Registry\n")
+            .nth(1)
+            .and_then(|rest| rest.split("\n## ").next())
+            .unwrap();
+        // The section's first table is the registry (its later subsections
+        // carry tables of their own). Data rows only: the header row starts
+        // `| `key``, and the delimiter row `| ---`.
+        let dirs: Vec<&str> = registry
+            .lines()
+            .skip_while(|line| !line.starts_with('|'))
+            .take_while(|line| line.starts_with('|'))
+            .filter(|line| line.starts_with("| `") && !line.starts_with("| `key`"))
+            .filter_map(|line| line.split('|').nth(3))
+            .map(|cell| cell.trim().trim_matches('`'))
+            .collect();
+        assert_eq!(dirs, AGENT_CONFIG_DIRS, "§Agent Registry config_dir column");
     }
 
     #[test]

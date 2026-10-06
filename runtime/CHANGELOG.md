@@ -17,6 +17,12 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
   link change read as a contract change. Both halves — the transition
   gate's `changed_beyond_spelling` and audit Family 19 — now apply the
   rewrites in one simultaneous pass. Spec 022.
+- **`check-corpus-links --scope repository` skips every agent's generated
+  command copies, not only the session agent's.** A repository can commit
+  more than one agent's copies — this one commits Claude's and Pi's — and a
+  session of one agent reported the other's links, which are broken by
+  construction, as defects. The exclusion is now every `config_dir` in the
+  bootstrap's Agent Registry, held to the registry by a test. Spec 022.
 
 ## [0.58.0] — 2026-10-04
 
