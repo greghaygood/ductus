@@ -7,6 +7,7 @@ All notable changes to the `ductus` deterministic runtime are recorded here. The
 ### Added
 
 - **Pi host (spec 064): `Host::command_file_candidates` gains the pi prompt-template shape `.pi/prompts/{project}-{name}.md`, appended last.** The runtime now resolves installed slash-command files for Pi — the fifth supported agent — whose commands are flat project-hyphenated prompt templates rather than the two directory-shaped layouts (`commands/{project}/` for claude-style, `command/{project}/` for opencode). The two pre-existing candidates keep their relative order, so every pre-pi adopter resolves identically; the `cli-config-dir` in the gitignored session file remains the real selector. The pi layout's tool surface is a zero-dependency extension bridge (`.pi/extensions/ductus.ts`) wrapping this runtime's MCP server over stdio; the MCP server itself is byte-identical — no new primitive, no schema change.
+- **`DUCTUS_REPO` adopts or tests ductus from a fork (spec 065).** `install.sh` and `/ductus` take the source repository's `owner/repo` from it, default `stonean/ductus`, for every fetch: the bootstrap, the version pin, the framework archive and the runtime binary. Any other value is announced before the first fetch, and the installer's next step says to export it to the agent too, because a value set for the installer alone would leave every later fetch on `stonean/ductus`. It is listed in the environment-variable inventory in `docs/runtime.md`.
 
 ### Fixed
 
