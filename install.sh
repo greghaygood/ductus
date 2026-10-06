@@ -36,11 +36,12 @@
 # silently change where the runtime binary comes from.
 set -eu
 
-repo="${DUCTUS_REPO:-stonean/ductus}"
+CANONICAL_REPO="stonean/ductus"
+repo="${DUCTUS_REPO:-$CANONICAL_REPO}"
 REPO_RAW="https://raw.githubusercontent.com/$repo"
 LATEST_URL="https://github.com/$repo/releases/latest"
-if [ "$repo" != "stonean/ductus" ]; then
-  echo "ductus: source repository is $repo (from DUCTUS_REPO), not the canonical stonean/ductus" >&2
+if [ "$repo" != "$CANONICAL_REPO" ]; then
+  echo "ductus: source repository is $repo (from DUCTUS_REPO), not the canonical $CANONICAL_REPO" >&2
 fi
 
 # The first release whose bootstrap honors --ref. Every earlier release's
