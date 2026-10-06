@@ -13,6 +13,7 @@ section: "Behavior"
 When `DUCTUS_REPO` is set, non-empty, and not `stonean/ductus`, both entry points name the origin before fetching from it:
 
 - `install.sh` prints `ductus: source repository is {repo} (from DUCTUS_REPO), not the canonical stonean/ductus` on stderr.
+- `install.sh`'s next-step line then says to start the agent with `DUCTUS_REPO={repo}` exported. A variable set inline for the installer alone (`DUCTUS_REPO=… sh`) never reaches the agent, and a bootstrap from the fork would then fetch the pin, the archive and the runtime from `stonean/ductus` — the half-forked adoption this spec exists to prevent.
 - `/ductus` prints `Source repository: {value} (from DUCTUS_REPO), not the canonical stonean/ductus. Every fetch this run, the runtime binary included, comes from it.` in Source resolution step 1, before any fetch.
 
 An unset or empty variable, or one naming `stonean/ductus`, prints nothing.

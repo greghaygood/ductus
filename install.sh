@@ -496,3 +496,9 @@ if [ "$ref_count" -eq 1 ]; then
 else
   echo "ductus: now run '/ductus <project-name>' in your agent to scaffold the project."
 fi
+# /ductus reads DUCTUS_REPO from the agent's own environment, which a variable
+# set inline for this script alone never reaches — and the fork's bootstrap
+# would then fetch everything after it from the canonical repository.
+if [ "$repo" != "$CANONICAL_REPO" ]; then
+  echo "ductus: start your agent with DUCTUS_REPO=$repo exported, or /ductus fetches the rest of the adoption from $CANONICAL_REPO"
+fi
