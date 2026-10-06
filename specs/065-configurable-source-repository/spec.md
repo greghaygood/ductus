@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 dependencies: [061-updates-track-the-latest-release-tag]
 next-criterion: 9
 ---
