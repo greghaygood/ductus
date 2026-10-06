@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 dependencies: [012-multi-agent-govern, 022-deterministic-runtime, 028-antigravity-agent, 029-bootstrap-runtime-autowire, 031-agent-mcp-wiring, 056-bootstrap-archive-boundary-split]
 next-criterion: 17
 ---
@@ -108,9 +108,9 @@ mechanism; nothing in the pipeline depends on either.
   comparison.
 - **D3 — Tool surface: a shipped, zero-dependency extension bridge.**
   `framework/bootstrap/pi/ductus-bridge.ts` (Shared Files row, strategy `update`) lands
-  as `.pi/extensions/ductus.ts` in adopter repos. The extension lazily spawns
+  as `.pi/extensions/ductus.ts` in adopter repos. The extension spawns
   `.ductus/bin/ductus mcp` (the per-project pointer `/ductus` already materializes) as
-  a stdio child on first tool call, speaks MCP-over-stdio as newline-delimited JSON-RPC
+  a stdio child when it loads, because the tool list comes from it, speaks MCP-over-stdio as newline-delimited JSON-RPC
   2.0 (`initialize` → `tools/list` → `tools/call`) with no npm dependency — the README
   promises nothing enters the adopter's dependency manifest, and the stdio transport
   needs nothing a ~150-line extension cannot carry. Every tool the server lists is
@@ -121,10 +121,13 @@ mechanism; nothing in the pipeline depends on either.
   Pi spelling of the host-namespace wrap §runtime-host-integration prescribes (match
   the prefix, not a spelling); it makes State-A detection a `ductus__*` inventory
   match and rules out collision with Pi built-ins or foreign extensions. The process
-  is lazy-spawned, kept alive, and respawned on exit. When the pointer or binary is
-  missing, the tools return an error envelope naming the missing file and pointing at
-  `/ductus` (re-acquisition), with a one-time load-time notice — no silent markdown
-  fallback: §runtime-boundary principle 3 makes acquisition failure halt, and the
+  is kept alive and respawned on the first call after it exits. When it cannot start
+  at load, no `ductus__*` tool is registered — a placeholder would read as State A —
+  and session start shows a notice naming the pointer and pointing at `/ductus`
+  (re-acquisition); when it fails mid-session, the call returns an error envelope
+  saying the same
+  ([the-bridge-fails-loudly-and-recovers](scenarios/the-bridge-fails-loudly-and-recovers.md))
+  — no silent markdown fallback: §runtime-boundary principle 3 makes acquisition failure halt, and the
   two-paths guarantee covers *unwired* hosts, not a wired host that lost its binary.
   The one implementation risk — Pi types `registerTool` parameters as typebox
   `TSchema` while the bridge holds plain JSON Schema — is settled by a throwaway
@@ -193,7 +196,7 @@ mechanism; nothing in the pipeline depends on either.
 - [x] AC3: The §Derived values table carries a `pi` column: command/skill path `.pi/prompts/{project}-<name>.md`, invocation `/{project}-<name>`, `ductus` install path `.pi/prompts/ductus.md`, settings file `.pi/settings.json` (Permission Setup a documented no-op), native rules file `AGENTS.md`, slash-command cleanup glob `{project}-*.md` in `.pi/prompts`
 - [x] AC4: The MCP registration table carries the `pi` row — target `.pi/extensions/ductus.ts` (the bridge from the staging archive), scope `project-local` (gitignored), mechanism `write-file` — and the State-B / MCP-wiring prose branches on Pi without writing any MCP config file
 - [x] AC5: The bootstrap's Pi-layout scaffolding section installs the sixteen command rows plus the configure row verbatim to `.pi/prompts/{project}-<name>.md` (with `{project}` / `{cli-config-dir}` substitution), installs `framework/bootstrap/pi/ductus-bridge.ts` to `.pi/extensions/ductus.ts` with no substitution, adds `.pi/` to the framework-managed `.gitignore` block, and the completion message carries the Pi trust reminder
-- [x] AC6: `framework/bootstrap/pi/ductus-bridge.ts` exists with zero npm dependencies: lazy spawn of `.ductus/bin/ductus mcp`, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `tools/list` / `tools/call`), `pi.registerTool` for every server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through, respawn on exit, and a missing-pointer/binary error envelope that names the file and points at `/ductus` (no markdown fallback)
+- [x] AC6: `framework/bootstrap/pi/ductus-bridge.ts` exists with zero npm dependencies: spawn of `.ductus/bin/ductus mcp` at load, hand-rolled MCP-over-stdio JSON-RPC (`initialize` / `notifications/initialized` / `tools/list` / `tools/call`), `pi.registerTool` for every server-listed tool under `ductus__<name>` with the server's `inputSchema` passed through, and the failure paths of [the-bridge-fails-loudly-and-recovers](scenarios/the-bridge-fails-loudly-and-recovers.md): no tools and a session-start notice naming the pointer and `/ductus` when the runtime cannot start at load, an error envelope naming both when it fails mid-session, and a respawn on the next call (no markdown fallback)
 - [x] AC7: `framework/bootstrap/configure/pi.md` verifies `.pi/extensions/ductus.ts` against the upstream bridge source (overwrite on divergence) and reports the no-permission-settings and trust facts; `gen-configure-mcp.sh`'s header names the Pi exclusion
 - [x] AC8: `Host::command_file_candidates` yields `{cli-config-dir}/prompts/{project}-{name}.md` as the **last** candidate, with a runtime test whose session file records `cli-config-dir = .pi`, and the two pre-existing candidate shapes keep their order (pre-existing host tests pass unmodified)
 - [x] AC9: [022-deterministic-runtime](../022-deterministic-runtime/spec.md) carries the scenario for the third candidate shape back-linking this spec, and its `data-model.md` records the candidate in the result-shape registry
@@ -201,9 +204,9 @@ mechanism; nothing in the pipeline depends on either.
 - [x] AC11: `gen-claude-commands.sh` emits `.pi/prompts/ductus-*.md` and `--check` covers it; the framework repo's `.pi/prompts/` dogfooded copy is committed with the matching `.gitignore` line
 - [x] AC12: Constitution §runtime-host-integration names Pi's tool spelling in full — `ductus__<verb>-<noun>` via the project's `.pi/extensions/ductus.ts` bridge, with the no-built-in-MCP note keeping the runtime's MCP server the single source for names and schemas
 - [x] AC13: `README.md` names Pi in the agent list, accepts `pi` in the per-agent install section, and the invocation-paragraph names `/{project}-<name>` for Pi
-- [x] AC14: A real `pi` run in a trusted project resolves a `/{project}-…` command from `.pi/prompts/`, registers the `ductus__*` tools, round-trips a live tool call, and `ductus exec` resolves the `.pi/prompts/` candidate — result recorded in this spec's plan as verification evidence
+- [ ] AC14: A real `pi` run in a trusted project resolves a `/{project}-…` command from `.pi/prompts/`, registers the `ductus__*` tools, round-trips a live tool call, and `ductus exec` resolves the `.pi/prompts/` candidate — result recorded in this spec's plan as verification evidence
 - [x] AC15: `framework/bootstrap/govern.md` remains byte-identical to `framework/bootstrap/ductus.md` (Family 21)
-- [x] AC16: The version sites (`version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md`) agree on the next minor and the matching `ductus-v<minor>` tag exists (the release is part of this spec's completion gate, not a deferral)
+- [ ] AC16: The version sites (`version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md`) agree on the next minor and the matching `ductus-v<minor>` tag exists (the release is part of this spec's completion gate, not a deferral)
 
 ## Resolved Questions
 

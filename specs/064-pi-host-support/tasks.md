@@ -100,28 +100,37 @@ Tasks derived from the [plan](plan.md). Complete in order.
 
 - [x] With the task-9 surface committed: run `pi` non-interactively in this repo (`--approve`), invoking a `/{project}-…` prompt-template command and observing: the command resolves from `.pi/prompts/`, the `ductus__*` tools are registered from `.pi/extensions/ductus.ts`, a live tool call round-trips (e.g., a read-only primitive), and `ductus exec <command>` resolves the `.pi/prompts/` candidate through the session's `cli-config-dir = .pi`
 - [x] Record the result in plan §D9 (the smoke-test-record placeholder), deviations included with their resolution
+- [ ] Re-run the smoke test after `991956e2`, which rewrote the bridge's lifecycle (spawn at load, handshake per child, respawn, failure notice), and record it in plan §D9 beside the first run — `scripts/tests/pi-bridge-harness.mjs` covers the transport, not pi's own loader
 
 - **Done when**: plan §D9 carries the recorded result with no unresolved deviation — AC14's evidence.
 
 ## 12. Reviews and analysis: 022 first, then 064
 
 - [x] 022: `/{project}:review` (five passes over its changed-since window; the standing truthful-`examined` disposition if the window is too large) and `/{project}:analyze`; all task blocks checked; `done` transition
-- [x] 064: every AC verified against the tree (AC14 via §D9's record), `/{project}:review` and `/{project}:analyze`; `done` transition
+- [ ] 064: every AC verified against the tree (AC14 via §D9's record), `/{project}:review` and `/{project}:analyze`; `done` transition
 
 - **Done when**: both specs are `done` with current, non-blocking reviews and current analyses, and `check-review-gate` passes for both.
 
-## 13. Release: `0.53.0` and `ductus-v0.53.0`
+## 13. Release: the next upstream minor
 
-- [x] Bump all three version sites to `0.53.0` (root `version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md` with the entry: "pi host: `Host::command_file_candidates` gains the `.pi/prompts/{project}-{name}.md` candidate" + the pi layout summary)
-- [x] One `cargo build --release --offline` to refresh `Cargo.lock`, then confirm `--locked` succeeds
-- [x] Commit the version bump; `/{project}:review` 064 at that HEAD (the review covers the release commit); commit the review
-- [x] `scripts/audit/run-all.sh` **after** the commit; on green, `git tag ductus-v0.53.0` at the release commit and push the tag
-- [x] Watch the run — **deferred to upstream**: this branch cuts no tag of its own (`version` stays `0.57.0`; upstream tags `ductus-v<next>` on the merge), so the release pipeline to watch is the upstream one for the merged commit, not this sha. When it runs there: `gh run list --json workflowName,status,conclusion,headSha`; `in_progress` + `release not found` is wait, not outage; a `failure` conclusion is the outage (read the failed job, never delete-and-re-tag an in-flight run)
+Reopened 2026-10-05: the `0.53.0` bump and the `ductus-v0.53.0` tag these items recorded were made on the contributor's fork (greghaygood/ductus) only. This repository's `0.53.0` is a different, earlier release, and the pi change has not been released here.
 
-- **Done when**: `ductus-v0.53.0` is a published release (assets + crates.io), the three version sites agree, and every workflow row for the sha is read and green.
+- [ ] Bump all three version sites to the next minor (root `version`, `runtime/Cargo.toml`, `runtime/CHANGELOG.md`, moving the `[Unreleased]` pi entries under the new heading)
+- [ ] One `cargo build --release --offline` to refresh `Cargo.lock`, then confirm `--locked` succeeds
+- [ ] Commit the version bump; `/{project}:review` 064 at that HEAD (the review covers the release commit); commit the review
+- [ ] `scripts/audit/run-all.sh` **after** the commit; on green, `git tag ductus-v<minor>` at the release commit and push the tag
+- [ ] Watch the run: `gh run list --json workflowName,status,conclusion,headSha`; `in_progress` + `release not found` is wait, not outage; a `failure` conclusion is the outage (read the failed job, never delete-and-re-tag an in-flight run)
+
+- **Done when**: `ductus-v<minor>` is a published release (assets + crates.io), the three version sites agree, and every workflow row for the sha is read and green.
 
 ## 14. Implement scenario: pi-layout-is-dispatched
 
 - [x] Implement the behavior described in `scenarios/pi-layout-is-dispatched.md`
+
+- **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 15. Implement scenario: [the-bridge-fails-loudly-and-recovers](scenarios/the-bridge-fails-loudly-and-recovers.md)
+
+- [x] Implement the behavior described in `scenarios/the-bridge-fails-loudly-and-recovers.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
