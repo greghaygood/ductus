@@ -272,7 +272,7 @@ When this was decided, `check-artifacts` carried an `analyze-state-drift`
 family (`check_analyze_drift`) that emitted every analyze-record condition
 under that one name. `--fix` never reverted on that family. Its only triggers
 were review-state drift and scenario open questions. Task 42 later removed that
-family. `/{project}:analyze` now judges analyze-state drift after step 20, from
+family. `/{project}:analyze` now judges analyze-state drift after step 21, from
 the record it has just written, and `--fix` still does not revert on it
 (`runtime/src/primitives/check_artifacts.rs`, module doc;
 `framework/commands/analyze.md`, §Analyze state drift).

@@ -42,7 +42,7 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 
 > **For agent runtimes**: the Invoke steps below call the MCP tools of the ductus runtime; the host-integration contract — bare↔prefixed tool names, lazy ToolSearch schema fetch, the no-shell-utilities rule, and the two-paths guarantee — lives once in the constitution, §runtime-host-integration. Before the server is registered — the window between acquisition and the restart that loads it — walk the same prose using the host file-reading tools (Read, Edit, Write).
 
-**Exec-path scope** (`ductus exec plan`): steps 4–6 cross the boundary at the `writeSpecBody` extension point, but the task breakdown (step 7) and the substantive readiness checks (the **Validation gate** reference below) are spec-wide semantic host work with no extension marker, so the subprocess walker no-ops them by design — the runtime owns no primitive for the task breakdown or the criteria/consistency judgments. A host driving `ductus exec` (and the markdown-only path) performs them itself before accepting the step-8 gate. `markdownlint` (steps 2, 10) is advisory on every path — it never blocks the clarified → planned transition. This scope reduction mirrors clarify's and is not a silent gap.
+**Exec-path scope** (`ductus exec plan`): steps 4–6 cross the boundary at the `writeSpecBody` extension point, but the task breakdown (step 7) and the substantive readiness checks (the **Validation gate** reference below) are spec-wide semantic host work with no extension marker, so the subprocess walker no-ops them by design — the runtime owns no primitive for the task breakdown or the criteria/consistency judgments. A host driving `ductus exec` (and the markdown-only path) performs them itself before accepting the step-9 gate. `markdownlint` (steps 2, 11) and the artifact-size check (step 8) are advisory on every path — neither blocks the clarified → planned transition. This scope reduction mirrors clarify's and is not a silent gap.
 
 1. Invoke `read-spec` against the targeted feature to load the spec's frontmatter, sections, acceptance criteria, and open-question count. The result drives downstream prompts; the procedure refuses to proceed when the spec's status is not clarified.
 
@@ -59,11 +59,13 @@ Read the spec's `status` field from the YAML frontmatter at the top of the file.
 <!-- audit:ignore-promotion -->
 7. **Author the task breakdown.** Break the plan into discrete, ordered work items in `tasks.md`, following the **Create the task breakdown** reference below. Step 3 copied the `tasks.md` template; this step fills it. This is spec-wide semantic host work with no extension marker (see the exec-path scope note above) — the runtime provides no primitive for the breakdown itself, so it is authored the same way on the MCP and markdown-only paths.
 
-8. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 9; on denial, the walker exits cleanly without modifying the spec.
+8. Invoke `check-artifact-size` against the feature to measure the spec's artifacts, the plan and tasks just written among them, against the configured read size — `.ductus/config.toml` `[artifacts] read-size-bytes`, 50,000 bytes by default. Print the `warning` of each entry in `oversized`, which says the file may not be read in one call and names the fixes for its kind, and each of the result's `notices`, and name each `skipped` subject as not examined. The result is advisory, like markdownlint: it never blocks the clarified → planned transition. On the markdown-only path, measure each subject — `spec.md`, `plan.md`, `tasks.md`, `data-model.md` and each scenario — with the host's file tools against the same threshold; a subject whose size those tools cannot report is not examined, never under the threshold.
 
-9. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+9. Invoke `gate-confirm` with a prompt that presents a summary of the plan body and the task breakdown and asks the user to approve the transition from clarified to planned. On confirmation, continue to step 10; on denial, the walker exits cleanly without modifying the spec.
 
-10. Invoke `lint-markdown` a second time. Any violations surface as advisory findings the user resolves before running `/{project}:implement` — markdownlint is advisory on both paths, never a transition blocker.
+10. Invoke `set-status` to flip the spec frontmatter's status from clarified to planned; the primitive guards against a stale "from" value so concurrent edits surface as an operational error rather than a silent overwrite.
+
+11. Invoke `lint-markdown` a second time. Any violations surface as advisory findings the user resolves before running `/{project}:implement` — markdownlint is advisory on both paths, never a transition blocker.
 
 ## Markdown-only reference
 
@@ -99,7 +101,7 @@ Before creating the plan, load only the cross-spec context this feature actually
 
 1. **If the user picked "keep" in the existing-artifact prompt above**, skip the template copy — `plan.md` is already on disk and is the working artifact. Otherwise (no prior artifacts, or "replace"), copy `specs/templates/plan.md` into the feature directory as `plan.md`.
 2. Fill in (or, on the keep path, edit/extend the existing content):
-   - **Technical Decisions**: each decision with rationale. Code snippets, function signatures, and package paths belong here. **Ground every claim about existing code, schema, or interfaces in the source — read the specific file (or query the dev database) and cite it (`path:line`), or label the claim an assumption (§grounding). Do not assert how existing code behaves from memory or conversation.**
+   - **Technical Decisions**: each decision with rationale. Name the code a decision concerns by path, citing `path:line`, rather than reproducing it: a code sketch goes stale the moment the code lands, and it regrows a plan that was trimmed to stay readable in one call. **Ground every claim about existing code, schema, or interfaces in the source — read the specific file (or query the dev database) and cite it (`path:line`), or label the claim an assumption (§grounding). Do not assert how existing code behaves from memory or conversation.**
    - **Affected Files**: a *planning aid* — list the files you expect to create or modify so reviewers can sanity-check scope.
    - **Data Model**: data structure definitions. Create `data-model.md` if the feature introduces or modifies domain entities or data structures.
    - **Trade-offs**: what was considered and rejected, known limitations.
@@ -130,7 +132,9 @@ Before proposing the status transition, run the readiness check. The substantive
 - Event types align with `events.md`
 - Tasks are ordered and each has a clear definition of done
 
-Markdownlint (`npx markdownlint-cli2` over the feature directory's `.md` files) runs as an **advisory** check on both paths — surface any violations for the user to resolve before `/{project}:implement`, but do not block the transition on them (this matches runtime step 10).
+Markdownlint (`npx markdownlint-cli2` over the feature directory's `.md` files) runs as an **advisory** check on both paths — surface any violations for the user to resolve before `/{project}:implement`, but do not block the transition on them (this matches runtime step 11).
+
+The artifact-size check (runtime step 8, `check-artifact-size`) is **advisory** on both paths too. It measures `spec.md`, `plan.md`, `tasks.md`, `data-model.md` and each scenario against `.ductus/config.toml` `[artifacts] read-size-bytes` (50,000 bytes by default) and prints a warning, with the fixes for its kind, for each one an agent may not read in one call. Surface the warnings and do not block the transition on them.
 
 If any substantive check fails, report the specific failures and do not propose the transition. The user fixes the issues and re-runs the command.
 
