@@ -23,7 +23,7 @@ Verify and, when drifted, repair the Pi extension bridge that exposes the `ductu
 
 2. **Compare bytes.** Read the installed `.pi/extensions/ductus.ts` and diff against the canonical source. When they are identical, proceed to step 4 — the bridge is current.
 
-3. **Repair on divergence.** When the installed file differs — whether from a hand edit, an aborted write, or a stale release — overwrite it with the canonical source **byte-for-byte** (no `ductus` / `.claude` substitution; the bridge holds no placeholders). Write atomically (tempfile + rename). Then verify the repair: re-read the installed file and confirm the diff is now empty. If the write cannot be made (permissions, exotic filesystem), report the error and stop — a half-repaired bridge is worse than the stale one.
+3. **Repair on divergence.** When the installed file differs — whether from a hand edit, an aborted write, or a stale release — overwrite it with the canonical source **byte-for-byte** (no `ductus` / `.pi` substitution; the bridge holds no placeholders). Write atomically (tempfile + rename). Then verify the repair: re-read the installed file and confirm the diff is now empty. If the write cannot be made (permissions, exotic filesystem), report the error and stop — a half-repaired bridge is worse than the stale one.
 
 4. **Report the facts.** State:
    - **Bridge state** — current (and repaired, when step 3 ran) or the error.

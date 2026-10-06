@@ -47,11 +47,10 @@ PI_DEST="$ROOT/.pi/prompts"
 PI_EXT_DEST="$ROOT/.pi/extensions/ductus.ts"
 PI_BRIDGE_SRC="$ROOT/framework/bootstrap/pi/ductus-bridge.ts"
 
-PI_PROJECT="$PROJECT"
 PI_CONFIG_DIR=".pi"
 
 substitute() {
-  sed -e "s/{project}/$PROJECT/g" -e "s|{cli-config-dir}|$CONFIG_DIR|g"
+  sed -e "s/{project}/$PROJECT/g" -e "s|{cli-config-dir}|$1|g"
 }
 
 # Track expected destination filenames so we can prune obsolete generated files.
@@ -64,10 +63,10 @@ if [ "$check_mode" -eq 1 ]; then
   trap 'rm -rf "$tmpdir"' EXIT
   for src in "$SRC"/*.md; do
     name="$(basename "$src")"
-    substitute < "$src" > "$tmpdir/$name"
+    substitute "$CONFIG_DIR" < "$src" > "$tmpdir/$name"
     expected+=("$name")
   done
-  substitute < "$CONFIGURE_SRC" > "$tmpdir/configure.md"
+  substitute "$CONFIG_DIR" < "$CONFIGURE_SRC" > "$tmpdir/configure.md"
   expected+=("configure.md")
 
   # Pi pass: flat `{project}-{name}` prompt templates in a pi tempdir, plus
@@ -78,11 +77,11 @@ if [ "$check_mode" -eq 1 ]; then
   pidi_expected=()
   for src in "$SRC"/*.md; do
     name="$(basename "$src")"
-    substitute < "$src" > "$pitmp/$PI_PROJECT-$name"
-    pidi_expected+=("$PI_PROJECT-$name")
+    substitute "$PI_CONFIG_DIR" < "$src" > "$pitmp/$PROJECT-$name"
+    pidi_expected+=("$PROJECT-$name")
   done
-  substitute < "$PI_SRC" > "$pitmp/$PI_PROJECT-configure.md"
-  pidi_expected+=("$PI_PROJECT-configure.md")
+  substitute "$PI_CONFIG_DIR" < "$PI_SRC" > "$pitmp/$PROJECT-configure.md"
+  pidi_expected+=("$PROJECT-configure.md")
   tmp_bridge="$pitmp/ductus.ts"
   cp "$PI_BRIDGE_SRC" "$tmp_bridge"
 
@@ -141,7 +140,7 @@ if [ "$check_mode" -eq 1 ]; then
   # flat directory is shared, and the default `*.md` glob would delete the
   # adopter's own files (spec 064 D1).
   if [ -d "$PI_DEST" ]; then
-    for existing in "$PI_DEST"/"$PI_PROJECT"-*.md; do
+    for existing in "$PI_DEST"/"$PROJECT"-*.md; do
       [ -f "$existing" ] || continue
       name="$(basename "$existing")"
       keep=0
@@ -163,12 +162,12 @@ mkdir -p "$DEST"
 # Generate one command per source file in framework/commands/.
 for src in "$SRC"/*.md; do
   name="$(basename "$src")"
-  substitute < "$src" > "$DEST/$name"
+  substitute "$CONFIG_DIR" < "$src" > "$DEST/$name"
   expected+=("$name")
 done
 
 # Configure is sourced from the agent-specific permission file, named configure.md.
-substitute < "$CONFIGURE_SRC" > "$DEST/configure.md"
+substitute "$CONFIG_DIR" < "$CONFIGURE_SRC" > "$DEST/configure.md"
 expected+=("configure.md")
 
 # Pi pass (write mode): flat `{project}-{name}` prompt templates + the bridge.
@@ -176,11 +175,11 @@ mkdir -p "$PI_DEST" "$(dirname "$PI_EXT_DEST")"
 pi_expected=()
 for src in "$SRC"/*.md; do
   name="$(basename "$src")"
-  substitute < "$src" > "$PI_DEST/$PI_PROJECT-$name"
-  pi_expected+=("$PI_PROJECT-$name")
+  substitute "$PI_CONFIG_DIR" < "$src" > "$PI_DEST/$PROJECT-$name"
+  pi_expected+=("$PROJECT-$name")
 done
-substitute < "$PI_SRC" > "$PI_DEST/$PI_PROJECT-configure.md"
-pi_expected+=("$PI_PROJECT-configure.md")
+substitute "$PI_CONFIG_DIR" < "$PI_SRC" > "$PI_DEST/$PROJECT-configure.md"
+pi_expected+=("$PROJECT-configure.md")
 cp "$PI_BRIDGE_SRC" "$PI_EXT_DEST"
 
 # Prune any .md files in DEST that are no longer in the expected set.
@@ -198,7 +197,7 @@ done
 
 # Prune pi prompt templates whose `{project}-{name}` is no longer expected.
 # Scoped to the `{project}-*.md` namespace: foreign templates are never touched.
-for existing in "$PI_DEST"/"$PI_PROJECT"-*.md; do
+for existing in "$PI_DEST"/"$PROJECT"-*.md; do
   [ -f "$existing" ] || continue
   name="$(basename "$existing")"
   keep=0
@@ -212,4 +211,4 @@ for existing in "$PI_DEST"/"$PI_PROJECT"-*.md; do
 done
 
 echo "Regenerated $(ls "$DEST"/*.md | wc -l | tr -d ' ') files in $DEST/"
-echo "Regenerated $(ls "$PI_DEST"/"$PI_PROJECT"-*.md | wc -l | tr -d ' ') files in $PI_DEST/"
+echo "Regenerated $(ls "$PI_DEST"/"$PROJECT"-*.md | wc -l | tr -d ' ') files in $PI_DEST/"
