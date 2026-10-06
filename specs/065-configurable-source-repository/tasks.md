@@ -50,3 +50,9 @@ Tasks derived from the [plan](plan.md). Complete in order.
 - [x] Implement the behavior described in `scenarios/a-non-canonical-origin-is-announced.md`
 
 - **Done when**: the scenario's described behavior is correctly implemented and tested.
+
+## 7. Inventory DUCTUS_REPO (CFG-ENV-002)
+
+- [x] List `DUCTUS_REPO` in `docs/runtime.md` §Environment variables — purpose, optional, default `stonean/ductus` — and widen the inventory's scope sentence to the installer and `/ductus` (613842d4)
+
+- **Done when**: the inventory lists DUCTUS_REPO with its purpose, its optionality and its default.

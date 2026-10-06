@@ -4,12 +4,13 @@ Implements [065 — Configurable Source Repository](spec.md).
 
 ## Overview
 
-One mechanism, four sites, zero runtime change. A `DUCTUS_REPO` environment
-variable (default `stonean/ductus`) parameterizes the repository component of
-the four exec-time fetch URLs — `install.sh`'s bootstrap fetch, `/ductus`'s
-version-pin fetch, the runtime release download, and the framework archive
-fetch — plus the self-update/staleness comparison fetch, which must name the
-same origin as the bootstrap that installed the file being compared. The
+One mechanism, every fetch site, zero runtime change. A `DUCTUS_REPO`
+environment variable (default `stonean/ductus`) parameterizes the repository
+component of every exec-time fetch URL — `install.sh`'s, and `/ductus`'s
+latest-release resolution, version pin, migrations registry, runtime release
+download and framework archive — plus the self-update/staleness comparison
+fetch, which must name the same origin as the bootstrap that installed the file
+being compared. The
 default is spelled in the committed text, so unset behavior is byte-identical
 and every audit that greps the committed URLs (self-url resolution, placeholder
 recognition) stays green. `govern.md` is re-copied from `ductus.md` (Family 21
@@ -20,8 +21,8 @@ byte-identity).
 ### D1 — One env var, "REPO" as the unit of configuration
 
 `DUCTUS_REPO` carries `owner/repo`. Each fetch site composes its URL from it:
-`https://raw.githubusercontent.com/$DUCTUS_REPO/main/…`,
-`https://codeload.github.com/$DUCTUS_REPO/tar.gz/refs/heads/main`,
+`https://raw.githubusercontent.com/$DUCTUS_REPO/{raw-ref}/…`,
+`https://codeload.github.com/$DUCTUS_REPO/tar.gz/{archive-ref}`,
 `https://github.com/$DUCTUS_REPO/releases/download/…`. A full-base-URL variable
 (`DUCTUS_RAW_BASE`, `DUCTUS_CODELOAD_BASE`, …) would fragment the default
 across hosts and invite a half-forked adoption; one `owner/repo` value composed
@@ -35,12 +36,13 @@ at execution. `ductus.md`'s fetch instructions are executed by the host
 (markdown-only path) or substituted by the host (runtime path), so the shell
 default syntax is the one canonical spelling.
 
-### D3 — self-url derivation untouched
+### D3 — self-url derivation keeps the canonical slug
 
 `scripts/audit/self-url-resolution.sh` derives the slug from the archive URL in
-`ductus.md` with a regex over `github.com/<owner>/<repo>/archive/`. Because the
-default remains the literal `stonean/ductus` in the committed text, the
-derivation keeps matching; no family change. A fork that changes the default
+`ductus.md` with a regex over `codeload.github.com/<owner>/<repo>/tar.gz/`,
+extended to unwrap the `${DUCTUS_REPO:-…}` default
+(`scripts/audit/self-url-resolution.sh:85-87`). Because the default remains the
+literal `stonean/ductus` in the committed text, the derived slug is unchanged. A fork that changes the default
 changes the URL the family derives from — the family's own stated design.
 
 ### D4 — staleness fetch parameterized
@@ -51,10 +53,11 @@ against its own upstream rather than the canonical one (spec AC7) — otherwise
 every `/ductus` run in a fork adoption would see its installed file as
 "divergent" from canonical main on the first byte of difference.
 
-### D5 — no runtime change; no release tag
+### D5 — no runtime change
 
-The parameterization is entirely in `install.sh` and markdown fetch prose.
-Ships live-on-main with the next push.
+The parameterization is entirely in `install.sh` and markdown fetch prose. Like
+any framework-only change it reaches a default-source adopter at the next
+`ductus-v*` release (061); a project on `--ref=main` sees it on commit.
 
 ## Affected Files
 

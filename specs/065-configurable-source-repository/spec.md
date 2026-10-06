@@ -34,25 +34,37 @@ rather than merely absent."* The fetch sites never caught up with the audit.
 
 ## Behavior
 
-- **`$DUCTUS_REPO` names the source repository.** The four exec-time fetch sites
-  — (1) the `install.sh` bootstrap fetch, (2) the version pin fetch, (3) the
-  runtime release download, and (4) the framework archive fetch — resolve their
-  repository component from the `DUCTUS_REPO` environment variable, defaulting to
-  `stonean/ductus` when the variable is unset or empty. With the default, every
+- **`$DUCTUS_REPO` names the source repository.** Every exec-time fetch back
+  into the repository — `install.sh`'s, and each of `/ductus`'s in Source
+  resolution, Runtime acquisition, the self-update check and the framework
+  archive fetch — resolves its repository component from the `DUCTUS_REPO`
+  environment variable, defaulting to `stonean/ductus` when the variable is
+  unset or empty. With the default, every
   fetch URL renders byte-identically to the pre-065 text; the audits stay green
   because they grep the committed text, whose defaults still spell the canonical
   repository.
-- **All four sites use the same value, consistently.** A value that names one
+- **Every site uses the same value, consistently.** A value that names one
   site but not another would half-fork the adoption — the archive from the fork
   paired with a version pin from the canonical repo (a divergence that can
   silently resolve to a mismatched pin) or a runtime download that 404s. The
-  parameterization is one variable for all four.
-- **`self-url-resolution.sh` derives, and keeps deriving.** The family's
-  `<owner>/<repo>` slug comes from the archive URL in `framework/bootstrap/ductus.md`.
-  The default text still contains `stonean/ductus/archive/…`, so the derivation
-  is unchanged; a fork that changed the *default* would need to change the URL
-  it derives from — which is correct behavior (the fork's identity is the fork's
-  archive URL), not a broken audit.
+  parameterization is one variable for every site.
+- **Read once per run, and inventoried.** `install.sh` resolves the variable
+  before anything else, against its named default `CANONICAL_REPO`. `/ductus`
+  reads it in Source resolution step 1, before the first fetch, and each fetch
+  command names the same variable from the agent's unchanged environment, so a
+  run has one source repository. The fetch commands keep
+  `${DUCTUS_REPO:-stonean/ductus}` rather than a settled value so the default
+  stays in the fetch text the self-url family derives the repository's slug
+  from. The variable is listed in the environment-variable inventory,
+  `docs/runtime.md` §Environment variables (CFG-ENV-001, CFG-ENV-002).
+- **`self-url-resolution.sh` keeps deriving the canonical slug.** The family's
+  `<owner>/<repo>` slug comes from the framework-archive fetch URL in
+  `framework/bootstrap/ductus.md` (`codeload.github.com/…/tar.gz/`), and its
+  pattern unwraps the `${DUCTUS_REPO:-…}` default, so the slug it derives is
+  still the canonical one (`scripts/audit/self-url-resolution.sh:85-87`). A fork
+  that changed the *default* would change the slug it derives — which is
+  correct behavior (the fork's identity is the fork's archive URL), not a
+  broken audit.
 - **`{placeholder}` recognition stays exact.** The runtime release download URLs
   carry `ductus-v{pin}` / `ductus-{triple}` placeholders, which the self-url
   family excludes by construction. Parameterizing the repository component must
@@ -89,7 +101,7 @@ rather than merely absent."* The fetch sites never caught up with the audit.
 - [x] AC2: The version-pin fetch (`ductus.md` §Pre-flight / Runtime acquisition) resolves the repository from `$DUCTUS_REPO`, default `stonean/ductus`
 - [x] AC3: The runtime release download fetches `…/$DUCTUS_REPO/releases/download/ductus-v{pin}/ductus-{triple}.tar.gz`, default `stonean/ductus`, keeping the `{pin}` / `{triple}` placeholders intact
 - [x] AC4: The framework archive fetch (`ductus.md` §File Fetching) uses `$DUCTUS_REPO`'s codeload URL with the same default
-- [x] AC5: All four sites use a single variable with a single default — no site hardcodes a different repository
+- [x] AC5: Every fetch site uses a single variable with a single default — no site hardcodes a different repository
 - [x] AC6: `self-url-resolution.sh` still derives the canonical slug from the archive URL (default text unchanged), passes on the default tree, and reports no footing loss
 - [x] AC7: The staleness/self-update fetch (which compares the installed bootstrap against upstream) resolves the same `$DUCTUS_REPO`, so a fork adoption sees its own upstream rather than the canonical one
 - [x] AC8: `ductus.md` documents `$DUCTUS_REPO` in its pre-flight / fetch sections and in §Project Configuration's environment-notes (as appropriate), and `govern.md` remains byte-identical to `ductus.md`
@@ -101,7 +113,7 @@ rather than merely absent."* The fetch sites never caught up with the audit.
   documented non-goal for this spec.
 - **Prose URLs stay canonical** — a fork's documentation citations should still
   point at the canonical repository; only fetches parameterize.
-- **Self-url family behavior in a fork** — the family already derives the slug
-  from the archive URL, so a fork with a fork default just resolves its own
-  identity. No family change required; the AC above pins that the default tree
-  is unaffected.
+- **Self-url family behavior in a fork** — the family derives the slug from the
+  archive URL's default, so a fork with a fork default just resolves its own
+  identity. Its pattern was extended to unwrap `${DUCTUS_REPO:-…}` rather than
+  replaced; the AC above pins that the default tree is unaffected.
